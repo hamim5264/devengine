@@ -12,7 +12,7 @@ export default function Intro() {
     }, 4000);
 
     return () => clearTimeout(timeout);
-  }, []);
+  }, [router]); // ✅ Fix: Added router to dependencies
 
   return (
     <>

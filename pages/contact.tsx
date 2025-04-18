@@ -12,10 +12,10 @@ export default function Contact() {
 
     emailjs
       .sendForm(
-        "service_4yl6voe",      // ← Replace with your actual Service ID
-        "template_hjh29ya",     // ← Replace with your actual Template ID
+        "service_4yl6voe",
+        "template_hjh29ya",
         form.current!,
-        "1EjxPg3_raS1xxgZ9"     // ← Replace with your actual Public Key
+        "1EjxPg3_raS1xxgZ9"
       )
       .then(
         () => {
@@ -27,7 +27,7 @@ export default function Contact() {
         }
       );
 
-    (form.current as HTMLFormElement).reset(); // ✅ Type-safe reset
+    (form.current as HTMLFormElement).reset();
   };
 
   return (

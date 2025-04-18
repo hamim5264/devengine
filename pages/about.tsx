@@ -2,8 +2,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import React from "react"; // make sure this is at the top
-
+import React from "react";
 
 export default function About() {
   return (
@@ -31,7 +30,7 @@ export default function About() {
           {/* 👤 Profile Image */}
           <div className="w-72 h-72 md:w-80 md:h-80 relative rounded-full overflow-hidden shadow-2xl border-4 border-teal-500 hover:scale-105 transition duration-300">
             <Image
-              src="/hamim.png" // Replace this with your image name
+              src="/hamim.png"
               alt="Hamim Leon"
               layout="fill"
               objectFit="cover"
@@ -57,8 +56,9 @@ export default function About() {
               students, freelancers, and clients. Whether it’s a semester project or
               a full business system — I’ve got you covered.
             </p>
-            <p>Let&rsquo;s build something awesome together. 💙</p>
-
+            <p>
+              Let&rsquo;s build something awesome together. 💙
+            </p>
           </div>
         </div>
       </main>

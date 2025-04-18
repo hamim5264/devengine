@@ -12,10 +12,10 @@ export default function Contact() {
 
     emailjs
       .sendForm(
-        "service_4yl6voe",      // ← 🟢 Replace with your actual Service ID
-        "template_hjh29ya",     // ← 🟢 Replace with your actual Template ID
+        "service_4yl6voe",      // ← Replace with your actual Service ID
+        "template_hjh29ya",     // ← Replace with your actual Template ID
         form.current!,
-        "1EjxPg3_raS1xxgZ9"       // ← 🟢 Replace with your actual Public Key
+        "1EjxPg3_raS1xxgZ9"     // ← Replace with your actual Public Key
       )
       .then(
         () => {
@@ -27,7 +27,7 @@ export default function Contact() {
         }
       );
 
-    e.target.reset();
+    (form.current as HTMLFormElement).reset(); // ✅ Type-safe reset
   };
 
   return (
@@ -45,14 +45,13 @@ export default function Contact() {
 
         <div className="max-w-2xl mx-auto bg-gray-800 rounded-xl p-6">
           <form ref={form} onSubmit={sendEmail} className="space-y-4">
-            {/* Optional: Pass a title to use in the email subject */}
             <input type="hidden" name="title" value="DevEngine Contact Message" />
 
             <div>
               <label className="block mb-1 text-sm">Your Name</label>
               <input
                 type="text"
-                name="name" // ✅ Matches EmailJS template variable
+                name="name"
                 required
                 placeholder="Enter your name"
                 className="w-full px-4 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-teal-400"
@@ -63,7 +62,7 @@ export default function Contact() {
               <label className="block mb-1 text-sm">Email Address</label>
               <input
                 type="email"
-                name="email" // ✅ Matches EmailJS template variable
+                name="email"
                 required
                 placeholder="you@example.com"
                 className="w-full px-4 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-teal-400"
@@ -73,7 +72,7 @@ export default function Contact() {
             <div>
               <label className="block mb-1 text-sm">Message</label>
               <textarea
-                name="message" // ✅ Matches EmailJS template variable
+                name="message"
                 required
                 rows={5}
                 placeholder="How can I help you?"
@@ -110,6 +109,7 @@ export default function Contact() {
           </p>
         </div>
       </main>
+
       <Footer />
     </>
   );

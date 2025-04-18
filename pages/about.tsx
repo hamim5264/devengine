@@ -41,24 +41,22 @@ export default function About() {
           {/* 🧠 Bio Content */}
           <div className="text-center md:text-left text-lg md:text-xl text-gray-300 space-y-6">
             <p>
-              Hi, I'm <span className="text-teal-400 font-semibold">Hamim</span> — a passionate
+              Hi, I&apos;m <span className="text-teal-400 font-semibold">Hamim</span> — a passionate
               developer from Bangladesh 🇧🇩. I help students, startups, and businesses turn
               their ideas into powerful software solutions.
             </p>
             <p>
-              I’ve worked on a wide variety of projects including AI systems, POS apps,
+              I&apos;ve worked on a wide variety of projects including AI systems, POS apps,
               quiz platforms, and client-based mobile apps. I specialize in building
               high-performance, beautiful, and functional apps using Flutter, Firebase,
               and Next.js.
             </p>
             <p>
               DevEngine is my initiative to bring clean, ready-made, and professional projects to
-              students, freelancers, and clients. Whether it’s a semester project or
-              a full business system — I’ve got you covered.
+              students, freelancers, and clients. Whether it&apos;s a semester project or
+              a full business system — I&apos;ve got you covered.
             </p>
-            <p>
-            <p>Let&rsquo;s build something awesome together. 💙</p>
-            </p>
+            <p>Let&apos;s build something awesome together. 💙</p>
           </div>
         </div>
       </main>

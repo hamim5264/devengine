@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 export default function Contact() {
   const form = useRef<HTMLFormElement>(null);
 
-  const sendEmail = (e: any) => {
+  const sendEmail = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     emailjs

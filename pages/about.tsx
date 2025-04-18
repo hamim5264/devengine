@@ -2,6 +2,8 @@ import Head from "next/head";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import React from "react"; // make sure this is at the top
+
 
 export default function About() {
   return (
@@ -55,9 +57,8 @@ export default function About() {
               students, freelancers, and clients. Whether it’s a semester project or
               a full business system — I’ve got you covered.
             </p>
-            <p>
-              Let’s build something awesome together. 💙
-            </p>
+            <p>Let&rsquo;s build something awesome together. 💙</p>
+
           </div>
         </div>
       </main>

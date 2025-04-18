@@ -57,7 +57,7 @@ export default function About() {
               a full business system — I’ve got you covered.
             </p>
             <p>
-            Let&rsquo;s build something awesome together. 💙
+            <p>Let&rsquo;s build something awesome together. 💙</p>
             </p>
           </div>
         </div>

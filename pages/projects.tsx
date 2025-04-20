@@ -29,13 +29,10 @@ export default function ProjectsPage() {
         </p>
 
         <div className="mt-10">
-          <p className="text-gray-400">
-            📬 For early access or inquiries, feel free to{" "}
-            <Link href="/contact" className="text-teal-400 underline">
-              contact us
-            </Link>
-            .
-          </p>
+        <p className="text-gray-400">
+        📬 For early access or inquiries, feel free to{" "}
+        <Link href="/contact" className="text-teal-400 underline">contact us</Link>.
+        </p>
         </div>
       </main>
 

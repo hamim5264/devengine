@@ -8,7 +8,7 @@ import jsPDF from "jspdf";
 
 export default function TermsForm() {
   const formRef = useRef<HTMLFormElement>(null);
-  const sigCanvas = useRef<any>(null);
+  const sigCanvas = useRef<SignatureCanvas>(null);
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "" });
 
@@ -42,7 +42,7 @@ export default function TermsForm() {
         "1EjxPg3_raS1xxgZ9"
       )
       .then(
-        (result) => {
+        () => {
           alert("✅ Form submitted successfully!");
           setFormData({
             name: fd.get("name") as string,
@@ -94,7 +94,13 @@ export default function TermsForm() {
             <br />
             <button
               className="mt-4 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
-              onClick={() => generatePDF(formData.name, formData.email, sigCanvas.current?.getCanvas()?.toDataURL("image/png"))}
+              onClick={() =>
+                generatePDF(
+                  formData.name,
+                  formData.email,
+                  sigCanvas.current?.getCanvas()?.toDataURL("image/png") || null
+                )
+              }
             >
               📄 Download Form
             </button>

@@ -8,11 +8,11 @@ export default function Intro() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      router.push("/home"); // ✅ Redirects to /home
+      router.push("/home");
     }, 4000);
 
     return () => clearTimeout(timeout);
-  }, [router]); // ✅ Fix: Added router to dependencies
+  }, [router]);
 
   return (
     <>
@@ -41,7 +41,7 @@ export default function Intro() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 1 }}
           >
-            Empowering Students. Impressing Clients.
+            Fueling Your Startup with Custom Software.
           </motion.p>
         </motion.div>
       </main>

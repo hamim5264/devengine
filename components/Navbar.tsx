@@ -26,13 +26,13 @@ export default function Navbar() {
             <Link href="/home" className="hover:text-teal-400 transition">Home</Link>
           </li>
           <li>
-            <Link href="/projects" className="hover:text-teal-400 transition">Projects</Link>
+            <Link href="/projects" className="hover:text-teal-400 transition">All Projects</Link>
           </li>
           <li>
             <Link href="/about" className="hover:text-teal-400 transition">About</Link>
           </li>
           <li>
-            <Link href="/contact" className="hover:text-teal-400 transition">Contact</Link>
+            <Link href="/contact" className="hover:text-teal-400 transition">Contact Us</Link>
           </li>
           <li>
             <Link href="/privacy-policy" className="hover:text-teal-400 transition">Privacy Policy</Link>

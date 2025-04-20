@@ -15,8 +15,8 @@ export default function ProjectsPage() {
         <h1 className="text-4xl md:text-5xl font-extrabold text-teal-400 mb-6">
           🚀 Projects Coming Soon!
         </h1>
-        <p className="text-lg md:text-xl text-gray-300 mb-4 max-w-2xl">
-          We're preparing something amazing! Soon, you’ll be able to explore, preview, and purchase software projects tailored for students, startups, and businesses.
+        <p className="text-sm text-gray-500 mt-6">
+        Soon, you&rsquo;ll be able to browse, preview, and purchase your desired projects directly from this platform.
         </p>
         <p className="text-sm text-gray-500 max-w-lg">
           Our team is working hard to make DevEngine your go-to hub for fully functional project solutions, complete with payment systems and download access.

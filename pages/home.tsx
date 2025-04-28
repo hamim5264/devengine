@@ -3,58 +3,43 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  FaBrain,
-  FaBriefcase,
-  FaUniversity,
-  FaShieldAlt,
-  FaCogs,
-} from "react-icons/fa";
+import { FaBriefcase, FaRobot, FaCode } from "react-icons/fa6";
+import { FaUniversity, FaCogs } from "react-icons/fa";
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const categories = [
+  const offerings = [
     {
-      title: "Intelligent Systems",
-      description: "Solutions powered by Machine Learning and Data Analysis.",
-      icon: <FaBrain size={24} />,
-      details:
-        "These projects are focused on AI, ML, and data-driven solutions such as disease predictors, recommendation engines, or intelligent automation tools.",
+      title: "Business Application Projects",
+      description: "Robust POS, inventory, and ERP systems for enterprises.",
+      icon: <FaBriefcase size={28} />,
     },
     {
-      title: "Business Projects",
-      description: "POS, inventory, and management systems.",
-      icon: <FaBriefcase size={24} />,
-      details:
-        "Projects tailored for small businesses or enterprises including inventory control, POS systems, invoicing tools, and sales tracking platforms.",
+      title: "AI Application Projects",
+      description: "Smart solutions using Machine Learning and Data Science.",
+      icon: <FaRobot size={28} />,
     },
     {
-      title: "University Projects",
-      description: "Academic and semester-wise software projects.",
-      icon: <FaUniversity size={24} />,
-      details:
-        "These are academic solutions such as quiz platforms, student portals, course planners, and other university-focused tools with documentation.",
+      title: "Defense Projects for University Students",
+      description: "Well-documented, thesis-ready final year submissions.",
+      icon: <FaUniversity size={28} />,
     },
     {
-      title: "Defense Projects",
-      description: "Final year thesis & advanced research-based builds.",
-      icon: <FaShieldAlt size={24} />,
-      details:
-        "These are professional-level thesis submissions with complex documentation, use-case validation, and cutting-edge implementation.",
+      title: "Basic Application Projects",
+      description: "Simple apps perfect for academic or personal portfolios.",
+      icon: <FaCode size={28} />,
     },
     {
-      title: "Professional Solutions",
-      description: "Industry-ready systems for real-world application.",
-      icon: <FaCogs size={24} />,
-      details:
-        "Enterprise-grade apps and tools built for clients, featuring payment gateways, user dashboards, APIs, and robust backend integration.",
+      title: "Client-Based Customized Projects",
+      description: "Tailored applications built to match your business needs.",
+      icon: <FaCogs size={28} />,
     },
   ];
 
-  const filteredCategories = categories.filter((cat) =>
-    cat.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOfferings = offerings.filter((offer) =>
+    offer.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -67,54 +52,67 @@ export default function Home() {
 
       <main className="pt-24 min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
         {/* Hero Section */}
-        <div className="text-center px-6 pt-24 pb-28">
+        <div className="text-center px-6 pt-24 pb-36 relative">
           <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-teal-400 to-blue-500 text-transparent bg-clip-text">
             DevEngine: Build Fast. Learn Smart.
           </h1>
           <p className="text-lg md:text-xl text-gray-300 mb-6 max-w-2xl mx-auto">
-            Buy ready-made software or request custom enterprise-level solutions — built for students, startups, and business owners.
+            Buy ready-made software or request custom enterprise-level solutions
+            — built for students, startups, and business owners.
           </p>
-          <Link href="/projects">
-            <button className="bg-teal-500 hover:scale-105 hover:bg-teal-600 text-white px-6 py-3 rounded-xl transition text-lg shadow-lg">
-              🚀 Explore Projects
-            </button>
-          </Link>
+
+          <div className="flex justify-center mt-8">
+            <Link href="/projects">
+              <button className="relative px-8 py-3 text-lg rounded-full font-semibold text-white shadow-lg bg-black overflow-hidden group border-2 border-teal-400">
+                <span className="absolute inset-0 rounded-full border-2 border-teal-400 animate-[spin_3s_linear_infinite] group-hover:border-blue-500"></span>
+                <span className="relative z-10 flex items-center gap-2">
+                  🚀 Explore Projects
+                </span>
+              </button>
+            </Link>
+          </div>
         </div>
 
-        {/* Project Categories Section */}
+        {/* Search Field */}
+        <div className="max-w-xl mx-auto mb-10 px-6 md:px-20">
+          <input
+            type="text"
+            placeholder="🔍 Search by project name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-teal-500 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-lg"
+          />
+        </div>
+
+        {/* Offerings Section */}
         <section className="py-20 px-6 md:px-20">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Project Categories
+            What We Offer
           </h2>
 
-          <div className="max-w-xl mx-auto mb-10">
-            <input
-              type="text"
-              placeholder="Search by category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:border-teal-400"
-            />
-          </div>
-
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCategories.map((cat, index) => (
+            {filteredOfferings.map((offer, index) => (
               <div
                 key={index}
-                className="border border-gray-700 rounded-xl p-6 hover:border-teal-500 transition bg-gray-800 shadow-md cursor-pointer"
-                onClick={() => setSelectedCategory(cat.details)}
+                className="border border-gray-700 rounded-xl p-6 hover:border-teal-500 bg-gray-900 transition shadow-md cursor-pointer hover:shadow-teal-400/30 hover:shadow-lg"
+                onClick={() => setSelectedCategory(offer.description)}
               >
-                <div className="text-teal-400 mb-4">{cat.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{cat.title}</h3>
-                <p className="text-gray-300 mb-4">{cat.description}</p>
-                <span className="text-teal-400 hover:underline">View Details →</span>
+                <div className="text-teal-400 mb-4 flex justify-center">
+                  {offer.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-center">
+                  {offer.title}
+                </h3>
+                <p className="text-gray-300 mb-4 text-sm text-center">
+                  {offer.description}
+                </p>
               </div>
             ))}
           </div>
 
           {selectedCategory && (
             <div className="mt-10 bg-gray-900 p-6 rounded-xl border border-teal-600 text-gray-200">
-              <h3 className="text-xl font-bold mb-2 text-teal-400">Category Details</h3>
+              <h3 className="text-xl font-bold mb-2 text-teal-400">Details</h3>
               <p>{selectedCategory}</p>
             </div>
           )}
@@ -127,32 +125,43 @@ export default function Home() {
           </h2>
           <ul className="list-disc list-inside space-y-4 text-lg text-gray-300">
             <li>
-              Each completed solution includes a license agreement. Full ownership is granted unless explicitly stated otherwise in a signed agreement.
+              Upon successful purchase, full copyright ownership of the
+              purchased project will be granted to the client, ensuring
+              exclusive usage rights.
             </li>
             <li>
-              In certain partnership-based projects, DevEngine reserves the right to retain partial ownership (up to 50%) based on scope and innovation.
+              All projects are delivered "as is" at the time of purchase. Any
+              modifications, upgrades, or additional customizations requested
+              afterward may incur additional charges based on mutual agreement.
             </li>
             <li>
-              For custom software development, a 3-phase payment structure is required:
+              Before proceeding with any purchase, clients must review and
+              accept the Terms & Conditions to ensure clear understanding and
+              agreement with DevEngine’s policies.
+            </li>
+            <li>
+              For custom software development services, a three-phase payment
+              structure is applicable:
               <ul className="list-disc list-inside ml-6">
-                <li>70% upfront before development begins</li>
-                <li>30% before final delivery</li>
-                <li>Post-deployment maintenance is billed separately, based on mutual agreement</li>
+                <li>70% upfront before project initiation</li>
+                <li>30% before final project delivery</li>
+                <li>
+                  Post-delivery maintenance and support will be billed
+                  separately as per mutual agreement
+                </li>
               </ul>
             </li>
             <li>
-              All clients must complete and digitally sign the Terms & Conditions Agreement Form before project initiation.
+              Project delivery timelines, revision policies, and ongoing support
+              details will be clearly outlined and agreed upon during the
+              initial purchase discussion.
             </li>
             <li>
-              Project timelines and post-sale support will be agreed upon and added to the final agreement.
+              DevEngine is not responsible for any misuse, resale, or
+              redistribution of the purchased projects without prior
+              authorization after ownership transfer.
             </li>
           </ul>
-
-          <div className="text-center mt-8">
-            <Link href="/terms-form" className="text-teal-400 underline text-lg">
-              Fill Out Terms & Conditions Form
-            </Link>
-          </div>
         </section>
       </main>
 
@@ -160,6 +169,3 @@ export default function Home() {
     </>
   );
 }
-
-
-

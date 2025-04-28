@@ -9,7 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fontsource/poppins": "^5.2.5",
+    "axios": "^1.9.0",
     "emailjs-com": "^3.2.0",
+    "firebase": "^11.6.0",
     "framer-motion": "^12.7.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",
@@ -17,7 +20,9 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
-    "react-signature-canvas": "^1.1.0-alpha.2"
+    "react-signature-canvas": "^1.1.0-alpha.2",
+    "sslcommerz-nodejs": "^1.0.8",
+    "sweetalert2": "^11.19.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

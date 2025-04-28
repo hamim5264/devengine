@@ -14,49 +14,71 @@ export default function About() {
       <Navbar />
 
       <main className="pt-24 px-6 md:px-20 pb-20 bg-gradient-to-br from-gray-900 to-black text-white">
-        <h1 className="text-3xl md:text-5xl font-bold mb-2 text-center">
-          About Me
+        <h1 className="text-3xl md:text-5xl font-bold mb-6 text-center text-teal-400">
+          Meet the Developer
         </h1>
 
-        {/* 💼 Highlighted Dev Title */}
-        <p className="text-center text-xl md:text-2xl font-semibold text-teal-400 mb-10 tracking-wide">
-          I am a <span className="text-white">Software Developer</span>{" "}
-          <span className="text-gray-400">||</span>{" "}
-          <span className="text-white">Mobile Application Developer</span>
+        <p className="text-center text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
+          I'm{" "}
+          <span className="text-teal-400 font-semibold">MD. ABDUL HAMIM</span> —
+          a Software Engineer & Mobile App Developer from Bangladesh 🇧🇩,
+          passionate about building performance-focused and beautifully designed
+          applications.
         </p>
 
-        {/* 🔥 About Section Layout */}
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-10">
-          {/* 👤 Profile Image */}
-          <div className="w-72 h-72 md:w-80 md:h-80 relative rounded-full overflow-hidden shadow-2xl border-4 border-teal-500 hover:scale-105 transition duration-300">
-            <Image
-              src="/hamim.png"
-              alt="Hamim Leon"
-              layout="fill"
-              objectFit="cover"
-              priority
-            />
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-center gap-10">
+          {/* 👤 Profile Image with Neon Circle */}
+          <div className="relative rounded-full w-72 h-72 md:w-80 md:h-80 bg-black p-1 shadow-lg">
+            <div className="absolute inset-0 animate-pulse rounded-full border-4 border-teal-400 blur-md"></div>
+            <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-teal-500">
+              <Image
+                src="/hamim.png"
+                alt="Hamim Leon"
+                layout="fill"
+                objectFit="cover"
+                priority
+              />
+            </div>
           </div>
 
           {/* 🧠 Bio Content */}
-          <div className="text-center md:text-left text-lg md:text-xl text-gray-300 space-y-6">
+          <div className="text-gray-300 space-y-5 text-center md:text-left text-lg">
             <p>
-              Hi, I&apos;m <span className="text-teal-400 font-semibold">Hamim</span> — a passionate
-              developer from Bangladesh 🇧🇩. I help students, startups, and businesses turn
-              their ideas into powerful software solutions.
+              I specialize in building{" "}
+              <span className="text-white font-medium">
+                cross-platform mobile apps
+              </span>{" "}
+              and web solutions using
+              <span className="text-teal-400 font-medium">
+                {" "}
+                Flutter, Firebase, and Next.js
+              </span>
+              . From academic projects to enterprise software, I craft apps that
+              deliver real-world impact.
             </p>
             <p>
-              I&apos;ve worked on a wide variety of projects including AI systems, POS apps,
-              quiz platforms, and client-based mobile apps. I specialize in building
-              high-performance, beautiful, and functional apps using Flutter, Firebase,
-              and Next.js.
+              Through{" "}
+              <span className="text-white font-semibold">DevEngine</span>, I
+              offer ready-made and custom-built software projects tailored for
+              students, professionals, and startups. My goal is to help you
+              launch faster, with smarter code and thoughtful design.
             </p>
             <p>
-              DevEngine is my initiative to bring clean, ready-made, and professional projects to
-              students, freelancers, and clients. Whether it&apos;s a semester project or
-              a full business system — I&apos;ve got you covered.
+              {/* ✅ Fixed Apostrophe safely */}
+              Let&apos;s collaborate and turn your ideas into impactful digital
+              products.
             </p>
-            <p>Let&apos;s build something awesome together. 💙</p>
+            <p className="text-teal-400 font-medium">
+              🔗{" "}
+              <a
+                href="https://hamim5264.github.io/portfolio-website/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-blue-400 transition"
+              >
+                Visit my portfolio for more details
+              </a>
+            </p>
           </div>
         </div>
       </main>

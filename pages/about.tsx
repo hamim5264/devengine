@@ -2,7 +2,6 @@ import Head from "next/head";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import React from "react";
 
 export default function About() {
   return (
@@ -19,7 +18,7 @@ export default function About() {
         </h1>
 
         <p className="text-center text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-          I'm{" "}
+          I&apos;m{" "}
           <span className="text-teal-400 font-semibold">MD. ABDUL HAMIM</span> —
           a Software Engineer & Mobile App Developer from Bangladesh 🇧🇩,
           passionate about building performance-focused and beautifully designed
@@ -48,9 +47,8 @@ export default function About() {
               <span className="text-white font-medium">
                 cross-platform mobile apps
               </span>{" "}
-              and web solutions using
+              and web solutions using{" "}
               <span className="text-teal-400 font-medium">
-                {" "}
                 Flutter, Firebase, and Next.js
               </span>
               . From academic projects to enterprise software, I craft apps that
@@ -64,7 +62,6 @@ export default function About() {
               launch faster, with smarter code and thoughtful design.
             </p>
             <p>
-              {/* ✅ Fixed Apostrophe safely */}
               Let&apos;s collaborate and turn your ideas into impactful digital
               products.
             </p>

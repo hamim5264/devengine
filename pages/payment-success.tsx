@@ -7,14 +7,22 @@ import Footer from "@/components/Footer";
 import Head from "next/head";
 import { db, auth } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
+
+interface PaymentInfo {
+  tran_id: string;
+  amount: string;
+  product_name: string;
+  card_issuer?: string;
+  currency_amount?: string;
+}
 
 export default function PaymentSuccess() {
   const router = useRouter();
   const { val_id } = router.query;
   const [loading, setLoading] = useState(true);
-  const [paymentInfo, setPaymentInfo] = useState<any>(null);
-  const [user, setUser] = useState<any>(null);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {

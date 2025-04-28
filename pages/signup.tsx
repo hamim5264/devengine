@@ -1,14 +1,23 @@
 import Head from "next/head";
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"; // ✅ added updateProfile
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import Footer from "@/components/Footer";
 
+interface FormData {
+  fullName: string;
+  mobile: string;
+  email: string;
+  address: string;
+  password: string;
+  acceptTerms: boolean;
+}
+
 export default function SignUpPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     fullName: "",
     mobile: "",
     email: "",
@@ -17,7 +26,7 @@ export default function SignUpPage() {
     acceptTerms: false,
   });
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -51,12 +60,10 @@ export default function SignUpPage() {
       );
       const user = userCredential.user;
 
-      // ✅ Update the user's profile to set displayName
       await updateProfile(user, {
-        displayName: fullName, // 👈 setting full name
+        displayName: fullName,
       });
 
-      // ✅ Then save to Firestore
       await setDoc(doc(db, "users", user.uid), {
         fullName,
         mobile,
@@ -65,9 +72,13 @@ export default function SignUpPage() {
         uid: user.uid,
       });
 
-      router.push("/"); // redirect to homepage after signup
-    } catch (err: any) {
-      setError(err.message);
+      router.push("/");
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred.");
+      }
     }
   };
 

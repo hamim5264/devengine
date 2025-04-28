@@ -4,12 +4,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { auth } from "@/lib/firebase";
+import { User } from "firebase/auth"; // ✅ Correct typing
 import projectData from "@/data/projectData";
 
 export default function ProjectDetailPage() {
   const router = useRouter();
   const { slug } = router.query;
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const project = projectData[slug as keyof typeof projectData];

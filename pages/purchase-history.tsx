@@ -4,8 +4,9 @@ import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { getDocs, collection, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
+// Define Purchase Type
 interface Purchase {
   id: string;
   projectName: string;
@@ -13,19 +14,16 @@ interface Purchase {
   paymentDate: string;
   discount: string;
   totalAmount: string;
-  transactionId: string; // ✅ corrected field
+  transactionId: string;
 }
 
 export default function PurchaseHistoryPage() {
-  const [user, setUser] = useState<any>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        setUser(currentUser);
-
         const q = query(
           collection(db, "purchases"),
           where("userId", "==", currentUser.uid)
@@ -53,9 +51,7 @@ export default function PurchaseHistoryPage() {
       <Head>
         <title>Purchase History | DevEngine</title>
       </Head>
-
       <Navbar />
-
       <main className="pt-28 px-6 md:px-20 pb-20 bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
         <h1 className="text-3xl font-bold text-teal-400 mb-8 text-center">
           Your Purchase History
@@ -65,7 +61,7 @@ export default function PurchaseHistoryPage() {
           <p className="text-center text-gray-400">Loading...</p>
         ) : purchases.length === 0 ? (
           <p className="text-center text-gray-400">
-            You haven't purchased anything yet.
+            You haven&apos;t purchased anything yet.
           </p>
         ) : (
           <div className="grid gap-6 max-w-3xl mx-auto">
@@ -113,7 +109,6 @@ export default function PurchaseHistoryPage() {
           </div>
         )}
       </main>
-
       <Footer />
     </>
   );

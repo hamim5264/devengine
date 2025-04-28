@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { signInWithEmailAndPassword, updateProfile } from "firebase/auth"; // ✅ imported
+import { signInWithEmailAndPassword } from "firebase/auth"; // 🛠️ removed updateProfile
 import { auth } from "@/lib/firebase";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ optional loading spinner
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,8 +26,7 @@ export default function LoginPage() {
       );
       const user = userCredential.user;
 
-      // ✅ Reload user profile to get latest displayName
-      await user.reload();
+      await user.reload(); // ✅ keep user reload
 
       console.log("✅ Logged in user:", {
         name: user.displayName,
@@ -35,8 +34,12 @@ export default function LoginPage() {
       });
 
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unexpected error occurred.");
+      }
     } finally {
       setLoading(false);
     }

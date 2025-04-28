@@ -58,7 +58,7 @@ export default function Home() {
           </h1>
           <p className="text-lg md:text-xl text-gray-300 mb-6 max-w-2xl mx-auto">
             Buy ready-made software or request custom enterprise-level solutions
-            — built for students, startups, and business owners.
+            &mdash; built for students, startups, and business owners.
           </p>
 
           <div className="flex justify-center mt-8">
@@ -121,7 +121,7 @@ export default function Home() {
         {/* Terms and Conditions Section */}
         <section className="py-16 px-6 md:px-20 bg-gray-800 rounded-xl text-white mt-10">
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-teal-400">
-            Terms & Conditions
+            Terms &amp; Conditions
           </h2>
           <ul className="list-disc list-inside space-y-4 text-lg text-gray-300">
             <li>
@@ -130,14 +130,15 @@ export default function Home() {
               exclusive usage rights.
             </li>
             <li>
-              All projects are delivered "as is" at the time of purchase. Any
-              modifications, upgrades, or additional customizations requested
-              afterward may incur additional charges based on mutual agreement.
+              All projects are delivered &quot;as is&quot; at the time of
+              purchase. Any modifications, upgrades, or additional
+              customizations requested afterward may incur additional charges
+              based on mutual agreement.
             </li>
             <li>
               Before proceeding with any purchase, clients must review and
-              accept the Terms & Conditions to ensure clear understanding and
-              agreement with DevEngine’s policies.
+              accept the Terms &amp; Conditions to ensure clear understanding
+              and agreement with DevEngine&apos;s policies.
             </li>
             <li>
               For custom software development services, a three-phase payment

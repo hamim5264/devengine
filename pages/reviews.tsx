@@ -9,21 +9,23 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 
 interface Review {
   id: string;
   reviewText: string;
   reviewerName: string;
-  createdAt: any;
+  createdAt: Date | null;
 }
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [newReview, setNewReview] = useState("");
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [newReview, setNewReview] = useState<string>("");
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,10 +38,14 @@ export default function ReviewsPage() {
   useEffect(() => {
     const fetchReviews = async () => {
       const querySnapshot = await getDocs(collection(db, "reviews"));
-      const reviewsList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Review, "id">),
-      }));
+      const reviewsList = querySnapshot.docs.map(
+        (doc: QueryDocumentSnapshot<DocumentData>) => ({
+          id: doc.id,
+          reviewText: doc.data().reviewText,
+          reviewerName: doc.data().reviewerName,
+          createdAt: doc.data().createdAt?.toDate() || null,
+        })
+      );
       setReviews(reviewsList);
       setLoading(false);
     };
@@ -65,15 +71,17 @@ export default function ReviewsPage() {
         createdAt: serverTimestamp(),
       });
       alert("✅ Review submitted successfully!");
-
       setNewReview("");
 
-      // Fetch reviews again after adding
       const querySnapshot = await getDocs(collection(db, "reviews"));
-      const updatedReviews = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Review, "id">),
-      }));
+      const updatedReviews = querySnapshot.docs.map(
+        (doc: QueryDocumentSnapshot<DocumentData>) => ({
+          id: doc.id,
+          reviewText: doc.data().reviewText,
+          reviewerName: doc.data().reviewerName,
+          createdAt: doc.data().createdAt?.toDate() || null,
+        })
+      );
       setReviews(updatedReviews);
     } catch (error) {
       console.error("Error adding review:", error);
@@ -108,7 +116,7 @@ export default function ReviewsPage() {
                 className="bg-gray-800 p-6 rounded-xl shadow-lg border border-teal-500 hover:shadow-teal-400/30 transition"
               >
                 <p className="text-lg text-gray-300 mb-4">
-                  "{review.reviewText}"
+                  &quot;{review.reviewText}&quot;
                 </p>
                 <div className="text-sm text-teal-400 font-semibold text-right">
                   - {review.reviewerName}

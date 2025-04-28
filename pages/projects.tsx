@@ -4,7 +4,18 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useState } from "react";
 
-const projects = [
+// Define type for a Project
+interface Project {
+  id: string;
+  title: string;
+  subtitle: string;
+  link: string;
+  category: string;
+  price: number;
+  tag: string[];
+}
+
+const projects: Project[] = [
   {
     id: "craftybay",
     title: "CraftyBay",
@@ -61,8 +72,15 @@ const projects = [
   },
 ];
 
-const ProjectSection = ({ title, tag, projects }: any) => {
-  const filtered = projects.filter((p: any) => p.tag.includes(tag));
+// Now type props correctly
+interface ProjectSectionProps {
+  title: string;
+  tag: string;
+  projects: Project[];
+}
+
+const ProjectSection = ({ title, tag, projects }: ProjectSectionProps) => {
+  const filtered = projects.filter((p) => p.tag.includes(tag));
 
   if (filtered.length === 0) return null;
 
@@ -72,7 +90,7 @@ const ProjectSection = ({ title, tag, projects }: any) => {
         {title}
       </h2>
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((project: any) => (
+        {filtered.map((project) => (
           <Link
             key={project.id}
             href={project.link}
@@ -95,8 +113,8 @@ const ProjectSection = ({ title, tag, projects }: any) => {
 };
 
 export default function ProjectsPage() {
-  const [priceRange, setPriceRange] = useState(100000);
-  const [category, setCategory] = useState("all");
+  const [priceRange, setPriceRange] = useState<number>(100000);
+  const [category, setCategory] = useState<string>("all");
 
   const filteredProjects = projects.filter((project) => {
     const matchesPrice = project.price <= priceRange;

@@ -9,9 +9,13 @@ import Navbar from "@/components/Navbar";
 import { FaUserCircle, FaHistory } from "react-icons/fa";
 import Link from "next/link";
 
+interface UserData {
+  fullName: string;
+  email: string;
+}
+
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
-  const [userData, setUserData] = useState<any>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -20,18 +24,18 @@ export default function DashboardPage() {
         router.push("/login");
         return;
       }
-      setUser(currentUser);
 
       const userRef = doc(db, "users", currentUser.uid);
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists()) {
-        setUserData(userSnap.data());
+        const data = userSnap.data() as UserData;
+        setUserData(data);
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   return (
     <>

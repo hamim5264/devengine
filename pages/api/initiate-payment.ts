@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-const store_id = process.env.STORE_ID!;
-const store_passwd = process.env.STORE_PASSWORD!;
+// 🛠 Use NEXT_PUBLIC_ variables because only those exist now
+const store_id = process.env.NEXT_PUBLIC_STORE_ID!;
+const store_passwd = process.env.NEXT_PUBLIC_STORE_PASSWORD!;
 const is_live = true; // ✅ live mode
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -53,8 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
 
   const sslcommerzUrl = is_live
-    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php" // ✅ live payment url
-    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php"; // 🧪 test payment url
+    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php" // ✅ Live payment URL
+    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";   // 🧪 Test payment URL
 
   try {
     const apiResponse = await axios.post(sslcommerzUrl, postData);

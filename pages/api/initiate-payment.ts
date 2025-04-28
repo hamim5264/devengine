@@ -3,19 +3,17 @@ import axios from "axios";
 
 const store_id = process.env.STORE_ID!;
 const store_passwd = process.env.STORE_PASSWORD!;
-const is_live = false; // sandbox mode
+const is_live = true; // ✅ live mode
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  // 🔵 Log incoming request
   console.log("🔵 Incoming Payment API Call:", req.body);
 
   const { name, email, amount, projectSlug } = req.body;
 
-  // ✅ Validation
   if (!name || !email || !amount || !projectSlug) {
     console.error("❌ Missing required fields:", { name, email, amount, projectSlug });
     return res.status(400).json({ error: "Missing required fields" });
@@ -55,8 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
 
   const sslcommerzUrl = is_live
-    ? "https://sandbox.sslcommerz.com/gwprocess/v4/api.php"
-    : "https://securepay.sslcommerz.com/gwprocess/v4/api.php";
+    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php" // ✅ live payment url
+    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php"; // 🧪 test payment url
 
   try {
     const apiResponse = await axios.post(sslcommerzUrl, postData);

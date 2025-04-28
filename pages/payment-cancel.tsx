@@ -24,11 +24,12 @@ export default function PaymentCancel() {
             Feel free to explore our other projects or try again later!
           </p>
 
-          {/* ✅ Correct Link with inside <a> */}
-          <Link href="/projects">
-            <a className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block">
-              Back to Projects
-            </a>
+          {/* ✅ Correct way without <a> */}
+          <Link
+            href="/projects"
+            className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block"
+          >
+            Back to Projects
           </Link>
         </div>
       </main>

@@ -38,7 +38,7 @@ export default function PaymentSuccess() {
       try {
         const storeId = process.env.NEXT_PUBLIC_STORE_ID;
         const storePasswd = process.env.NEXT_PUBLIC_STORE_PASSWORD;
-        const is_live = false;
+        const is_live = true; // ✅ enable real payment validation
 
         const validationUrl = is_live
           ? `https://securepay.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${val_id}&store_id=${storeId}&store_passwd=${storePasswd}&v=1&format=json`

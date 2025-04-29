@@ -2,8 +2,12 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import FormData from "form-data";
 import axios from "axios";
 
-const store_id = process.env.NEXT_PUBLIC_STORE_ID;
-const store_passwd = process.env.NEXT_PUBLIC_STORE_PASSWORD;
+// const store_id = process.env.NEXT_PUBLIC_STORE_ID;
+// const store_passwd = process.env.NEXT_PUBLIC_STORE_PASSWORD;
+// const is_live = false; // ✨ Set to false for sandbox mode
+
+const store_id = process.env.STORE_ID;
+const store_passwd = process.env.STORE_PASSWORD;
 const is_live = true; // ✨ Set to false for sandbox mode
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

@@ -34,8 +34,12 @@ export default function PaymentSuccess() {
 
     const validatePayment = async () => {
       try {
-        const storeId = process.env.NEXT_PUBLIC_STORE_ID;
-        const storePasswd = process.env.NEXT_PUBLIC_STORE_PASSWORD;
+        // const storeId = process.env.NEXT_PUBLIC_STORE_ID;
+        // const storePasswd = process.env.NEXT_PUBLIC_STORE_PASSWORD;
+        // const is_live = false; // 🧪 sandbox mode now
+
+        const storeId = process.env.STORE_ID;
+        const storePasswd = process.env.STORE_PASSWORD;
         const is_live = true; // 🧪 sandbox mode now
 
         const validationUrl = is_live

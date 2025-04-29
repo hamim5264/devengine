@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-// 🛠 Use NEXT_PUBLIC_ variables because only those exist now
+// 🛡️ Use the correct environment variables
 const store_id = process.env.NEXT_PUBLIC_STORE_ID!;
 const store_passwd = process.env.NEXT_PUBLIC_STORE_PASSWORD!;
-const is_live = true; // ✅ live mode
+const is_live = true; // ✅ Live mode for real payments
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -15,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { name, email, amount, projectSlug } = req.body;
 
+  // ✅ Basic validation
   if (!name || !email || !amount || !projectSlug) {
     console.error("❌ Missing required fields:", { name, email, amount, projectSlug });
     return res.status(400).json({ error: "Missing required fields" });
@@ -53,9 +54,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     product_profile: "general",
   };
 
+  // ✅ Corrected live vs sandbox URL
   const sslcommerzUrl = is_live
-    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php" // ✅ Live payment URL
-    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";   // 🧪 Test payment URL
+    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php" // 🔥 Live server
+    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";  // 🧪 Test server
 
   try {
     const apiResponse = await axios.post(sslcommerzUrl, postData);
@@ -66,8 +68,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error("❌ SSLCommerz Response Error:", apiResponse.data);
       return res.status(400).json({ error: "Failed to create payment session" });
     }
-  } catch (error) {
-    console.error("❌ SSLCommerz API Error:", error);
+  } catch (error: any) {
+    console.error("❌ SSLCommerz API Error:", error?.response?.data || error.message);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }

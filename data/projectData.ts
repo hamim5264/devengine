@@ -62,8 +62,8 @@ const projectData = {
       installation:
         "1. You will receive a ZIP file after purchase.\n2. Open in Android Studio.\n3. Launch the app.\n4. Use DB Browser for SQLite to edit/view question database.",
       tools: ["Java", "Android Studio", "SQLite"],
-      price: "30 BDT",
-      discount: "20 BDT",
+      price: "3,000 BDT",
+      discount: "2,000 BDT",
     },
   };
   

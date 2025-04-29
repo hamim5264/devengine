@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-// ✅ Correct Server Environment Variables (never use NEXT_PUBLIC_ on server side)
-const store_id = process.env.STORE_ID!;
-const store_passwd = process.env.STORE_PASSWORD!;
-const is_live = true; // ✅ Real Payment Mode
+// 🛡️ Using NEXT_PUBLIC_ variables because your env is like that
+const store_id = process.env.NEXT_PUBLIC_STORE_ID!;
+const store_passwd = process.env.NEXT_PUBLIC_STORE_PASSWORD!;
+const is_live = false; // 🧪 Sandbox mode for SSLCommerz
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -44,20 +44,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-cancel`,
     cus_name: name,
     cus_email: email,
-    cus_add1: "Customer Address",
+    cus_add1: "Dhaka, Bangladesh", // 🛡️ Valid address
     cus_city: "Dhaka",
     cus_country: "Bangladesh",
-    cus_phone: "01700000000",
+    cus_phone: "01724879284", // 🛡️ Your real number
     shipping_method: "NO",
     product_name: projectSlug,
     product_category: "Software",
     product_profile: "general",
   };
 
-  // ✅ Correct Live or Sandbox URL
   const sslcommerzUrl = is_live
-    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php"
-    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";
+    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php" // 🔥 live (disabled)
+    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";   // 🧪 sandbox (active)
 
   try {
     const apiResponse = await axios.post(sslcommerzUrl, postData);

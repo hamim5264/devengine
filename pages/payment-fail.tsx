@@ -25,11 +25,11 @@ export default function PaymentFail() {
             persists.
           </p>
 
-          {/* ✅ Correct Link wrapping a button-style <div> */}
-          <Link href="/projects">
-            <div className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block cursor-pointer">
+          {/* ✅ Proper Next.js Link with <a> tag */}
+          <Link href="/projects" passHref legacyBehavior>
+            <a className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block">
               Back to Projects
-            </div>
+            </a>
           </Link>
         </div>
       </main>

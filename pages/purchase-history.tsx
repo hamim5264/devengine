@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { useRouter } from "next/router";
 
-// Define Purchase Type
 interface Purchase {
   id: string;
   projectName: string;
@@ -20,6 +20,10 @@ interface Purchase {
 export default function PurchaseHistoryPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  const router = useRouter();
+  const { payment } = router.query;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -46,16 +50,37 @@ export default function PurchaseHistoryPage() {
     return () => unsubscribe();
   }, []);
 
+  // ✅ Check if payment success after coming from payment-success page
+  useEffect(() => {
+    if (payment === "success") {
+      setShowSuccessMessage(true);
+
+      const timer = setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 5000); // hide after 5 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [payment]);
+
   return (
     <>
       <Head>
         <title>Purchase History | DevEngine</title>
       </Head>
       <Navbar />
+
       <main className="pt-28 px-6 md:px-20 pb-20 bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
         <h1 className="text-3xl font-bold text-teal-400 mb-8 text-center">
           Your Purchase History
         </h1>
+
+        {/* ✅ Payment Success Popup */}
+        {showSuccessMessage && (
+          <div className="max-w-2xl mx-auto bg-green-600 text-white px-4 py-3 rounded-lg shadow mb-8 text-center animate-pulse">
+            🎉 Payment Successful! Thank you for your purchase.
+          </div>
+        )}
 
         {loading ? (
           <p className="text-center text-gray-400">Loading...</p>
@@ -109,6 +134,7 @@ export default function PurchaseHistoryPage() {
           </div>
         )}
       </main>
+
       <Footer />
     </>
   );

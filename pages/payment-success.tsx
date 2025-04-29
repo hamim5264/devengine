@@ -20,7 +20,6 @@ export default function PaymentSuccess() {
   const router = useRouter();
   const { val_id } = router.query;
   const [loading, setLoading] = useState(true);
-  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -37,7 +36,7 @@ export default function PaymentSuccess() {
       try {
         const storeId = process.env.NEXT_PUBLIC_STORE_ID;
         const storePasswd = process.env.NEXT_PUBLIC_STORE_PASSWORD;
-        const is_live = true; // ✅ Real payment mode
+        const is_live = true; // 🧪 sandbox mode now
 
         const validationUrl = is_live
           ? `https://securepay.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${val_id}&store_id=${storeId}&store_passwd=${storePasswd}&v=1&format=json`
@@ -55,9 +54,6 @@ export default function PaymentSuccess() {
           return;
         }
 
-        setPaymentInfo(paymentData);
-        setLoading(false);
-
         if (user) {
           await addDoc(collection(db, "purchases"), {
             userId: user.uid,
@@ -69,7 +65,11 @@ export default function PaymentSuccess() {
             totalAmount: paymentData.amount,
             transactionId: paymentData.tran_id,
           });
+
           console.log("✅ Purchase saved successfully.");
+
+          // ✅ Redirect to Purchase History page with success message
+          router.push("/purchase-history?payment=success");
         }
       } catch (error: any) {
         console.error(
@@ -94,25 +94,14 @@ export default function PaymentSuccess() {
   return (
     <>
       <Head>
-        <title>Payment Successful | DevEngine</title>
+        <title>Processing Payment | DevEngine</title>
       </Head>
       <Navbar />
-      <main className="pt-32 min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
-        <div className="max-w-xl mx-auto text-center p-8 bg-gray-800 rounded-xl shadow-lg">
-          <h1 className="text-3xl font-bold text-green-400 mb-4">
-            Payment Successful! 🎉
+      <main className="pt-32 min-h-screen bg-gradient-to-br from-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold animate-pulse">
+            Processing your payment...
           </h1>
-          <p className="mb-4">
-            Transaction ID:{" "}
-            <span className="text-teal-400">{paymentInfo?.tran_id}</span>
-          </p>
-          <p>
-            Amount Paid:{" "}
-            <span className="text-teal-400">{paymentInfo?.amount} BDT</span>
-          </p>
-          <p className="mt-6 text-gray-300">
-            Thank you for trusting DevEngine!
-          </p>
         </div>
       </main>
       <Footer />

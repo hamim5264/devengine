@@ -1,4 +1,3 @@
-// pages/payment-success.tsx
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -38,7 +37,7 @@ export default function PaymentSuccess() {
       try {
         const storeId = process.env.NEXT_PUBLIC_STORE_ID;
         const storePasswd = process.env.NEXT_PUBLIC_STORE_PASSWORD;
-        const is_live = true; // ✅ enable real payment validation
+        const is_live = true; // ✅ Real payment mode
 
         const validationUrl = is_live
           ? `https://securepay.sslcommerz.com/validator/api/validationserverAPI.php?val_id=${val_id}&store_id=${storeId}&store_passwd=${storePasswd}&v=1&format=json`
@@ -46,10 +45,20 @@ export default function PaymentSuccess() {
 
         const response = await axios.get(validationUrl);
         const paymentData = response.data;
+
+        if (
+          paymentData.status !== "VALID" &&
+          paymentData.status !== "VALIDATED"
+        ) {
+          console.error("❌ Payment not validated:", paymentData);
+          router.push("/payment-fail");
+          return;
+        }
+
         setPaymentInfo(paymentData);
         setLoading(false);
 
-        if (paymentData && user) {
+        if (user) {
           await addDoc(collection(db, "purchases"), {
             userId: user.uid,
             userEmail: user.email,
@@ -62,8 +71,11 @@ export default function PaymentSuccess() {
           });
           console.log("✅ Purchase saved successfully.");
         }
-      } catch (error) {
-        console.error("Payment validation failed:", error);
+      } catch (error: any) {
+        console.error(
+          "Payment validation failed:",
+          error?.response?.data || error.message
+        );
         router.push("/payment-fail");
       }
     };

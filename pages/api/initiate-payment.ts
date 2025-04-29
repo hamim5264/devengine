@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-// 🛡️ Use the correct environment variables
-const store_id = process.env.NEXT_PUBLIC_STORE_ID!;
-const store_passwd = process.env.NEXT_PUBLIC_STORE_PASSWORD!;
-const is_live = true; // ✅ Live mode for real payments
+// ✅ Correct Server Environment Variables (never use NEXT_PUBLIC_ on server side)
+const store_id = process.env.STORE_ID!;
+const store_passwd = process.env.STORE_PASSWORD!;
+const is_live = true; // ✅ Real Payment Mode
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { name, email, amount, projectSlug } = req.body;
 
-  // ✅ Basic validation
+  // ✅ Validation
   if (!name || !email || !amount || !projectSlug) {
     console.error("❌ Missing required fields:", { name, email, amount, projectSlug });
     return res.status(400).json({ error: "Missing required fields" });
@@ -54,10 +54,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     product_profile: "general",
   };
 
-  // ✅ Corrected live vs sandbox URL
+  // ✅ Correct Live or Sandbox URL
   const sslcommerzUrl = is_live
-    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php" // 🔥 Live server
-    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";  // 🧪 Test server
+    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php"
+    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";
 
   try {
     const apiResponse = await axios.post(sslcommerzUrl, postData);

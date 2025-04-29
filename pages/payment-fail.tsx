@@ -25,12 +25,11 @@ export default function PaymentFail() {
             persists.
           </p>
 
-          {/* ✅ No <a> tag, Vercel-ready */}
-          <Link
-            href="/projects"
-            className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block"
-          >
-            Back to Projects
+          {/* ✅ Correct Link wrapping a button-style <div> */}
+          <Link href="/projects">
+            <div className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block cursor-pointer">
+              Back to Projects
+            </div>
           </Link>
         </div>
       </main>

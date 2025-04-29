@@ -24,12 +24,11 @@ export default function PaymentCancel() {
             Feel free to explore our other projects or try again later!
           </p>
 
-          {/* ✅ Correct way without <a> */}
-          <Link
-            href="/projects"
-            className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block"
-          >
-            Back to Projects
+          {/* ✅ Wrap button div inside Link */}
+          <Link href="/projects">
+            <div className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg transition inline-block cursor-pointer">
+              Back to Projects
+            </div>
           </Link>
         </div>
       </main>

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth"; // ✅ Import User type
 import axios from "axios";
 import projectData from "@/data/projectData";
 
@@ -13,8 +13,8 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!slug) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
         router.push("/login");
         return;
       }
@@ -26,7 +26,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      // Safe parsing of discount
       const discountPriceRaw = project.discount?.replace(",", "").trim();
       const price = parseInt(discountPriceRaw || "0", 10);
 
@@ -36,30 +35,30 @@ export default function CheckoutPage() {
         return;
       }
 
-      // 🛒 Log before sending
+      // 🛒 Log Payment Details
       console.log("🛒 Payment Request Body:", {
-        name: user.displayName || "Anonymous User",
-        email: user.email,
+        name: currentUser.displayName || "Anonymous User",
+        email: currentUser.email,
         amount: price,
         projectSlug: slug,
       });
 
       try {
         const response = await axios.post("/api/initiate-payment", {
-          name: user.displayName || "Anonymous User",
-          email: user.email,
+          name: currentUser.displayName || "Anonymous User",
+          email: currentUser.email,
           amount: price,
           projectSlug: slug,
         });
 
         if (response.data?.url) {
-          window.location.href = response.data.url;
+          window.location.href = response.data.url; // ✅ Safe redirect
         } else {
           alert("Failed to start payment session.");
           router.push("/projects");
         }
-      } catch (error) {
-        console.error("Payment initiation error:", error);
+      } catch (error: any) {
+        console.error("Payment initiation error:", error?.response?.data || error.message);
         alert("Payment error. Please try again.");
         router.push("/projects");
       }

@@ -34,11 +34,18 @@ export default function LoginPage() {
       });
 
       router.push("/");
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+    } catch (err: any) {
+      if (
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/invalid-credential"
+      ) {
+        setError("User not found. Please sign up first before logging in.");
+      } else if (err.code === "auth/wrong-password") {
+        setError("Incorrect password. Please try again.");
       } else {
-        setError("An unexpected error occurred.");
+        setError(
+          "Login failed. Please check your credentials or try again later."
+        );
       }
     } finally {
       setLoading(false);

@@ -67,7 +67,7 @@ const projects: Project[] = [
     subtitle: "Java-Based Quiz Application",
     link: "/projects/quizwhiz",
     category: "desktop",
-    price: 50,
+    price: 2000,
     tag: ["students-favourite"],
   },
 ];

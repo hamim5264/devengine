@@ -68,7 +68,7 @@ export default function About() {
             <p className="text-teal-400 font-medium">
               🔗{" "}
               <a
-                href="https://hamim5264.github.io/portfolio-website/"
+                href="https://hamim-info.vercel.app/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-blue-400 transition"

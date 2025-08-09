@@ -2,86 +2,58 @@ import Head from "next/head";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { db, auth } from "@/lib/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
+import HelixLoader from "@/components/HelixLoader";
 
-// Define type for a Project
+// ---- Types ----
 interface Project {
-  id: string;
+  id: string; // Firestore doc id (slug)
+  slug: string;
   title: string;
   subtitle: string;
-  link: string;
-  category: string;
-  price: number;
-  tag: string[];
+  category: string; // "android" | "ios" | "desktop" | "web"
+  price: string | number;
+  discount?: string | number;
+  tags: string[];
+  isPublic?: boolean;
 }
 
-const projects: Project[] = [
-  {
-    id: "craftybay",
-    title: "CraftyBay",
-    subtitle: "E-Commerce App with Payment Integration",
-    link: "/projects/craftybay",
-    category: "android",
-    price: 70000,
-    tag: ["most-popular"],
-  },
-  {
-    id: "quizcrafter-beta",
-    title: "QuizCrafter Beta",
-    subtitle: "Simple Quiz Application",
-    link: "/projects/quizcrafter-beta",
-    category: "android",
-    price: 15000,
-    tag: ["trending", "students-favourite"],
-  },
-  {
-    id: "quizcrafter-premium",
-    title: "QuizCrafter Premium",
-    subtitle: "World-Class Quiz App with Earning System",
-    link: "/projects/quizcrafter-premium",
-    category: "android",
-    price: 50000,
-    tag: ["most-popular"],
-  },
-  {
-    id: "find-it",
-    title: "Find It",
-    subtitle: "Lost and Found Application",
-    link: "/projects/find-it",
-    category: "android",
-    price: 20000,
-    tag: ["trending", "new", "students-favourite"],
-  },
-  {
-    id: "task-manager",
-    title: "Task Manager",
-    subtitle: "Simple Task Management App",
-    link: "/projects/task-manager",
-    category: "android",
-    price: 7000,
-    tag: [],
-  },
-  {
-    id: "quizwhiz",
-    title: "QuizWhiz",
-    subtitle: "Java-Based Quiz Application",
-    link: "/projects/quizwhiz",
-    category: "desktop",
-    price: 2000,
-    tag: ["students-favourite"],
-  },
-];
+const toNumber = (v: unknown) =>
+  typeof v === "number" ? v : Number(String(v ?? "0").replace(/[^\d]/g, ""));
 
-// Now type props correctly
-interface ProjectSectionProps {
+// ---- Reusable cards ----
+function ProjectCard({ p }: { p: Project }) {
+  return (
+    <Link
+      href={`/projects/${p.slug}`}
+      className="group block bg-gray-800 rounded-2xl p-6 border border-gray-700 hover:border-teal-500 shadow-xl hover:shadow-teal-500/40 hover:scale-105 transition-all duration-300"
+    >
+      <h2 className="text-xl font-bold text-white group-hover:text-teal-400 mb-2">
+        {p.title}
+      </h2>
+      <p className="text-gray-400 group-hover:text-gray-300 text-sm mb-1">
+        {p.subtitle}
+      </p>
+      <p className="text-sm text-teal-400 font-semibold">
+        Price: {p.discount ?? p.price}
+      </p>
+    </Link>
+  );
+}
+
+function ProjectSection({
+  title,
+  tag,
+  projects,
+}: {
   title: string;
   tag: string;
   projects: Project[];
-}
-
-const ProjectSection = ({ title, tag, projects }: ProjectSectionProps) => {
-  const filtered = projects.filter((p) => p.tag.includes(tag));
-
+}) {
+  const filtered = projects.filter((p) => (p.tags || []).includes(tag));
   if (filtered.length === 0) return null;
 
   return (
@@ -90,37 +62,86 @@ const ProjectSection = ({ title, tag, projects }: ProjectSectionProps) => {
         {title}
       </h2>
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((project) => (
-          <Link
-            key={project.id}
-            href={project.link}
-            className="group block bg-gray-800 rounded-2xl p-6 border border-gray-700 hover:border-teal-500 shadow-xl hover:shadow-teal-500/40 hover:scale-105 transition-all duration-300"
-          >
-            <h2 className="text-xl font-bold text-white group-hover:text-teal-400 mb-2">
-              {project.title}
-            </h2>
-            <p className="text-gray-400 group-hover:text-gray-300 text-sm mb-1">
-              {project.subtitle}
-            </p>
-            <p className="text-sm text-teal-400 font-semibold">
-              Price: BDT {project.price.toLocaleString()}
-            </p>
-          </Link>
+        {filtered.map((p) => (
+          <ProjectCard key={p.id} p={p} />
         ))}
       </div>
     </div>
   );
-};
+}
 
 export default function ProjectsPage() {
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // filters
   const [priceRange, setPriceRange] = useState<number>(100000);
   const [category, setCategory] = useState<string>("all");
 
-  const filteredProjects = projects.filter((project) => {
-    const matchesPrice = project.price <= priceRange;
+  // admin detection
+  const [authReady, setAuthReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if admin is logged in
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setIsAdmin(!!user && user.email === "hamim.leon@gmail.com");
+      setAuthReady(true);
+    });
+    return () => unsub();
+  }, []);
+
+  // Fetch projects (admin = all, public = only isPublic)
+  useEffect(() => {
+    if (!authReady) return;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const colRef = collection(db, "projects");
+        const q = isAdmin
+          ? colRef
+          : query(colRef, where("isPublic", "==", true));
+        const snap = await getDocs(q);
+
+        const list = snap.docs.map((d) => {
+          const data = d.data() as any;
+          return {
+            id: d.id,
+            slug: d.id,
+            title: data.title || "",
+            subtitle: data.subtitle || "",
+            category: data.category || "android",
+            price: data.price ?? "0 BDT",
+            discount: data.discount,
+            tags: Array.isArray(data.tags) ? data.tags : [],
+            isPublic: !!data.isPublic,
+          } as Project;
+        });
+
+        setAllProjects(list);
+      } catch (e) {
+        console.error("Failed to load projects:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [authReady, isAdmin]);
+
+  // Apply filters
+  const filteredProjects = allProjects.filter((project) => {
+    const priceVal = toNumber(project.discount ?? project.price);
+    const matchesPrice = priceVal <= priceRange;
     const matchesCategory = category === "all" || project.category === category;
     return matchesPrice && matchesCategory;
   });
+
+  const anyTagMatches = [
+    "most-popular",
+    "trending",
+    "new",
+    "students-favourite",
+  ].some((t) => filteredProjects.some((p) => (p.tags || []).includes(t)));
 
   return (
     <>
@@ -135,7 +156,7 @@ export default function ProjectsPage() {
           All Projects
         </h1>
 
-        {/* Filters Section */}
+        {/* Filters */}
         <div className="flex flex-col md:flex-row gap-6 justify-between items-center mb-12">
           <div className="flex flex-col gap-3 w-full md:w-1/2 bg-gray-800 p-4 rounded-xl shadow-md h-36 justify-center">
             <label className="text-sm text-teal-400 font-semibold">
@@ -165,30 +186,59 @@ export default function ProjectsPage() {
               <option value="android">Android</option>
               <option value="ios">iOS</option>
               <option value="desktop">Desktop</option>
+              <option value="web">Web</option>
             </select>
           </div>
         </div>
 
-        <ProjectSection
-          title="Most Popular"
-          tag="most-popular"
-          projects={filteredProjects}
-        />
-        <ProjectSection
-          title="Trending"
-          tag="trending"
-          projects={filteredProjects}
-        />
-        <ProjectSection
-          title="New Releases"
-          tag="new"
-          projects={filteredProjects}
-        />
-        <ProjectSection
-          title="Students' Favourite"
-          tag="students-favourite"
-          projects={filteredProjects}
-        />
+        {/* Grid / Loader */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <HelixLoader size={50} speed={2.5} color="#14b8a6" />
+            <p className="mt-4 text-gray-400 text-sm">Loading projects…</p>
+          </div>
+        ) : filteredProjects.length === 0 ? (
+          <p className="text-center text-yellow-400">No projects found.</p>
+        ) : (
+          <>
+            <div className="mb-16">
+              <h2 className="text-2xl md:text-3xl font-semibold text-teal-400 mb-6">
+                All
+              </h2>
+              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {filteredProjects.map((p) => (
+                  <ProjectCard key={p.id} p={p} />
+                ))}
+              </div>
+            </div>
+
+            {/* Optional: Tag-based sections */}
+            {anyTagMatches && (
+              <>
+                <ProjectSection
+                  title="Most Popular"
+                  tag="most-popular"
+                  projects={filteredProjects}
+                />
+                <ProjectSection
+                  title="Trending"
+                  tag="trending"
+                  projects={filteredProjects}
+                />
+                <ProjectSection
+                  title="New Releases"
+                  tag="new"
+                  projects={filteredProjects}
+                />
+                <ProjectSection
+                  title="Students' Favourite"
+                  tag="students-favourite"
+                  projects={filteredProjects}
+                />
+              </>
+            )}
+          </>
+        )}
       </main>
 
       <Footer />

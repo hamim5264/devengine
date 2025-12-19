@@ -19,10 +19,14 @@ export default function About() {
 
         <p className="text-center text-lg md:text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
           I&apos;m{" "}
-          <span className="text-teal-400 font-semibold">MD. ABDUL HAMIM</span> —
-          a Software Engineer & Mobile App Developer from Bangladesh 🇧🇩,
-          passionate about building performance-focused and beautifully designed
-          applications.
+          <span className="text-teal-400 font-semibold">ABDUL HAMIM LEON</span>{" "}
+          — a{" "}
+          <span className="text-white font-medium">
+            Junior Software Developer
+          </span>{" "}
+          and <span className="text-white font-medium">Flutter Developer</span>{" "}
+          from Bangladesh 🇧🇩, focused on building scalable, real-world software
+          solutions.
         </p>
 
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-center gap-10">
@@ -31,8 +35,8 @@ export default function About() {
             <div className="absolute inset-0 animate-pulse rounded-full border-4 border-teal-400 blur-md"></div>
             <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-teal-500">
               <Image
-                src="/hamim.png"
-                alt="Hamim Leon"
+                src="/dev_hamim.jpg"
+                alt="Abdul Hamim Leon"
                 layout="fill"
                 objectFit="cover"
                 priority
@@ -43,28 +47,52 @@ export default function About() {
           {/* 🧠 Bio Content */}
           <div className="text-gray-300 space-y-5 text-center md:text-left text-lg">
             <p>
-              I specialize in building{" "}
+              I work primarily as a{" "}
               <span className="text-white font-medium">
-                cross-platform mobile apps
-              </span>{" "}
-              and web solutions using{" "}
-              <span className="text-teal-400 font-medium">
-                Flutter, Firebase, and Next.js
+                software developer with a strong focus on mobile applications
               </span>
-              . From academic projects to enterprise software, I craft apps that
-              deliver real-world impact.
+              , specializing in{" "}
+              <span className="text-teal-400 font-medium">
+                Flutter, Dart, and Firebase
+              </span>
+              . I build secure, performance-focused applications with clean
+              architecture and maintainable codebases.
             </p>
+
+            <p>
+              Alongside mobile development, I also have experience with{" "}
+              <span className="text-white font-medium">
+                modern web technologies
+              </span>{" "}
+              such as{" "}
+              <span className="text-teal-400 font-medium">
+                Next.js, REST APIs, Socket.IO, and backend integrations
+              </span>
+              , allowing me to collaborate effectively on full-stack systems and
+              real-time features.
+            </p>
+
+            <p>
+              Currently, I&apos;m working as a{" "}
+              <span className="text-white font-semibold">
+                Jr. Software Developer / Jr. Flutter Developer
+              </span>{" "}
+              at{" "}
+              <span className="text-teal-400 font-semibold">BeUp In Tech</span>,
+              a concern of{" "}
+              <span className="text-white font-medium">Betopia Group</span>,
+              where I contribute to production-level applications and
+              continuously sharpen my engineering skills.
+            </p>
+
             <p>
               Through{" "}
               <span className="text-white font-semibold">DevEngine</span>, I
-              offer ready-made and custom-built software projects tailored for
-              students, professionals, and startups. My goal is to help you
-              launch faster, with smarter code and thoughtful design.
+              develop and showcase software projects for students, startups, and
+              early-stage products — focusing on practical solutions, thoughtful
+              UX, and scalable architecture.
             </p>
-            <p>
-              Let&apos;s collaborate and turn your ideas into impactful digital
-              products.
-            </p>
+
             <p className="text-teal-400 font-medium">
               🔗{" "}
               <a
@@ -73,7 +101,7 @@ export default function About() {
                 rel="noopener noreferrer"
                 className="underline hover:text-blue-400 transition"
               >
-                Visit my portfolio for more details
+                Visit my portfolio for detailed projects & experience
               </a>
             </p>
           </div>

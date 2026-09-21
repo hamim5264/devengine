@@ -5,13 +5,15 @@ type Props = {
   size?: number; // px
   color?: string; // CSS color
   speed?: number; // seconds
+  text?: string;
   className?: string;
 };
 
 export default function HelixLoader({
   size = 45,
-  color = "#14b8a6",
+  color = "#38f2ff",
   speed = 2.5,
+  text,
   className = "",
 }: Props) {
   const style: React.CSSProperties = {
@@ -21,18 +23,25 @@ export default function HelixLoader({
   };
 
   return (
-    <div
-      className={`de-helix ${className}`}
-      style={style}
-      role="status"
-      aria-label="Loading"
-    >
-      <div className="de-helix__slice" />
-      <div className="de-helix__slice" />
-      <div className="de-helix__slice" />
-      <div className="de-helix__slice" />
-      <div className="de-helix__slice" />
-      <div className="de-helix__slice" />
+    <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
+      <div
+        className="de-helix"
+        style={style}
+        role="status"
+        aria-label="Loading"
+      >
+        <div className="de-helix__slice" />
+        <div className="de-helix__slice" />
+        <div className="de-helix__slice" />
+        <div className="de-helix__slice" />
+        <div className="de-helix__slice" />
+        <div className="de-helix__slice" />
+      </div>
+      {text && (
+        <p className="font-jetbrains text-xs text-[#38f2ff] tracking-widest uppercase animate-pulse">
+          {text}
+        </p>
+      )}
     </div>
   );
 }

@@ -193,7 +193,7 @@ export default function AgreementPreviewModal({
 
             <div className={`text-left sm:text-right font-mono text-[11px] space-y-0.5 ${isDark ? "text-gray-400" : "text-slate-600"}`}>
               <p className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>DEVENGINE TECHNOLOGY OPERATIONS</p>
-              <p className="text-cyan-400 font-semibold">https://devengine.vercel.app</p>
+              <p className="text-cyan-400 font-semibold">{record.devengine.companyWebsite || "https://thedevengine.vercel.app"}</p>
               <p>{record.devengine.companyEmail}</p>
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function AgreementPreviewModal({
                           <strong className={`font-bold ${isDark ? "text-white" : "text-slate-900"}`}>DEVENGINE TECHNOLOGY OPERATIONS</strong>
                         </div>
                         <p className={`leading-relaxed text-[11.5px] ${isDark ? "text-slate-300" : "text-slate-600"}`}>
-                          Under the executive direction of <strong className={isDark ? "text-white" : "text-slate-900"}>{record.devengine.ceoName}</strong> ({record.devengine.ceoTitle}). Operational headquarters at DevEngine Technology Operations, Dhaka, Bangladesh. Official Website: <span className="text-cyan-400 font-semibold">https://devengine.vercel.app</span>
+                          Under the executive direction of <strong className={isDark ? "text-white" : "text-slate-900"}>{record.devengine.ceoName}</strong> ({record.devengine.ceoTitle}). Operational headquarters at DevEngine Technology Operations, Dhaka, Bangladesh. Official Website: <span className="text-cyan-400 font-semibold">{record.devengine.companyWebsite || "https://thedevengine.vercel.app"}</span>
                         </p>
                       </div>
 
@@ -467,7 +467,7 @@ export default function AgreementPreviewModal({
 
           {/* Running Footer Note */}
           <div className={`pt-4 border-t flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono gap-2 ${isDark ? "border-white/[0.08] text-gray-500" : "border-slate-200 text-slate-400"}`}>
-            <span>DevEngine Technology Operations • https://devengine.vercel.app</span>
+            <span>DevEngine Technology Operations • {record.devengine.companyWebsite || "https://thedevengine.vercel.app"}</span>
             <span>Doc Ref: {record.agreementNumber} (v{record.version})</span>
           </div>
         </div>

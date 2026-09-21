@@ -61,6 +61,8 @@ export interface ArchiveFeaturedCaseStudyConfig {
   license: string;
   buttonText: string;
   phoneImage: string;
+  isManual?: boolean;
+  customProjectUrl?: string;
   caseStudyContent?: CaseStudyContent;
 }
 

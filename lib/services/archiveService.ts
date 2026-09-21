@@ -123,6 +123,8 @@ export const DEFAULT_ARCHIVE_CONFIG: ArchiveConfig = {
   },
   featuredCaseStudy: {
     projectId: "dialogix-ai-intelligent-chat-assistant",
+    isManual: false,
+    customProjectUrl: "",
     badgeText: "FEATURED CASE STUDY",
     title: "Dialogix AI",
     titleHighlight: "Intelligent Chat Assistant",

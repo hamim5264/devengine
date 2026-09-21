@@ -20,9 +20,16 @@ import ProcessSection from "@/components/landing/ProcessSection";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactSection from "@/components/landing/ContactSection";
 import LandingFooter from "@/components/landing/LandingFooter";
+import HelixLoader from "@/components/HelixLoader";
+import { getCachedData, setCachedData } from "@/lib/utils/cacheService";
 
 export default function HomePage() {
-  const [config, setConfig] = useState<LandingConfig>(DEFAULT_LANDING_CONFIG);
+  const [config, setConfig] = useState<LandingConfig>(() => {
+    return getCachedData<LandingConfig>("landing_config") || DEFAULT_LANDING_CONFIG;
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !getCachedData<LandingConfig>("landing_config");
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -31,9 +38,12 @@ export default function HomePage() {
         const data = await getLandingConfig();
         if (isMounted) {
           setConfig(data);
+          setCachedData("landing_config", data);
+          setLoading(false);
         }
       } catch (err) {
         console.warn("Using fallback landing configuration:", err);
+        if (isMounted) setLoading(false);
       }
     }
     load();
@@ -51,6 +61,17 @@ export default function HomePage() {
       isMounted = false;
     };
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#02040A] flex flex-col items-center justify-center text-[#dde2f3]">
+        <HelixLoader size={54} color="#3EF3FF" />
+        <p className="mt-5 text-xs font-mono tracking-widest text-[#3EF3FF] uppercase animate-pulse">
+          Loading Cinematic Ecosystem...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>

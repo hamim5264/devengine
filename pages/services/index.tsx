@@ -4,6 +4,7 @@ import Link from "next/link";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
+import { getCachedData, setCachedData } from "@/lib/utils/cacheService";
 import { DevEngineService } from "@/types/service";
 import {
   getPublicServices,
@@ -53,8 +54,13 @@ const ENGINEERING_STEPS = [
 ];
 
 export default function ServicesPage() {
-  const [services, setServices] = useState<DevEngineService[]>(DEFAULT_SERVICES);
-  const [loading, setLoading] = useState(true);
+  const [services, setServices] = useState<DevEngineService[]>(() => {
+    return getCachedData<DevEngineService[]>("services_list", DEFAULT_SERVICES);
+  });
+  const [loading, setLoading] = useState(() => {
+    const cached = getCachedData<DevEngineService[] | null>("services_list", null);
+    return !cached || cached.length === 0;
+  });
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   // Modal State for Project Inquiry
@@ -79,6 +85,7 @@ export default function ServicesPage() {
         const data = await getPublicServices();
         if (mounted && data.length > 0) {
           setServices(data);
+          setCachedData("services_list", data);
         }
       } catch (err) {
         console.error("Failed to load services:", err);
@@ -128,6 +135,14 @@ export default function ServicesPage() {
       setSubmittingInquiry(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-[#030712] z-50 flex items-center justify-center">
+        <HelixLoader size={80} text="LOADING SERVICES..." />
+      </div>
+    );
+  }
 
   return (
     <>

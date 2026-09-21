@@ -237,7 +237,7 @@ export async function generateAgreementPdf(
   doc.setFont("times", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(14, 116, 144); // cyan-700
-  doc.text("https://devengine.vercel.app  •  hamim.leon@gmail.com", pageWidth - margin, currentY + 11.2, { align: "right" });
+  doc.text("https://thedevengine.vercel.app  •  hamim.leon@gmail.com", pageWidth - margin, currentY + 11.2, { align: "right" });
 
   currentY += 17.5;
 
@@ -355,7 +355,7 @@ export async function generateAgreementPdf(
       doc.setFontSize(8.2);
       doc.setTextColor(51, 65, 85);
       doc.text(
-        `Executive Direction: MD. Abdul Hamim Leon, Chief Executive Officer | Operations: Dhaka, Bangladesh | Web: https://devengine.vercel.app`,
+        `Executive Direction: MD. Abdul Hamim Leon, Chief Executive Officer | Operations: Dhaka, Bangladesh | Web: https://thedevengine.vercel.app`,
         margin + 5,
         currentY + 14.8
       );
@@ -797,7 +797,7 @@ export async function generateAgreementPdf(
     doc.setFont("times", "normal");
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(" • https://devengine.vercel.app", margin + 17, footerY);
+    doc.text(" • https://thedevengine.vercel.app", margin + 17, footerY);
 
     // Center: Confidential Notice
     doc.setFont("times", "bold");

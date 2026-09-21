@@ -183,7 +183,7 @@ export const DEFAULT_DEVENGINE_INFO: DevEngineInfo = {
   ceoName: "MD. Abdul Hamim Leon",
   ceoTitle: "Chief Executive Officer",
   companyEmail: process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com",
-  companyWebsite: "https://devengine.vercel.app",
+  companyWebsite: process.env.NEXT_PUBLIC_BASE_URL || "https://thedevengine.vercel.app",
   companyAddress: "DevEngine Technology Operations, Dhaka, Bangladesh",
 };
 

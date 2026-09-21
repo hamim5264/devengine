@@ -5,6 +5,7 @@ import Image from "next/image";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
+import { getCachedData, setCachedData } from "@/lib/utils/cacheService";
 import {
   LaunchpadConfig,
   LaunchpadFeaturedSlide,
@@ -98,9 +99,17 @@ const SECTIONS = [
 ];
 
 export default function LaunchpadPage() {
-  const [config, setConfig] = useState<LaunchpadConfig>(DEFAULT_LAUNCHPAD_CONFIG);
-  const [appsList, setAppsList] = useState<AppLabItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState<LaunchpadConfig>(() => {
+    return getCachedData<LaunchpadConfig>("launchpad_config", DEFAULT_LAUNCHPAD_CONFIG);
+  });
+  const [appsList, setAppsList] = useState<AppLabItem[]>(() => {
+    return getCachedData<AppLabItem[]>("launchpad_apps", FALLBACK_APPS);
+  });
+  const [loading, setLoading] = useState(() => {
+    const cachedConfig = getCachedData<LaunchpadConfig | null>("launchpad_config", null);
+    const cachedApps = getCachedData<AppLabItem[] | null>("launchpad_apps", null);
+    return !cachedConfig || !cachedApps;
+  });
   const [activeSection, setActiveSection] = useState("overview");
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -130,8 +139,15 @@ export default function LaunchpadPage() {
           getAppLabApps(),
         ]);
         if (mounted) {
-          setConfig(loadedConfig);
-          setAppsList(loadedApps.length > 0 ? loadedApps : FALLBACK_APPS);
+          if (loadedConfig) {
+            setConfig(loadedConfig);
+            setCachedData("launchpad_config", loadedConfig);
+          }
+          const finalApps = loadedApps.length > 0 ? loadedApps : FALLBACK_APPS;
+          setAppsList(finalApps);
+          if (loadedApps.length > 0) {
+            setCachedData("launchpad_apps", loadedApps);
+          }
         }
       } catch (err) {
         console.error("Failed to load launchpad data:", err);
@@ -278,15 +294,9 @@ export default function LaunchpadPage() {
 
   if (loading) {
     return (
-      <>
-        <LandingNavbar />
-        <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center">
-          <HelixLoader size={56} color="#38f2ff" />
-          <p className="mt-6 font-jetbrains text-xs text-gray-400 tracking-widest uppercase">
-            Loading DevEngine Launchpad…
-          </p>
-        </div>
-      </>
+      <div className="fixed inset-0 bg-[#030712] z-50 flex items-center justify-center">
+        <HelixLoader size={56} color="#38f2ff" text="LOADING DEVENGINE LAUNCHPAD..." />
+      </div>
     );
   }
 
@@ -625,7 +635,7 @@ export default function LaunchpadPage() {
             {filteredApps.map((app) => (
               <div
                 key={app.id || app.slug}
-                className="bg-[#0e131f]/80 backdrop-blur-xl rounded-2xl p-6 flex flex-col sm:flex-row gap-6 border border-white/10 hover:border-[#38f2ff]/40 shadow-xl hover:shadow-[0_0_30px_rgba(56,242,255,0.1)] transition-all duration-300 group"
+                className="bg-[#0e131f]/80 backdrop-blur-xl rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row gap-5 sm:gap-6 border border-white/10 hover:border-[#38f2ff]/40 shadow-xl hover:shadow-[0_0_30px_rgba(56,242,255,0.1)] transition-all duration-300 group min-w-0 overflow-hidden"
               >
                 {/* App Preview Image / Thumbnail (With Guaranteed Fallback & No Robot Icon) */}
                 <div className="w-full sm:w-[170px] h-[220px] bg-[#161c28] rounded-xl border border-white/10 overflow-hidden relative shrink-0">
@@ -640,13 +650,13 @@ export default function LaunchpadPage() {
                 </div>
 
                 {/* App Info & Action Buttons */}
-                <div className="flex flex-col justify-between w-full py-1">
+                <div className="flex flex-col justify-between w-full py-1 min-w-0">
                   <div>
                     {/* Title and Category */}
                     <div className="flex items-start justify-between mb-2">
                       <Link
                         href={`/app-lab/${app.slug}`}
-                        className="font-space font-bold text-xl text-white hover:text-[#38f2ff] transition-colors"
+                        className="font-space font-bold text-xl text-white hover:text-[#38f2ff] transition-colors truncate block"
                       >
                         {app.name}
                       </Link>
@@ -672,11 +682,11 @@ export default function LaunchpadPage() {
                     </p>
                   </div>
 
-                  {/* 2 Buttons: Perfectly aligned in one line without wrapping */}
-                  <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                  {/* 2 Action Buttons: Responsive grid layout so buttons NEVER overflow card */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pt-2 w-full">
                     <button
                       onClick={() => handleOpenAppPreview(app)}
-                      className="bg-[#161c28] hover:bg-[#242a36] text-white border border-white/10 hover:border-[#38f2ff]/40 flex-1 py-2.5 px-3 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-2 transition-all cursor-pointer font-bold whitespace-nowrap group/btn"
+                      className="bg-[#161c28] hover:bg-[#242a36] text-white border border-white/10 hover:border-[#38f2ff]/40 w-full py-2.5 px-2 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer font-bold group/btn min-w-0"
                     >
                       <svg
                         className="w-4 h-4 shrink-0 text-gray-300 group-hover/btn:text-[#38f2ff] transition-colors"
@@ -696,12 +706,12 @@ export default function LaunchpadPage() {
                           d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                         />
                       </svg>
-                      <span className="whitespace-nowrap">Open App preview</span>
+                      <span className="truncate">Open Preview</span>
                     </button>
 
                     <button
                       onClick={() => handleDownloadApk(app)}
-                      className="bg-[#38f2ff] hover:bg-[#00dbe8] text-[#030712] flex-1 py-2.5 px-3 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(56,242,255,0.25)] transition-all cursor-pointer font-bold whitespace-nowrap"
+                      className="bg-[#38f2ff] hover:bg-[#00dbe8] text-[#030712] w-full py-2.5 px-2 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(56,242,255,0.25)] transition-all cursor-pointer font-bold min-w-0"
                     >
                       <svg
                         className="w-4 h-4 shrink-0"
@@ -716,7 +726,7 @@ export default function LaunchpadPage() {
                           d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                         />
                       </svg>
-                      <span className="whitespace-nowrap">Download APK</span>
+                      <span className="truncate">Download APK</span>
                     </button>
                   </div>
                 </div>

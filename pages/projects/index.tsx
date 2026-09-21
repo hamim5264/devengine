@@ -8,6 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
+import { getCachedData, setCachedData } from "@/lib/utils/cacheService";
 import { ArchiveConfig } from "@/types/archive";
 import {
   getArchiveConfig,
@@ -35,9 +36,17 @@ interface ProjectItem {
 }
 
 export default function ArchivePage() {
-  const [config, setConfig] = useState<ArchiveConfig>(DEFAULT_ARCHIVE_CONFIG);
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState<ArchiveConfig>(() => {
+    return getCachedData<ArchiveConfig>("archive_config", DEFAULT_ARCHIVE_CONFIG);
+  });
+  const [projects, setProjects] = useState<ProjectItem[]>(() => {
+    return getCachedData<ProjectItem[]>("archive_projects", []);
+  });
+  const [loading, setLoading] = useState(() => {
+    const cachedConfig = getCachedData<ArchiveConfig | null>("archive_config", null);
+    const cachedProjects = getCachedData<ProjectItem[] | null>("archive_projects", null);
+    return !cachedConfig || !cachedProjects || cachedProjects.length === 0;
+  });
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -74,10 +83,12 @@ export default function ArchivePage() {
 
     async function loadData() {
       try {
-        setLoading(true);
         // Load Archive CMS Config
         const archiveData = await getArchiveConfig();
-        if (isMounted) setConfig(archiveData);
+        if (isMounted && archiveData) {
+          setConfig(archiveData);
+          setCachedData("archive_config", archiveData);
+        }
 
         // Load Public Projects
         const colRef = collection(db, "projects");
@@ -107,7 +118,10 @@ export default function ArchivePage() {
             } as ProjectItem;
           });
 
-        if (isMounted) setProjects(list);
+        if (isMounted) {
+          setProjects(list);
+          setCachedData("archive_projects", list);
+        }
       } catch (err) {
         console.error("Error loading archive data:", err);
       } finally {
@@ -242,20 +256,54 @@ export default function ArchivePage() {
     return () => clearInterval(interval);
   }, [config.lab.targetLaunchDate]);
 
-  // 6. Featured Case Study Project lookup
+  // 6. Featured Case Study Project lookup (Supports Database Project & Manual Custom Entry)
+  const isManualCaseStudy = Boolean(config.featuredCaseStudy?.isManual);
+
   const featuredProject = useMemo(() => {
-    if (!config.featuredCaseStudy.projectId) return null;
+    if (isManualCaseStudy || !config.featuredCaseStudy?.projectId) return null;
     return projects.find(
       (p) =>
         p.slug === config.featuredCaseStudy.projectId ||
         p.id === config.featuredCaseStudy.projectId
     );
-  }, [projects, config.featuredCaseStudy.projectId]);
+  }, [projects, config.featuredCaseStudy?.projectId, isManualCaseStudy]);
+
+  const caseStudyTitle = isManualCaseStudy
+    ? config.featuredCaseStudy.title
+    : (featuredProject?.title || config.featuredCaseStudy.title);
+
+  const caseStudySubtitle = isManualCaseStudy
+    ? config.featuredCaseStudy.titleHighlight
+    : (featuredProject?.subtitle || config.featuredCaseStudy.titleHighlight);
+
+  const caseStudyDescription = isManualCaseStudy
+    ? config.featuredCaseStudy.description
+    : (featuredProject?.details || config.featuredCaseStudy.description);
+
+  const caseStudyTechStack = isManualCaseStudy
+    ? config.featuredCaseStudy.techStack
+    : (featuredProject?.tags?.join(", ") || config.featuredCaseStudy.techStack);
+
+  const caseStudyImage = isManualCaseStudy
+    ? (config.featuredCaseStudy.phoneImage || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop")
+    : (config.featuredCaseStudy.phoneImage || featuredProject?.imageUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop");
+
+  const caseStudyUrl = isManualCaseStudy
+    ? (config.featuredCaseStudy.customProjectUrl?.trim() || "/projects/case-study")
+    : "/projects/case-study";
 
   // 7. 4 Most Recent Projects for The Archive Bento Grid
   const recent4Projects = useMemo(() => {
     return filteredProjects.slice(0, 4);
   }, [filteredProjects]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-[#030712] z-50 flex items-center justify-center">
+        <HelixLoader size={80} text="LOADING ARCHIVE..." />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -433,15 +481,15 @@ export default function ArchivePage() {
                 </div>
 
                 <h2 className="font-space text-3xl sm:text-5xl font-bold text-white mb-4 leading-tight">
-                  {featuredProject?.title || config.featuredCaseStudy.title}
+                  {caseStudyTitle}
                   <br />
                   <span className="text-gray-400 text-2xl sm:text-3xl font-medium">
-                    {featuredProject?.subtitle || config.featuredCaseStudy.titleHighlight}
+                    {caseStudySubtitle}
                   </span>
                 </h2>
 
                 <p className="font-sans text-base text-[#849495] mb-8 max-w-xl leading-relaxed">
-                  {featuredProject?.details || config.featuredCaseStudy.description}
+                  {caseStudyDescription}
                 </p>
 
                 <div className="grid grid-cols-2 gap-6 mb-10 border-t border-white/10 pt-6 max-w-md">
@@ -450,8 +498,7 @@ export default function ArchivePage() {
                       Tech Stack
                     </p>
                     <p className="font-sans text-sm text-white font-medium">
-                      {featuredProject?.tags?.join(", ") ||
-                        config.featuredCaseStudy.techStack}
+                      {caseStudyTechStack}
                     </p>
                   </div>
                   <div>
@@ -464,17 +511,19 @@ export default function ArchivePage() {
                   </div>
                 </div>
 
-                {featuredProject ? (
-                  <Link
-                    href="/projects/case-study"
-                    className="inline-flex items-center gap-3 bg-white/10 hover:bg-[#38f2ff] text-white hover:text-[#030712] font-jetbrains text-xs tracking-wider uppercase px-8 py-4 rounded-full border border-white/15 transition-all shadow-lg font-bold cursor-pointer"
+                {caseStudyUrl.startsWith("http") ? (
+                  <a
+                    href={caseStudyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-3 bg-[#38f2ff] hover:bg-[#78f5ff] text-[#030712] font-jetbrains text-xs tracking-wider uppercase px-8 py-4 rounded-full transition-all shadow-lg font-bold cursor-pointer"
                   >
                     {config.featuredCaseStudy.buttonText} <span>↗</span>
-                  </Link>
+                  </a>
                 ) : (
                   <Link
-                    href="/projects/case-study"
-                    className="inline-flex items-center gap-3 bg-[#38f2ff] text-[#030712] font-jetbrains text-xs tracking-wider uppercase px-8 py-4 rounded-full transition-all shadow-lg font-bold cursor-pointer"
+                    href={caseStudyUrl}
+                    className="inline-flex items-center gap-3 bg-[#38f2ff] hover:bg-[#78f5ff] text-[#030712] font-jetbrains text-xs tracking-wider uppercase px-8 py-4 rounded-full transition-all shadow-lg font-bold cursor-pointer"
                   >
                     {config.featuredCaseStudy.buttonText} <span>↗</span>
                   </Link>
@@ -483,33 +532,57 @@ export default function ArchivePage() {
 
               {/* Right Column: Simulated 3D Mobile Phone Frame */}
               <div className="relative h-[560px] flex justify-center items-center group">
-                <Link
-                  href="/projects/case-study"
-                  className="relative block cursor-pointer group/phone"
-                  aria-label="View Featured Case Study Details"
-                >
-                  <div className="relative w-[280px] h-[550px] rounded-[44px] bg-[#0e131f] border-[6px] border-[#242a36] shadow-[0_0_60px_rgba(56,242,255,0.25)] overflow-hidden transition-transform duration-700 transform lg:rotate-y-[-12deg] lg:rotate-x-[4deg] group-hover/phone:rotate-0 group-hover/phone:border-[#38f2ff]/60">
-                    {/* Dynamic Island Notch */}
-                    <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-full z-30 flex items-center justify-end px-3">
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#161c28] border border-white/20" />
-                    </div>
+                {caseStudyUrl.startsWith("http") ? (
+                  <a
+                    href={caseStudyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative block cursor-pointer group/phone"
+                    aria-label="View Featured Case Study Details"
+                  >
+                    <div className="relative w-[280px] h-[550px] rounded-[44px] bg-[#0e131f] border-[6px] border-[#242a36] shadow-[0_0_60px_rgba(56,242,255,0.25)] overflow-hidden transition-transform duration-700 transform lg:rotate-y-[-12deg] lg:rotate-x-[4deg] group-hover/phone:rotate-0 group-hover/phone:border-[#38f2ff]/60">
+                      {/* Dynamic Island Notch */}
+                      <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-full z-30 flex items-center justify-end px-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#161c28] border border-white/20" />
+                      </div>
 
-                    {/* Phone Screen Mockup Content */}
-                    <div className="w-full h-full relative">
-                      <Image
-                        src={
-                          config.featuredCaseStudy.phoneImage ||
-                          featuredProject?.imageUrl ||
-                          "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop"
-                        }
-                        alt={config.featuredCaseStudy.title}
-                        fill
-                        className="object-cover group-hover/phone:scale-105 transition-transform duration-500"
-                        unoptimized
-                      />
+                      {/* Phone Screen Mockup Content */}
+                      <div className="w-full h-full relative">
+                        <Image
+                          src={caseStudyImage}
+                          alt={caseStudyTitle}
+                          fill
+                          className="object-cover group-hover/phone:scale-105 transition-transform duration-500"
+                          unoptimized
+                        />
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </a>
+                ) : (
+                  <Link
+                    href={caseStudyUrl}
+                    className="relative block cursor-pointer group/phone"
+                    aria-label="View Featured Case Study Details"
+                  >
+                    <div className="relative w-[280px] h-[550px] rounded-[44px] bg-[#0e131f] border-[6px] border-[#242a36] shadow-[0_0_60px_rgba(56,242,255,0.25)] overflow-hidden transition-transform duration-700 transform lg:rotate-y-[-12deg] lg:rotate-x-[4deg] group-hover/phone:rotate-0 group-hover/phone:border-[#38f2ff]/60">
+                      {/* Dynamic Island Notch */}
+                      <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-full z-30 flex items-center justify-end px-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#161c28] border border-white/20" />
+                      </div>
+
+                      {/* Phone Screen Mockup Content */}
+                      <div className="w-full h-full relative">
+                        <Image
+                          src={caseStudyImage}
+                          alt={caseStudyTitle}
+                          fill
+                          className="object-cover group-hover/phone:scale-105 transition-transform duration-500"
+                          unoptimized
+                        />
+                      </div>
+                    </div>
+                  </Link>
+                )}
 
                 {/* Floating Ambient Glow Orbs */}
                 <div className="absolute top-1/4 -right-8 w-24 h-24 bg-[#38f2ff]/20 rounded-full blur-2xl pointer-events-none" />

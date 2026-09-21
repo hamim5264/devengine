@@ -759,37 +759,126 @@ export default function ManageArchivePage() {
               </span>
             </div>
 
-            {/* Project Selector Dropdown */}
-            <div className="p-5 rounded-2xl bg-teal-500/[0.03] border border-teal-500/20 space-y-3">
-              <label className="block text-xs font-semibold text-teal-300">
-                Select Existing Project from Database
-              </label>
-              <div className="relative">
-                <select
-                  value={config.featuredCaseStudy.projectId}
-                  onChange={(e) => handleSelectFeaturedProject(e.target.value)}
-                  className="w-full h-11 bg-black/60 border border-teal-500/30 rounded-xl px-4 pr-10 text-sm text-white focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400/40 transition appearance-none cursor-pointer"
+            {/* Showcase Mode Switcher: Link Existing Project vs Manual Custom Project */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-white">Showcase Configuration Mode</h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Choose whether to link an existing project from your database or write a custom showcase manually.
+                </p>
+              </div>
+              <div className="flex bg-black/60 p-1 rounded-xl border border-white/10 shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setConfig({
+                      ...config,
+                      featuredCaseStudy: {
+                        ...config.featuredCaseStudy,
+                        isManual: false,
+                      },
+                    })
+                  }
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    !config.featuredCaseStudy.isManual
+                      ? "bg-teal-500 text-black shadow-[0_0_12px_rgba(20,184,166,0.4)]"
+                      : "text-gray-400 hover:text-white"
+                  }`}
                 >
-                  <option value="">-- Choose a Project --</option>
-                  {projectsList.map((p) => (
-                    <option key={p.slug} value={p.slug}>
-                      {p.title} ({p.category.toUpperCase()}) — ৳ {p.discount || p.price}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  Link Database Project
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setConfig({
+                      ...config,
+                      featuredCaseStudy: {
+                        ...config.featuredCaseStudy,
+                        isManual: true,
+                        projectId: "",
+                      },
+                    })
+                  }
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    config.featuredCaseStudy.isManual
+                      ? "bg-teal-500 text-black shadow-[0_0_12px_rgba(20,184,166,0.4)]"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Manual Custom Entry
+                </button>
+              </div>
+            </div>
+
+            {/* If Link Existing Project: Show Dropdown */}
+            {!config.featuredCaseStudy.isManual ? (
+              <div className="p-5 rounded-2xl bg-teal-500/[0.03] border border-teal-500/20 space-y-3">
+                <label className="block text-xs font-semibold text-teal-300">
+                  Select Existing Project from Database
+                </label>
+                <div className="relative">
+                  <select
+                    value={config.featuredCaseStudy.projectId}
+                    onChange={(e) => handleSelectFeaturedProject(e.target.value)}
+                    className="w-full h-11 bg-black/60 border border-teal-500/30 rounded-xl px-4 pr-10 text-sm text-white focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400/40 transition appearance-none cursor-pointer"
+                  >
+                    <option value="">-- Choose a Project --</option>
+                    {projectsList.map((p) => (
+                      <option key={p.slug} value={p.slug}>
+                        {p.title} ({p.category.toUpperCase()}) — ৳ {p.discount || p.price}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 text-teal-400/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
+                  Selecting a project automatically links the "VIEW CASE STUDY" button to its detail page.
+                </p>
+              </div>
+            ) : (
+              /* If Manual Custom Entry: Show Custom URL & Instructions */
+              <div className="p-5 rounded-2xl bg-cyan-500/[0.04] border border-cyan-500/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  <label className="block text-xs font-semibold text-cyan-300 uppercase tracking-wider">
+                    Manual Custom Entry Mode Active
+                  </label>
+                </div>
+                <p className="text-xs text-gray-400">
+                  You can input all showcase details manually below (title, highlight, description, tech stack, phone screenshot). No existing database project is required.
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                    Custom Target Link / Action URL (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={config.featuredCaseStudy.customProjectUrl || ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        featuredCaseStudy: {
+                          ...config.featuredCaseStudy,
+                          customProjectUrl: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="e.g. /projects/case-study or /projects/custom-slug or external link"
+                    className="w-full h-11 bg-black/60 border border-cyan-500/30 focus:border-cyan-400 rounded-xl px-4 text-sm text-white placeholder-gray-500 transition font-mono focus:outline-none"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Leave blank to default to <code className="text-cyan-400 font-mono">/projects/case-study</code>.
+                  </p>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-teal-400/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Selecting a project automatically links the "VIEW CASE STUDY" button to its detail page.
-              </p>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>

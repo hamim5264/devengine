@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
+import { getCachedData, setCachedData } from "@/lib/utils/cacheService";
 import {
   ProjectItem,
   ProjectPricingTier,
@@ -23,9 +24,14 @@ export default function GeneralPricingPage() {
   const router = useRouter();
   const { project: queryProject } = router.query;
 
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [projects, setProjects] = useState<ProjectItem[]>(() => {
+    return getCachedData<ProjectItem[]>("archive_projects", []);
+  });
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    const cached = getCachedData<ProjectItem[] | null>("archive_projects", null);
+    return !cached || cached.length === 0;
+  });
   const [activePlanModal, setActivePlanModal] = useState<ProjectPricingTier | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
@@ -53,6 +59,9 @@ export default function GeneralPricingPage() {
           };
         });
         setProjects(list);
+        if (list.length > 0) {
+          setCachedData("archive_projects", list);
+        }
 
         if (queryProject) {
           const match = list.find(
@@ -88,6 +97,14 @@ export default function GeneralPricingPage() {
     );
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
   };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-[#030712] z-50 flex items-center justify-center">
+        <HelixLoader size={80} text="LOADING PRICING..." />
+      </div>
+    );
+  }
 
   return (
     <>

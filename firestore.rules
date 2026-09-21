@@ -1,0 +1,376 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* =========================
+       HELPERS
+    ========================== */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.email == "hamim.leon@gmail.com";
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /* =========================
+       STAFF MEMBERS
+    ========================== */
+    match /staff_members/{staffId} {
+      // Admin has full CRUD access
+      allow read, write: if isAdmin();
+
+      // Staff can read their own record (staffId == auth uid)
+      allow read: if isSignedIn() && request.auth.uid == staffId;
+    }
+
+    /* =========================
+       SYSTEM UPDATE LOGS (NEW)
+    ========================== */
+    match /update_logs/{logId} {
+      // Public can read system updates and changelogs
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       NETWORK HUBS (NEW)
+    ========================== */
+    match /network_hubs/{hubId} {
+      // Public can read network routing nodes and status
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       LANDING SECTIONS CMS (NEW)
+    ========================== */
+    match /landing_sections/{sectionId} {
+      // Public can read landing page configurations
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       TERMS & CONDITIONS CMS (NEW)
+    ========================== */
+    match /terms_config/{docId} {
+      // Public can read terms and conditions
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       PRIVACY POLICY CMS (NEW)
+    ========================== */
+    match /privacy_config/{docId} {
+      // Public can read privacy policy
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       SECURITY PROTOCOL CMS (NEW)
+    ========================== */
+    match /security_config/{docId} {
+      // Public can read security protocol
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       DOCUMENTATION & API CMS (NEW)
+    ========================== */
+    match /documentation_config/{docId} {
+      // Public can read documentation & API access
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       COMMERCIAL LICENSE CMS (NEW)
+    ========================== */
+    match /license_config/{docId} {
+      // Public can read commercial license agreement
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       PROJECT AGREEMENTS & CONTRACTS (ADMIN-ONLY)
+    ========================== */
+    match /agreements/{agreementId} {
+      // Strictly admin-only: confidential contracts, developer terms & compensation
+      allow read, write: if isAdmin();
+    }
+
+    /* =========================
+       STRICT NO-RETURN & REFUND POLICY CMS (NEW)
+    ========================== */
+    match /refund_config/{docId} {
+      // Public can read refund policy
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       ARCHIVE & PROJECTS CMS (NEW)
+    ========================== */
+    match /archive_config/{docId} {
+      // Public can read archive configuration
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       LAUNCHPAD & APP LAB CMS (NEW)
+    ========================== */
+    match /launchpad_config/{docId} {
+      // Public can read launchpad configuration
+      allow read: if true;
+
+      // Only admin can create, update, or delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       SERVICES & INQUIRIES
+    ========================== */
+    match /services/{serviceId} {
+      // Public can read services catalog
+      allow read: if true;
+
+      // Only admin can manage services
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /service_inquiries/{inquiryId} {
+      // Public can submit project inquiries
+      allow create: if true;
+
+      // Only admin can read or manage inquiries
+      allow read, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       LAB PROJECTS (Upcoming / Ongoing)
+    ========================== */
+    match /lab_projects/{projectId} {
+      // Public can read lab projects (visibility filtered client-side)
+      allow read: if true;
+
+      // Only admin can manage lab projects
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       PROJECTS
+    ========================== */
+    match /projects/{projectId} {
+      // Admin can list/get all projects; public can only get published ones
+      allow list: if isAdmin();
+      allow get: if resource.data.isPublic == true || isAdmin();
+
+      // Only admin can create/update/delete
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       APP LAB
+    ========================== */
+    match /appLab/{appId} {
+      // Admin can list/get all apps; public can only get published ones
+      allow list: if isAdmin();
+      allow get: if resource.data.isPublic == true || isAdmin();
+
+      // Only admin can manage App Lab entries
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       TAGS
+    ========================== */
+    match /tags/{tagId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       CURRENCIES
+    ========================== */
+    match /currencies/{currencyId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       USERS
+    ========================== */
+    match /users/{userId} {
+      // User can read/write own profile
+      // Admin can read all users
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update, delete: if isOwner(userId);
+    }
+
+    /* =========================
+       REVIEWS & TRUST WALL
+    ========================== */
+    match /reviews/{reviewId} {
+      // Public can read all reviews
+      allow read: if true;
+
+      // Anyone (client or guest) can submit a review with pending status
+      allow create: if true;
+
+      // Admin can approve, reject, or delete any review; users can edit/delete their own
+      allow update, delete: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    /* =========================
+       PURCHASES
+    ========================== */
+    match /purchases/{purchaseId} {
+      // Allow users to record their purchases
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+
+      // Users can view/manage their own; Admin can view all purchases
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      allow update, delete: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    /* =========================
+       ORDERS & MANUAL PAYMENTS
+    ========================== */
+    match /orders/{orderId} {
+      // Anyone can submit an order without logging in
+      allow create: if true;
+
+      // Public can read orders (for confirmation & order tracking by ID)
+      allow read: if true;
+
+      // Only admin can update status or delete
+      allow update, delete: if isAdmin();
+    }
+
+    /* =========================
+       BLOGS & CHRONICLES
+    ========================== */
+    match /blogs/{blogId} {
+      // Public can read all published or individual blogs
+      allow read: if true;
+
+      // Only admin can create, update, or delete blog posts
+      allow write: if isAdmin();
+    }
+
+    /* =========================
+       TEAM & ABOUT STUDIO
+    ========================== */
+    match /team_members/{memberId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /studio_about/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* =========================
+       CAREER & JOB CIRCULARS
+    ========================== */
+    match /job_circulars/{circularId} {
+      // Public can read all active circulars
+      allow read: if true;
+      // Only admin can create, update, or delete circulars
+      allow write: if isAdmin();
+    }
+
+    /* =========================
+       CANDIDATE APPLICATIONS
+    ========================== */
+    match /job_applications/{applicationId} {
+      // Anyone can submit a job application without logging in
+      allow create: if true;
+      // Only admin can read, review, update status, or delete candidate submissions
+      allow read, update, delete: if isAdmin();
+    }
+
+    /* =========================
+       FOOTER SOCIAL LINKS
+    ========================== */
+    match /footer_socials/{linkId} {
+      // Public can read social channels
+      allow read: if true;
+      // Only admin can create, update, or delete social channels
+      allow write: if isAdmin();
+    }
+
+    /* =========================
+       SYSTEM SETTINGS & MAINTENANCE
+    ========================== */
+    match /system_settings/{settingId} {
+      // Public can read maintenance state
+      allow read: if true;
+      // Only admin can configure maintenance mode
+      allow write: if isAdmin();
+    }
+
+    /* =========================
+       SITE ANALYTICS & VISITOR TRACKING
+    ========================== */
+    match /site_analytics/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    /* =========================
+       SYSTEM ACTIVITY LOGS
+    ========================== */
+    match /activity_logs/{logId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    /* =========================
+       RECYCLE BIN (TRASH & RECOVERY)
+    ========================== */
+    match /recycle_bin/{binId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+

@@ -58,23 +58,18 @@ export default function PaymentSuccess() {
           return;
         }
 
-        if (user) {
-          await addDoc(collection(db, "purchases"), {
-            userId: user.uid,
-            userEmail: user.email,
-            projectName: paymentData.product_name,
-            paymentType: paymentData.card_issuer || "N/A",
-            paymentDate: new Date().toISOString(),
-            discount: paymentData.currency_amount || "N/A",
-            totalAmount: paymentData.amount,
-            transactionId: paymentData.tran_id,
-          });
+        // Save transaction to purchases/orders ledger
+        await addDoc(collection(db, "purchases"), {
+          projectName: paymentData.product_name || "DevEngine Software License",
+          paymentType: paymentData.card_issuer || "SSLCommerz",
+          paymentDate: new Date().toISOString(),
+          discount: paymentData.currency_amount || "N/A",
+          totalAmount: paymentData.amount,
+          transactionId: paymentData.tran_id,
+        });
 
-          console.log("✅ Purchase saved successfully.");
-
-          // ✅ Redirect to Purchase History page with success message
-          router.push("/purchase-history?payment=success");
-        }
+        console.log("✅ Purchase record recorded successfully.");
+        router.push(`/home?payment=success&tran_id=${paymentData.tran_id}`);
       } catch (error: any) {
         console.error(
           "Payment validation failed:",

@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-const ADMIN_EMAIL = "hamim.leon@gmail.com";
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
 export function useAuthRole() {
   const [user, setUser] = useState<User | null>(null);

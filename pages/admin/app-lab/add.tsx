@@ -1,17 +1,22 @@
-import Head from "next/head";
+﻿import Head from "next/head";
+import AdminLayout from "@/components/AdminLayout";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import {
+  uploadAppLabImage,
+  DUMMY_APP_IMAGES,
+} from "@/lib/services/launchpadService";
 
-const ADMIN_EMAIL = "hamim.leon@gmail.com";
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
 export default function AddAppLab() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -88,14 +93,11 @@ export default function AddAppLab() {
     "w-full bg-gray-900 text-white px-4 py-3 rounded-lg border border-gray-700 focus:outline-none focus:border-teal-400 placeholder-gray-400 resize-none";
 
   return (
-    <>
+    <AdminLayout>
       <Head>
         <title>Add App | App Lab</title>
       </Head>
-
-      <Navbar />
-
-      <main className="pt-32 px-6 md:px-20 pb-24 bg-gradient-to-br from-gray-900 to-black text-white min-h-screen">
+        <main className="px-6 md:px-8 py-8 min-h-[calc(100vh-56px)] text-white">
         <h1 className="text-4xl font-bold text-teal-400 mb-10 text-center">
           Add App (App Lab)
         </h1>
@@ -184,12 +186,59 @@ export default function AddAppLab() {
 
           {/* Images */}
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold text-teal-300">
-              App Images / Mockups
-            </h2>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+              <h2 className="text-xl font-semibold text-teal-300">
+                App Images / Mockups
+              </h2>
+              <div className="flex gap-2">
+                <label className="px-3 py-1.5 bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 border border-teal-500/40 rounded text-xs font-mono font-bold cursor-pointer transition flex items-center gap-1.5">
+                  {uploadingImage ? "Uploading..." : "📁 Upload Image File"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingImage}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        setUploadingImage(true);
+                        const slug = form.name ? slugify(form.name) : "app";
+                        const url = await uploadAppLabImage(file, slug);
+                        setForm((prev) => ({
+                          ...prev,
+                          images: prev.images ? `${prev.images}\n${url}` : url,
+                        }));
+                      } catch (err: any) {
+                        alert("Failed to upload image: " + err.message);
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const slug = form.name ? slugify(form.name) : "default";
+                    const dummy = DUMMY_APP_IMAGES[slug] || DUMMY_APP_IMAGES.default;
+                    setForm((prev) => ({
+                      ...prev,
+                      images: prev.images ? `${prev.images}\n${dummy}` : dummy,
+                    }));
+                  }}
+                  className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs font-mono transition cursor-pointer"
+                >
+                  Insert Dummy Image
+                </button>
+              </div>
+            </div>
+
             <textarea
-              className={`${textarea} h-32`}
-              placeholder={`Paste image links (one per line)\nGoogle Drive / CDN recommended`}
+              className={`${textarea} h-28`}
+              placeholder={`Paste image links (one per line) or use the upload button above`}
+              value={form.images}
               onChange={(e) => setForm({ ...form, images: e.target.value })}
             />
           </section>
@@ -203,8 +252,6 @@ export default function AddAppLab() {
           </button>
         </form>
       </main>
-
-      <Footer />
-    </>
+    </AdminLayout>
   );
 }

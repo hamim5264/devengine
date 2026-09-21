@@ -1,4 +1,5 @@
-import Head from "next/head";
+﻿import Head from "next/head";
+import AdminLayout from "@/components/AdminLayout";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
@@ -9,11 +10,10 @@ import {
   doc,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { useRouter } from "next/router";
 
-const ADMIN_EMAIL = "hamim.leon@gmail.com";
+const ADMIN_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
 export default function ManageAppLab() {
   const router = useRouter();
@@ -32,13 +32,11 @@ export default function ManageAppLab() {
   }, []);
 
   return (
-    <>
+    <AdminLayout>
       <Head>
         <title>Manage App Lab</title>
       </Head>
-      <Navbar />
-
-      <main className="pt-28 px-6 md:px-20 pb-20 bg-black text-white min-h-screen">
+        <main className="px-6 md:px-8 py-8 min-h-[calc(100vh-56px)] text-white">
         <h1 className="text-3xl text-teal-400 mb-6">Manage App Lab</h1>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -70,8 +68,6 @@ export default function ManageAppLab() {
           ))}
         </div>
       </main>
-
-      <Footer />
-    </>
+    </AdminLayout>
   );
 }

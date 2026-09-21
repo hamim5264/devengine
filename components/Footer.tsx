@@ -1,8 +1,9 @@
 import {
   FaLinkedin,
   FaGithub,
-  FaInstagram,
   FaFacebook,
+  FaYoutube,
+  FaInstagram,
   FaXTwitter,
 } from "react-icons/fa6";
 import Link from "next/link";
@@ -14,54 +15,50 @@ export default function Footer() {
         {/* Left Section */}
         <div className="text-center md:text-left">
           <h3 className="text-lg font-semibold text-teal-400 mb-1">
-            Connect with Me
+            Connect with DevEngine
           </h3>
           <p className="text-sm text-gray-400">
-            Let’s build something amazing together!
+            Engineering the Cinematic Future. High-fidelity, performant digital ecosystems.
           </p>
         </div>
 
         {/* Social Icons */}
-        <div className="flex gap-5 text-2xl">
+        <div className="flex gap-5 text-2xl items-center">
           <a
-            href="https://www.linkedin.com/in/abdul-hamim-a35b02253?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app"
+            href="https://github.com/DevEngine-Build-Fast-Learn-Smart"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-teal-400 transition transform hover:scale-110"
-          >
-            <FaLinkedin />
-          </a>
-          <a
-            href="https://github.com/hamim5264"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-teal-400 transition transform hover:scale-110"
+            title="GitHub"
           >
             <FaGithub />
           </a>
           <a
-            href="https://www.instagram.com/hamimleon?igsh=aTV3Zm8xemFoNmZu&utm_source=qr"
+            href="https://www.linkedin.com/in/abdul-hamim-a35b02253/"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-teal-400 transition transform hover:scale-110"
+            title="LinkedIn"
           >
-            <FaInstagram />
+            <FaLinkedin />
           </a>
           <a
-            href="https://www.facebook.com/share/18wTRxW6Fk/?mibextid=wwXIfr"
+            href="https://www.facebook.com/profile.php?id=61575608701014"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-teal-400 transition transform hover:scale-110"
+            title="Facebook"
           >
             <FaFacebook />
           </a>
           <a
-            href="https://x.com/hamim_leon?s=21"
+            href="https://www.youtube.com/@TheDevHamim"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-teal-400 transition transform hover:scale-110"
+            className="hover:text-red-400 transition transform hover:scale-110 text-2xl"
+            title="YouTube"
           >
-            <FaXTwitter />
+            <FaYoutube />
           </a>
         </div>
 

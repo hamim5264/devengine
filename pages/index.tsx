@@ -1,49 +1,31 @@
-import { useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
-import { motion } from "framer-motion";
 import Head from "next/head";
 
-export default function Intro() {
+const SplashScreen = dynamic(() => import("../components/SplashScreen"), {
+  ssr: false,
+});
+
+export default function IndexPage() {
   const router = useRouter();
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      router.push("/home");
-    }, 4000);
-
-    return () => clearTimeout(timeout);
-  }, [router]);
+  const handleEnterConsole = () => {
+    router.push("/home");
+  };
 
   return (
     <>
       <Head>
-        <title>DevEngine - Loading</title>
+        <title>DevEngine - System Initialization</title>
+        <meta
+          name="description"
+          content="DevEngine - Engineering the digital future. System initialization sequence."
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
-      <main className="flex items-center justify-center min-h-screen bg-black text-white">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.4, ease: "easeInOut" }}
-          className="text-center"
-        >
-          <motion.h1
-            className="text-5xl md:text-7xl font-extrabold tracking-wide"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 1 }}
-          >
-            Dev<span className="text-teal-400">Engine</span>
-          </motion.h1>
 
-          <motion.p
-            className="text-lg md:text-2xl text-gray-400 mt-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2, duration: 1 }}
-          >
-            Fueling Your Startup with Custom Software.
-          </motion.p>
-        </motion.div>
+      <main className="w-screen h-screen overflow-hidden bg-black">
+        <SplashScreen onEnterConsole={handleEnterConsole} />
       </main>
     </>
   );

@@ -8,13 +8,69 @@ body {
   @apply font-sans;
 }
 
+/* Hide Next.js dev mode build indicator floating in bottom-left */
+#__next-build-watcher,
+nextjs-portal,
+div[data-nextjs-toast-wrapper] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* Universal sleek dark scrollbar */
+html,
+body,
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 184, 166, 0.4) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #14b8a6;
+}
+
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-resizer {
+  background: transparent;
+}
+
+textarea {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
 /* Themed vertical scrollbar */
 .themed-scroll {
   scrollbar-width: thin;
   scrollbar-color: #0d9488 #0b1220;
 }
 .themed-scroll::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 .themed-scroll::-webkit-scrollbar-track {
   background: #0b1220;
@@ -187,3 +243,93 @@ body {
     opacity: 0.65;
   }
 }
+
+/* Futuristic Splash Screen Keyframes & Utility Classes */
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(56, 242, 255, 0.2)); }
+  50% { filter: drop-shadow(0 0 32px rgba(56, 242, 255, 0.6)); }
+}
+
+@keyframes sweepReveal {
+  0% { clip-path: inset(0 100% 0 0); opacity: 0; }
+  100% { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+
+@keyframes progressLine {
+  0% { width: 0; opacity: 0.5; }
+  100% { width: 100%; opacity: 1; }
+}
+
+@keyframes metadataFade {
+  0%, 40% { opacity: 0; }
+  100% { opacity: 0.7; }
+}
+
+@keyframes scaleUpFadeOut {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.3); opacity: 0; pointer-events: none; }
+}
+
+.anim-fade { animation: fadeIn 1s ease-in-out forwards; }
+.anim-glow { animation: pulseGlow 3s ease-in-out infinite; }
+.anim-sweep { opacity: 0; animation: sweepReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 1.2s; }
+.anim-sweep-delay { opacity: 0; animation: sweepReveal 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 1.8s; }
+.anim-progress { animation: progressLine 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.anim-meta { opacity: 0; animation: metadataFade 1s ease-in forwards; }
+.splash-exit { animation: scaleUpFadeOut 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+.glitch-effect {
+  position: relative;
+}
+.glitch-effect::before,
+.glitch-effect::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+}
+.glitch-effect::before {
+  left: 2px;
+  text-shadow: -1px 0 rgba(56, 242, 255, 0.7);
+  clip: rect(24px, 550px, 90px, 0);
+  animation: glitch-anim 3s infinite linear alternate-reverse;
+}
+.glitch-effect::after {
+  left: -2px;
+  text-shadow: -1px 0 rgba(255, 0, 255, 0.7);
+  clip: rect(85px, 550px, 140px, 0);
+  animation: glitch-anim 2.5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim {
+  0% { clip: rect(66px, 9999px, 86px, 0); }
+  5% { clip: rect(72px, 9999px, 16px, 0); }
+  10% { clip: rect(62px, 9999px, 20px, 0); }
+  15% { clip: rect(70px, 9999px, 15px, 0); }
+  20% { clip: rect(98px, 9999px, 46px, 0); }
+  25% { clip: rect(69px, 9999px, 32px, 0); }
+  30% { clip: rect(89px, 9999px, 75px, 0); }
+  35% { clip: rect(96px, 9999px, 15px, 0); }
+  40% { clip: rect(31px, 9999px, 83px, 0); }
+  45% { clip: rect(30px, 9999px, 99px, 0); }
+  50% { clip: rect(91px, 9999px, 81px, 0); }
+  55% { clip: rect(100px, 9999px, 66px, 0); }
+  60% { clip: rect(59px, 9999px, 2px, 0); }
+  65% { clip: rect(68px, 9999px, 46px, 0); }
+  70% { clip: rect(95px, 9999px, 26px, 0); }
+  75% { clip: rect(16px, 9999px, 80px, 0); }
+  80% { clip: rect(50px, 9999px, 76px, 0); }
+  85% { clip: rect(57px, 9999px, 89px, 0); }
+  90% { clip: rect(5px, 9999px, 54px, 0); }
+  95% { clip: rect(76px, 9999px, 15px, 0); }
+  100% { clip: rect(87px, 9999px, 28px, 0); }
+}
+

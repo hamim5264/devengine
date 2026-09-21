@@ -18,7 +18,7 @@ export default function Navbar() {
     router.push("/");
   };
 
-  const dashHref = isAdmin ? "/admin/dashboard" : "/dashboard";
+  const dashHref = "/admin/dashboard";
 
   const BaseLinks = ({ onClick }: { onClick?: () => void }) => (
     <>
@@ -39,11 +39,19 @@ export default function Navbar() {
       </Link>
 
       <Link
-        href="/app-lab"
+        href="/services"
+        onClick={onClick}
+        className="hover:text-teal-400 transition font-medium"
+      >
+        Services
+      </Link>
+
+      <Link
+        href="/launchpad"
         onClick={onClick}
         className="hover:text-teal-400 transition"
       >
-        App Lab
+        Launchpad
       </Link>
 
       <Link
@@ -155,6 +163,22 @@ export default function Navbar() {
                       </Link>
 
                       <Link
+                        href="/admin/manage-launchpad"
+                        onClick={() => setAdminOpen(false)}
+                        className="block px-3 py-2 rounded-lg hover:bg-gray-800 transition text-teal-300 font-bold"
+                      >
+                        Launchpad CMS
+                      </Link>
+
+                      <Link
+                        href="/admin/manage-services"
+                        onClick={() => setAdminOpen(false)}
+                        className="block px-3 py-2 rounded-lg hover:bg-gray-800 transition text-teal-300 font-bold"
+                      >
+                        Services CMS
+                      </Link>
+
+                      <Link
                         href="/admin/app-lab/manage"
                         onClick={() => setAdminOpen(false)}
                         className="block px-3 py-2 rounded-lg hover:bg-gray-800 transition"
@@ -174,20 +198,12 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="text-teal-400 hover:text-teal-300 transition"
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                className="text-teal-400 hover:text-white transition"
-              >
-                Sign Up
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="text-teal-400 hover:text-teal-300 transition text-sm font-semibold"
+            >
+              Console Login
+            </Link>
           )}
         </div>
 
@@ -249,7 +265,27 @@ export default function Navbar() {
                       </Link>
                     </li>
 
-                    <li className="pt-2 text-sm text-gray-500">App Lab</li>
+                    <li className="pt-2 text-sm text-gray-500">Launchpad & App Lab</li>
+
+                    <li>
+                      <Link
+                        href="/admin/manage-launchpad"
+                        onClick={() => setIsOpen(false)}
+                        className="block py-1 text-teal-300 font-bold"
+                      >
+                        Launchpad CMS
+                      </Link>
+                    </li>
+
+                    <li>
+                      <Link
+                        href="/admin/manage-services"
+                        onClick={() => setIsOpen(false)}
+                        className="block py-1 text-teal-300 font-bold"
+                      >
+                        Services CMS
+                      </Link>
+                    </li>
 
                     <li>
                       <Link
@@ -286,26 +322,15 @@ export default function Navbar() {
                 </li>
               </>
             ) : (
-              <>
-                <li>
-                  <Link
-                    href="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="block py-1 text-teal-400"
-                  >
-                    Login
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/signup"
-                    onClick={() => setIsOpen(false)}
-                    className="block py-1 text-teal-400"
-                  >
-                    Sign Up
-                  </Link>
-                </li>
-              </>
+              <li>
+                <Link
+                  href="/login"
+                  onClick={() => setIsOpen(false)}
+                  className="block py-1 text-teal-400 font-semibold"
+                >
+                  Console Login
+                </Link>
+              </li>
             )}
           </ul>
         </div>

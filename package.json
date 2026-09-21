@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/three": "^0.186.0",
     "axios": "^1.9.0",
     "emailjs-com": "^3.2.0",
     "firebase": "^11.6.0",
@@ -18,13 +20,15 @@
     "jspdf": "^3.0.1",
     "ldrs": "^1.1.7",
     "next": "15.5.9",
+    "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-icons": "^5.5.0",
     "react-signature-canvas": "^1.1.0-alpha.2",
     "sslcommerz-nodejs": "^1.0.8",
     "sweetalert2": "^11.19.1",
-    "swiper": "^11.2.6"
+    "swiper": "^11.2.6",
+    "three": "^0.186.0"
   },
   "devDependencies": {
     "@types/node": "^20",

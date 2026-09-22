@@ -300,22 +300,6 @@ function BentoBlogCard({ post }: { post: BlogPost }) {
           <p className="font-sans text-xs sm:text-sm text-gray-400 mt-2.5 leading-relaxed line-clamp-3">
             {post.excerpt}
           </p>
-
-          {/* Stats Bar if available */}
-          {post.stats && post.stats.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/10">
-              {post.stats.map((st, i) => (
-                <div key={i} className="text-left">
-                  <div className="font-jetbrains text-[10px] text-gray-500 uppercase">
-                    {st.label}
-                  </div>
-                  <div className="font-space font-bold text-sm text-[#3EF3FF]">
-                    {st.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Footer Meta: Author & CTA */}

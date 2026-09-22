@@ -216,22 +216,6 @@ export default function BlogDetailPage() {
           />
         </div>
 
-        {/* Highlight Stats Bar if available */}
-        {post.stats && post.stats.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12 p-6 bg-[#08111f] border border-white/10 rounded-3xl shadow-xl">
-            {post.stats.map((st, idx) => (
-              <div key={idx} className="text-center sm:text-left border-b sm:border-b-0 sm:border-r last:border-0 border-white/10 pb-3 sm:pb-0 sm:pr-4">
-                <div className="font-jetbrains text-xs text-gray-400 uppercase tracking-wider mb-1">
-                  {st.label}
-                </div>
-                <div className="font-space font-bold text-2xl sm:text-3xl text-[#3EF3FF]">
-                  {st.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Article Body Content */}
         <div className="prose prose-invert prose-cyan max-w-none space-y-6 text-gray-300 font-sans leading-relaxed text-base sm:text-lg">
           {post.content.split("\n\n").map((paragraph, index) => {

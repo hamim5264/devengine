@@ -106,6 +106,7 @@ const ALL_NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Add Project", href: "/admin/add-project", staffHref: "/staff/add-project" },
       { label: "Manage Projects", href: "/admin/manage-projects", staffHref: "/staff/manage-projects" },
+      { label: "Manage Categories", href: "/admin/manage-categories", staffHref: "/staff/manage-categories" },
       { label: "Agreements", href: "/admin/agreements", staffHref: "/staff/agreements" },
       { label: "Manage Tags", href: "/admin/manage-tags", staffHref: "/staff/manage-tags" },
     ],
@@ -127,6 +128,7 @@ const ALL_NAV_GROUPS: NavGroup[] = [
       { label: "Docs & API", href: "/admin/manage-documentation", staffHref: "/staff/manage-documentation" },
       { label: "Update Logs", href: "/admin/manage-update-logs", staffHref: "/staff/manage-update-logs" },
       { label: "Lab", href: "/admin/manage-lab", staffHref: "/staff/manage-lab" },
+      { label: "Lab Categories", href: "/admin/manage-lab-categories", staffHref: "/staff/manage-lab-categories" },
     ],
   },
   {

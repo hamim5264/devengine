@@ -22,6 +22,8 @@ interface Project {
   slug?: string;
   title: string;
   subtitle: string;
+  imageUrl?: string;
+  image?: string;
   price: string;
   discount: string;
   pricing?: CurrencyPricing[];
@@ -465,6 +467,19 @@ export default function ManageProjectsPage() {
                 >
                   {/* Top content */}
                   <div>
+                    {/* Project Cover Thumbnail (if present) */}
+                    {(project.imageUrl || project.image) && (
+                      <div className="relative w-full h-32 rounded-xl overflow-hidden mb-3.5 border border-white/[0.08] bg-black/40">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={project.imageUrl || project.image}
+                          alt={project.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c16]/80 via-transparent to-transparent opacity-60 pointer-events-none" />
+                      </div>
+                    )}
+
                     {/* Header line: Title & Status */}
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="min-w-0 pr-1">

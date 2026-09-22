@@ -14,6 +14,11 @@ import {
   deleteLabProject,
   seedDefaultLabProjects,
 } from "@/lib/services/labService";
+import {
+  LabCategory,
+  subscribeLabCategories,
+  DEFAULT_LAB_CATEGORIES,
+} from "@/lib/services/labCategoryService";
 import { moveToBin } from "@/lib/services/binService";
 
 const ADMIN_EMAIL =
@@ -25,15 +30,6 @@ const STATUS_OPTIONS: LabProjectStatus[] = [
   "ALPHA",
   "BETA",
   "LAUNCHING_SOON",
-];
-
-const CATEGORY_OPTIONS: LabProjectCategory[] = [
-  "Mobile App",
-  "Web Platform",
-  "AI Engine",
-  "Cloud Service",
-  "Desktop App",
-  "IoT System",
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -72,6 +68,9 @@ export default function ManageLabPage() {
   const [seeding, setSeeding] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
+  // Dynamic Categories from Firestore
+  const [dynamicCategories, setDynamicCategories] = useState<LabCategory[]>(DEFAULT_LAB_CATEGORIES);
+
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<LabProject | null>(null);
@@ -94,6 +93,15 @@ export default function ManageLabPage() {
     });
     return () => unsub();
   }, [router]);
+
+  // Subscribe to real-time categories
+  useEffect(() => {
+    if (!authReady || !isAdmin) return;
+    const unsub = subscribeLabCategories((cats) => {
+      setDynamicCategories(cats);
+    });
+    return () => unsub();
+  }, [authReady, isAdmin]);
 
   // Load projects
   const loadProjects = async () => {
@@ -266,6 +274,9 @@ export default function ManageLabPage() {
 
   if (!isAdmin) return null;
 
+  const categoryNames = dynamicCategories.map((c) => c.name);
+  const categoryOptions = Array.from(new Set([...categoryNames, form.category].filter(Boolean)));
+
   return (
     <AdminLayout>
       <Head>
@@ -326,6 +337,13 @@ export default function ManageLabPage() {
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
+              <Link
+                href="/admin/manage-lab-categories"
+                className="px-4 py-2.5 rounded-xl border border-white/[0.08] hover:border-teal-500/40 bg-white/[0.03] hover:bg-white/[0.06] text-gray-300 hover:text-white text-xs font-mono transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px] text-teal-400">category</span>
+                <span>Manage Categories</span>
+              </Link>
               <button
                 type="button"
                 onClick={handleSeedDefaults}
@@ -610,9 +628,20 @@ export default function ManageLabPage() {
                 {/* Row 2: Category, Status, Icon */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-mono text-gray-300 mb-1.5">
-                      Category
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-mono text-gray-300">
+                        Category *
+                      </label>
+                      <Link
+                        href="/admin/manage-lab-categories"
+                        target="_blank"
+                        className="text-[10px] font-mono text-teal-400 hover:text-teal-300 transition flex items-center gap-0.5"
+                        title="Manage Categories in new tab"
+                      >
+                        <span>+ Manage</span>
+                        <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                      </Link>
+                    </div>
                     <div className="relative">
                       <select
                         value={form.category}
@@ -621,7 +650,7 @@ export default function ManageLabPage() {
                         }
                         className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-4 pr-10 text-white text-xs font-mono appearance-none focus:outline-none transition-colors cursor-pointer"
                       >
-                        {CATEGORY_OPTIONS.map((c) => (
+                        {categoryOptions.map((c) => (
                           <option key={c} value={c}>
                             {c}
                           </option>

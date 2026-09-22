@@ -16,6 +16,8 @@ import Link from "next/link";
 import { CurrencyPricing } from "@/types/currency";
 import { getAvailableCurrencies } from "@/lib/services/currencyService";
 import HelixLoader from "@/components/HelixLoader";
+import { uploadProjectImage } from "@/lib/services/projectImageService";
+import { getLabCategories } from "@/lib/services/labCategoryService";
 import {
   DEFAULT_YOUTUBE_URL,
   DEFAULT_SNAPSHOT,
@@ -44,6 +46,8 @@ export default function AddProjectPage() {
   // Form state
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [details, setDetails] = useState("");
   const [installation, setInstallation] = useState("");
   const [tools, setTools] = useState("");
@@ -51,6 +55,13 @@ export default function AddProjectPage() {
   const [discount, setDiscount] = useState("");
   const [currencyPricing, setCurrencyPricing] = useState<CurrencyPricing[]>([]);
   const [category, setCategory] = useState("android");
+  const [availableCategories, setAvailableCategories] = useState<string[]>([
+    "android",
+    "ios",
+    "flutter",
+    "web",
+    "desktop",
+  ]);
   const [publishNow, setPublishNow] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
@@ -105,9 +116,17 @@ export default function AddProjectPage() {
             discountPrice: "",
           }))
         );
+
+        // Load dynamic categories
+        const dbCats = await getLabCategories();
+        const base = ["android", "ios", "flutter", "web", "desktop"];
+        const merged = Array.from(
+          new Set([...base, ...dbCats.map((c) => c.slug || c.name.toLowerCase())])
+        );
+        setAvailableCategories(merged);
       } catch (e) {
         console.error(e);
-        setErrMsg("Failed to load tags and currencies. Please refresh.");
+        setErrMsg("Failed to load tags, currencies, and categories. Please refresh.");
       }
     })();
   }, []);
@@ -184,6 +203,7 @@ export default function AddProjectPage() {
     if (typeof window !== "undefined" && window.confirm("Reset all entered fields to blank draft?")) {
       setTitle("");
       setSubtitle("");
+      setImageUrl("");
       setDetails("");
       setInstallation("");
       setTools("");
@@ -209,6 +229,34 @@ export default function AddProjectPage() {
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
+
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrMsg("Please select a valid image file (PNG, JPG, WebP, SVG, etc.).");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      setErrMsg("Image file size must be under 15MB.");
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setErrMsg("");
+      const uploadedUrl = await uploadProjectImage(file, makeSlug(title) || "cover");
+      setImageUrl(uploadedUrl);
+    } catch (err: any) {
+      console.error("Image upload failed:", err);
+      setErrMsg(err?.message || "Failed to upload image. You can also paste an image URL directly.");
+    } finally {
+      setUploadingImage(false);
+      if (e.target) e.target.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,6 +293,8 @@ export default function AddProjectPage() {
         slug,
         title: title.trim(),
         subtitle: subtitle.trim(),
+        imageUrl: imageUrl.trim(),
+        image: imageUrl.trim(),
         details: details.trim(),
         installation: installation.trim(),
         tools: tools.split(",").map((t) => t.trim()).filter(Boolean),
@@ -395,6 +445,7 @@ export default function AddProjectPage() {
                     setCreatedSlug("");
                     setTitle("");
                     setSubtitle("");
+                    setImageUrl("");
                     setDetails("");
                     setInstallation("");
                     setTools("");
@@ -442,6 +493,163 @@ export default function AddProjectPage() {
                   className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl px-4 text-sm text-white placeholder-gray-500 font-sans transition outline-none"
                   required
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION: PROJECT COVER & SHOWCASE IMAGE */}
+          <div className="bg-[#0e0e1a]/80 border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/[0.06]">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-teal-400/10 border border-teal-400/30 text-teal-300 flex items-center justify-center text-xs font-bold">
+                    <span className="material-symbols-outlined text-[15px]">image</span>
+                  </span>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    Project Showcase / Cover Image
+                    <span className="bg-teal-500/15 text-teal-300 text-[10px] font-mono px-2 py-0.5 rounded-full border border-teal-500/30">
+                      Archive & Details
+                    </span>
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Featured in the Archive project grid and header banner on the project details page.
+                </p>
+              </div>
+
+              {imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="self-start sm:self-auto px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[11px] font-medium transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[14px]">delete</span>
+                  <span>Remove Image</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-5 items-start">
+              {/* Image Input Controls */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center justify-between">
+                    <span>Direct Image URL</span>
+                    <span className="text-[10px] font-mono text-gray-500">Unsplash / Cloudinary / External</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/... or image link"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl pl-9 pr-9 text-xs text-white placeholder-gray-500 font-mono transition outline-none"
+                    />
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[16px]">
+                      link
+                    </span>
+                    {imageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                        title="Clear link"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">close</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="relative flex items-center py-1">
+                  <div className="flex-grow border-t border-white/[0.06]"></div>
+                  <span className="flex-shrink mx-3 text-[10px] font-mono text-gray-500 uppercase tracking-widest">
+                    OR UPLOAD FILE
+                  </span>
+                  <div className="flex-grow border-t border-white/[0.06]"></div>
+                </div>
+
+                <div>
+                  <input
+                    type="file"
+                    id="add-project-image-file"
+                    accept="image/*"
+                    onChange={handleImageFileUpload}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                  <label
+                    htmlFor="add-project-image-file"
+                    className={`w-full h-12 rounded-xl border border-dashed flex items-center justify-center gap-2.5 px-4 text-xs font-semibold transition cursor-pointer ${
+                      uploadingImage
+                        ? "border-teal-400/50 bg-teal-500/10 text-teal-300 pointer-events-none"
+                        : "border-white/[0.15] bg-white/[0.02] hover:bg-white/[0.05] hover:border-teal-400/50 text-gray-300 hover:text-white"
+                    }`}
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <HelixLoader size={16} color="#14b8a6" />
+                        <span>Uploading & Processing Image...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-teal-400 text-[18px]">
+                          cloud_upload
+                        </span>
+                        <span>Click to Upload Local Image (Max 15MB)</span>
+                      </>
+                    )}
+                  </label>
+                  <p className="text-[11px] text-gray-500 mt-1.5">
+                    Supports PNG, JPG, WebP, GIF, SVG. Automatically optimized for Firebase Storage & local fallback.
+                  </p>
+                </div>
+              </div>
+
+              {/* Image Preview Box */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                  Live Preview
+                </label>
+                <div className="relative w-full h-[156px] rounded-xl overflow-hidden border border-white/[0.08] bg-black/50 flex items-center justify-center group">
+                  {imageUrl ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imageUrl}
+                        alt="Project cover preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
+                        <span className="text-[10px] font-mono text-gray-300 truncate max-w-[200px]">
+                          {imageUrl}
+                        </span>
+                        <a
+                          href={imageUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2 py-1 rounded bg-black/60 border border-white/20 text-white text-[10px] flex items-center gap-1 hover:bg-black/90 transition"
+                        >
+                          <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                          <span>Open</span>
+                        </a>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center p-4">
+                      <span className="material-symbols-outlined text-3xl text-gray-600 block mb-1">
+                        add_photo_alternate
+                      </span>
+                      <p className="text-xs text-gray-400 font-medium">No cover image set</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">
+                        A default placeholder is shown in the Archive if omitted
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -935,20 +1143,31 @@ export default function AddProjectPage() {
           {/* SECTION 9: CATEGORY & TAGS */}
           <div className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                Category <span className="text-teal-400">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-gray-300">
+                  Category <span className="text-teal-400">*</span>
+                </label>
+                <Link
+                  href="/admin/manage-categories"
+                  target="_blank"
+                  className="text-[10px] font-mono text-teal-400 hover:text-teal-300 transition flex items-center gap-0.5"
+                  title="Open Category Manager"
+                >
+                  <span>+ Manage Categories</span>
+                  <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                </Link>
+              </div>
               <div className="relative">
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl px-4 text-sm text-white font-medium outline-none transition cursor-pointer appearance-none"
+                  className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl px-4 text-sm text-white font-medium outline-none transition cursor-pointer appearance-none capitalize"
                 >
-                  <option value="android">Android</option>
-                  <option value="ios">iOS</option>
-                  <option value="flutter">Flutter</option>
-                  <option value="web">Web</option>
-                  <option value="desktop">Desktop</option>
+                  {availableCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
                 </select>
                 <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[20px]">
                   expand_more

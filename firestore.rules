@@ -189,6 +189,19 @@ service cloud.firestore {
     }
 
     /* =========================
+       LAB & GLOBAL CATEGORIES
+    ========================== */
+    match /lab_categories/{catId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{catId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* =========================
        PROJECTS
     ========================== */
     match /projects/{projectId} {

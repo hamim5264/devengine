@@ -91,6 +91,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Add Project", href: "/admin/add-project" },
       { label: "Manage Projects", href: "/admin/manage-projects" },
+      { label: "Manage Categories", href: "/admin/manage-categories" },
       { label: "Agreements", href: "/admin/agreements", badge: "new" },
       { label: "Manage Tags", href: "/admin/manage-tags" },
     ],
@@ -111,6 +112,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Docs & API", href: "/admin/manage-documentation" },
       { label: "Update Logs", href: "/admin/manage-update-logs" },
       { label: "Lab", href: "/admin/manage-lab" },
+      { label: "Lab Categories", href: "/admin/manage-lab-categories" },
     ],
   },
   {

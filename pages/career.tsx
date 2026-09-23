@@ -102,13 +102,11 @@ function DeadlineCountdown({
 }
 
 export default function CareerPage() {
-  const [circulars, setCirculars] = useState<JobCircular[]>([INITIAL_SENIOR_UI_UX_CIRCULAR]);
+  const [circulars, setCirculars] = useState<JobCircular[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobCircular | null>(null);
   const [isApplyOpen, setIsApplyOpen] = useState(false);
-  const [expandedJobId, setExpandedJobId] = useState<string | null>(
-    INITIAL_SENIOR_UI_UX_CIRCULAR.id
-  );
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
 
   // Form State
   const [applicantName, setApplicantName] = useState("");
@@ -151,6 +149,17 @@ export default function CareerPage() {
   }, []);
 
   const openApplySheet = (job: JobCircular) => {
+    if (job.status === "closed") {
+      alert("This position has been closed.");
+      return;
+    }
+    if (job.deadlineDate) {
+      const target = new Date(job.deadlineDate).getTime();
+      if (!isNaN(target) && target < Date.now()) {
+        alert("The application deadline for this position has passed.");
+        return;
+      }
+    }
     setSelectedJob(job);
     setIsApplyOpen(true);
   };
@@ -162,6 +171,15 @@ export default function CareerPage() {
   const handleApplicationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedJob) return;
+
+    if (
+      selectedJob.status === "closed" ||
+      (selectedJob.deadlineDate && new Date(selectedJob.deadlineDate).getTime() < Date.now())
+    ) {
+      alert("The application deadline for this position has passed. Applications are no longer accepted.");
+      setIsApplyOpen(false);
+      return;
+    }
 
     if (!applicantName.trim() || !email.trim() || !resumeDriveLink.trim()) {
       alert("Please fill in your Full Name, Email, and Resume Google Drive Link.");
@@ -324,9 +342,16 @@ export default function CareerPage() {
                 Open Circulars &amp; Positions
               </h2>
             </div>
-            <p className="text-gray-400 text-xs font-jetbrains">
-              SHOWING {circulars.length} OPEN ARCHITECTURAL ROLE(S)
-            </p>
+            <div className="text-gray-400 text-xs font-jetbrains">
+              {circulars.length > 0 ? (
+                <span>SHOWING {circulars.length} OPEN ARCHITECTURAL ROLE(S)</span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-gray-400 font-semibold text-[11px]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
+                  RECRUITMENT PAUSED // 0 OPEN ROLES
+                </span>
+              )}
+            </div>
           </div>
 
           {loading ? (
@@ -337,23 +362,59 @@ export default function CareerPage() {
               </p>
             </div>
           ) : circulars.length === 0 ? (
-            <div className="py-24 text-center rounded-3xl border border-white/10 bg-white/[0.01] my-8">
-              <span className="material-symbols-outlined text-gray-600 text-6xl mb-3">
-                work_off
-              </span>
-              <h3 className="text-xl font-bold text-white font-['Space_Grotesk']">
-                No active circulars at this moment
+            <div className="py-20 sm:py-24 px-6 sm:px-12 my-8 rounded-3xl border border-white/10 bg-gradient-to-b from-[#08111F]/90 via-[#050b14]/90 to-[#02040A] backdrop-blur-2xl shadow-2xl text-center max-w-4xl mx-auto relative overflow-hidden">
+              {/* Subtle ambient lighting */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-[#38F2FF]/10 rounded-full blur-[90px] pointer-events-none" />
+
+              {/* Big Formal Icon */}
+              <div className="relative mx-auto w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-b from-[#38F2FF]/20 to-[#38F2FF]/5 border border-[#38F2FF]/30 flex items-center justify-center shadow-[0_0_50px_rgba(56,242,255,0.2)] mb-8">
+                <span className="material-symbols-outlined text-5xl sm:text-6xl text-[#38F2FF] select-none">
+                  domain_verification
+                </span>
+                <span className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-emerald-500 border-2 border-[#02040A] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[14px] text-black font-bold">check</span>
+                </span>
+              </div>
+
+              {/* Formal Tag */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[11px] font-jetbrains uppercase tracking-widest text-[#38F2FF] mb-5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Recruitment Status // All Positions Fully Staffed</span>
+              </div>
+
+              {/* Formal Heading */}
+              <h3 className="text-2xl sm:text-4xl font-extrabold text-white font-['Space_Grotesk'] tracking-tight max-w-2xl mx-auto leading-tight">
+                No Active Openings at This Time
               </h3>
-              <p className="text-gray-400 text-sm mt-2 max-w-md mx-auto">
-                Check back soon or send your spontaneous portfolio to{" "}
+
+              {/* Formal Body Paragraphs */}
+              <div className="max-w-2xl mx-auto mt-4 space-y-3 text-gray-300 text-sm sm:text-base leading-relaxed">
+                <p>
+                  All architectural, systems engineering, and design roles are currently filled. We are not actively recruiting for open circulars at the moment.
+                </p>
+                <p className="text-gray-400 text-xs sm:text-sm">
+                  However, our talent desk continuously engages with exceptional engineers and spatial designers for future vanguard initiatives. If your craft meets zero-compromise architectural standards, you are welcome to send a spontaneous portfolio.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-4 mt-8 pt-6 border-t border-white/[0.08]">
                 <a
-                  href="mailto:devenginesoftsolution@gmail.com"
-                  className="text-[#38F2FF] underline underline-offset-4"
+                  href="mailto:devenginesoftsolution@gmail.com?subject=Spontaneous%20Application%20%2F%2F%20DevEngine%20Talent%20Architecture"
+                  className="px-7 py-3 rounded-full bg-[#38F2FF] hover:bg-[#78F5FF] text-[#02040A] font-jetbrains text-xs font-bold tracking-wider uppercase transition-all shadow-[0_0_25px_rgba(56,242,255,0.4)] hover:shadow-[0_0_35px_rgba(56,242,255,0.6)] hover:scale-105 flex items-center gap-2 cursor-pointer"
                 >
-                  devenginesoftsolution@gmail.com
+                  <span className="material-symbols-outlined text-[16px]">mail</span>
+                  <span>Transmit Spontaneous CV</span>
                 </a>
-                .
-              </p>
+
+                <Link
+                  href="/archive"
+                  className="px-6 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-white/20 text-gray-300 hover:text-white font-jetbrains text-xs font-semibold tracking-wider transition-all flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[16px]">terminal</span>
+                  <span>Explore Engineering Works</span>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-8 mt-10">

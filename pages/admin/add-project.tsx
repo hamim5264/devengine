@@ -14,10 +14,17 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { CurrencyPricing } from "@/types/currency";
-import { getAvailableCurrencies } from "@/lib/services/currencyService";
+import {
+  getAvailableCurrencies,
+  getBdtToUsdRate,
+  convertBdtToUsd,
+} from "@/lib/services/currencyService";
 import HelixLoader from "@/components/HelixLoader";
 import { uploadProjectImage } from "@/lib/services/projectImageService";
-import { getLabCategories } from "@/lib/services/labCategoryService";
+import {
+  getLabCategories,
+  createLabCategory,
+} from "@/lib/services/labCategoryService";
 import {
   DEFAULT_YOUTUBE_URL,
   DEFAULT_SNAPSHOT,
@@ -25,6 +32,7 @@ import {
   DEFAULT_NOT_INCLUDED,
   DEFAULT_FAQS,
   ProjectFAQ,
+  ProjectPricingTier,
   getDefaultPricingPlans,
 } from "@/types/project";
 
@@ -46,14 +54,21 @@ export default function AddProjectPage() {
   // Form state
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  
+  // Multi-image state (1 mandatory, max 5)
+  const [images, setImages] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+
   const [details, setDetails] = useState("");
   const [installation, setInstallation] = useState("");
   const [tools, setTools] = useState("");
   const [price, setPrice] = useState("");
   const [discount, setDiscount] = useState("");
   const [currencyPricing, setCurrencyPricing] = useState<CurrencyPricing[]>([]);
+  const [bdtToUsdRate, setBdtToUsdRate] = useState<number>(1 / 122);
+
+  // Category state + Search & Instant Create
   const [category, setCategory] = useState("android");
   const [availableCategories, setAvailableCategories] = useState<string[]>([
     "android",
@@ -62,9 +77,17 @@ export default function AddProjectPage() {
     "web",
     "desktop",
   ]);
-  const [publishNow, setPublishNow] = useState(true);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  // Tag state + Search & Instant Create
   const [tags, setTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [tagSearch, setTagSearch] = useState("");
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
+
+  const [publishNow, setPublishNow] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -79,9 +102,21 @@ export default function AddProjectPage() {
     solution: "",
     value: "",
   });
+
+  // Inclusions & Exclusions with bulk comma support
   const [whatsIncluded, setWhatsIncluded] = useState<string[]>(DEFAULT_WHATS_INCLUDED);
+  const [bulkIncludedInput, setBulkIncludedInput] = useState("");
   const [notIncluded, setNotIncluded] = useState<string[]>(DEFAULT_NOT_INCLUDED);
+  const [bulkNotIncludedInput, setBulkNotIncludedInput] = useState("");
+
+  // FAQ state
   const [faqs, setFaqs] = useState<ProjectFAQ[]>(DEFAULT_FAQS);
+
+  // 3-Tier Pricing Plans state
+  const [pricingPlans, setPricingPlans] = useState<ProjectPricingTier[]>(() =>
+    getDefaultPricingPlans()
+  );
+  const [tierFeatureInputs, setTierFeatureInputs] = useState<{ [tierIdx: number]: string }>({});
 
   // Admin-only access check (wait for auth)
   useEffect(() => {
@@ -96,7 +131,7 @@ export default function AddProjectPage() {
     return () => unsub();
   }, [router]);
 
-  // Load tags & currencies
+  // Load tags, currencies, categories & live exchange rate
   useEffect(() => {
     (async () => {
       try {
@@ -116,6 +151,10 @@ export default function AddProjectPage() {
             discountPrice: "",
           }))
         );
+
+        // Fetch live exchange rate
+        const rate = await getBdtToUsdRate();
+        if (rate && rate > 0) setBdtToUsdRate(rate);
 
         // Load dynamic categories
         const dbCats = await getLabCategories();
@@ -137,19 +176,250 @@ export default function AddProjectPage() {
     );
   };
 
+  const handleCreateTag = async (tagName: string) => {
+    const trimmed = tagName.trim();
+    if (!trimmed) return;
+    const slug = makeSlug(trimmed);
+    if (!slug) return;
+
+    setIsCreatingTag(true);
+    try {
+      const ref = doc(db, "tags", slug);
+      await setDoc(ref, { name: trimmed, createdAt: new Date() });
+      const newTagItem: Tag = { id: slug, name: trimmed };
+      setAvailableTags((prev) => {
+        const exists = prev.some((t) => t.id === slug);
+        return exists ? prev : [...prev, newTagItem].sort((a, b) => a.name.localeCompare(b.name));
+      });
+      setTags((prev) => (prev.includes(slug) ? prev : [...prev, slug]));
+      setTagSearch("");
+    } catch (err: any) {
+      setErrMsg(err?.message || "Failed to create tag.");
+    } finally {
+      setIsCreatingTag(false);
+    }
+  };
+
+  const handleCreateCategory = async (catName: string) => {
+    const trimmed = catName.trim();
+    if (!trimmed) return;
+    setIsCreatingCategory(true);
+    try {
+      const slug = await createLabCategory({ name: trimmed });
+      if (!availableCategories.includes(slug)) {
+        setAvailableCategories((prev) => [...prev, slug]);
+      }
+      setCategory(slug);
+      setCategorySearch("");
+      setCategoryDropdownOpen(false);
+    } catch (err: any) {
+      setErrMsg(err?.message || "Failed to create category.");
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
   const handleCurrencyPriceChange = (
     currencyCode: string,
     field: "regularPrice" | "discountPrice",
     value: string
   ) => {
-    setCurrencyPricing((prev) =>
-      prev.map((item) =>
+    setCurrencyPricing((prev) => {
+      let updated = prev.map((item) =>
         item.currency === currencyCode ? { ...item, [field]: value } : item
-      )
-    );
+      );
+
+      // Auto-convert BDT to USD in real-time
+      if (currencyCode === "BDT") {
+        const convertedUsd = convertBdtToUsd(value, bdtToUsdRate);
+        updated = updated.map((item) => {
+          if (item.currency === "USD") {
+            return {
+              ...item,
+              [field]: convertedUsd,
+            };
+          }
+          return item;
+        });
+      }
+
+      return updated;
+    });
+
+    if (currencyCode === "BDT") {
+      if (field === "regularPrice") {
+        setPrice(value);
+      } else if (field === "discountPrice") {
+        setDiscount(value);
+      }
+    }
   };
 
-  // Inclusions handlers
+  // ── MULTI-IMAGE HANDLERS (1 Mandatory, Max 5) ──
+  const handleAddImageUrl = () => {
+    const trimmed = imageUrlInput.trim();
+    if (!trimmed) return;
+    if (images.length >= 5) {
+      setErrMsg("Maximum 5 project images allowed. Please remove an image first.");
+      return;
+    }
+    setErrMsg("");
+    setImages((prev) => [...prev, trimmed]);
+    setImageUrlInput("");
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSetCoverImage = (index: number) => {
+    if (index === 0) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [selected] = next.splice(index, 1);
+      return [selected, ...next];
+    });
+  };
+
+  const handleMoveImage = (fromIdx: number, toIdx: number) => {
+    setImages((prev) => {
+      if (toIdx < 0 || toIdx >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      return next;
+    });
+  };
+
+  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = 5 - images.length;
+    if (remainingSlots <= 0) {
+      setErrMsg("Maximum 5 images allowed. Please remove an image before uploading more.");
+      return;
+    }
+
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    for (const file of filesToUpload) {
+      if (!file.type.startsWith("image/")) {
+        setErrMsg(`File "${file.name}" is not a valid image file.`);
+        return;
+      }
+      if (file.size > 15 * 1024 * 1024) {
+        setErrMsg(`"${file.name}" exceeds the 15MB file size limit.`);
+        return;
+      }
+    }
+
+    try {
+      setUploadingImage(true);
+      setErrMsg("");
+      const uploadedUrls: string[] = [];
+      for (const file of filesToUpload) {
+        const url = await uploadProjectImage(file, makeSlug(title) || "project");
+        uploadedUrls.push(url);
+      }
+      setImages((prev) => [...prev, ...uploadedUrls].slice(0, 5));
+    } catch (err: any) {
+      console.error("Multi-image upload failed:", err);
+      setErrMsg(err?.message || "Failed to upload some images.");
+    } finally {
+      setUploadingImage(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  // ── 3-TIER PRICING PLANS HANDLERS ──
+  const handlePlanChange = (tierIdx: number, field: string, value: any) => {
+    setPricingPlans((prev) => {
+      const next = [...prev];
+      next[tierIdx] = { ...next[tierIdx], [field]: value };
+      return next;
+    });
+  };
+
+  // Real-time BDT -> USD live auto-conversion
+  const handlePlanPriceChange = (tierIdx: number, bdtValue: string) => {
+    setPricingPlans((prev) => {
+      const next = [...prev];
+      const convertedUsd = convertBdtToUsd(bdtValue, bdtToUsdRate);
+      next[tierIdx] = {
+        ...next[tierIdx],
+        price: bdtValue,
+        usdPrice: bdtValue.trim() === "" ? "" : (convertedUsd || next[tierIdx].usdPrice || ""),
+      };
+      return next;
+    });
+  };
+
+  const handlePlanFeatureChange = (tierIdx: number, featIdx: number, text: string) => {
+    setPricingPlans((prev) => {
+      const next = [...prev];
+      const nextFeatures = [...(next[tierIdx]?.features || [])];
+      nextFeatures[featIdx] = { ...nextFeatures[featIdx], text };
+      next[tierIdx] = { ...next[tierIdx], features: nextFeatures };
+      return next;
+    });
+  };
+
+  const handlePlanFeatureToggle = (tierIdx: number, featIdx: number) => {
+    setPricingPlans((prev) => {
+      const next = [...prev];
+      const nextFeatures = [...(next[tierIdx]?.features || [])];
+      nextFeatures[featIdx] = {
+        ...nextFeatures[featIdx],
+        included: !nextFeatures[featIdx].included,
+      };
+      next[tierIdx] = { ...next[tierIdx], features: nextFeatures };
+      return next;
+    });
+  };
+
+  // Bulk comma-separated add for tier features (e.g. "x, y, z")
+  const handleAddPlanFeature = (tierIdx: number, rawText?: string) => {
+    const textToProcess = rawText !== undefined ? rawText : (tierFeatureInputs[tierIdx] || "");
+    const parts = textToProcess.includes(",")
+      ? textToProcess.split(",").map((s) => s.trim()).filter(Boolean)
+      : [textToProcess.trim()].filter(Boolean);
+
+    const itemsToAdd = parts.length > 0 ? parts : ["New Plan Feature"];
+
+    setPricingPlans((prev) => {
+      const next = [...prev];
+      const newItems = itemsToAdd.map((txt) => ({ text: txt, included: true }));
+      next[tierIdx] = {
+        ...next[tierIdx],
+        features: [...(next[tierIdx]?.features || []), ...newItems],
+      };
+      return next;
+    });
+
+    if (rawText === undefined) {
+      setTierFeatureInputs((prev) => ({ ...prev, [tierIdx]: "" }));
+    }
+  };
+
+  const handleRemovePlanFeature = (tierIdx: number, featIdx: number) => {
+    setPricingPlans((prev) => {
+      const next = [...prev];
+      const nextFeatures = (next[tierIdx]?.features || []).filter((_, i) => i !== featIdx);
+      next[tierIdx] = { ...next[tierIdx], features: nextFeatures };
+      return next;
+    });
+  };
+
+  const handleResetPlans = () => {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm("Reset all 3 pricing tiers to standard defaults derived from project price?")
+    ) {
+      setPricingPlans(getDefaultPricingPlans({ price, discount }));
+    }
+  };
+
+  // ── INCLUSIONS HANDLERS (With Bulk Comma-Separated Support) ──
   const handleWhatsIncludedChange = (idx: number, val: string) => {
     setWhatsIncluded((prev) => {
       const next = [...prev];
@@ -157,9 +427,36 @@ export default function AddProjectPage() {
       return next;
     });
   };
-  const handleAddWhatsIncluded = () => {
-    setWhatsIncluded((prev) => [...prev, "New included feature item"]);
+
+  const handleAddWhatsIncluded = (rawText?: string) => {
+    const textToProcess = rawText !== undefined ? rawText : bulkIncludedInput;
+    if (!textToProcess.trim()) {
+      setWhatsIncluded((prev) => [...prev, "New included feature item"]);
+      return;
+    }
+    const parts = textToProcess.includes(",")
+      ? textToProcess.split(",").map((s) => s.trim()).filter(Boolean)
+      : [textToProcess.trim()].filter(Boolean);
+
+    if (parts.length > 0) {
+      setWhatsIncluded((prev) => [...prev, ...parts]);
+      if (rawText === undefined) setBulkIncludedInput("");
+    }
   };
+
+  const handleSplitWhatsIncluded = (idx: number) => {
+    const current = whatsIncluded[idx];
+    if (!current || !current.includes(",")) return;
+    const parts = current.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      setWhatsIncluded((prev) => {
+        const next = [...prev];
+        next.splice(idx, 1, ...parts);
+        return next;
+      });
+    }
+  };
+
   const handleRemoveWhatsIncluded = (idx: number) => {
     setWhatsIncluded((prev) => prev.filter((_, i) => i !== idx));
   };
@@ -171,14 +468,41 @@ export default function AddProjectPage() {
       return next;
     });
   };
-  const handleAddNotIncluded = () => {
-    setNotIncluded((prev) => [...prev, "Excluded feature item"]);
+
+  const handleAddNotIncluded = (rawText?: string) => {
+    const textToProcess = rawText !== undefined ? rawText : bulkNotIncludedInput;
+    if (!textToProcess.trim()) {
+      setNotIncluded((prev) => [...prev, "Excluded feature item"]);
+      return;
+    }
+    const parts = textToProcess.includes(",")
+      ? textToProcess.split(",").map((s) => s.trim()).filter(Boolean)
+      : [textToProcess.trim()].filter(Boolean);
+
+    if (parts.length > 0) {
+      setNotIncluded((prev) => [...prev, ...parts]);
+      if (rawText === undefined) setBulkNotIncludedInput("");
+    }
   };
+
+  const handleSplitNotIncluded = (idx: number) => {
+    const current = notIncluded[idx];
+    if (!current || !current.includes(",")) return;
+    const parts = current.split(",").map((s) => s.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      setNotIncluded((prev) => {
+        const next = [...prev];
+        next.splice(idx, 1, ...parts);
+        return next;
+      });
+    }
+  };
+
   const handleRemoveNotIncluded = (idx: number) => {
     setNotIncluded((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // FAQ handlers
+  // ── FAQ HANDLERS ──
   const handleFaqChange = (idx: number, field: "question" | "answer", val: string) => {
     setFaqs((prev) => {
       const next = [...prev];
@@ -203,7 +527,8 @@ export default function AddProjectPage() {
     if (typeof window !== "undefined" && window.confirm("Reset all entered fields to blank draft?")) {
       setTitle("");
       setSubtitle("");
-      setImageUrl("");
+      setImages([]);
+      setImageUrlInput("");
       setDetails("");
       setInstallation("");
       setTools("");
@@ -218,6 +543,7 @@ export default function AddProjectPage() {
       setWhatsIncluded(DEFAULT_WHATS_INCLUDED);
       setNotIncluded(DEFAULT_NOT_INCLUDED);
       setFaqs(DEFAULT_FAQS);
+      setPricingPlans(getDefaultPricingPlans());
       setErrMsg("");
     }
   };
@@ -230,34 +556,6 @@ export default function AddProjectPage() {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
 
-  const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setErrMsg("Please select a valid image file (PNG, JPG, WebP, SVG, etc.).");
-      return;
-    }
-
-    if (file.size > 15 * 1024 * 1024) {
-      setErrMsg("Image file size must be under 15MB.");
-      return;
-    }
-
-    try {
-      setUploadingImage(true);
-      setErrMsg("");
-      const uploadedUrl = await uploadProjectImage(file, makeSlug(title) || "cover");
-      setImageUrl(uploadedUrl);
-    } catch (err: any) {
-      console.error("Image upload failed:", err);
-      setErrMsg(err?.message || "Failed to upload image. You can also paste an image URL directly.");
-    } finally {
-      setUploadingImage(false);
-      if (e.target) e.target.value = "";
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrMsg("");
@@ -267,6 +565,19 @@ export default function AddProjectPage() {
       const slug = makeSlug(title);
       if (!slug) {
         setErrMsg("Title is required to generate a valid project slug.");
+        setLoading(false);
+        return;
+      }
+
+      // Mandatory images check (1 to 5)
+      if (images.length === 0) {
+        setErrMsg("Please add at least 1 project image (max 5). The first image will serve as the cover.");
+        setLoading(false);
+        return;
+      }
+
+      if (images.length > 5) {
+        setErrMsg("Maximum 5 project images allowed. Please remove excess images.");
         setLoading(false);
         return;
       }
@@ -289,22 +600,22 @@ export default function AddProjectPage() {
       );
       const bdtPricing = activePricing.find((p) => p.currency === "BDT");
 
+      const primaryCoverImage = images[0];
+
       const newProject = {
         slug,
         title: title.trim(),
         subtitle: subtitle.trim(),
-        imageUrl: imageUrl.trim(),
-        image: imageUrl.trim(),
+        imageUrl: primaryCoverImage,
+        image: primaryCoverImage,
+        images: images,
         details: details.trim(),
         installation: installation.trim(),
         tools: tools.split(",").map((t) => t.trim()).filter(Boolean),
         pricing: activePricing,
         price: bdtPricing?.regularPrice || price.trim(),
         discount: bdtPricing?.discountPrice || discount.trim(),
-        pricingPlans: getDefaultPricingPlans({
-          price: bdtPricing?.regularPrice || price.trim(),
-          discount: bdtPricing?.discountPrice || discount.trim(),
-        }),
+        pricingPlans: pricingPlans,
         category,
         tags,
         youtubeUrl: youtubeUrl.trim() || DEFAULT_YOUTUBE_URL,
@@ -329,6 +640,7 @@ export default function AddProjectPage() {
       setLoading(false);
     }
   };
+
 
   if (!authReady || !isAdmin) {
     return (
@@ -445,7 +757,8 @@ export default function AddProjectPage() {
                     setCreatedSlug("");
                     setTitle("");
                     setSubtitle("");
-                    setImageUrl("");
+                    setImages([]);
+                    setImageUrlInput("");
                     setDetails("");
                     setInstallation("");
                     setTools("");
@@ -497,162 +810,245 @@ export default function AddProjectPage() {
             </div>
           </div>
 
-          {/* SECTION: PROJECT COVER & SHOWCASE IMAGE */}
+          {/* SECTION: MULTI-IMAGE MANAGEMENT (1 Mandatory, Max 5) */}
           <div className="bg-[#0e0e1a]/80 border border-white/[0.08] rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/[0.06]">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="w-6 h-6 rounded-lg bg-teal-400/10 border border-teal-400/30 text-teal-300 flex items-center justify-center text-xs font-bold">
-                    <span className="material-symbols-outlined text-[15px]">image</span>
+                    <span className="material-symbols-outlined text-[15px]">photo_library</span>
                   </span>
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    Project Showcase / Cover Image
-                    <span className="bg-teal-500/15 text-teal-300 text-[10px] font-mono px-2 py-0.5 rounded-full border border-teal-500/30">
-                      Archive & Details
+                    Project Showcase & Gallery Images
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                      images.length > 0
+                        ? "bg-teal-500/15 text-teal-300 border-teal-500/30"
+                        : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                    }`}>
+                      {images.length} / 5 Images {images.length === 0 ? "(1 Mandatory)" : ""}
                     </span>
                   </h3>
                 </div>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Featured in the Archive project grid and header banner on the project details page.
+                  At least 1 cover image is mandatory. Add up to 5 images for an adaptive multi-angle showcase grid.
                 </p>
               </div>
 
-              {imageUrl && (
+              {images.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setImageUrl("")}
-                  className="self-start sm:self-auto px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-[11px] font-medium transition flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => {
+                    if (window.confirm("Clear all added project images?")) setImages([]);
+                  }}
+                  className="self-start sm:self-auto px-2.5 py-1 rounded-lg bg-white/[0.03] hover:bg-rose-500/10 border border-white/[0.08] hover:border-rose-500/30 text-gray-400 hover:text-rose-300 text-[11px] font-medium transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[14px]">delete</span>
-                  <span>Remove Image</span>
+                  <span>Clear All</span>
                 </button>
               )}
             </div>
 
-            <div className="grid md:grid-cols-2 gap-5 items-start">
-              {/* Image Input Controls */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center justify-between">
-                    <span>Direct Image URL</span>
-                    <span className="text-[10px] font-mono text-gray-500">Unsplash / Cloudinary / External</span>
-                  </label>
-                  <div className="relative">
+            {/* Empty state alert */}
+            {images.length === 0 && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs flex items-center gap-2.5">
+                <span className="material-symbols-outlined text-[18px] text-amber-400">warning</span>
+                <span>
+                  <strong>1 image is mandatory:</strong> Please upload or paste at least one image. The first image will automatically act as the primary storefront cover.
+                </span>
+              </div>
+            )}
+
+            {/* Input Controls (URL & Multi-File Upload) */}
+            <div className="grid md:grid-cols-2 gap-4 items-start">
+              {/* Direct URL Add */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-300 flex items-center justify-between">
+                  <span>Add Image by URL</span>
+                  <span className="text-[10px] font-mono text-gray-500">Unsplash / Cloudinary / Web Link</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
                     <input
                       type="url"
                       placeholder="https://images.unsplash.com/... or image link"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl pl-9 pr-9 text-xs text-white placeholder-gray-500 font-mono transition outline-none"
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddImageUrl();
+                        }
+                      }}
+                      disabled={images.length >= 5}
+                      className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-3 text-xs text-white placeholder-gray-500 font-mono transition outline-none disabled:opacity-50"
                     />
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[16px]">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[15px]">
                       link
                     </span>
-                    {imageUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setImageUrl("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
-                        title="Clear link"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">close</span>
-                      </button>
-                    )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    disabled={!imageUrlInput.trim() || images.length >= 5}
+                    className="h-10 px-3.5 bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 text-teal-300 rounded-xl text-xs font-semibold transition disabled:opacity-40 disabled:pointer-events-none flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">add</span>
+                    <span>Add</span>
+                  </button>
                 </div>
+              </div>
 
-                <div className="relative flex items-center py-1">
-                  <div className="flex-grow border-t border-white/[0.06]"></div>
-                  <span className="flex-shrink mx-3 text-[10px] font-mono text-gray-500 uppercase tracking-widest">
-                    OR UPLOAD FILE
-                  </span>
-                  <div className="flex-grow border-t border-white/[0.06]"></div>
-                </div>
-
+              {/* Local File Upload */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-300 flex items-center justify-between">
+                  <span>Upload Local File(s)</span>
+                  <span className="text-[10px] font-mono text-gray-500">Select single or multiple (Max 15MB each)</span>
+                </label>
                 <div>
                   <input
                     type="file"
-                    id="add-project-image-file"
+                    id="add-project-multi-files"
                     accept="image/*"
+                    multiple
                     onChange={handleImageFileUpload}
                     className="hidden"
-                    disabled={uploadingImage}
+                    disabled={uploadingImage || images.length >= 5}
                   />
                   <label
-                    htmlFor="add-project-image-file"
-                    className={`w-full h-12 rounded-xl border border-dashed flex items-center justify-center gap-2.5 px-4 text-xs font-semibold transition cursor-pointer ${
-                      uploadingImage
+                    htmlFor="add-project-multi-files"
+                    className={`w-full h-10 rounded-xl border border-dashed flex items-center justify-center gap-2 px-4 text-xs font-semibold transition cursor-pointer ${
+                      images.length >= 5
+                        ? "opacity-40 border-white/[0.08] bg-white/[0.02] pointer-events-none text-gray-500"
+                        : uploadingImage
                         ? "border-teal-400/50 bg-teal-500/10 text-teal-300 pointer-events-none"
                         : "border-white/[0.15] bg-white/[0.02] hover:bg-white/[0.05] hover:border-teal-400/50 text-gray-300 hover:text-white"
                     }`}
                   >
                     {uploadingImage ? (
                       <>
-                        <HelixLoader size={16} color="#14b8a6" />
-                        <span>Uploading & Processing Image...</span>
+                        <HelixLoader size={15} color="#14b8a6" />
+                        <span>Uploading Images...</span>
                       </>
+                    ) : images.length >= 5 ? (
+                      <span>Maximum 5 Images Reached</span>
                     ) : (
                       <>
-                        <span className="material-symbols-outlined text-teal-400 text-[18px]">
+                        <span className="material-symbols-outlined text-teal-400 text-[17px]">
                           cloud_upload
                         </span>
-                        <span>Click to Upload Local Image (Max 15MB)</span>
+                        <span>Click to Upload (Up to {5 - images.length} remaining)</span>
                       </>
                     )}
                   </label>
-                  <p className="text-[11px] text-gray-500 mt-1.5">
-                    Supports PNG, JPG, WebP, GIF, SVG. Automatically optimized for Firebase Storage & local fallback.
-                  </p>
-                </div>
-              </div>
-
-              {/* Image Preview Box */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                  Live Preview
-                </label>
-                <div className="relative w-full h-[156px] rounded-xl overflow-hidden border border-white/[0.08] bg-black/50 flex items-center justify-center group">
-                  {imageUrl ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imageUrl}
-                        alt="Project cover preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = "none";
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-3">
-                        <span className="text-[10px] font-mono text-gray-300 truncate max-w-[200px]">
-                          {imageUrl}
-                        </span>
-                        <a
-                          href={imageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2 py-1 rounded bg-black/60 border border-white/20 text-white text-[10px] flex items-center gap-1 hover:bg-black/90 transition"
-                        >
-                          <span className="material-symbols-outlined text-[12px]">open_in_new</span>
-                          <span>Open</span>
-                        </a>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center p-4">
-                      <span className="material-symbols-outlined text-3xl text-gray-600 block mb-1">
-                        add_photo_alternate
-                      </span>
-                      <p className="text-xs text-gray-400 font-medium">No cover image set</p>
-                      <p className="text-[10px] text-gray-500 mt-0.5">
-                        A default placeholder is shown in the Archive if omitted
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
+
+            {/* Gallery Image Thumbnails & Management List */}
+            {images.length > 0 && (
+              <div className="pt-2">
+                <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2.5">
+                  Current Gallery Images ({images.length} of 5)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                  {images.map((imgUrl, idx) => {
+                    const isCover = idx === 0;
+                    return (
+                      <div
+                        key={idx}
+                        className={`relative rounded-xl overflow-hidden border p-2 bg-black/40 flex flex-col justify-between space-y-2 transition group ${
+                          isCover
+                            ? "border-teal-500/60 shadow-[0_0_15px_rgba(20,184,166,0.15)] ring-1 ring-teal-400/40"
+                            : "border-white/[0.08] hover:border-white/20"
+                        }`}
+                      >
+                        {/* Image Preview Container */}
+                        <div className="relative w-full h-28 rounded-lg overflow-hidden bg-black/60 flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={imgUrl}
+                            alt={`Project upload ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.opacity = "0.3";
+                            }}
+                          />
+
+                          {/* Badge indicator */}
+                          <span
+                            className={`absolute top-1.5 left-1.5 text-[9px] font-mono font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                              isCover
+                                ? "bg-teal-500 text-black shadow-md"
+                                : "bg-black/75 text-gray-300 border border-white/20"
+                            }`}
+                          >
+                            {isCover ? "★ Cover" : `#${idx + 1}`}
+                          </span>
+
+                          {/* External preview link */}
+                          <a
+                            href={imgUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="absolute bottom-1.5 right-1.5 p-1 rounded-md bg-black/80 text-gray-300 hover:text-white opacity-0 group-hover:opacity-100 transition"
+                            title="Open full image"
+                          >
+                            <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+                          </a>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/[0.06]">
+                          <div className="flex items-center gap-1">
+                            {!isCover && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetCoverImage(idx)}
+                                className="text-[10px] px-2 py-0.5 rounded bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 transition cursor-pointer"
+                                title="Make this the primary cover image"
+                              >
+                                Make Cover
+                              </button>
+                            )}
+                            {idx > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleMoveImage(idx, idx - 1)}
+                                className="p-1 rounded text-gray-400 hover:text-white bg-white/[0.04] transition"
+                                title="Move left"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">arrow_back</span>
+                              </button>
+                            )}
+                            {idx < images.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleMoveImage(idx, idx + 1)}
+                                className="p-1 rounded text-gray-400 hover:text-white bg-white/[0.04] transition"
+                                title="Move right"
+                              >
+                                <span className="material-symbols-outlined text-[13px]">arrow_forward</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(idx)}
+                            className="p-1 rounded text-gray-400 hover:text-rose-300 hover:bg-rose-500/10 transition"
+                            title="Remove image"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
+
 
           {/* SECTION 2: MULTI-CURRENCY PRICING MATRIX */}
           <div className="bg-gradient-to-br from-teal-500/[0.03] to-transparent border border-teal-500/20 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
@@ -975,26 +1371,51 @@ export default function AddProjectPage() {
             </div>
           </div>
 
-          {/* SECTION 7: INCLUSIONS & EXCLUSIONS */}
+          {/* SECTION 7: INCLUSIONS & EXCLUSIONS (With Bulk Comma-Separated Support) */}
           <div className="grid md:grid-cols-2 gap-5">
             {/* What's Included */}
-            <div className="bg-gradient-to-br from-emerald-500/[0.03] to-transparent border border-emerald-500/20 rounded-2xl p-5 space-y-3 shadow-xl">
+            <div className="bg-gradient-to-br from-emerald-500/[0.03] to-transparent border border-emerald-500/20 rounded-2xl p-5 space-y-3.5 shadow-xl">
               <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
                   <span className="w-5 h-5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center text-xs font-bold">
                     ✓
                   </span>
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                    What&apos;s Included
+                    What&apos;s Included ({whatsIncluded.length})
                   </h3>
                 </div>
                 <button
                   type="button"
-                  onClick={handleAddWhatsIncluded}
+                  onClick={() => handleAddWhatsIncluded()}
                   className="text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg font-semibold border border-emerald-500/30 transition flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[13px]">add</span>
-                  <span>Add Item</span>
+                  <span>Add Line</span>
+                </button>
+              </div>
+
+              {/* Bulk Quick Add Bar */}
+              <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-emerald-500/25 rounded-xl">
+                <input
+                  type="text"
+                  placeholder="Paste or type comma-separated items: e.g. Clean Code, 100+ Screens, Riverpod"
+                  value={bulkIncludedInput}
+                  onChange={(e) => setBulkIncludedInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddWhatsIncluded();
+                    }
+                  }}
+                  className="flex-1 h-8 bg-transparent px-2.5 text-xs text-white placeholder-gray-500 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddWhatsIncluded()}
+                  disabled={!bulkIncludedInput.trim()}
+                  className="h-7 px-2.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded-lg text-[11px] font-semibold border border-emerald-500/30 transition disabled:opacity-40 disabled:pointer-events-none shrink-0"
+                >
+                  Add Items
                 </button>
               </div>
 
@@ -1008,6 +1429,16 @@ export default function AddProjectPage() {
                       onChange={(e) => handleWhatsIncludedChange(idx, e.target.value)}
                       className="w-full h-9 bg-black/40 border border-white/[0.08] focus:border-emerald-400/70 rounded-lg px-3 text-xs text-white placeholder-gray-500 outline-none transition"
                     />
+                    {item.includes(",") && (
+                      <button
+                        type="button"
+                        onClick={() => handleSplitWhatsIncluded(idx)}
+                        className="px-2 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-[10px] font-mono border border-emerald-500/30 transition shrink-0"
+                        title="Split comma-separated values into individual items"
+                      >
+                        Split
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemoveWhatsIncluded(idx)}
@@ -1022,23 +1453,48 @@ export default function AddProjectPage() {
             </div>
 
             {/* Not Included */}
-            <div className="bg-gradient-to-br from-amber-500/[0.03] to-transparent border border-amber-500/20 rounded-2xl p-5 space-y-3 shadow-xl">
+            <div className="bg-gradient-to-br from-amber-500/[0.03] to-transparent border border-amber-500/20 rounded-2xl p-5 space-y-3.5 shadow-xl">
               <div className="flex items-center justify-between pb-2 border-b border-white/[0.06]">
                 <div className="flex items-center gap-2">
                   <span className="w-5 h-5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center text-xs font-bold">
                     ✕
                   </span>
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Not Included
+                    Not Included ({notIncluded.length})
                   </h3>
                 </div>
                 <button
                   type="button"
-                  onClick={handleAddNotIncluded}
+                  onClick={() => handleAddNotIncluded()}
                   className="text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg font-semibold border border-amber-500/30 transition flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[13px]">add</span>
-                  <span>Add Item</span>
+                  <span>Add Line</span>
+                </button>
+              </div>
+
+              {/* Bulk Quick Add Bar */}
+              <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-amber-500/25 rounded-xl">
+                <input
+                  type="text"
+                  placeholder="Paste or type comma-separated items: e.g. Domain, Hosting, Custom API"
+                  value={bulkNotIncludedInput}
+                  onChange={(e) => setBulkNotIncludedInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddNotIncluded();
+                    }
+                  }}
+                  className="flex-1 h-8 bg-transparent px-2.5 text-xs text-white placeholder-gray-500 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAddNotIncluded()}
+                  disabled={!bulkNotIncludedInput.trim()}
+                  className="h-7 px-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg text-[11px] font-semibold border border-amber-500/30 transition disabled:opacity-40 disabled:pointer-events-none shrink-0"
+                >
+                  Add Items
                 </button>
               </div>
 
@@ -1052,6 +1508,16 @@ export default function AddProjectPage() {
                       onChange={(e) => handleNotIncludedChange(idx, e.target.value)}
                       className="w-full h-9 bg-black/40 border border-white/[0.08] focus:border-amber-400/70 rounded-lg px-3 text-xs text-white placeholder-gray-500 outline-none transition"
                     />
+                    {item.includes(",") && (
+                      <button
+                        type="button"
+                        onClick={() => handleSplitNotIncluded(idx)}
+                        className="px-2 py-1 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/30 transition shrink-0"
+                        title="Split comma-separated values into individual items"
+                      >
+                        Split
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemoveNotIncluded(idx)}
@@ -1140,74 +1606,413 @@ export default function AddProjectPage() {
             </div>
           </div>
 
-          {/* SECTION 9: CATEGORY & TAGS */}
-          <div className="space-y-5">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-gray-300">
-                  Category <span className="text-teal-400">*</span>
-                </label>
+          {/* SECTION 9: 3-TIER PRICING PLANS MANAGEMENT (With BDT Auto-Conversion & Comma Input) */}
+          <div className="bg-gradient-to-br from-cyan-500/[0.03] to-transparent border border-cyan-500/30 rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <h3 className="text-sm sm:text-base font-bold text-white">
+                    Pricing Plans (3-Tier Management)
+                  </h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-300">
+                    Live BDT ➔ USD Sync
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Configure Individual, Studio, and Enterprise tiers. Typing BDT automatically converts to USD (editable).
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleResetPlans}
+                  className="text-xs bg-white/[0.04] hover:bg-white/[0.08] text-gray-400 hover:text-white px-3 py-1.5 rounded-xl border border-white/[0.08] transition"
+                >
+                  Reset Standard Defaults
+                </button>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-5">
+              {pricingPlans.map((tier, tIdx) => {
+                const isPopular = !!tier.isPopular;
+                return (
+                  <div
+                    key={tier.id || tIdx}
+                    className={`rounded-2xl p-4 sm:p-5 border flex flex-col justify-between space-y-4 transition ${
+                      isPopular
+                        ? "bg-cyan-950/20 border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.12)]"
+                        : "bg-black/30 border-white/[0.07]"
+                    }`}
+                  >
+                    <div className="space-y-3.5">
+                      {/* Header line */}
+                      <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/[0.06]">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/[0.06] text-gray-300 font-bold uppercase">
+                          Tier {tIdx + 1}: {tier.id}
+                        </span>
+
+                        <label className="flex items-center gap-1.5 text-xs text-cyan-300 font-medium cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={isPopular}
+                            onChange={(e) => handlePlanChange(tIdx, "isPopular", e.target.checked)}
+                            className="rounded border-gray-600 text-cyan-500 focus:ring-0 cursor-pointer"
+                          />
+                          <span>Most Popular</span>
+                        </label>
+                      </div>
+
+                      {/* Tier Name */}
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-400 mb-1">
+                          Tier Name
+                        </label>
+                        <input
+                          type="text"
+                          value={tier.name || ""}
+                          onChange={(e) => handlePlanChange(tIdx, "name", e.target.value)}
+                          placeholder="e.g. Studio License"
+                          className="w-full h-10 bg-black/50 border border-white/[0.08] focus:border-cyan-400/70 rounded-xl px-3 text-xs sm:text-sm font-bold text-white outline-none transition"
+                        />
+                      </div>
+
+                      {/* Tagline */}
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-400 mb-1">
+                          Tagline / Value Proposition
+                        </label>
+                        <input
+                          type="text"
+                          value={tier.tagline || ""}
+                          onChange={(e) => handlePlanChange(tIdx, "tagline", e.target.value)}
+                          placeholder="e.g. For full commercial ownership"
+                          className="w-full h-9 bg-black/50 border border-white/[0.08] focus:border-cyan-400/70 rounded-xl px-3 text-xs text-white outline-none transition"
+                        />
+                      </div>
+
+                      {/* Pricing Specs (BDT, USD, Period) */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-400 mb-1 truncate">
+                            BDT (৳)
+                          </label>
+                          <input
+                            type="text"
+                            value={tier.price || ""}
+                            onChange={(e) => handlePlanPriceChange(tIdx, e.target.value)}
+                            placeholder="30000"
+                            className="w-full h-9 bg-black/50 border border-white/[0.08] focus:border-cyan-400/70 rounded-lg px-2.5 text-xs font-mono text-white outline-none transition"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-emerald-400 mb-1 truncate">
+                            USD ($)
+                          </label>
+                          <input
+                            type="text"
+                            value={tier.usdPrice || ""}
+                            onChange={(e) => handlePlanChange(tIdx, "usdPrice", e.target.value)}
+                            placeholder="280"
+                            className="w-full h-9 bg-black/50 border border-white/[0.08] focus:border-emerald-400/70 rounded-lg px-2.5 text-xs font-mono text-emerald-300 outline-none transition"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-medium text-gray-400 mb-1 truncate">
+                            Period
+                          </label>
+                          <input
+                            type="text"
+                            value={tier.billingPeriod || ""}
+                            onChange={(e) => handlePlanChange(tIdx, "billingPeriod", e.target.value)}
+                            placeholder="one-time"
+                            className="w-full h-9 bg-black/50 border border-white/[0.08] focus:border-cyan-400/70 rounded-lg px-2 text-xs font-mono text-white outline-none transition"
+                          />
+                        </div>
+                      </div>
+
+                      {/* CTA Button Text */}
+                      <div>
+                        <label className="block text-[10px] font-medium text-gray-400 mb-1">
+                          Button CTA Text
+                        </label>
+                        <input
+                          type="text"
+                          value={tier.buttonText || ""}
+                          onChange={(e) => handlePlanChange(tIdx, "buttonText", e.target.value)}
+                          placeholder="Acquire License"
+                          className="w-full h-9 bg-black/50 border border-white/[0.08] focus:border-cyan-400/70 rounded-lg px-3 text-xs font-mono text-white outline-none transition"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Features Checklist */}
+                    <div className="space-y-2 pt-3 border-t border-white/[0.06]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-gray-300">
+                          Features ({tier.features?.length || 0})
+                        </span>
+                      </div>
+
+                      {/* Quick Add with Comma Separation */}
+                      <div className="flex items-center gap-1.5 p-1 bg-black/60 border border-white/[0.08] rounded-lg">
+                        <input
+                          type="text"
+                          placeholder="Add feature(s), comma-separated..."
+                          value={tierFeatureInputs[tIdx] || ""}
+                          onChange={(e) =>
+                            setTierFeatureInputs((prev) => ({ ...prev, [tIdx]: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddPlanFeature(tIdx);
+                            }
+                          }}
+                          className="flex-1 bg-transparent px-2 text-[11px] text-white placeholder-gray-500 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddPlanFeature(tIdx)}
+                          className="px-2 py-0.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 rounded text-[11px] font-semibold border border-cyan-500/30 transition shrink-0"
+                        >
+                          + Add
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                        {(tier.features || []).map((feat, fIdx) => (
+                          <div
+                            key={fIdx}
+                            className="flex items-center gap-2 bg-black/40 border border-white/[0.05] p-2 rounded-lg"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={feat.included}
+                              onChange={() => handlePlanFeatureToggle(tIdx, fIdx)}
+                              title={feat.included ? "Mark as Excluded" : "Mark as Included"}
+                              className="rounded text-cyan-500 focus:ring-0 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={feat.text}
+                              onChange={(e) => handlePlanFeatureChange(tIdx, fIdx, e.target.value)}
+                              className={`bg-transparent text-xs w-full focus:outline-none ${
+                                feat.included ? "text-gray-200" : "text-gray-500 line-through"
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePlanFeature(tIdx, fIdx)}
+                              className="text-gray-500 hover:text-rose-400 text-xs px-1 cursor-pointer"
+                              title="Delete feature"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SECTION 10: SEARCHABLE CATEGORY & TAGS WITH INSTANT INLINE CREATION */}
+          <div className="space-y-6">
+            {/* Category Combobox / Instant Add */}
+            <div className="bg-[#0e0e1a]/80 border border-white/[0.08] rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between pb-1 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-teal-400 text-[18px]">category</span>
+                  <label className="text-xs font-semibold text-gray-200 uppercase tracking-wider">
+                    Category <span className="text-teal-400">*</span>
+                  </label>
+                  <span className="bg-teal-500/10 text-teal-300 font-mono text-[10px] px-2 py-0.5 rounded-full border border-teal-500/20 uppercase">
+                    Active: {category}
+                  </span>
+                </div>
                 <Link
                   href="/admin/manage-categories"
                   target="_blank"
                   className="text-[10px] font-mono text-teal-400 hover:text-teal-300 transition flex items-center gap-0.5"
-                  title="Open Category Manager"
+                  title="Open dedicated Category Manager"
                 >
-                  <span>+ Manage Categories</span>
+                  <span>Manage All</span>
                   <span className="material-symbols-outlined text-[12px]">open_in_new</span>
                 </Link>
               </div>
+
+              {/* Search + Create Bar */}
               <div className="relative">
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl px-4 text-sm text-white font-medium outline-none transition cursor-pointer appearance-none capitalize"
-                >
-                  {availableCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-[20px]">
-                  expand_more
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search categories or type new to create instant..."
+                      value={categorySearch}
+                      onChange={(e) => {
+                        setCategorySearch(e.target.value);
+                        setCategoryDropdownOpen(true);
+                      }}
+                      onFocus={() => setCategoryDropdownOpen(true)}
+                      className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-4 text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition"
+                    />
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[17px]">
+                      search
+                    </span>
+                  </div>
+
+                  {categorySearch.trim() && (
+                    <button
+                      type="button"
+                      disabled={isCreatingCategory}
+                      onClick={() => handleCreateCategory(categorySearch)}
+                      className="h-11 px-3.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">add</span>
+                      <span>Create &quot;{categorySearch.trim()}&quot;</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown Options */}
+                {categoryDropdownOpen && (
+                  <div className="mt-2 p-2 bg-[#0a0a14] border border-white/[0.12] rounded-xl shadow-2xl space-y-1 max-h-52 overflow-y-auto z-20">
+                    <div className="px-2 py-1 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
+                      Available Categories ({availableCategories.length})
+                    </div>
+                    {availableCategories
+                      .filter((c) => c.toLowerCase().includes(categorySearch.toLowerCase()))
+                      .map((cat) => {
+                        const isSelected = category.toLowerCase() === cat.toLowerCase();
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              setCategory(cat);
+                              setCategorySearch("");
+                              setCategoryDropdownOpen(false);
+                            }}
+                            className={`w-full px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition cursor-pointer text-left capitalize ${
+                              isSelected
+                                ? "bg-teal-500/20 text-teal-300 border border-teal-500/30"
+                                : "text-gray-300 hover:bg-white/[0.05] hover:text-white"
+                            }`}
+                          >
+                            <span>{cat}</span>
+                            {isSelected && (
+                              <span className="material-symbols-outlined text-[14px] text-teal-400">
+                                check
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+
+                    {categorySearch.trim() &&
+                      !availableCategories.some(
+                        (c) => c.toLowerCase() === categorySearch.trim().toLowerCase()
+                      ) && (
+                        <button
+                          type="button"
+                          onClick={() => handleCreateCategory(categorySearch)}
+                          className="w-full px-3 py-2 rounded-lg text-xs font-semibold text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                          <span>Create category &quot;{categorySearch.trim()}&quot; and select</span>
+                        </button>
+                      )}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-semibold text-gray-300">
-                  Tags
-                </label>
-                <span className="text-[11px] font-mono text-gray-500">
-                  {tags.length} selected
-                </span>
+            {/* Tags Combobox / Instant Add */}
+            <div className="bg-[#0e0e1a]/80 border border-white/[0.08] rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between pb-1 border-b border-white/[0.06]">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-teal-400 text-[18px]">label</span>
+                  <label className="text-xs font-semibold text-gray-200 uppercase tracking-wider">
+                    Tags ({tags.length} selected)
+                  </label>
+                </div>
+                <Link
+                  href="/admin/manage-tags"
+                  target="_blank"
+                  className="text-[10px] font-mono text-teal-400 hover:text-teal-300 transition flex items-center gap-0.5"
+                  title="Open dedicated Tag Manager"
+                >
+                  <span>Manage All</span>
+                  <span className="material-symbols-outlined text-[12px]">open_in_new</span>
+                </Link>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {availableTags.map((tag) => {
-                  const isSelected = tags.includes(tag.id);
-                  return (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition flex items-center gap-1.5 cursor-pointer select-none ${
-                        isSelected
-                          ? "bg-teal-500/20 border-teal-400/50 text-teal-300"
-                          : "bg-white/[0.03] border-white/[0.08] text-gray-400 hover:text-white hover:border-white/20"
-                      }`}
-                      onClick={() => handleTagToggle(tag.id)}
-                    >
-                      {isSelected && (
-                        <span className="material-symbols-outlined text-[13px]">check</span>
-                      )}
-                      <span>{tag.name}</span>
-                    </button>
-                  );
-                })}
+
+              {/* Tag Search + Inline Create */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search existing tags or type to create new..."
+                    value={tagSearch}
+                    onChange={(e) => setTagSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && tagSearch.trim()) {
+                        e.preventDefault();
+                        handleCreateTag(tagSearch);
+                      }
+                    }}
+                    className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-4 text-xs text-white placeholder-gray-500 outline-none transition"
+                  />
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">
+                    search
+                  </span>
+                </div>
+                {tagSearch.trim() && (
+                  <button
+                    type="button"
+                    disabled={isCreatingTag}
+                    onClick={() => handleCreateTag(tagSearch)}
+                    className="h-10 px-3.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">add</span>
+                    <span>Create &quot;{tagSearch.trim()}&quot;</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Tag Pills */}
+              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+                {availableTags
+                  .filter((t) => t.name.toLowerCase().includes(tagSearch.toLowerCase()))
+                  .map((tag) => {
+                    const isSelected = tags.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition flex items-center gap-1.5 cursor-pointer select-none ${
+                          isSelected
+                            ? "bg-teal-500/20 border-teal-400/50 text-teal-300"
+                            : "bg-white/[0.03] border-white/[0.08] text-gray-400 hover:text-white hover:border-white/20"
+                        }`}
+                        onClick={() => handleTagToggle(tag.id)}
+                      >
+                        {isSelected && (
+                          <span className="material-symbols-outlined text-[13px]">check</span>
+                        )}
+                        <span>{tag.name}</span>
+                      </button>
+                    );
+                  })}
               </div>
             </div>
           </div>
+
 
           {/* SECTION 10: PUBLISH TOGGLE */}
           <div

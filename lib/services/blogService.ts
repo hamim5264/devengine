@@ -35,6 +35,7 @@ export const INITIAL_BLOGS: Omit<BlogPost, "id">[] = [
     featured: true,
     gridSpan: "hero",
     tags: ["Success Story", "System Architecture", "Next.js", "WebGL", "Production"],
+    order: 1,
     stats: [
       { label: "Target FPS", value: "60 FPS" },
       { label: "Build Time", value: "90 Days" },
@@ -85,6 +86,7 @@ Extreme performance is not an afterthought; it is a discipline. When you value t
     featured: false,
     gridSpan: "tall",
     tags: ["Failure Story", "Post-Mortem", "Database", "Resilience", "DevOps"],
+    order: 2,
     stats: [
       { label: "Downtime", value: "48 Hours" },
       { label: "Locked Queries", value: "12,400" },
@@ -131,6 +133,7 @@ Today, no migration touches production without automated shadow-traffic dry runs
     featured: false,
     gridSpan: "wide",
     tags: ["Milestone", "Enterprise", "Commercial License", "Scaling"],
+    order: 3,
     stats: [
       { label: "Licenses Deployed", value: "100+" },
       { label: "Global Reach", value: "14 Countries" },
@@ -174,6 +177,7 @@ Our customers choose DevEngine because we don't sell bloated monthly lock-ins—
     featured: false,
     gridSpan: "normal",
     tags: ["Engineering", "WebGL", "Three.js", "React 19", "Performance"],
+    order: 4,
     stats: [
       { label: "GC Pauses", value: "0 ms" },
       { label: "Render Budget", value: "16.6 ms" },
@@ -210,6 +214,7 @@ Combining modern React lifecycle rendering with WebGL animation loops frequently
     featured: false,
     gridSpan: "normal",
     tags: ["Philosophy", "Craftsmanship", "Studio Culture", "Quality"],
+    order: 5,
     isPublished: true,
     publishedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
@@ -224,6 +229,66 @@ At DevEngine, we reject the notion that business software should feel dull, slow
 3. **Resilience by Design**: Assume networks will fail, disks will throttle, and users will make mistakes. Build systems that absorb stress and recover automatically.`,
   },
 ];
+
+/**
+ * Recursively removes undefined fields from objects before saving to Firestore.
+ * Firestore throws a fatal error if any field is undefined.
+ */
+export function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): Partial<T> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) {
+      continue;
+    }
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      result[key] = sanitizeFirestoreData(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as Partial<T>;
+}
+
+/**
+ * Sorts blogs consistently:
+ * 1. Respects explicit display order (order: 1, 2, ... 9, 10)
+ * 2. Unordered posts are assigned the remaining natural slots (1..8) by publication date
+ * 3. Guarantees posts with order 9 and 10 stay at position 9 and 10
+ */
+export function sortBlogList(list: BlogPost[]): BlogPost[] {
+  const explicitOrders = new Set<number>();
+  for (const b of list) {
+    if (typeof b.order === "number") {
+      explicitOrders.add(b.order);
+    }
+  }
+
+  // Items without explicit order sorted by date descending (their natural sequence)
+  const unOrdered = list
+    .filter((b) => typeof b.order !== "number")
+    .sort((a, b) => {
+      const timeA = new Date(a.publishedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.publishedAt || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+
+  // Assign virtual order to unordered items in available slots (1, 2, 3...)
+  let slot = 1;
+  const virtualMap = new Map<string, number>();
+  for (const item of unOrdered) {
+    while (explicitOrders.has(slot)) {
+      slot++;
+    }
+    virtualMap.set(item.id, slot);
+    slot++;
+  }
+
+  return list.slice().sort((a, b) => {
+    const orderA = typeof a.order === "number" ? a.order : virtualMap.get(a.id) ?? 999;
+    const orderB = typeof b.order === "number" ? b.order : virtualMap.get(b.id) ?? 999;
+    return orderA - orderB;
+  });
+}
 
 /**
  * Fetch all published blogs for public view
@@ -248,15 +313,7 @@ export async function getPublishedBlogs(): Promise<BlogPost[]> {
     }
 
     const list: BlogPost[] = Array.from(uniqueMap.values());
-
-    // Sort descending by date in memory (zero Firebase composite index needed)
-    list.sort((a, b) => {
-      const timeA = new Date(a.publishedAt || a.createdAt || 0).getTime();
-      const timeB = new Date(b.publishedAt || b.createdAt || 0).getTime();
-      return timeB - timeA;
-    });
-
-    return list;
+    return sortBlogList(list);
   } catch (err) {
     console.error("Error fetching published blogs:", err);
     return [];
@@ -274,14 +331,7 @@ export async function getAllBlogs(): Promise<BlogPost[]> {
       ...(d.data() as any),
     }));
 
-    // Sort descending by createdAt in memory
-    list.sort((a, b) => {
-      const timeA = new Date(a.createdAt || 0).getTime();
-      const timeB = new Date(b.createdAt || 0).getTime();
-      return timeB - timeA;
-    });
-
-    return list;
+    return sortBlogList(list);
   } catch (err) {
     console.error("Error fetching all blogs:", err);
     return [];
@@ -327,11 +377,13 @@ export async function createBlog(
   const newPost: BlogPost = {
     ...data,
     id: docRef.id,
+    order: typeof data.order === "number" ? data.order : 1,
     createdAt: now,
     updatedAt: now,
     publishedAt: data.isPublished ? data.publishedAt || now : "",
   };
-  await setDoc(docRef, newPost);
+  const sanitized = sanitizeFirestoreData(newPost);
+  await setDoc(docRef, sanitized);
   return docRef.id;
 }
 
@@ -343,10 +395,11 @@ export async function updateBlog(
   data: Partial<BlogPost>
 ): Promise<void> {
   const docRef = doc(db, COLLECTION_NAME, id);
-  await updateDoc(docRef, {
+  const sanitized = sanitizeFirestoreData({
     ...data,
     updatedAt: new Date().toISOString(),
   });
+  await updateDoc(docRef, sanitized);
 }
 
 /**

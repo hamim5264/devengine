@@ -468,13 +468,13 @@ export default function ManageProjectsPage() {
                   {/* Top content */}
                   <div>
                     {/* Project Cover Thumbnail (if present) */}
-                    {(project.imageUrl || project.image) && (
-                      <div className="relative w-full h-32 rounded-xl overflow-hidden mb-3.5 border border-white/[0.08] bg-black/40">
+                    {((project as any).images?.[0] || project.imageUrl || project.image) && (
+                      <div className="relative w-full h-44 sm:h-48 rounded-xl overflow-hidden mb-3.5 border border-white/[0.08] bg-black/40">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={project.imageUrl || project.image}
+                          src={(project as any).images?.[0] || project.imageUrl || project.image}
                           alt={project.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c16]/80 via-transparent to-transparent opacity-60 pointer-events-none" />
                       </div>

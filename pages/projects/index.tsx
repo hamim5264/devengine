@@ -292,9 +292,9 @@ export default function ArchivePage() {
     ? (config.featuredCaseStudy.customProjectUrl?.trim() || "/projects/case-study")
     : "/projects/case-study";
 
-  // 7. 4 Most Recent Projects for The Archive Bento Grid
-  const recent4Projects = useMemo(() => {
-    return filteredProjects.slice(0, 4);
+  // 7. 5 Most Recent Projects for The Archive Bento Grid (Max 5)
+  const recent5Projects = useMemo(() => {
+    return filteredProjects.slice(0, 5);
   }, [filteredProjects]);
 
   if (loading) {
@@ -810,97 +810,106 @@ export default function ArchivePage() {
             </div>
           ) : (
             <>
-              {/* Editorial Bento Grid: 4 Recent Projects */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[340px]">
+              {/* Editorial Bento Grid: Up to 5 Recent Projects (Row 1: 2-col + 1-col, Row 2: 3 x 1-col) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Card 1: Large Feature (spans 2 cols) */}
-                {recent4Projects[0] && (
+                {recent5Projects[0] && (
                   <Link
-                    href={`/projects/${recent4Projects[0].slug || recent4Projects[0].id}`}
-                    className="md:col-span-2 bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-8 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_30px_rgba(56,242,255,0.15)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    href={`/projects/${recent5Projects[0].slug || recent5Projects[0].id}`}
+                    className="md:col-span-2 bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_30px_rgba(56,242,255,0.15)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-space text-2xl sm:text-3xl font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-2">
-                          {recent4Projects[0].title}
-                        </h3>
-                        <p className="font-sans text-sm text-[#849495] max-w-md line-clamp-2">
-                          {recent4Projects[0].subtitle || recent4Projects[0].details}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
-                          {recent4Projects[0].category}
-                        </span>
-                        <span className="text-gray-500 group-hover:text-[#38f2ff] font-jetbrains text-sm transition-colors">
-                          ↗
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end w-full pt-4 gap-4">
-                      <div>
-                        <span className="font-jetbrains text-[10px] text-gray-400 uppercase tracking-widest block mb-1.5">
-                          Licensing Rates
-                        </span>
-                        <PriceDisplay
-                          prices={getProjectPrices(recent4Projects[0])}
-                          size="md"
-                        />
+                    <div>
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="max-w-xl">
+                          <h3 className="font-space text-2xl sm:text-3xl font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-2">
+                            {recent5Projects[0].title}
+                          </h3>
+                          <p className="font-sans text-sm text-[#849495] line-clamp-2">
+                            {recent5Projects[0].subtitle || recent5Projects[0].details}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
+                            {recent5Projects[0].category}
+                          </span>
+                          <span className="text-gray-500 group-hover:text-[#38f2ff] font-jetbrains text-sm transition-colors">
+                            ↗
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Project Image Frame */}
-                      <div className="w-48 sm:w-56 h-32 rounded-xl overflow-hidden border border-white/10 relative shadow-2xl group-hover:border-[#38f2ff]/40 transition-all flex-shrink-0">
+                      {/* Prominent High-Resolution Project Showcase */}
+                      <div className="w-full h-52 sm:h-64 rounded-xl overflow-hidden border border-white/10 relative shadow-2xl group-hover:border-[#38f2ff]/40 transition-all bg-black/40 my-3">
                         <Image
                           src={
-                            recent4Projects[0].imageUrl ||
+                            (recent5Projects[0] as any).images?.[0] ||
+                            recent5Projects[0].imageUrl ||
+                            (recent5Projects[0] as any).image ||
                             config.defaultProjectImages?.[0] ||
                             "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1000&auto=format&fit=crop"
                           }
-                          alt={recent4Projects[0].title}
+                          alt={recent5Projects[0].title}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                           unoptimized
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/80 via-transparent to-transparent pointer-events-none" />
                       </div>
                     </div>
+
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end w-full pt-4 border-t border-white/5 gap-3">
+                      <div>
+                        <span className="font-jetbrains text-[10px] text-gray-400 uppercase tracking-widest block mb-1">
+                          Licensing Rates
+                        </span>
+                        <PriceDisplay
+                          prices={getProjectPrices(recent5Projects[0])}
+                          size="md"
+                        />
+                      </div>
+                      <span className="font-jetbrains text-xs text-[#38f2ff] group-hover:underline flex items-center gap-1 font-semibold">
+                        View System Architecture →
+                      </span>
+                    </div>
                   </Link>
                 )}
 
-                {/* Card 2: Standard Bento Card */}
-                {recent4Projects[1] && (
+                {/* Card 2: Standard Bento Card (Row 1 Col 3) */}
+                {recent5Projects[1] && (
                   <Link
-                    href={`/projects/${recent4Projects[1].slug || recent4Projects[1].id}`}
+                    href={`/projects/${recent5Projects[1].slug || recent5Projects[1].id}`}
                     className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
                   >
                     <div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
-                          {recent4Projects[1].category}
+                          {recent5Projects[1].category}
                         </span>
                         <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
                           ↗
                         </span>
                       </div>
-                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1">
-                        {recent4Projects[1].title}
+                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
+                        {recent5Projects[1].title}
                       </h3>
-                      <p className="font-sans text-xs text-[#849495] line-clamp-2">
-                        {recent4Projects[1].subtitle || recent4Projects[1].details}
+                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
+                        {recent5Projects[1].subtitle || recent5Projects[1].details}
                       </p>
                     </div>
 
-                    {/* Project Image Frame */}
-                    <div className="w-full h-28 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all">
+                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
+                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
                       <Image
                         src={
-                          recent4Projects[1].imageUrl ||
+                          (recent5Projects[1] as any).images?.[0] ||
+                          recent5Projects[1].imageUrl ||
+                          (recent5Projects[1] as any).image ||
                           config.defaultProjectImages?.[1] ||
                           "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop"
                         }
-                        alt={recent4Projects[1].title}
+                        alt={recent5Projects[1].title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         unoptimized
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
@@ -911,47 +920,49 @@ export default function ArchivePage() {
                         Price
                       </span>
                       <PriceDisplay
-                        prices={getProjectPrices(recent4Projects[1])}
+                        prices={getProjectPrices(recent5Projects[1])}
                         size="sm"
                       />
                     </div>
                   </Link>
                 )}
 
-                {/* Card 3: Standard Bento Card */}
-                {recent4Projects[2] && (
+                {/* Card 3: Standard Bento Card (Row 2 Col 1) */}
+                {recent5Projects[2] && (
                   <Link
-                    href={`/projects/${recent4Projects[2].slug || recent4Projects[2].id}`}
+                    href={`/projects/${recent5Projects[2].slug || recent5Projects[2].id}`}
                     className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
                   >
                     <div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
-                          {recent4Projects[2].category}
+                          {recent5Projects[2].category}
                         </span>
                         <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
                           ↗
                         </span>
                       </div>
-                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1">
-                        {recent4Projects[2].title}
+                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
+                        {recent5Projects[2].title}
                       </h3>
-                      <p className="font-sans text-xs text-[#849495] line-clamp-2">
-                        {recent4Projects[2].subtitle || recent4Projects[2].details}
+                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
+                        {recent5Projects[2].subtitle || recent5Projects[2].details}
                       </p>
                     </div>
 
-                    {/* Project Image Frame */}
-                    <div className="w-full h-28 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all">
+                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
+                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
                       <Image
                         src={
-                          recent4Projects[2].imageUrl ||
+                          (recent5Projects[2] as any).images?.[0] ||
+                          recent5Projects[2].imageUrl ||
+                          (recent5Projects[2] as any).image ||
                           config.defaultProjectImages?.[2] ||
                           "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
                         }
-                        alt={recent4Projects[2].title}
+                        alt={recent5Projects[2].title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         unoptimized
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
@@ -962,47 +973,49 @@ export default function ArchivePage() {
                         Price
                       </span>
                       <PriceDisplay
-                        prices={getProjectPrices(recent4Projects[2])}
+                        prices={getProjectPrices(recent5Projects[2])}
                         size="sm"
                       />
                     </div>
                   </Link>
                 )}
 
-                {/* Card 4: Standard Bento Card */}
-                {recent4Projects[3] && (
+                {/* Card 4: Standard Bento Card (Row 2 Col 2) */}
+                {recent5Projects[3] && (
                   <Link
-                    href={`/projects/${recent4Projects[3].slug || recent4Projects[3].id}`}
+                    href={`/projects/${recent5Projects[3].slug || recent5Projects[3].id}`}
                     className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
                   >
                     <div>
                       <div className="flex justify-between items-start mb-2">
                         <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
-                          {recent4Projects[3].category}
+                          {recent5Projects[3].category}
                         </span>
                         <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
                           ↗
                         </span>
                       </div>
-                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1">
-                        {recent4Projects[3].title}
+                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
+                        {recent5Projects[3].title}
                       </h3>
-                      <p className="font-sans text-xs text-[#849495] line-clamp-2">
-                        {recent4Projects[3].subtitle || recent4Projects[3].details}
+                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
+                        {recent5Projects[3].subtitle || recent5Projects[3].details}
                       </p>
                     </div>
 
-                    {/* Project Image Frame */}
-                    <div className="w-full h-28 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all">
+                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
+                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
                       <Image
                         src={
-                          recent4Projects[3].imageUrl ||
+                          (recent5Projects[3] as any).images?.[0] ||
+                          recent5Projects[3].imageUrl ||
+                          (recent5Projects[3] as any).image ||
                           config.defaultProjectImages?.[3] ||
                           "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop"
                         }
-                        alt={recent4Projects[3].title}
+                        alt={recent5Projects[3].title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         unoptimized
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
@@ -1013,7 +1026,60 @@ export default function ArchivePage() {
                         Price
                       </span>
                       <PriceDisplay
-                        prices={getProjectPrices(recent4Projects[3])}
+                        prices={getProjectPrices(recent5Projects[3])}
+                        size="sm"
+                      />
+                    </div>
+                  </Link>
+                )}
+
+                {/* Card 5: Standard Bento Card (Row 2 Col 3 - Completes the 3x2 Bento Grid!) */}
+                {recent5Projects[4] && (
+                  <Link
+                    href={`/projects/${recent5Projects[4].slug || recent5Projects[4].id}`}
+                    className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                  >
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
+                          {recent5Projects[4].category}
+                        </span>
+                        <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
+                          ↗
+                        </span>
+                      </div>
+                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
+                        {recent5Projects[4].title}
+                      </h3>
+                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
+                        {recent5Projects[4].subtitle || recent5Projects[4].details}
+                      </p>
+                    </div>
+
+                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
+                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
+                      <Image
+                        src={
+                          (recent5Projects[4] as any).images?.[0] ||
+                          recent5Projects[4].imageUrl ||
+                          (recent5Projects[4] as any).image ||
+                          config.defaultProjectImages?.[4 % (config.defaultProjectImages?.length || 1)] ||
+                          "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
+                        }
+                        alt={recent5Projects[4].title}
+                        fill
+                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                        unoptimized
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
+                    </div>
+
+                    <div className="pt-2.5 border-t border-white/5 flex flex-wrap justify-between items-center gap-2">
+                      <span className="font-jetbrains text-[9px] text-gray-500 uppercase tracking-wider">
+                        Price
+                      </span>
+                      <PriceDisplay
+                        prices={getProjectPrices(recent5Projects[4])}
                         size="sm"
                       />
                     </div>
@@ -1022,7 +1088,7 @@ export default function ArchivePage() {
               </div>
 
               {/* View All Catalog Grid (When expanded) */}
-              {showAllCatalog && filteredProjects.length > 4 && (
+              {showAllCatalog && filteredProjects.length > 5 && (
                 <div className="mt-12 pt-12 border-t border-white/10 space-y-6">
                   <h3 className="font-space text-xl font-bold text-white flex items-center justify-between">
                     <span>Full Catalog ({filteredProjects.length} Projects)</span>
@@ -1031,7 +1097,7 @@ export default function ArchivePage() {
                     </span>
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredProjects.slice(4).map((project, idx) => (
+                    {filteredProjects.slice(5).map((project, idx) => (
                       <Link
                         key={project.id}
                         href={`/projects/${project.slug || project.id}`}
@@ -1054,18 +1120,20 @@ export default function ArchivePage() {
                           </p>
 
                           {/* Image Frame for catalog items */}
-                          <div className="w-full h-36 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all">
+                          <div className="w-full h-44 sm:h-48 rounded-xl overflow-hidden border border-white/10 relative my-3 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
                             <Image
                               src={
+                                (project as any).images?.[0] ||
                                 project.imageUrl ||
+                                (project as any).image ||
                                 config.defaultProjectImages?.[
-                                  (idx + 4) % (config.defaultProjectImages?.length || 6)
+                                  (idx + 5) % (config.defaultProjectImages?.length || 6)
                                 ] ||
                                 "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
                               }
                               alt={project.title}
                               fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-500"
+                              className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
                               unoptimized
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />

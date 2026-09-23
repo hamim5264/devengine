@@ -83,3 +83,55 @@ export function getProjectPrices(project: {
 
   return list;
 }
+
+// Cached exchange rate to avoid repeated API hits
+let cachedRate: { rate: number; timestamp: number } | null = null;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Fetches the current live BDT to USD conversion rate.
+ * Uses open.er-api.com (free, open, no key needed).
+ * Falls back to 1 / 122 (~0.0082) if offline or network fails.
+ */
+export async function getBdtToUsdRate(): Promise<number> {
+  const now = Date.now();
+  if (cachedRate && now - cachedRate.timestamp < CACHE_TTL_MS) {
+    return cachedRate.rate;
+  }
+
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/BDT");
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.rates?.USD && typeof data.rates.USD === "number") {
+        cachedRate = { rate: data.rates.USD, timestamp: now };
+        return data.rates.USD;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch live BDT-to-USD exchange rate, using fallback:", err);
+  }
+
+  // Fallback rate ~ 1 USD = 122 BDT
+  return 1 / 122;
+}
+
+/**
+ * Converts a BDT amount string or number to USD string.
+ * Rounds to standard whole dollars (or returns empty string if invalid).
+ */
+export function convertBdtToUsd(
+  bdtAmount: number | string,
+  rate?: number
+): string {
+  if (bdtAmount === "" || bdtAmount === undefined || bdtAmount === null) return "";
+  const cleaned = String(bdtAmount).replace(/[^0-9.]/g, "");
+  if (!cleaned) return "";
+  const numeric = typeof bdtAmount === "number" ? bdtAmount : parseFloat(cleaned);
+  if (isNaN(numeric) || numeric < 0) return "";
+  if (numeric === 0) return "0";
+  const effectiveRate = rate && rate > 0 ? rate : 1 / 122;
+  const usdValue = Math.max(1, Math.round(numeric * effectiveRate));
+  return String(usdValue);
+}
+

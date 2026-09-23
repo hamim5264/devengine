@@ -22,6 +22,7 @@ import {
   getApplicationsAdmin,
   updateApplicationStatus,
   deleteApplication,
+  isCircularExpired,
   INITIAL_SENIOR_UI_UX_CIRCULAR,
 } from "@/lib/services/careerService";
 
@@ -490,55 +491,73 @@ export default function ManageCareersPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {circulars.map((c) => (
-                    <div
-                      key={c.id}
-                      className="p-6 sm:p-8 rounded-3xl bg-[#0c0c16]/95 border border-white/[0.08] hover:border-teal-500/30 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 group"
-                    >
-                      <div className="space-y-2 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-jetbrains uppercase tracking-wider font-bold ${
-                              c.status === "open"
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                                : "bg-gray-700/30 text-gray-400 border border-gray-600"
-                            }`}
+                  {circulars.map((c) => {
+                    const isExpired = isCircularExpired(c);
+                    const isEffectivelyClosed = c.status === "closed" || isExpired;
+
+                    return (
+                      <div
+                        key={c.id}
+                        className="p-6 sm:p-8 rounded-3xl bg-[#0c0c16]/95 border border-white/[0.08] hover:border-teal-500/30 backdrop-blur-xl shadow-xl hover:shadow-2xl transition-all duration-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 group"
+                      >
+                        <div className="space-y-2 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {c.status === "closed" ? (
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-jetbrains uppercase tracking-wider font-bold bg-gray-700/30 text-gray-400 border border-gray-600">
+                                CLOSED
+                              </span>
+                            ) : isExpired ? (
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-jetbrains uppercase tracking-wider font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                <span>AUTO-CLOSED (DEADLINE OVER)</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-lg text-[10px] font-jetbrains uppercase tracking-wider font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span>OPEN</span>
+                              </span>
+                            )}
+                            <span className="px-2.5 py-1 rounded-lg bg-teal-500/10 border border-teal-500/20 font-jetbrains text-[10px] text-teal-400 font-medium">
+                              {c.department}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] font-jetbrains text-[10px] text-gray-400">
+                              {c.employmentType} · {c.location}
+                            </span>
+                          </div>
+
+                          <h3 className="text-xl font-bold text-white font-['Space_Grotesk']">
+                            {c.title}
+                          </h3>
+
+                          <p className="text-gray-300 text-xs sm:text-sm line-clamp-2 max-w-3xl leading-relaxed">
+                            {c.overview}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-4 text-xs font-jetbrains text-gray-400 pt-1">
+                            <span className="text-teal-400 font-semibold">
+                              Salary: {c.salaryRange}
+                            </span>
+                            <span>•</span>
+                            <span>Experience: {c.experienceLevel}</span>
+                            {c.deadlineDate && (
+                              <>
+                                <span>•</span>
+                                <span className={isExpired ? "text-amber-400 font-semibold" : "text-gray-300"}>
+                                  Deadline: {c.deadline || c.deadlineDate.slice(0, 10)} {isExpired ? "(Passed)" : "(Active)"}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-white/[0.06]">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleCircularStatus(c)}
+                            className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-xs font-jetbrains text-gray-300 hover:text-white cursor-pointer transition-all"
                           >
-                            {c.status.toUpperCase()}
-                          </span>
-                          <span className="px-2.5 py-1 rounded-lg bg-teal-500/10 border border-teal-500/20 font-jetbrains text-[10px] text-teal-400 font-medium">
-                            {c.department}
-                          </span>
-                          <span className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] font-jetbrains text-[10px] text-gray-400">
-                            {c.employmentType} · {c.location}
-                          </span>
-                        </div>
-
-                        <h3 className="text-xl font-bold text-white font-['Space_Grotesk']">
-                          {c.title}
-                        </h3>
-
-                        <p className="text-gray-300 text-xs sm:text-sm line-clamp-2 max-w-3xl leading-relaxed">
-                          {c.overview}
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-4 text-xs font-jetbrains text-gray-400 pt-1">
-                          <span className="text-teal-400 font-semibold">
-                            Salary: {c.salaryRange}
-                          </span>
-                          <span>•</span>
-                          <span>Experience: {c.experienceLevel}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-white/[0.06]">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleCircularStatus(c)}
-                          className="px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-xs font-jetbrains text-gray-300 hover:text-white cursor-pointer transition-all"
-                        >
-                          {c.status === "open" ? "CLOSE ROLE" : "OPEN ROLE"}
-                        </button>
+                            {!isEffectivelyClosed ? "CLOSE ROLE" : "OPEN ROLE"}
+                          </button>
 
                         <button
                           type="button"
@@ -559,7 +578,8 @@ export default function ManageCareersPage() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               )}
             </div>

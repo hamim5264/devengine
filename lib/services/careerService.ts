@@ -67,6 +67,36 @@ export const INITIAL_SENIOR_UI_UX_CIRCULAR: JobCircular = {
 
 /**
  * Fetch all active/open job circulars for public career page
+/**
+ * Helper to check if a job circular's application deadline has passed
+ */
+export function isCircularExpired(c: JobCircular): boolean {
+  if (!c.deadlineDate) return false;
+  const target = new Date(c.deadlineDate).getTime();
+  return !isNaN(target) && target < Date.now();
+}
+
+/**
+ * Recursively removes undefined fields from objects before saving to Firestore.
+ */
+export function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): Partial<T> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) {
+      continue;
+    }
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      result[key] = sanitizeFirestoreData(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result as Partial<T>;
+}
+
+/**
+ * Fetch all active/open job circulars for public career page.
+ * Closed circulars and circulars whose application deadline has passed are excluded.
  */
 export async function getActiveCirculars(): Promise<JobCircular[]> {
   try {
@@ -74,23 +104,41 @@ export async function getActiveCirculars(): Promise<JobCircular[]> {
     const snap = await getDocs(colRef);
 
     if (snap.empty) {
-      return [INITIAL_SENIOR_UI_UX_CIRCULAR];
+      return [];
     }
 
     const items: JobCircular[] = [];
-    snap.forEach((d) => {
+    const now = Date.now();
+
+    for (const d of snap.docs) {
       const data = d.data() as JobCircular;
-      if (data.status === "open") {
-        items.push({ ...data, id: d.id });
+      // Only include explicitly open jobs
+      if (data.status !== "open") {
+        continue;
       }
-    });
+
+      // Check if deadline has passed -> auto-close
+      if (data.deadlineDate) {
+        const deadlineTime = new Date(data.deadlineDate).getTime();
+        if (!isNaN(deadlineTime) && deadlineTime < now) {
+          // Auto-close in Firestore in the background
+          updateDoc(d.ref, {
+            status: "closed",
+            updatedAt: new Date().toISOString(),
+          }).catch(() => {});
+          continue;
+        }
+      }
+
+      items.push({ ...data, id: d.id });
+    }
 
     items.sort((a, b) => (a.order || 99) - (b.order || 99));
 
-    return items.length > 0 ? items : [INITIAL_SENIOR_UI_UX_CIRCULAR];
+    return items;
   } catch (err) {
-    console.error("Error fetching active circulars, using fallback:", err);
-    return [INITIAL_SENIOR_UI_UX_CIRCULAR];
+    console.error("Error fetching active circulars:", err);
+    return [];
   }
 }
 
@@ -103,19 +151,33 @@ export async function getAllCircularsAdmin(): Promise<JobCircular[]> {
     const snap = await getDocs(colRef);
 
     if (snap.empty) {
-      return [INITIAL_SENIOR_UI_UX_CIRCULAR];
+      return [];
     }
 
     const items: JobCircular[] = [];
-    snap.forEach((d) => {
-      items.push({ ...(d.data() as JobCircular), id: d.id });
-    });
+    const now = Date.now();
+
+    for (const d of snap.docs) {
+      const data = { ...(d.data() as JobCircular), id: d.id };
+      // Check if open but deadline has passed -> auto-close
+      if (data.status === "open" && data.deadlineDate) {
+        const deadlineTime = new Date(data.deadlineDate).getTime();
+        if (!isNaN(deadlineTime) && deadlineTime < now) {
+          data.status = "closed";
+          updateDoc(d.ref, {
+            status: "closed",
+            updatedAt: new Date().toISOString(),
+          }).catch(() => {});
+        }
+      }
+      items.push(data);
+    }
 
     items.sort((a, b) => (a.order || 99) - (b.order || 99));
     return items;
   } catch (err) {
     console.error("Error fetching admin circulars:", err);
-    return [INITIAL_SENIOR_UI_UX_CIRCULAR];
+    return [];
   }
 }
 
@@ -141,11 +203,12 @@ export async function createCircular(
 ): Promise<string> {
   const colRef = collection(db, CIRCULARS_COLLECTION);
   const now = new Date().toISOString();
-  const docRef = await addDoc(colRef, {
+  const sanitized = sanitizeFirestoreData({
     ...data,
     createdAt: now,
     updatedAt: now,
   });
+  const docRef = await addDoc(colRef, sanitized);
   return docRef.id;
 }
 
@@ -157,10 +220,11 @@ export async function updateCircular(
   data: Partial<JobCircular>
 ): Promise<void> {
   const docRef = doc(db, CIRCULARS_COLLECTION, id);
-  await updateDoc(docRef, {
+  const sanitized = sanitizeFirestoreData({
     ...data,
     updatedAt: new Date().toISOString(),
   });
+  await updateDoc(docRef, sanitized);
 }
 
 /**

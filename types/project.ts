@@ -66,6 +66,7 @@ export interface ProjectItem {
   isPublic?: boolean;
   imageUrl?: string;
   image?: string;
+  images?: string[];
   details?: string;
   installation?: string;
 

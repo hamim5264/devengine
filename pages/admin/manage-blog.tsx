@@ -53,6 +53,7 @@ const EMPTY_FORM: Omit<BlogPost, "id" | "createdAt" | "updatedAt"> = {
   featured: false,
   gridSpan: "normal",
   tags: ["Architecture", "Engineering"],
+  order: 1,
   isPublished: true,
   publishedAt: new Date().toISOString(),
 };
@@ -128,30 +129,39 @@ export default function ManageBlogPage() {
   // Open Create Modal
   const handleOpenCreate = () => {
     setEditingPost(null);
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      order: posts.length + 1,
+      publishedAt: new Date().toISOString(),
+    });
     setTagsInput(EMPTY_FORM.tags.join(", "));
     setModalOpen(true);
   };
 
   // Open Edit Modal
-  const handleOpenEdit = (post: BlogPost) => {
+  const handleOpenEdit = (post: BlogPost, index?: number) => {
     setEditingPost(post);
     setForm({
-      slug: post.slug,
-      title: post.title,
+      slug: post.slug || "",
+      title: post.title || "",
       subtitle: post.subtitle || "",
-      excerpt: post.excerpt,
-      content: post.content,
-      category: post.category,
-      coverImage: post.coverImage,
-      author: post.author,
-      readTime: post.readTime,
-      featured: post.featured,
-      gridSpan: post.gridSpan,
-      tags: post.tags,
-      stats: post.stats,
-      isPublished: post.isPublished,
-      publishedAt: post.publishedAt,
+      excerpt: post.excerpt || "",
+      content: post.content || "",
+      category: post.category || "SUCCESS_STORY",
+      coverImage: post.coverImage || "",
+      author: {
+        name: post.author?.name || "MD. ABDUL HAMIM LEON",
+        role: post.author?.role || "Founder & Lead Architect",
+        avatarUrl: post.author?.avatarUrl || "/assets/DevEngine-emblem.png",
+      },
+      readTime: post.readTime || "5 min read",
+      featured: !!post.featured,
+      gridSpan: post.gridSpan || "normal",
+      tags: post.tags || [],
+      order: typeof post.order === "number" ? post.order : (index !== undefined ? index + 1 : 1),
+      isPublished: post.isPublished !== false,
+      publishedAt: post.publishedAt || new Date().toISOString(),
+      ...(post.stats ? { stats: post.stats } : {}),
     });
     setTagsInput((post.tags || []).join(", "));
     setModalOpen(true);
@@ -183,9 +193,27 @@ export default function ManageBlogPage() {
         .map((t) => t.trim())
         .filter(Boolean);
 
-      const payload = {
-        ...form,
+      const payload: Omit<BlogPost, "id" | "createdAt" | "updatedAt"> = {
+        slug: form.slug.trim(),
+        title: form.title.trim(),
+        subtitle: form.subtitle?.trim() || "",
+        excerpt: form.excerpt.trim(),
+        content: form.content,
+        category: form.category,
+        coverImage: form.coverImage.trim(),
+        author: {
+          name: form.author?.name?.trim() || "MD. ABDUL HAMIM LEON",
+          role: form.author?.role?.trim() || "Founder & Lead Architect",
+          ...(form.author?.avatarUrl ? { avatarUrl: form.author.avatarUrl } : {}),
+        },
+        readTime: form.readTime?.trim() || "5 min read",
+        featured: !!form.featured,
+        gridSpan: form.gridSpan,
         tags: parsedTags,
+        order: Number(form.order) || 1,
+        isPublished: !!form.isPublished,
+        publishedAt: form.publishedAt || new Date().toISOString(),
+        ...(form.stats ? { stats: form.stats } : {}),
       };
 
       if (editingPost) {
@@ -196,9 +224,9 @@ export default function ManageBlogPage() {
 
       setModalOpen(false);
       await loadPosts();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to save post:", err);
-      alert("Failed to save chronicle. Check console.");
+      alert(`Failed to save chronicle: ${err?.message || "Check console."}`);
     } finally {
       setSaving(false);
     }
@@ -463,6 +491,7 @@ export default function ManageBlogPage() {
               <table className="w-full text-left border-collapse min-w-[900px]">
                 <thead>
                   <tr className="border-b border-white/[0.08] bg-black/40 text-gray-400 font-mono text-[11px] uppercase tracking-wider">
+                    <th className="py-4 px-4 text-center">Order</th>
                     <th className="py-4 px-5">Chronicle</th>
                     <th className="py-4 px-5">Category</th>
                     <th className="py-4 px-5">Layout Grid</th>
@@ -472,12 +501,19 @@ export default function ManageBlogPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] text-xs font-sans">
-                  {filteredPosts.map((post) => {
+                  {filteredPosts.map((post, idx) => {
                     const catConfig =
                       BLOG_CATEGORY_CONFIG[post.category] || BLOG_CATEGORY_CONFIG.ENGINEERING;
+                    const orderNum = typeof post.order === "number" ? post.order : idx + 1;
 
                     return (
                       <tr key={post.id} className="hover:bg-white/[0.02] transition-colors">
+                        {/* Display Order */}
+                        <td className="py-4 px-4 text-center">
+                          <span className="inline-block px-2.5 py-1 rounded-lg bg-teal-500/10 border border-teal-500/25 text-teal-300 font-mono text-xs font-bold shadow-sm">
+                            #{orderNum}
+                          </span>
+                        </td>
                         {/* Image + Title */}
                         <td className="py-4 px-5">
                           <div className="flex items-center gap-3">
@@ -559,7 +595,7 @@ export default function ManageBlogPage() {
 
                             <button
                               type="button"
-                              onClick={() => handleOpenEdit(post)}
+                              onClick={() => handleOpenEdit(post, idx)}
                               className="p-2 rounded-xl hover:bg-teal-500/10 text-gray-400 hover:text-teal-300 transition cursor-pointer"
                               title="Edit Chronicle"
                             >
@@ -672,8 +708,8 @@ export default function ManageBlogPage() {
                 />
               </div>
 
-              {/* Category & Grid Span */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Category, Grid Span, Read Time & Order */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
                     <span>Category</span>
@@ -726,6 +762,23 @@ export default function ManageBlogPage() {
                       </svg>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
+                    <span>Display Order</span>
+                    <span className="text-[10px] text-teal-400 font-mono">1 = Top</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={form.order || 1}
+                    onChange={(e) =>
+                      setForm({ ...form, order: parseInt(e.target.value, 10) || 1 })
+                    }
+                    placeholder="1"
+                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white font-mono placeholder-gray-500 outline-none transition"
+                  />
                 </div>
 
                 <div>

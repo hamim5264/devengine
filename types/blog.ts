@@ -33,6 +33,7 @@ export interface BlogPost {
   gridSpan: GridSpanType;
   tags: string[];
   stats?: BlogStat[];
+  order?: number;
   isPublished: boolean;
   publishedAt: string;
   createdAt: string;

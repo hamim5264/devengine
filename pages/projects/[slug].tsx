@@ -52,6 +52,7 @@ export default function ProjectDetailPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [showBuyAlert, setShowBuyAlert] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Detect admin status
   useEffect(() => {
@@ -141,7 +142,12 @@ export default function ProjectDetailPage() {
               tags: Array.isArray(data.tags) ? data.tags : [],
               tools: Array.isArray(data.tools) ? data.tools : [],
               isPublic: data.isPublic !== false,
+              images:
+                Array.isArray(data.images) && data.images.length > 0
+                  ? data.images
+                  : (data.imageUrl || data.image ? [data.imageUrl || data.image] : []),
               imageUrl: data.imageUrl || data.image || "",
+              image: data.imageUrl || data.image || "",
               details: data.details || "",
               installation: data.installation || "",
               youtubeUrl: data.youtubeUrl || DEFAULT_YOUTUBE_URL,
@@ -254,12 +260,40 @@ export default function ProjectDetailPage() {
     return project ? getProjectPrices(project) : [];
   }, [project]);
 
-  const displayImage = useMemo(() => {
-    return (
-      project?.imageUrl ||
-      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1400&auto=format&fit=crop"
-    );
+  const projectImages: string[] = useMemo(() => {
+    if (!project) return [];
+    if (Array.isArray(project.images) && project.images.length > 0) {
+      return project.images.filter(Boolean);
+    }
+    if (project.imageUrl) return [project.imageUrl];
+    return [
+      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1400&auto=format&fit=crop",
+    ];
   }, [project]);
+
+  const displayImage =
+    projectImages[0] ||
+    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1400&auto=format&fit=crop";
+
+  // Lightbox Keyboard Navigation (Esc, Left, Right)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (lightboxIndex === null) return;
+      if (e.key === "Escape") {
+        setLightboxIndex(null);
+      } else if (e.key === "ArrowLeft") {
+        setLightboxIndex((prev) =>
+          prev !== null ? (prev > 0 ? prev - 1 : projectImages.length - 1) : null
+        );
+      } else if (e.key === "ArrowRight") {
+        setLightboxIndex((prev) =>
+          prev !== null ? (prev < projectImages.length - 1 ? prev + 1 : 0) : null
+        );
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxIndex, projectImages.length]);
 
   if (loading) {
     return (
@@ -442,28 +476,228 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
-          {/* Massive Cinematic Device Mockup Frame */}
-          <div className="mt-16 relative w-full max-w-6xl mx-auto h-[450px] sm:h-[650px] md:h-[750px] rounded-3xl overflow-hidden border border-white/10 bg-[#080e1a]/80 backdrop-blur-2xl shadow-[0_0_100px_rgba(56,242,255,0.15)] flex items-center justify-center group">
-            <Image
-              src={displayImage}
-              alt={project.title}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
-              priority
-              unoptimized
-            />
-            {/* Cinematic Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#080e1a]/60 via-transparent to-transparent pointer-events-none" />
+          {/* =========================================================================
+              ADAPTIVE MULTI-IMAGE GALLERY (1 to 5 Images with Dynamic Grid)
+          ========================================================================= */}
+          {projectImages.length === 1 && (
+            /* 1 Image: Massive Cinematic Device Mockup Banner */
+            <div
+              onClick={() => setLightboxIndex(0)}
+              className="mt-16 relative w-full max-w-6xl mx-auto h-[420px] sm:h-[600px] md:h-[700px] rounded-3xl overflow-hidden border border-white/10 hover:border-[#38f2ff]/40 bg-[#080e1a]/80 backdrop-blur-2xl shadow-[0_0_100px_rgba(56,242,255,0.15)] flex items-center justify-center group cursor-pointer transition-all duration-500"
+            >
+              <Image
+                src={projectImages[0]}
+                alt={project.title}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                priority
+                unoptimized
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#080e1a]/60 via-transparent to-transparent pointer-events-none" />
 
-            {/* Telemetry Badge Overlay */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3">
-              <div className="bg-[#080e1a]/90 backdrop-blur-xl px-5 py-2 rounded-full border border-[#38f2ff]/40 font-mono text-xs text-[#38f2ff] flex items-center gap-2 shadow-2xl">
-                <span className="material-symbols-outlined text-sm">memory</span>
-                <span>Active Production Architecture // Ready for Deployment</span>
+              {/* Hover Expand Overlay */}
+              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <div className="bg-[#080e1a]/90 backdrop-blur-xl border border-[#38f2ff]/50 text-white font-mono text-xs px-4 py-2 rounded-xl flex items-center gap-2 shadow-2xl scale-95 group-hover:scale-100 transition-transform">
+                  <span className="material-symbols-outlined text-[#38f2ff] text-base">zoom_in</span>
+                  <span>Click to expand full screen</span>
+                </div>
+              </div>
+
+              {/* Telemetry Badge Overlay */}
+              <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 pointer-events-none">
+                <div className="bg-[#080e1a]/90 backdrop-blur-xl px-4 sm:px-5 py-2 rounded-full border border-[#38f2ff]/40 font-mono text-[11px] sm:text-xs text-[#38f2ff] flex items-center gap-2 shadow-2xl">
+                  <span className="material-symbols-outlined text-sm">memory</span>
+                  <span>Active Production Architecture // Ready for Deployment</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {projectImages.length === 2 && (
+            /* 2 Images: Symmetrical 2-Column Showcase */
+            <div className="mt-16 w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+              {projectImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setLightboxIndex(idx)}
+                  className="relative h-[320px] sm:h-[450px] md:h-[500px] rounded-3xl overflow-hidden border border-white/10 hover:border-[#38f2ff]/50 bg-[#080e1a]/80 backdrop-blur-2xl shadow-xl flex items-center justify-center group cursor-pointer transition-all duration-500 hover:scale-[1.01]"
+                >
+                  <Image
+                    src={img}
+                    alt={`${project.title} - View ${idx + 1}`}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                    priority={idx === 0}
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute top-4 left-4 bg-[#080e1a]/85 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 font-mono text-[10px] text-[#38f2ff]">
+                    {idx === 0 ? "PRIMARY // COVER" : `VIEW ${idx + 1}`}
+                  </div>
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="bg-[#080e1a]/90 backdrop-blur-xl border border-[#38f2ff]/50 text-white font-mono text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-2xl">
+                      <span className="material-symbols-outlined text-[#38f2ff] text-base">zoom_in</span>
+                      <span>Expand view</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {projectImages.length === 3 && (
+            /* 3 Images: Bento Grid (Primary Hero on Left, 2 Stacked on Right) */
+            <div className="mt-16 w-full max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6">
+              {/* Large Primary Card */}
+              <div
+                onClick={() => setLightboxIndex(0)}
+                className="md:col-span-7 relative h-[360px] md:h-[540px] rounded-3xl overflow-hidden border border-white/10 hover:border-[#38f2ff]/50 bg-[#080e1a]/80 backdrop-blur-2xl shadow-xl flex items-center justify-center group cursor-pointer transition-all duration-500 hover:scale-[1.01]"
+              >
+                <Image
+                  src={projectImages[0]}
+                  alt={`${project.title} - Primary View`}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                  priority
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-4 left-4 bg-[#080e1a]/85 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 font-mono text-[10px] text-[#38f2ff]">
+                  PRIMARY ARCHITECTURE
+                </div>
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div className="bg-[#080e1a]/90 backdrop-blur-xl border border-[#38f2ff]/50 text-white font-mono text-xs px-4 py-2 rounded-xl flex items-center gap-2 shadow-2xl">
+                    <span className="material-symbols-outlined text-[#38f2ff] text-base">zoom_in</span>
+                    <span>Expand Primary View</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2 Stacked Cards on Right */}
+              <div className="md:col-span-5 grid grid-cols-1 gap-5 sm:gap-6">
+                {projectImages.slice(1, 3).map((img, i) => {
+                  const actualIdx = i + 1;
+                  return (
+                    <div
+                      key={actualIdx}
+                      onClick={() => setLightboxIndex(actualIdx)}
+                      className="relative h-[220px] md:h-[258px] rounded-3xl overflow-hidden border border-white/10 hover:border-[#38f2ff]/50 bg-[#080e1a]/80 backdrop-blur-2xl shadow-xl flex items-center justify-center group cursor-pointer transition-all duration-500 hover:scale-[1.01]"
+                    >
+                      <Image
+                        src={img}
+                        alt={`${project.title} - View ${actualIdx + 1}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                        unoptimized
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent pointer-events-none" />
+                      <div className="absolute top-3 left-3 bg-[#080e1a]/85 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/10 font-mono text-[10px] text-gray-300">
+                        VIEW #{actualIdx + 1}
+                      </div>
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="bg-[#080e1a]/90 backdrop-blur-xl border border-[#38f2ff]/50 text-white font-mono text-[11px] px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xl">
+                          <span className="material-symbols-outlined text-[#38f2ff] text-sm">zoom_in</span>
+                          <span>Expand</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {projectImages.length === 4 && (
+            /* 4 Images: 2x2 Grid Showcase */
+            <div className="mt-16 w-full max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+              {projectImages.map((img, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setLightboxIndex(idx)}
+                  className="relative h-[260px] sm:h-[340px] md:h-[380px] rounded-3xl overflow-hidden border border-white/10 hover:border-[#38f2ff]/50 bg-[#080e1a]/80 backdrop-blur-2xl shadow-xl flex items-center justify-center group cursor-pointer transition-all duration-500 hover:scale-[1.01]"
+                >
+                  <Image
+                    src={img}
+                    alt={`${project.title} - View ${idx + 1}`}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                    priority={idx === 0}
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute top-4 left-4 bg-[#080e1a]/85 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 font-mono text-[10px] text-[#38f2ff]">
+                    {idx === 0 ? "PRIMARY // COVER" : `VIEW ${idx + 1}`}
+                  </div>
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="bg-[#080e1a]/90 backdrop-blur-xl border border-[#38f2ff]/50 text-white font-mono text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-2xl">
+                      <span className="material-symbols-outlined text-[#38f2ff] text-base">zoom_in</span>
+                      <span>Expand view</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {projectImages.length >= 5 && (
+            /* 5 Images: Featured Large Header + 4-Column Showcase */
+            <div className="mt-16 w-full max-w-6xl mx-auto space-y-4 sm:space-y-6">
+              {/* Large Primary Banner */}
+              <div
+                onClick={() => setLightboxIndex(0)}
+                className="relative w-full h-[340px] sm:h-[460px] md:h-[540px] rounded-3xl overflow-hidden border border-white/10 hover:border-[#38f2ff]/50 bg-[#080e1a]/80 backdrop-blur-2xl shadow-xl flex items-center justify-center group cursor-pointer transition-all duration-500 hover:scale-[1.005]"
+              >
+                <Image
+                  src={projectImages[0]}
+                  alt={`${project.title} - Primary Architecture`}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-90"
+                  priority
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-transparent to-transparent pointer-events-none" />
+                <div className="absolute top-4 left-4 bg-[#080e1a]/85 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10 font-mono text-[10px] text-[#38f2ff]">
+                  PRIMARY ARCHITECTURE // 5 VIEWS
+                </div>
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div className="bg-[#080e1a]/90 backdrop-blur-xl border border-[#38f2ff]/50 text-white font-mono text-xs px-4 py-2 rounded-xl flex items-center gap-2 shadow-2xl">
+                    <span className="material-symbols-outlined text-[#38f2ff] text-base">zoom_in</span>
+                    <span>Expand Primary View</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 Bottom Thumbnails */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                {projectImages.slice(1, 5).map((img, i) => {
+                  const actualIdx = i + 1;
+                  return (
+                    <div
+                      key={actualIdx}
+                      onClick={() => setLightboxIndex(actualIdx)}
+                      className="relative h-[130px] sm:h-[180px] md:h-[200px] rounded-2xl overflow-hidden border border-white/10 hover:border-[#38f2ff]/50 bg-[#080e1a]/80 backdrop-blur-2xl shadow-lg flex items-center justify-center group cursor-pointer transition-all duration-500 hover:scale-[1.02]"
+                    >
+                      <Image
+                        src={img}
+                        alt={`${project.title} - View ${actualIdx + 1}`}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-700 opacity-85"
+                        unoptimized
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#030712]/90 via-transparent to-transparent pointer-events-none" />
+                      <div className="absolute bottom-2 left-2.5 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded font-mono text-[10px] text-gray-300">
+                        VIEW #{actualIdx + 1}
+                      </div>
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[#38f2ff] text-xl">zoom_in</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* =========================================================================
@@ -953,6 +1187,123 @@ export default function ProjectDetailPage() {
               allowFullScreen
             />
           </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          LIGHTBOX FULLSCREEN MODAL VIEWER
+      ========================================================================= */}
+      {lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex flex-col justify-between p-4 sm:p-6 animate-fadeIn"
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Top Bar */}
+          <div
+            className="flex items-center justify-between z-10 w-full max-w-7xl mx-auto pb-3 border-b border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs text-[#38f2ff] bg-[#38f2ff]/10 px-3 py-1 rounded-full border border-[#38f2ff]/30">
+                {lightboxIndex + 1} / {projectImages.length}
+              </span>
+              <h4 className="text-sm font-semibold text-white truncate max-w-xs sm:max-w-md">
+                {project.title}
+              </h4>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline-block text-[11px] font-mono text-gray-400 mr-2">
+                Use Arrow Keys / Esc
+              </span>
+              <button
+                type="button"
+                onClick={() => setLightboxIndex(null)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+                title="Close Lightbox (Esc)"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Central Image Viewer */}
+          <div
+            className="relative flex-1 flex items-center justify-center my-3 max-w-7xl mx-auto w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {projectImages.length > 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setLightboxIndex((prev) =>
+                    prev !== null ? (prev > 0 ? prev - 1 : projectImages.length - 1) : null
+                  )
+                }
+                className="absolute left-2 sm:left-4 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 hover:border-[#38f2ff]/60 flex items-center justify-center transition shadow-2xl cursor-pointer"
+                title="Previous Image (Left Arrow)"
+              >
+                <span className="material-symbols-outlined text-2xl">chevron_left</span>
+              </button>
+            )}
+
+            <div className="relative w-full h-[60vh] sm:h-[70vh] max-w-5xl rounded-2xl overflow-hidden flex items-center justify-center shadow-2xl">
+              <Image
+                src={projectImages[lightboxIndex]}
+                alt={`${project.title} - View ${lightboxIndex + 1}`}
+                fill
+                className="object-contain"
+                unoptimized
+              />
+            </div>
+
+            {projectImages.length > 1 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setLightboxIndex((prev) =>
+                    prev !== null ? (prev < projectImages.length - 1 ? prev + 1 : 0) : null
+                  )
+                }
+                className="absolute right-2 sm:right-4 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 hover:border-[#38f2ff]/60 flex items-center justify-center transition shadow-2xl cursor-pointer"
+                title="Next Image (Right Arrow)"
+              >
+                <span className="material-symbols-outlined text-2xl">chevron_right</span>
+              </button>
+            )}
+          </div>
+
+          {/* Bottom Thumbnails Strip */}
+          {projectImages.length > 1 && (
+            <div
+              className="flex items-center justify-center gap-2 sm:gap-3 max-w-3xl mx-auto z-10 overflow-x-auto py-2 px-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {projectImages.map((thumb, tIdx) => {
+                const isActive = tIdx === lightboxIndex;
+                return (
+                  <button
+                    key={tIdx}
+                    type="button"
+                    onClick={() => setLightboxIndex(tIdx)}
+                    className={`relative w-14 h-11 sm:w-18 sm:h-14 rounded-xl overflow-hidden border-2 transition shrink-0 cursor-pointer ${
+                      isActive
+                        ? "border-[#38f2ff] scale-105 shadow-[0_0_15px_rgba(56,242,255,0.4)]"
+                        : "border-white/20 hover:border-white/60 opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <Image
+                      src={thumb}
+                      alt={`Thumbnail ${tIdx + 1}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

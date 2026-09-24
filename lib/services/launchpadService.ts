@@ -339,6 +339,24 @@ export const DEFAULT_APP_LAB_ITEMS: AppLabItem[] = [
       "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop",
     ],
     apkUrl: "https://drive.google.com",
+    previewUrl: "https://dialogix-preview.thedevengine.com",
+    usages: [
+      "AI-powered chat assistant",
+      "Learning and experimentation with Gemini LLM APIs",
+      "Developer portfolio showcase and mobile interface testing",
+      "Personal productivity and idea exploration",
+      "AI feature prototyping and prompt engineering",
+    ],
+    warnings: [
+      "Active internet connection required for API streaming",
+      "Uses third-party AI models (Google Gemini Pro)",
+      "Responses may occasionally contain model inaccuracies",
+      "Not intended for safety-critical or financial decision making",
+    ],
+    devUsage:
+      "This build is intended for authorized developer testing and interactive architectural evaluation. Run within an Android 10+ virtual emulator or hardware testing device with developer options enabled. Do not use privileged root shells or modify internal keystore certificates.",
+    copyright:
+      "Copyright © 2026 DevEngine. Developed by Hamim & DevEngine Studio. All rights reserved. Proprietary source code and UI assets are protected by international intellectual property law. Unauthorized redistribution, modification, or commercial sublicensing is strictly prohibited.",
     isPublic: true,
   },
   {
@@ -356,6 +374,22 @@ export const DEFAULT_APP_LAB_ITEMS: AppLabItem[] = [
       "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=800&auto=format&fit=crop",
     ],
     apkUrl: "https://drive.google.com",
+    previewUrl: "https://blume.thedevengine.com",
+    usages: [
+      "Daily botanical watering and sunlight monitoring",
+      "Plant growth journaling with photo timeline capture",
+      "Automated care reminders and moisture scheduling",
+      "Species identification and optimal climate recommendations",
+    ],
+    warnings: [
+      "Beta build: Local SQLite cache may reset across major updates",
+      "Notification permissions required for watering reminders",
+      "Offline mode caches up to 50 botanical entries",
+    ],
+    devUsage:
+      "Developer testing package: verify background notification worker persistence and SQLite schema migrations. Please submit bug reports through the DevEngine telemetry console.",
+    copyright:
+      "Copyright © 2026 DevEngine Botanics. All rights reserved. Trademark, UX animations, and graphic designs are intellectual property of DevEngine. Unlicensed cloning or reverse engineering is prohibited.",
     isPublic: true,
   },
   {
@@ -373,6 +407,21 @@ export const DEFAULT_APP_LAB_ITEMS: AppLabItem[] = [
       "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop",
     ],
     apkUrl: "https://drive.google.com",
+    previewUrl: "https://snapcaption.thedevengine.com",
+    usages: [
+      "Short-form social media caption generation (Reels, TikTok, Shorts)",
+      "Tone customization (Viral, Professional, Minimalist, Humorous)",
+      "Multi-lingual translation across 30+ spoken languages",
+      "Hashtag clustering and engagement optimization",
+    ],
+    warnings: [
+      "Requires active network connectivity for cloud translation APIs",
+      "Rate limits apply on high-frequency caption generation in demo mode",
+    ],
+    devUsage:
+      "Developer demonstration build. Verify API token rotation mechanisms and ensure clipboard write permissions are enabled on target devices.",
+    copyright:
+      "Copyright © 2026 DevEngine AI Suite. All rights reserved. Intellectual property and algorithmic prompt routing are proprietary to DevEngine.",
     isPublic: true,
   },
   {
@@ -390,6 +439,20 @@ export const DEFAULT_APP_LAB_ITEMS: AppLabItem[] = [
       "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=800&auto=format&fit=crop",
     ],
     apkUrl: "https://drive.google.com",
+    previewUrl: "https://quizcrafter.thedevengine.com",
+    usages: [
+      "Interactive knowledge testing and examination practice",
+      "Dynamic question randomization and time trial challenges",
+      "Detailed category performance metrics and score breakdown",
+    ],
+    warnings: [
+      "Beta testing build: Leaderboard scores are cleared weekly during maintenance",
+      "Web audio effects require user gesture interaction before playback",
+    ],
+    devUsage:
+      "Web testing build: Supports Chromium and WebKit rendering engines. Inspect browser console for WebSocket latency and realtime state synchronization logs.",
+    copyright:
+      "Copyright © 2026 DevEngine Interactive. All rights reserved. Any unauthorized mirror hosting or reverse engineering of question databases is strictly prohibited.",
     isPublic: true,
   },
 ];

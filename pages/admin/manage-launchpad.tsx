@@ -27,6 +27,7 @@ import {
 } from "@/lib/services/launchpadService";
 import { collection, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { moveToBin } from "@/lib/services/binService";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
@@ -48,6 +49,84 @@ export default function ManageLaunchpadPage() {
   const [loadingApps, setLoadingApps] = useState(false);
   const [syncingDummyImages, setSyncingDummyImages] = useState(false);
   const [editingImageUrls, setEditingImageUrls] = useState<Record<string, string>>({});
+  const [editingApkUrls, setEditingApkUrls] = useState<Record<string, string>>({});
+  const [editingPreviewUrls, setEditingPreviewUrls] = useState<Record<string, string>>({});
+  const [savingLinks, setSavingLinks] = useState<Record<string, boolean>>({});
+
+  // Full Details Edit Modal State
+  const [editDetailsApp, setEditDetailsApp] = useState<AppLabItem | null>(null);
+  const [detailsForm, setDetailsForm] = useState<{
+    name: string;
+    subtitle: string;
+    version: string;
+    platform: string;
+    category: string;
+    apkUrl: string;
+    previewUrl: string;
+    description: string;
+    usages: string;
+    warnings: string;
+    devUsage: string;
+    copyright: string;
+    imageUrl: string;
+    isPublic: boolean;
+  }>({
+    name: "",
+    subtitle: "",
+    version: "1.0.0",
+    platform: "android",
+    category: "AI",
+    apkUrl: "",
+    previewUrl: "",
+    description: "",
+    usages: "",
+    warnings: "",
+    devUsage: "",
+    copyright: "",
+    imageUrl: "",
+    isPublic: true,
+  });
+  const [savingAppDetails, setSavingAppDetails] = useState(false);
+
+  // Add New App Modal State
+  const [showAddAppModal, setShowAddAppModal] = useState(false);
+  const [newAppForm, setNewAppForm] = useState<{
+    name: string;
+    subtitle: string;
+    version: string;
+    platform: string;
+    category: string;
+    apkUrl: string;
+    previewUrl: string;
+    description: string;
+    usages: string;
+    warnings: string;
+    devUsage: string;
+    copyright: string;
+    imageUrl: string;
+    isPublic: boolean;
+  }>({
+    name: "",
+    subtitle: "",
+    version: "1.0.0",
+    platform: "android",
+    category: "AI",
+    apkUrl: "",
+    previewUrl: "",
+    description: "",
+    usages: "",
+    warnings: "",
+    devUsage: "",
+    copyright: "",
+    imageUrl: "",
+    isPublic: true,
+  });
+  const [creatingApp, setCreatingApp] = useState(false);
+
+  // Recycle Bin Delete Confirmation Modal State
+  const [deleteTargetApp, setDeleteTargetApp] = useState<AppLabItem | null>(null);
+  const [deletingApp, setDeletingApp] = useState(false);
+
   const [message, setMessage] = useState<{
     text: string;
     type: "success" | "error";
@@ -375,22 +454,228 @@ export default function ManageLaunchpadPage() {
     }
   };
 
-  const handleDeleteApp = async (appId: string, appName: string) => {
-    if (!confirm(`Are you sure you want to delete "${appName}" from App Lab?`)) {
-      return;
-    }
+  const handleSaveAppApkUrl = async (appId: string) => {
+    const url = editingApkUrls[appId];
+    if (url === undefined) return;
     try {
-      await deleteDoc(doc(db, "appLab", appId));
-      setAppLabApps((prev) => prev.filter((a) => a.id !== appId));
+      setSavingLinks((prev) => ({ ...prev, [appId + "-apk"]: true }));
+      await updateAppLabApp(appId, { apkUrl: url.trim() });
+      setAppLabApps((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, apkUrl: url.trim() } : a))
+      );
       setMessage({
-        text: `Deleted "${appName}" successfully.`,
+        text: "Google Drive / APK download link updated successfully!",
         type: "success",
       });
     } catch (err: any) {
       setMessage({
-        text: err?.message || "Failed to delete app",
+        text: err?.message || "Failed to update download link",
         type: "error",
       });
+    } finally {
+      setSavingLinks((prev) => ({ ...prev, [appId + "-apk"]: false }));
+    }
+  };
+
+  const handleSaveAppPreviewUrl = async (appId: string) => {
+    const url = editingPreviewUrls[appId];
+    if (url === undefined) return;
+    try {
+      setSavingLinks((prev) => ({ ...prev, [appId + "-prev"]: true }));
+      await updateAppLabApp(appId, { previewUrl: url.trim() });
+      setAppLabApps((prev) =>
+        prev.map((a) => (a.id === appId ? { ...a, previewUrl: url.trim() } : a))
+      );
+      setMessage({
+        text: "Preview URL link updated successfully!",
+        type: "success",
+      });
+    } catch (err: any) {
+      setMessage({
+        text: err?.message || "Failed to update preview URL",
+        type: "error",
+      });
+    } finally {
+      setSavingLinks((prev) => ({ ...prev, [appId + "-prev"]: false }));
+    }
+  };
+
+  const handleOpenEditDetails = (app: AppLabItem) => {
+    setEditDetailsApp(app);
+    setDetailsForm({
+      name: app.name || "",
+      subtitle: app.subtitle || "",
+      version: app.version || "1.0.0",
+      platform: app.platform || "android",
+      category: app.category || "AI",
+      apkUrl: app.apkUrl || "",
+      previewUrl: app.previewUrl || "",
+      description: app.description || "",
+      usages: (app.usages || []).join("\n"),
+      warnings: (app.warnings || []).join("\n"),
+      devUsage: app.devUsage || "",
+      copyright: app.copyright || "",
+      imageUrl: app.images?.[0] || "",
+      isPublic: app.isPublic !== false,
+    });
+  };
+
+  const handleSaveEditDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDetailsApp) return;
+
+    try {
+      setSavingAppDetails(true);
+      const updatedData: Partial<AppLabItem> = {
+        name: detailsForm.name.trim(),
+        subtitle: detailsForm.subtitle.trim(),
+        version: detailsForm.version.trim(),
+        platform: detailsForm.platform.trim(),
+        category: detailsForm.category.trim(),
+        apkUrl: detailsForm.apkUrl.trim(),
+        previewUrl: detailsForm.previewUrl.trim(),
+        description: detailsForm.description.trim(),
+        usages: detailsForm.usages
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        warnings: detailsForm.warnings
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        devUsage: detailsForm.devUsage.trim(),
+        copyright: detailsForm.copyright.trim(),
+        images: detailsForm.imageUrl.trim()
+          ? [detailsForm.imageUrl.trim()]
+          : editDetailsApp.images,
+        isPublic: detailsForm.isPublic,
+      };
+
+      await updateAppLabApp(editDetailsApp.id, updatedData);
+      setAppLabApps((prev) =>
+        prev.map((a) => (a.id === editDetailsApp.id ? { ...a, ...updatedData } : a))
+      );
+      setEditDetailsApp(null);
+      setMessage({
+        text: `Updated details for "${updatedData.name}" successfully!`,
+        type: "success",
+      });
+    } catch (err: any) {
+      setMessage({
+        text: err?.message || "Failed to update app details",
+        type: "error",
+      });
+    } finally {
+      setSavingAppDetails(false);
+    }
+  };
+
+  const handleCreateNewApp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAppForm.name.trim()) return;
+
+    try {
+      setCreatingApp(true);
+      const slug = newAppForm.name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-");
+
+      const newApp: AppLabItem = {
+        id: slug,
+        slug: slug,
+        name: newAppForm.name.trim(),
+        subtitle: newAppForm.subtitle.trim(),
+        version: newAppForm.version.trim() || "1.0.0",
+        platform: newAppForm.platform.trim() || "android",
+        category: newAppForm.category.trim() || "AI",
+        apkUrl: newAppForm.apkUrl.trim(),
+        previewUrl: newAppForm.previewUrl.trim(),
+        description: newAppForm.description.trim(),
+        usages: newAppForm.usages
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        warnings: newAppForm.warnings
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        devUsage: newAppForm.devUsage.trim(),
+        copyright: newAppForm.copyright.trim(),
+        images: newAppForm.imageUrl.trim()
+          ? [newAppForm.imageUrl.trim()]
+          : [DUMMY_APP_IMAGES.default],
+        isPublic: newAppForm.isPublic,
+      };
+
+      await updateAppLabApp(slug, newApp);
+      setAppLabApps((prev) => [newApp, ...prev.filter((a) => a.id !== slug)]);
+      setShowAddAppModal(false);
+      setNewAppForm({
+        name: "",
+        subtitle: "",
+        version: "1.0.0",
+        platform: "android",
+        category: "AI",
+        apkUrl: "",
+        previewUrl: "",
+        description: "",
+        usages: "",
+        warnings: "",
+        devUsage: "",
+        copyright: "",
+        imageUrl: "",
+        isPublic: true,
+      });
+      setMessage({
+        text: `App "${newApp.name}" created successfully and published!`,
+        type: "success",
+      });
+    } catch (err: any) {
+      setMessage({
+        text: err?.message || "Failed to create app",
+        type: "error",
+      });
+    } finally {
+      setCreatingApp(false);
+    }
+  };
+
+  const handleOpenDeleteAppModal = (app: AppLabItem) => {
+    setDeleteTargetApp(app);
+  };
+
+  const handleConfirmMoveAppToBin = async () => {
+    if (!deleteTargetApp) return;
+    try {
+      setDeletingApp(true);
+      await moveToBin({
+        originalCollection: "appLab",
+        originalId: deleteTargetApp.id,
+        itemTitle: deleteTargetApp.name,
+        itemType: "App Lab",
+        data: deleteTargetApp,
+        metadata: {
+          slug: deleteTargetApp.slug || deleteTargetApp.id,
+          version: deleteTargetApp.version,
+          platform: deleteTargetApp.platform,
+          category: deleteTargetApp.category,
+        },
+      });
+
+      setAppLabApps((prev) => prev.filter((a) => a.id !== deleteTargetApp.id));
+      setMessage({
+        text: `"${deleteTargetApp.name}" was moved to the Recycle Bin. Restore anytime from Dashboard > Recycle Bin!`,
+        type: "success",
+      });
+      setDeleteTargetApp(null);
+    } catch (err: any) {
+      setMessage({
+        text: err?.message || "Failed to move app to Recycle Bin",
+        type: "error",
+      });
+    } finally {
+      setDeletingApp(false);
     }
   };
 
@@ -1594,17 +1879,34 @@ export default function ManageLaunchpadPage() {
 
             {/* Apps Grid with Full Image Upload & URL Management */}
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-mono text-white font-bold tracking-wider uppercase">
-                  Current Firestore Apps ({appLabApps.length})
-                </h3>
-                <button
-                  type="button"
-                  onClick={fetchApps}
-                  className="text-xs text-[#38f2ff] hover:underline font-mono"
-                >
-                  ↻ Refresh Apps
-                </button>
+              <div className="flex flex-wrap justify-between items-center gap-3">
+                <div>
+                  <h3 className="text-sm font-mono text-white font-bold tracking-wider uppercase">
+                    Current Firestore Apps ({appLabApps.length})
+                  </h3>
+                  <p className="text-xs text-gray-400 font-mono">
+                    Manage Google Drive download links, preview demos, developer guidelines &amp; copyrights
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAppModal(true)}
+                    className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-black text-xs font-bold font-mono transition flex items-center gap-1.5 shadow-[0_0_15px_rgba(20,184,166,0.3)] cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>+ Add New App</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={fetchApps}
+                    className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-[#38f2ff] hover:underline font-mono transition"
+                  >
+                    ↻ Refresh Apps
+                  </button>
+                </div>
               </div>
 
               {loadingApps ? (
@@ -1628,58 +1930,59 @@ export default function ManageLaunchpadPage() {
                     return (
                       <div
                         key={app.id}
-                        className="bg-[#0e131f] border border-white/10 rounded-xl p-5 flex flex-col sm:flex-row gap-5 hover:border-[#38f2ff]/30 transition"
+                        className="bg-[#0e131f] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-[#38f2ff]/30 transition shadow-lg relative"
                       >
-                        {/* Thumbnail & Image Controls */}
-                        <div className="w-full sm:w-[150px] shrink-0 space-y-2">
-                          <div className="w-full h-[180px] bg-[#161c28] rounded-lg overflow-hidden border border-white/10 relative">
-                            <img
-                              src={currentImg}
-                              alt={app.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = DUMMY_APP_IMAGES.default;
-                              }}
-                            />
+                        {/* Top row: Thumbnail + Identity */}
+                        <div className="flex flex-col sm:flex-row gap-4 items-start">
+                          {/* Thumbnail & Image Controls */}
+                          <div className="w-full sm:w-[130px] shrink-0 space-y-2">
+                            <div className="w-full h-[140px] bg-[#161c28] rounded-xl overflow-hidden border border-white/10 relative shadow-inner">
+                              <img
+                                src={currentImg}
+                                alt={app.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = DUMMY_APP_IMAGES.default;
+                                }}
+                              />
+                            </div>
+
+                            {/* Upload Image File Button */}
+                            <label className="block w-full text-center px-2 py-1.5 bg-[#38f2ff]/10 hover:bg-[#38f2ff]/20 text-[#38f2ff] border border-[#38f2ff]/30 rounded-lg text-[10px] font-mono font-bold cursor-pointer transition">
+                              {uploadingImage ? "Uploading…" : "Upload Image"}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingImage}
+                                onChange={(e) => handleUploadAppImage(app.id, e)}
+                              />
+                            </label>
+
+                            {/* Quick Dummy Image Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleSetAppDummyImage(app)}
+                              className="w-full text-center px-2 py-1 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10 rounded-lg text-[10px] font-mono transition cursor-pointer"
+                            >
+                              Reset Dummy
+                            </button>
                           </div>
 
-                          {/* Upload Image File Button */}
-                          <label className="block w-full text-center px-2 py-1.5 bg-[#38f2ff]/10 hover:bg-[#38f2ff]/20 text-[#38f2ff] border border-[#38f2ff]/30 rounded text-[11px] font-mono font-bold cursor-pointer transition">
-                            {uploadingImage ? "Uploading…" : "Upload Image File"}
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={uploadingImage}
-                              onChange={(e) => handleUploadAppImage(app.id, e)}
-                            />
-                          </label>
-
-                          {/* Quick Dummy Image Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleSetAppDummyImage(app)}
-                            className="w-full text-center px-2 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 rounded text-[10px] font-mono transition cursor-pointer"
-                          >
-                            Set Dummy Image
-                          </button>
-                        </div>
-
-                        {/* App Information & Actions */}
-                        <div className="flex-1 flex flex-col justify-between space-y-3">
-                          <div>
+                          {/* App Information & Badges */}
+                          <div className="flex-1 space-y-2 w-full">
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <h4 className="text-base font-bold text-white font-mono">
+                                <h4 className="text-base font-bold text-white font-space">
                                   {app.name}
                                 </h4>
-                                <p className="text-xs text-[#38f2ff] font-mono">
+                                <p className="text-xs text-[#38f2ff] font-mono line-clamp-1">
                                   {app.subtitle || "No tagline"}
                                 </p>
                               </div>
 
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider shrink-0 ${
                                   app.isPublic
                                     ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                                     : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
@@ -1689,29 +1992,151 @@ export default function ManageLaunchpadPage() {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2 mt-2 text-[10px] font-mono text-gray-400">
-                              <span className="px-1.5 py-0.5 bg-white/5 rounded border border-white/5">
+                            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono text-gray-300">
+                              <span className="px-2 py-0.5 bg-white/5 rounded-md border border-white/10">
                                 v{app.version || "1.0.0"}
                               </span>
-                              <span className="px-1.5 py-0.5 bg-white/5 rounded border border-white/5">
+                              <span className="px-2 py-0.5 bg-white/5 rounded-md border border-white/10 text-cyan-300">
                                 {app.platform || "android"}
                               </span>
                               {app.category && (
-                                <span className="px-1.5 py-0.5 bg-white/5 rounded border border-white/5">
+                                <span className="px-2 py-0.5 bg-white/5 rounded-md border border-white/10 text-gray-400">
                                   {app.category}
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-xs text-gray-400 mt-2 line-clamp-2 leading-relaxed">
-                              {app.description}
+                            <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+                              {app.description || "No description provided."}
                             </p>
+
+                            {/* Indicators for Dev Usage & Copyright */}
+                            <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] font-mono">
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border ${
+                                  app.devUsage
+                                    ? "bg-teal-500/10 text-teal-300 border-teal-500/30"
+                                    : "bg-white/5 text-gray-500 border-white/5"
+                                }`}
+                              >
+                                {app.devUsage ? "✓ Dev Usage Set" : "• Default Dev Usage"}
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border ${
+                                  app.copyright
+                                    ? "bg-indigo-500/10 text-indigo-300 border-indigo-500/30"
+                                    : "bg-white/5 text-gray-500 border-white/5"
+                                }`}
+                              >
+                                {app.copyright ? "✓ Custom IP Notice" : "• Default Copyright"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Dedicated Link Fields Section */}
+                        <div className="space-y-2.5 border-t border-white/10 pt-3">
+                          {/* 1. Google Drive / Download APK Link */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[10px] font-mono font-bold text-teal-300 flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Google Drive / APK Download Link</span>
+                              </label>
+                              {app.apkUrl && (
+                                <a
+                                  href={app.apkUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] font-mono text-gray-400 hover:text-teal-300 flex items-center gap-0.5"
+                                >
+                                  Test Link ↗
+                                </a>
+                              )}
+                            </div>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                placeholder="https://drive.google.com/..."
+                                value={
+                                  editingApkUrls[app.id] !== undefined
+                                    ? editingApkUrls[app.id]
+                                    : (app.apkUrl || "")
+                                }
+                                onChange={(e) =>
+                                  setEditingApkUrls({
+                                    ...editingApkUrls,
+                                    [app.id]: e.target.value,
+                                  })
+                                }
+                                className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono placeholder:text-gray-600 focus:border-teal-400 outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveAppApkUrl(app.id)}
+                                disabled={savingLinks[app.id + "-apk"]}
+                                className="px-3 py-1.5 bg-teal-500 hover:bg-teal-400 text-black text-xs font-mono font-bold rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0 shadow-sm"
+                              >
+                                {savingLinks[app.id + "-apk"] ? "Saving…" : "Save APK Link"}
+                              </button>
+                            </div>
                           </div>
 
-                          {/* Image Link Input */}
-                          <div className="space-y-1.5 border-t border-white/5 pt-2">
+                          {/* 2. Web Preview / Live Demo Link */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[10px] font-mono text-gray-400 flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                <span>Preview / Web Demo URL Link</span>
+                              </label>
+                              {app.previewUrl && (
+                                <a
+                                  href={app.previewUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] font-mono text-gray-400 hover:text-cyan-300 flex items-center gap-0.5"
+                                >
+                                  Open Preview ↗
+                                </a>
+                              )}
+                            </div>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                placeholder="https://example.com/preview or web app link"
+                                value={
+                                  editingPreviewUrls[app.id] !== undefined
+                                    ? editingPreviewUrls[app.id]
+                                    : (app.previewUrl || "")
+                                }
+                                onChange={(e) =>
+                                  setEditingPreviewUrls({
+                                    ...editingPreviewUrls,
+                                    [app.id]: e.target.value,
+                                  })
+                                }
+                                className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono placeholder:text-gray-600 focus:border-[#38f2ff] outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleSaveAppPreviewUrl(app.id)}
+                                disabled={savingLinks[app.id + "-prev"]}
+                                className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-[#38f2ff] border border-[#38f2ff]/30 text-xs font-mono font-bold rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0"
+                              >
+                                {savingLinks[app.id + "-prev"] ? "Saving…" : "Save Link"}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* 3. Image URL Link */}
+                          <div className="space-y-1">
                             <label className="block text-[10px] font-mono text-gray-400">
-                              Or Paste Image URL Link
+                              Direct Image / Cover URL
                             </label>
                             <div className="flex gap-1.5">
                               <input
@@ -1728,38 +2153,68 @@ export default function ManageLaunchpadPage() {
                                     [app.id]: e.target.value,
                                   })
                                 }
-                                className="flex-1 bg-[#080e1a] border border-white/10 rounded px-2.5 py-1 text-xs text-white font-mono"
+                                className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono placeholder:text-gray-600 focus:border-[#38f2ff] outline-none"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSaveAppImageUrl(app.id)}
-                                className="px-2.5 py-1 bg-[#38f2ff] text-black text-[11px] font-mono font-bold rounded hover:bg-[#00dbe8] transition cursor-pointer"
+                                className="px-3 py-1.5 bg-[#38f2ff] text-black text-xs font-mono font-bold rounded-lg hover:bg-[#00dbe8] transition cursor-pointer shrink-0"
                               >
-                                Save Link
+                                Save Image
                               </button>
                             </div>
                           </div>
+                        </div>
 
-                          {/* Bottom Actions */}
-                          <div className="flex items-center justify-between gap-2 border-t border-white/5 pt-2">
+                        {/* Bottom Actions Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
+                          <div className="flex items-center gap-2">
+                            {/* Edit All Details Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditDetails(app)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#38f2ff]/10 hover:bg-[#38f2ff]/20 text-[#38f2ff] border border-[#38f2ff]/30 transition flex items-center gap-1 cursor-pointer"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              <span>Edit Full Specs</span>
+                            </button>
+
+                            {/* View Public Specs Page Link */}
+                            <Link
+                              href={`/app-lab/${app.slug || app.id}`}
+                              target="_blank"
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-mono text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition flex items-center gap-1"
+                            >
+                              <span>View Specs ↗</span>
+                            </Link>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {/* Toggle Publish / Draft */}
                             <button
                               type="button"
                               onClick={() => handleToggleAppPublic(app)}
-                              className={`px-3 py-1 rounded text-xs font-mono font-bold cursor-pointer transition ${
+                              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold cursor-pointer transition ${
                                 app.isPublic
-                                  ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-300"
-                                  : "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300"
+                                  ? "bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30"
+                                  : "bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30"
                               }`}
                             >
                               {app.isPublic ? "Unpublish" : "Publish"}
                             </button>
 
+                            {/* Soft Delete to Recycle Bin */}
                             <button
                               type="button"
-                              onClick={() => handleDeleteApp(app.id, app.name)}
-                              className="px-3 py-1 rounded text-xs font-mono text-red-400 hover:text-red-300 bg-red-950/20 hover:bg-red-950/40 border border-red-500/20 transition cursor-pointer"
+                              onClick={() => handleOpenDeleteAppModal(app)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-mono text-rose-400 hover:text-rose-200 bg-rose-950/20 hover:bg-rose-950/40 border border-rose-500/20 transition cursor-pointer flex items-center gap-1"
                             >
-                              Delete
+                              <svg className="w-3.5 h-3.5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Delete</span>
                             </button>
                           </div>
                         </div>
@@ -1768,6 +2223,655 @@ export default function ManageLaunchpadPage() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            MODAL 1: EDIT APP DETAILS & DEVELOPER / COPYRIGHT SPECS
+        ═══════════════════════════════════════════════════════════════════ */}
+        {editDetailsApp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md">
+            <div className="w-full max-w-3xl max-h-[92vh] bg-[#0c101c] border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+              {/* Sticky Header */}
+              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/10 shrink-0 bg-[#0c101c]/95 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0 shadow-sm">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold font-space text-white">
+                      Edit App Specifications
+                    </h3>
+                    <p className="text-xs font-mono text-gray-400">
+                      ID: <span className="text-teal-300 font-semibold">{editDetailsApp.id}</span> · Links, developer guidelines &amp; copyright specs
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEditDetailsApp(null)}
+                  className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable Form Body */}
+              <form id="edit-app-specs-form" onSubmit={handleSaveEditDetails} className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-6">
+                {/* 1. Basic Info */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-teal-400 font-bold flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                    General App Identity
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">App Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={detailsForm.name}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, name: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Subtitle / Tagline</label>
+                      <input
+                        type="text"
+                        value={detailsForm.subtitle}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, subtitle: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Version</label>
+                      <input
+                        type="text"
+                        value={detailsForm.version}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, version: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                        placeholder="1.0.0"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Platform</label>
+                      <input
+                        type="text"
+                        value={detailsForm.platform}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, platform: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                        placeholder="android, web, flutter"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Category</label>
+                      <input
+                        type="text"
+                        value={detailsForm.category}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, category: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                        placeholder="AI, Productivity, etc."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Dedicated Links */}
+                <div className="space-y-3 p-5 rounded-2xl bg-teal-500/5 border border-teal-500/20">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-teal-300 font-bold flex items-center gap-2">
+                    <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Dedicated Application Links
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-mono font-bold text-teal-300 flex items-center gap-1.5">
+                          <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span>Google Drive / APK Download Link</span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={detailsForm.apkUrl}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, apkUrl: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-teal-400 outline-none"
+                        placeholder="https://drive.google.com/..."
+                      />
+                      <p className="text-[10px] font-mono text-gray-400">
+                        Associated with user-side &quot;Download APK&quot; buttons.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-mono text-cyan-300 flex items-center gap-1.5">
+                          <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>Preview / Web Demo URL Link</span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={detailsForm.previewUrl}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, previewUrl: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-[#38f2ff] outline-none"
+                        placeholder="https://example.com/preview"
+                      />
+                      <p className="text-[10px] font-mono text-gray-400">
+                        Interactive web preview or demo URL.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Description */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono uppercase tracking-wider text-gray-300 font-bold">
+                    Architecture &amp; Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={detailsForm.description}
+                    onChange={(e) => setDetailsForm({ ...detailsForm, description: e.target.value })}
+                    className="w-full bg-[#080e1a] border border-white/10 rounded-xl p-3.5 text-xs sm:text-sm text-white font-sans focus:border-teal-400 outline-none resize-none leading-relaxed"
+                    placeholder="Comprehensive description of the application architecture and features..."
+                  />
+                </div>
+
+                {/* 4. Developer Usage Warning Message */}
+                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-[#09101f] border-2 border-[#38f2ff]/30 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono font-bold text-[#38f2ff] flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-[#38f2ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      Developer Usage &amp; Testing Warning Message (Details Screen)
+                    </label>
+                    <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#38f2ff]/10 border border-[#38f2ff]/20">
+                      Notice Banner
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={detailsForm.devUsage}
+                    onChange={(e) => setDetailsForm({ ...detailsForm, devUsage: e.target.value })}
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-cyan-200 font-mono focus:border-[#38f2ff] outline-none leading-relaxed resize-none"
+                    placeholder="Custom developer instructions: e.g. This build is intended strictly for authorized developer testing. Run within an Android 10+ virtual emulator. Do not inject sensitive production secrets..."
+                  />
+                  <p className="text-[10px] font-mono text-gray-400">
+                    Displayed prominently on <code>/app-lab/[slug]</code> in place of the removed download/preview buttons.
+                  </p>
+                </div>
+
+                {/* 5. Copyright Claims */}
+                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono font-bold text-indigo-300 flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      Copyright Claims &amp; Legal Protection Notice
+                    </label>
+                    <span className="text-[10px] font-mono text-indigo-300 uppercase px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+                      Legal IP
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={detailsForm.copyright}
+                    onChange={(e) => setDetailsForm({ ...detailsForm, copyright: e.target.value })}
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-gray-200 font-sans focus:border-indigo-400 outline-none leading-relaxed resize-none"
+                    placeholder="Copyright © 2026 DevEngine. All rights reserved. Reverse engineering, decompilation, or unauthorized commercial reproduction is strictly prohibited..."
+                  />
+                </div>
+
+                {/* 6. Usages & Warnings */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono text-gray-300">
+                      Target Usages (One per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={detailsForm.usages}
+                      onChange={(e) => setDetailsForm({ ...detailsForm, usages: e.target.value })}
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:border-teal-400 outline-none leading-relaxed resize-none"
+                      placeholder={`AI-powered chat\nPersonal productivity\nPortfolio testing`}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono text-amber-300">
+                      Warnings / Operating Notes (One per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={detailsForm.warnings}
+                      onChange={(e) => setDetailsForm({ ...detailsForm, warnings: e.target.value })}
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:border-amber-400 outline-none leading-relaxed resize-none"
+                      placeholder={`Internet connection required\nBeta testing release`}
+                    />
+                  </div>
+                </div>
+
+                {/* 7. Image URL & Publish Toggle */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center pt-2 border-t border-white/10">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-gray-300">Cover Image URL</label>
+                    <input
+                      type="text"
+                      value={detailsForm.imageUrl}
+                      onChange={(e) => setDetailsForm({ ...detailsForm, imageUrl: e.target.value })}
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-teal-400 outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-3 sm:pt-4">
+                    <label className="flex items-center gap-2 cursor-pointer font-mono text-xs text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={detailsForm.isPublic}
+                        onChange={(e) => setDetailsForm({ ...detailsForm, isPublic: e.target.checked })}
+                        className="w-4 h-4 rounded text-teal-500 focus:ring-teal-400"
+                      />
+                      <span>Publish live to Showroom immediately</span>
+                    </label>
+                  </div>
+                </div>
+              </form>
+
+              {/* Sticky Footer */}
+              <div className="p-4 sm:p-5 border-t border-white/10 shrink-0 bg-[#080d19] flex flex-wrap items-center justify-between gap-3">
+                <div className="text-xs font-mono text-gray-400">
+                  Status:{" "}
+                  <span className={detailsForm.isPublic ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                    {detailsForm.isPublic ? "LIVE IN SHOWROOM" : "DRAFT (HIDDEN)"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setEditDetailsApp(null)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-mono text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="edit-app-specs-form"
+                    disabled={savingAppDetails}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-black text-xs font-mono font-bold transition shadow-lg disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                  >
+                    {savingAppDetails ? "Saving Changes…" : "Save Specifications"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            MODAL 2: ADD NEW APPLICATION WITH FULL FIELDS
+        ═══════════════════════════════════════════════════════════════════ */}
+        {showAddAppModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md">
+            <div className="w-full max-w-3xl max-h-[92vh] bg-[#0c101c] border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+              {/* Sticky Header */}
+              <div className="flex items-center justify-between p-5 sm:p-6 border-b border-white/10 shrink-0 bg-[#0c101c]/95 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-sm">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold font-space text-white">
+                      Add New App to Showroom
+                    </h3>
+                    <p className="text-xs font-mono text-gray-400">
+                      Populate download links, developer instructions, and intellectual property specs
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddAppModal(false)}
+                  className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Scrollable Form Body */}
+              <form id="create-new-app-form" onSubmit={handleCreateNewApp} className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-6">
+                <div className="space-y-4">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    General App Identity
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">App Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Nexus AI Assistant"
+                        value={newAppForm.name}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, name: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Subtitle / Tagline</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Next-generation neural workflow platform"
+                        value={newAppForm.subtitle}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, subtitle: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Version</label>
+                      <input
+                        type="text"
+                        value={newAppForm.version}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, version: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Platform</label>
+                      <input
+                        type="text"
+                        value={newAppForm.platform}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, platform: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-gray-300">Category</label>
+                      <input
+                        type="text"
+                        value={newAppForm.category}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, category: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dedicated Links */}
+                <div className="space-y-3 p-5 rounded-2xl bg-teal-500/5 border border-teal-500/20">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-teal-300 font-bold flex items-center gap-2">
+                    <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    Dedicated Application Links
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono font-bold text-teal-300 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Google Drive / APK Download Link</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://drive.google.com/file/d/..."
+                        value={newAppForm.apkUrl}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, apkUrl: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-teal-400 outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-mono text-cyan-300 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span>Preview / Web Demo URL Link</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://preview.thedevengine.com"
+                        value={newAppForm.previewUrl}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, previewUrl: e.target.value })}
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-[#38f2ff] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-mono uppercase tracking-wider text-gray-300 font-bold">
+                    Architecture &amp; Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Detailed explanation of the app..."
+                    value={newAppForm.description}
+                    onChange={(e) => setNewAppForm({ ...newAppForm, description: e.target.value })}
+                    className="w-full bg-[#080e1a] border border-white/10 rounded-xl p-3.5 text-xs sm:text-sm text-white font-sans focus:border-teal-400 outline-none resize-none leading-relaxed"
+                  />
+                </div>
+
+                {/* Developer Usage Notice */}
+                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-[#09101f] border-2 border-[#38f2ff]/30 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono font-bold text-[#38f2ff] flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-[#38f2ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      Developer Usage &amp; Testing Warning Message (Details Page)
+                    </label>
+                    <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#38f2ff]/10 border border-[#38f2ff]/20">
+                      Notice Banner
+                    </span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder="Instructions on how developers should execute, test, and sandbox this application..."
+                    value={newAppForm.devUsage}
+                    onChange={(e) => setNewAppForm({ ...newAppForm, devUsage: e.target.value })}
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-cyan-200 font-mono focus:border-[#38f2ff] outline-none leading-relaxed resize-none"
+                  />
+                </div>
+
+                {/* Copyright Claims */}
+                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono font-bold text-indigo-300 flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      Copyright Claims &amp; Legal Terms
+                    </label>
+                    <span className="text-[10px] font-mono text-indigo-300 uppercase px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20">
+                      Legal IP
+                    </span>
+                  </div>
+                  <textarea
+                    rows={2}
+                    placeholder="DevEngine copyright and IP ownership statement..."
+                    value={newAppForm.copyright}
+                    onChange={(e) => setNewAppForm({ ...newAppForm, copyright: e.target.value })}
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-gray-200 font-sans focus:border-indigo-400 outline-none leading-relaxed resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono text-gray-300">Target Usages (One per line)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Use case 1&#10;Use case 2"
+                      value={newAppForm.usages}
+                      onChange={(e) => setNewAppForm({ ...newAppForm, usages: e.target.value })}
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:border-teal-400 outline-none leading-relaxed resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-mono text-amber-300">Operating Warnings (One per line)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Warning 1&#10;Warning 2"
+                      value={newAppForm.warnings}
+                      onChange={(e) => setNewAppForm({ ...newAppForm, warnings: e.target.value })}
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-xl p-3 text-xs text-white font-mono focus:border-amber-400 outline-none leading-relaxed resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center pt-2 border-t border-white/10">
+                  <div className="space-y-1">
+                    <label className="text-xs font-mono text-gray-300">Cover Image URL</label>
+                    <input
+                      type="text"
+                      placeholder="https://..."
+                      value={newAppForm.imageUrl}
+                      onChange={(e) => setNewAppForm({ ...newAppForm, imageUrl: e.target.value })}
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono focus:border-teal-400 outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-3 sm:pt-4">
+                    <label className="flex items-center gap-2 cursor-pointer font-mono text-xs text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={newAppForm.isPublic}
+                        onChange={(e) => setNewAppForm({ ...newAppForm, isPublic: e.target.checked })}
+                        className="w-4 h-4 rounded text-teal-500 focus:ring-teal-400"
+                      />
+                      <span>Make App Public Immediately</span>
+                    </label>
+                  </div>
+                </div>
+              </form>
+
+              {/* Sticky Footer */}
+              <div className="p-4 sm:p-5 border-t border-white/10 shrink-0 bg-[#080d19] flex flex-wrap items-center justify-between gap-3">
+                <div className="text-xs font-mono text-gray-400">
+                  Status:{" "}
+                  <span className={newAppForm.isPublic ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                    {newAppForm.isPublic ? "READY TO PUBLISH LIVE" : "SAVING AS DRAFT"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAppModal(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-mono text-gray-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="create-new-app-form"
+                    disabled={creatingApp}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-black text-xs font-mono font-bold transition shadow-lg disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                  >
+                    {creatingApp ? "Publishing App…" : "🚀 Publish App to Showroom"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            MODAL 3: RECYCLE BIN SOFT DELETE CONFIRMATION MODAL (USER REQUESTED)
+        ═══════════════════════════════════════════════════════════════════ */}
+        {deleteTargetApp && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="w-full max-w-md bg-[#0c0c16]/98 border border-white/[0.08] rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl relative">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-space">Move to Recycle Bin?</h3>
+                  <p className="text-xs font-mono text-gray-400">
+                    Retained for 30 days before permanent purging.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-gray-300 text-sm leading-relaxed font-sans">
+                Are you sure you want to move the application{" "}
+                <span className="text-white font-semibold font-mono">
+                  &quot;{deleteTargetApp.name}&quot;
+                </span>{" "}
+                to the Recycle Bin?
+              </p>
+
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-mono">
+                💡 You can restore this application anytime from{" "}
+                <strong>Dashboard &gt; Recycle Bin</strong>.
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={deletingApp}
+                  onClick={() => setDeleteTargetApp(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-mono text-gray-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+                >
+                  CANCEL
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingApp}
+                  onClick={handleConfirmMoveAppToBin}
+                  className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-mono font-bold tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-rose-500/20 flex items-center gap-1.5"
+                >
+                  {deletingApp ? (
+                    <span>Moving to Bin…</span>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>MOVE TO BIN</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}

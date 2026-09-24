@@ -66,9 +66,12 @@ export interface AppLabItem {
   version: string;
   platform?: "android" | "ios" | "web" | string;
   apkUrl?: string;
+  previewUrl?: string;
   description: string;
   usages?: string[];
   warnings?: string[];
+  devUsage?: string;
+  copyright?: string;
   images?: string[];
   category?: string;
   status?: string;

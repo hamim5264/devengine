@@ -7,6 +7,7 @@ import {
   collection,
   onSnapshot,
   updateDoc,
+  deleteDoc,
   doc,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -38,7 +39,13 @@ export default function ManageAppLab() {
 
   useEffect(() => {
     return onSnapshot(collection(db, "appLab"), (snap) => {
-      setApps(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setApps(
+        snap.docs.map((d) => ({
+          ...(d.data() as any),
+          id: d.id,
+          slug: (d.data() as any).slug || d.id,
+        }))
+      );
     });
   }, []);
 
@@ -59,25 +66,42 @@ export default function ManageAppLab() {
     if (!deleteTarget) return;
     try {
       setDeleting(true);
-      await moveToBin({
-        originalCollection: "appLab",
-        originalId: deleteTarget.id,
-        itemTitle: deleteTarget.name,
-        itemType: "App Lab",
-        data: deleteTarget,
-        metadata: {
-          slug: deleteTarget.slug || deleteTarget.id,
-          version: deleteTarget.version,
-          platform: deleteTarget.platform,
-          category: deleteTarget.category,
-        },
-      });
+      try {
+        await moveToBin({
+          originalCollection: "appLab",
+          originalId: deleteTarget.id,
+          itemTitle: deleteTarget.name,
+          itemType: "App Lab",
+          data: deleteTarget,
+          metadata: {
+            slug: deleteTarget.slug || deleteTarget.id,
+            version: deleteTarget.version,
+            platform: deleteTarget.platform,
+            category: deleteTarget.category,
+          },
+        });
+      } catch (binErr) {
+        console.warn("Recycle bin warning:", binErr);
+      }
 
-      setMessage(`"${deleteTarget.name}" was moved to the Recycle Bin.`);
+      await deleteDoc(doc(db, "appLab", deleteTarget.id));
+      if (deleteTarget.slug && deleteTarget.slug !== deleteTarget.id) {
+        try {
+          await deleteDoc(doc(db, "appLab", deleteTarget.slug));
+        } catch (_) {}
+      }
+
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("launchpad_apps");
+        } catch (_) {}
+      }
+
+      setMessage(`"${deleteTarget.name}" was removed from the App Collection.`);
       setDeleteTarget(null);
       setTimeout(() => setMessage(null), 3000);
     } catch (err: any) {
-      alert("Failed to move to bin: " + err.message);
+      alert("Failed to delete app: " + err.message);
     } finally {
       setDeleting(false);
     }

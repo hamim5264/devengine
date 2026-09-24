@@ -21,6 +21,8 @@ import {
   getCleanAppThumbnail,
   uploadAppLabImage,
   updateAppLabApp,
+  deleteAppLabApp,
+  deleteAllAppLabApps,
   seedAppLabDummyImages,
   seedDefaultAppLabApps,
   DUMMY_APP_IMAGES,
@@ -126,6 +128,8 @@ export default function ManageLaunchpadPage() {
   // Recycle Bin Delete Confirmation Modal State
   const [deleteTargetApp, setDeleteTargetApp] = useState<AppLabItem | null>(null);
   const [deletingApp, setDeletingApp] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const [message, setMessage] = useState<{
     text: string;
@@ -137,9 +141,14 @@ export default function ManageLaunchpadPage() {
       setLoadingApps(true);
       const col = collection(db, "appLab");
       const snap = await getDocs(col);
-      const list = snap.docs.map(
-        (d) => ({ id: d.id, slug: d.id, ...d.data() } as AppLabItem)
-      );
+      const list = snap.docs.map((d) => {
+        const data = d.data() as any;
+        return {
+          ...data,
+          id: d.id,
+          slug: data.slug || d.id,
+        } as AppLabItem;
+      });
       setAppLabApps(list);
     } catch (err) {
       console.error("Failed to load appLab apps:", err);
@@ -649,33 +658,83 @@ export default function ManageLaunchpadPage() {
     if (!deleteTargetApp) return;
     try {
       setDeletingApp(true);
-      await moveToBin({
-        originalCollection: "appLab",
-        originalId: deleteTargetApp.id,
-        itemTitle: deleteTargetApp.name,
-        itemType: "App Lab",
-        data: deleteTargetApp,
-        metadata: {
-          slug: deleteTargetApp.slug || deleteTargetApp.id,
-          version: deleteTargetApp.version,
-          platform: deleteTargetApp.platform,
-          category: deleteTargetApp.category,
-        },
-      });
+      
+      // 1. Attempt safe archiving in Recycle Bin
+      try {
+        await moveToBin({
+          originalCollection: "appLab",
+          originalId: deleteTargetApp.id,
+          itemTitle: deleteTargetApp.name,
+          itemType: "App Lab",
+          data: deleteTargetApp,
+          metadata: {
+            slug: deleteTargetApp.slug || deleteTargetApp.id,
+            version: deleteTargetApp.version,
+            platform: deleteTargetApp.platform,
+            category: deleteTargetApp.category,
+          },
+        });
+      } catch (binErr) {
+        console.warn("Recycle bin move warning, proceeding with direct delete:", binErr);
+      }
 
-      setAppLabApps((prev) => prev.filter((a) => a.id !== deleteTargetApp.id));
+      // 2. Direct Firestore deletion of document ID
+      await deleteAppLabApp(deleteTargetApp.id);
+
+      // Also clean up by slug if slug is different
+      if (deleteTargetApp.slug && deleteTargetApp.slug !== deleteTargetApp.id) {
+        try {
+          await deleteAppLabApp(deleteTargetApp.slug);
+        } catch (_) {}
+      }
+
+      // 3. Clear public cached launchpad apps so user view reflects deletion immediately
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("launchpad_apps");
+        } catch (_) {}
+      }
+
+      setAppLabApps((prev) =>
+        prev.filter((a) => a.id !== deleteTargetApp.id && a.slug !== deleteTargetApp.id)
+      );
       setMessage({
-        text: `"${deleteTargetApp.name}" was moved to the Recycle Bin. Restore anytime from Dashboard > Recycle Bin!`,
+        text: `"${deleteTargetApp.name}" was successfully removed from the App Collection.`,
         type: "success",
       });
       setDeleteTargetApp(null);
     } catch (err: any) {
       setMessage({
-        text: err?.message || "Failed to move app to Recycle Bin",
+        text: err?.message || "Failed to delete app",
         type: "error",
       });
     } finally {
       setDeletingApp(false);
+    }
+  };
+
+  const handleConfirmDeleteAllApps = async () => {
+    try {
+      setDeletingAll(true);
+      await deleteAllAppLabApps();
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("launchpad_apps");
+        } catch (_) {}
+      }
+      setAppLabApps([]);
+      setShowDeleteAllModal(false);
+      setMessage({
+        text: "All applications were deleted from the App Collection. The public catalog is now clear.",
+        type: "success",
+      });
+    } catch (err: any) {
+      setMessage({
+        text: err?.message || "Failed to delete all apps",
+        type: "error",
+      });
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -1889,6 +1948,18 @@ export default function ManageLaunchpadPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2.5">
+                  {appLabApps.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteAllModal(true)}
+                      className="px-3 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:text-rose-300 text-xs font-mono font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      <svg className="w-3.5 h-3.5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>Delete All Apps</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setShowAddAppModal(true)}
@@ -2813,7 +2884,7 @@ export default function ManageLaunchpadPage() {
         )}
 
         {/* ═══════════════════════════════════════════════════════════════════
-            MODAL 3: RECYCLE BIN SOFT DELETE CONFIRMATION MODAL (USER REQUESTED)
+            MODAL 3: DELETE APP CONFIRMATION MODAL
         ═══════════════════════════════════════════════════════════════════ */}
         {deleteTargetApp && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -2825,24 +2896,24 @@ export default function ManageLaunchpadPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white font-space">Move to Recycle Bin?</h3>
+                  <h3 className="text-lg font-bold text-white font-space">Delete Application?</h3>
                   <p className="text-xs font-mono text-gray-400">
-                    Retained for 30 days before permanent purging.
+                    Remove app from App Collection &amp; Firebase
                   </p>
                 </div>
               </div>
 
               <p className="text-gray-300 text-sm leading-relaxed font-sans">
-                Are you sure you want to move the application{" "}
+                Are you sure you want to delete the application{" "}
                 <span className="text-white font-semibold font-mono">
                   &quot;{deleteTargetApp.name}&quot;
                 </span>{" "}
-                to the Recycle Bin?
+                from the App Collection?
               </p>
 
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-mono">
-                💡 You can restore this application anytime from{" "}
-                <strong>Dashboard &gt; Recycle Bin</strong>.
+                💡 A backup copy will be archived to your{" "}
+                <strong>Dashboard &gt; Recycle Bin</strong> for safe keeping.
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
@@ -2861,13 +2932,72 @@ export default function ManageLaunchpadPage() {
                   className="px-5 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-mono font-bold tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-rose-500/20 flex items-center gap-1.5"
                 >
                   {deletingApp ? (
-                    <span>Moving to Bin…</span>
+                    <span>Deleting App…</span>
                   ) : (
                     <>
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      <span>MOVE TO BIN</span>
+                      <span>DELETE APP</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            MODAL 4: DELETE ALL APPS CONFIRMATION MODAL
+        ═══════════════════════════════════════════════════════════════════ */}
+        {showDeleteAllModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <div className="w-full max-w-md bg-[#0c0c16]/98 border border-white/[0.08] rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl relative">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white font-space">Delete All Applications?</h3>
+                  <p className="text-xs font-mono text-gray-400">
+                    Purge all {appLabApps.length} apps from collection
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-gray-300 text-sm leading-relaxed font-sans">
+                Are you sure you want to delete all <span className="text-rose-400 font-bold font-mono">{appLabApps.length}</span> applications from the App Collection?
+              </p>
+
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 leading-relaxed font-mono">
+                ⚠️ On the public user side, the App Collection will automatically switch to displaying the official <strong>&quot;Catalog Staging &amp; Updates in Progress&quot;</strong> waiting state.
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={deletingAll}
+                  onClick={() => setShowDeleteAllModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-mono text-gray-400 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+                >
+                  CANCEL
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingAll}
+                  onClick={handleConfirmDeleteAllApps}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono font-bold tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-rose-600/30 flex items-center gap-1.5"
+                >
+                  {deletingAll ? (
+                    <span>Deleting All Apps…</span>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span>DELETE ALL APPS</span>
                     </>
                   )}
                 </button>

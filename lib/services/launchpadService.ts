@@ -3,6 +3,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   serverTimestamp,
   collection,
   getDocs,
@@ -260,6 +261,22 @@ export async function updateAppLabApp(
   );
 }
 
+export async function deleteAppLabApp(appId: string): Promise<void> {
+  const docRef = doc(db, "appLab", appId);
+  await deleteDoc(docRef);
+}
+
+export async function deleteAllAppLabApps(): Promise<number> {
+  const colRef = collection(db, "appLab");
+  const snap = await getDocs(colRef);
+  let count = 0;
+  for (const d of snap.docs) {
+    await deleteDoc(d.ref);
+    count++;
+  }
+  return count;
+}
+
 export async function seedAppLabDummyImages(): Promise<{ updated: number }> {
   try {
     const colRef = collection(db, "appLab");
@@ -303,20 +320,30 @@ export async function getAppLabApps(): Promise<AppLabItem[]> {
     const colRef = collection(db, "appLab");
     const snap = await getDocs(query(colRef, where("isPublic", "==", true)));
     if (!snap.empty) {
-      return snap.docs.map((d) => ({
-        id: d.id,
-        slug: d.id,
-        ...(d.data() as any),
-      }));
+      return snap.docs.map((d) => {
+        const data = d.data() as any;
+        return {
+          ...data,
+          id: d.id,
+          slug: data.slug || d.id,
+        };
+      });
     }
 
-    // Fallback if isPublic query returns empty: fetch all apps
+    // Fallback if isPublic query returns empty: fetch all apps (in case isPublic field is not yet set)
     const allSnap = await getDocs(colRef);
-    return allSnap.docs.map((d) => ({
-      id: d.id,
-      slug: d.id,
-      ...(d.data() as any),
-    }));
+    if (!allSnap.empty) {
+      return allSnap.docs.map((d) => {
+        const data = d.data() as any;
+        return {
+          ...data,
+          id: d.id,
+          slug: data.slug || d.id,
+        };
+      });
+    }
+
+    return [];
   } catch (err) {
     console.error("Failed to fetch appLab apps:", err);
     return [];

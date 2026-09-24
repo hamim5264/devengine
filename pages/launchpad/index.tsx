@@ -103,12 +103,12 @@ export default function LaunchpadPage() {
     return getCachedData<LaunchpadConfig>("launchpad_config", DEFAULT_LAUNCHPAD_CONFIG);
   });
   const [appsList, setAppsList] = useState<AppLabItem[]>(() => {
-    return getCachedData<AppLabItem[]>("launchpad_apps", FALLBACK_APPS);
+    return getCachedData<AppLabItem[]>("launchpad_apps", []);
   });
   const [loading, setLoading] = useState(() => {
     const cachedConfig = getCachedData<LaunchpadConfig | null>("launchpad_config", null);
     const cachedApps = getCachedData<AppLabItem[] | null>("launchpad_apps", null);
-    return !cachedConfig || !cachedApps;
+    return !cachedConfig || cachedApps === null;
   });
   const [activeSection, setActiveSection] = useState("overview");
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
@@ -143,11 +143,8 @@ export default function LaunchpadPage() {
             setConfig(loadedConfig);
             setCachedData("launchpad_config", loadedConfig);
           }
-          const finalApps = loadedApps.length > 0 ? loadedApps : FALLBACK_APPS;
-          setAppsList(finalApps);
-          if (loadedApps.length > 0) {
-            setCachedData("launchpad_apps", loadedApps);
-          }
+          setAppsList(loadedApps);
+          setCachedData("launchpad_apps", loadedApps);
         }
       } catch (err) {
         console.error("Failed to load launchpad data:", err);
@@ -618,7 +615,7 @@ export default function LaunchpadPage() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-5 py-2 rounded-full font-jetbrains text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
+                  className={`px-5 py-2 rounded-full font-jetbrains text-xs uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
                     selectedCategory === cat
                       ? "bg-[#38f2ff] text-[#030712] font-bold shadow-[0_0_15px_rgba(56,242,255,0.4)]"
                       : "bg-[#161c28] text-gray-400 hover:text-white hover:bg-white/10 border border-white/5"
@@ -630,109 +627,212 @@ export default function LaunchpadPage() {
             </div>
           </div>
 
-          {/* Apps Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {filteredApps.map((app) => (
-              <div
-                key={app.id || app.slug}
-                className="bg-[#0e131f]/80 backdrop-blur-xl rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row gap-5 sm:gap-6 border border-white/10 hover:border-[#38f2ff]/40 shadow-xl hover:shadow-[0_0_30px_rgba(56,242,255,0.1)] transition-all duration-300 group min-w-0 overflow-hidden"
-              >
-                {/* App Preview Image / Thumbnail (With Guaranteed Fallback & No Robot Icon) */}
-                <div className="w-full sm:w-[170px] h-[220px] bg-[#161c28] rounded-xl border border-white/10 overflow-hidden relative shrink-0">
-                  <img
-                    src={getCleanAppThumbnail(app)}
-                    alt={app.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = DUMMY_APP_IMAGES.default;
-                    }}
-                  />
+          {/* Apps Content: Cards Grid OR Big Icon with Formal Waiting State */}
+          {filteredApps.length === 0 ? (
+            <div className="relative max-w-4xl mx-auto rounded-3xl bg-gradient-to-b from-[#0e131f]/95 via-[#0a0f1d]/95 to-[#070b14]/95 border border-white/[0.08] backdrop-blur-2xl p-8 sm:p-14 text-center overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)]">
+              {/* Background ambient glow inside card */}
+              <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#38f2ff]/10 rounded-full blur-[100px] pointer-events-none" />
+              <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#3495ea]/10 rounded-full blur-[100px] pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col items-center max-w-2xl mx-auto space-y-6">
+                {/* Big Futuristic Icon Container with Glow */}
+                <div className="relative">
+                  {/* Outer pulse ring */}
+                  <div className="absolute inset-0 rounded-3xl bg-[#38f2ff]/20 blur-xl animate-pulse" />
+                  
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-[#121927] border-2 border-[#38f2ff]/40 flex items-center justify-center shadow-[0_0_40px_rgba(56,242,255,0.25)] group">
+                    <svg
+                      className="w-12 h-12 sm:w-14 sm:h-14 text-[#38f2ff] drop-shadow-[0_0_12px_rgba(56,242,255,0.8)]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                  </div>
                 </div>
 
-                {/* App Info & Action Buttons */}
-                <div className="flex flex-col justify-between w-full py-1 min-w-0">
-                  <div>
-                    {/* Title and Category */}
-                    <div className="flex items-start justify-between mb-2">
-                      <Link
-                        href={`/app-lab/${app.slug}`}
-                        className="font-space font-bold text-xl text-white hover:text-[#38f2ff] transition-colors truncate block"
-                      >
-                        {app.name}
-                      </Link>
+                {/* Status Badge */}
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#38f2ff]/10 border border-[#38f2ff]/30 text-[#38f2ff] font-jetbrains text-[11px] font-bold tracking-widest uppercase">
+                  <span className="w-2 h-2 rounded-full bg-[#38f2ff] animate-ping" />
+                  <span>Catalog In Staging</span>
+                </div>
+
+                {/* Formal Heading */}
+                <div className="space-y-2">
+                  <h3 className="font-space font-bold text-2xl sm:text-3xl text-white tracking-tight">
+                    {selectedCategory === "All"
+                      ? "Upcoming Applications in Staging"
+                      : `No Applications Under "${selectedCategory}"`}
+                  </h3>
+                  <p className="font-jetbrains text-xs text-[#38f2ff]/80 uppercase tracking-widest">
+                    Pipeline Compilation &amp; Release Review Active
+                  </p>
+                </div>
+
+                {/* Formal Waiting Message */}
+                <p className="font-sans text-sm sm:text-base text-gray-300 leading-relaxed max-w-xl">
+                  {selectedCategory === "All"
+                    ? "Our engineering and product teams are currently packaging, auditing, and staging the next batch of production builds for this catalog. All applications undergo comprehensive security screening and QA testing before public distribution."
+                    : `There are currently no active applications deployed under the ${selectedCategory} category. You can view all experimental applications or check back shortly as new builds are published.`}
+                </p>
+
+                {/* Formal Meta Info Box */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full pt-2 text-left">
+                  <div className="bg-[#121927]/80 border border-white/5 rounded-xl p-3">
+                    <div className="text-[10px] font-jetbrains uppercase text-gray-400">Release Status</div>
+                    <div className="text-xs font-mono text-emerald-400 font-semibold mt-0.5 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Auditing In Progress
                     </div>
-
-                    {/* Version & Status Chips */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="px-2 py-0.5 bg-[#161c28] border border-white/10 rounded font-jetbrains text-[10px] text-gray-300">
-                        v{app.version || "1.0.0"}
-                      </span>
-                      <span className="px-2 py-0.5 bg-[#38f2ff]/10 border border-[#38f2ff]/30 rounded font-jetbrains text-[10px] text-[#38f2ff] font-bold">
-                        {app.status || "LIVE"}
-                      </span>
-                      {app.category && (
-                        <span className="px-2 py-0.5 bg-white/5 border border-white/5 rounded font-jetbrains text-[10px] text-gray-400">
-                          {app.category}
-                        </span>
-                      )}
+                  </div>
+                  <div className="bg-[#121927]/80 border border-white/5 rounded-xl p-3">
+                    <div className="text-[10px] font-jetbrains uppercase text-gray-400">Target Platforms</div>
+                    <div className="text-xs font-mono text-white font-semibold mt-0.5">
+                      Android APK &amp; Web
                     </div>
-
-                    <p className="font-sans text-xs sm:text-sm text-[#849495] line-clamp-3 mb-4 leading-relaxed">
-                      {app.subtitle || app.description}
-                    </p>
                   </div>
-
-                  {/* 2 Action Buttons: Responsive grid layout so buttons NEVER overflow card */}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pt-2 w-full">
-                    <button
-                      onClick={() => handleOpenAppPreview(app)}
-                      className="bg-[#161c28] hover:bg-[#242a36] text-white border border-white/10 hover:border-[#38f2ff]/40 w-full py-2.5 px-2 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer font-bold group/btn min-w-0"
-                    >
-                      <svg
-                        className="w-4 h-4 shrink-0 text-gray-300 group-hover/btn:text-[#38f2ff] transition-colors"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                      <span className="truncate">Open Preview</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleDownloadApk(app)}
-                      className="bg-[#38f2ff] hover:bg-[#00dbe8] text-[#030712] w-full py-2.5 px-2 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(56,242,255,0.25)] transition-all cursor-pointer font-bold min-w-0"
-                    >
-                      <svg
-                        className="w-4 h-4 shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                      </svg>
-                      <span className="truncate">Download APK</span>
-                    </button>
+                  <div className="bg-[#121927]/80 border border-white/5 rounded-xl p-3">
+                    <div className="text-[10px] font-jetbrains uppercase text-gray-400">Access Tier</div>
+                    <div className="text-xs font-mono text-[#38f2ff] font-semibold mt-0.5">
+                      Free Early Access
+                    </div>
                   </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+                  {selectedCategory !== "All" && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory("All")}
+                      className="px-5 py-2.5 rounded-xl bg-[#38f2ff] hover:bg-[#00dbe8] text-black font-sans font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(56,242,255,0.3)] cursor-pointer"
+                    >
+                      Show All Categories
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection("featured")}
+                    className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-sans font-bold text-xs uppercase tracking-wider transition cursor-pointer flex items-center gap-2"
+                  >
+                    <span>View Featured Builds</span>
+                    <svg className="w-3.5 h-3.5 text-[#38f2ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {filteredApps.map((app) => (
+                <div
+                  key={app.id || app.slug}
+                  className="bg-[#0e131f]/80 backdrop-blur-xl rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row gap-5 sm:gap-6 border border-white/10 hover:border-[#38f2ff]/40 shadow-xl hover:shadow-[0_0_30px_rgba(56,242,255,0.1)] transition-all duration-300 group min-w-0 overflow-hidden"
+                >
+                  {/* App Preview Image / Thumbnail (With Guaranteed Fallback & No Robot Icon) */}
+                  <div className="w-full sm:w-[170px] h-[220px] bg-[#161c28] rounded-xl border border-white/10 overflow-hidden relative shrink-0">
+                    <img
+                      src={getCleanAppThumbnail(app)}
+                      alt={app.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = DUMMY_APP_IMAGES.default;
+                      }}
+                    />
+                  </div>
+
+                  {/* App Info & Action Buttons */}
+                  <div className="flex flex-col justify-between w-full py-1 min-w-0">
+                    <div>
+                      {/* Title and Category */}
+                      <div className="flex items-start justify-between mb-2">
+                        <Link
+                          href={`/app-lab/${app.slug}`}
+                          className="font-space font-bold text-xl text-white hover:text-[#38f2ff] transition-colors truncate block"
+                        >
+                          {app.name}
+                        </Link>
+                      </div>
+
+                      {/* Version & Status Chips */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-2 py-0.5 bg-[#161c28] border border-white/10 rounded font-jetbrains text-[10px] text-gray-300">
+                          v{app.version || "1.0.0"}
+                        </span>
+                        <span className="px-2 py-0.5 bg-[#38f2ff]/10 border border-[#38f2ff]/30 rounded font-jetbrains text-[10px] text-[#38f2ff] font-bold">
+                          {app.status || "LIVE"}
+                        </span>
+                        {app.category && (
+                          <span className="px-2 py-0.5 bg-white/5 border border-white/5 rounded font-jetbrains text-[10px] text-gray-400">
+                            {app.category}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="font-sans text-xs sm:text-sm text-[#849495] line-clamp-3 mb-4 leading-relaxed">
+                        {app.subtitle || app.description}
+                      </p>
+                    </div>
+
+                    {/* 2 Action Buttons: Responsive grid layout so buttons NEVER overflow card */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pt-2 w-full">
+                      <button
+                        onClick={() => handleOpenAppPreview(app)}
+                        className="bg-[#161c28] hover:bg-[#242a36] text-white border border-white/10 hover:border-[#38f2ff]/40 w-full py-2.5 px-2 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer font-bold group/btn min-w-0"
+                      >
+                        <svg
+                          className="w-4 h-4 shrink-0 text-gray-300 group-hover/btn:text-[#38f2ff] transition-colors"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        <span className="truncate">Open Preview</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDownloadApk(app)}
+                        className="bg-[#38f2ff] hover:bg-[#00dbe8] text-[#030712] w-full py-2.5 px-2 rounded-xl font-sans text-xs uppercase tracking-wide inline-flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(56,242,255,0.25)] transition-all cursor-pointer font-bold min-w-0"
+                      >
+                        <svg
+                          className="w-4 h-4 shrink-0"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                        <span className="truncate">Download APK</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ═════════════════════════════════════════════════════════════════

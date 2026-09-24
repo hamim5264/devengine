@@ -217,9 +217,8 @@ service cloud.firestore {
        APP LAB
     ========================== */
     match /appLab/{appId} {
-      // Admin can list/get all apps; public can only get published ones
-      allow list: if isAdmin();
-      allow get: if resource.data.isPublic == true || isAdmin();
+      // Public can read apps; admin can manage
+      allow read: if true;
 
       // Only admin can manage App Lab entries
       allow create, update, delete: if isAdmin();

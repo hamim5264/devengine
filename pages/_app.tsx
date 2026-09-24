@@ -10,6 +10,7 @@ import {
 } from "@/lib/services/maintenanceService";
 import { recordPageView } from "@/lib/services/analyticsService";
 import MaintenanceScreen from "@/components/maintenance/MaintenanceScreen";
+import DevKittyFloatingButton from "@/components/DevKittyFloatingButton";
 import "../styles/globals.css";
 
 const ADMIN_EMAIL =
@@ -91,7 +92,11 @@ function MyApp({ Component, pageProps }: AppProps) {
       {shouldLockScreen ? (
         <MaintenanceScreen config={maintenanceConfig!} />
       ) : (
-        <Component {...pageProps} />
+        <>
+          <Component {...pageProps} />
+          {/* DevKitty Future ChatBot Floating Button (All user screens) */}
+          <DevKittyFloatingButton />
+        </>
       )}
     </>
   );

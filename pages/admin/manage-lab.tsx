@@ -56,6 +56,7 @@ const EMPTY_FORM: Omit<LabProject, "id" | "createdAt" | "updatedAt"> = {
   icon: "science",
   isPublic: true,
   order: 1,
+  youtubeUrl: "",
 };
 
 export default function ManageLabPage() {
@@ -161,6 +162,7 @@ export default function ManageLabPage() {
         icon: project.icon || "science",
         isPublic: project.isPublic !== false,
         order: project.order || 1,
+        youtubeUrl: project.youtubeUrl || "",
       });
       setTechStackInput((project.techStack || []).join(", "));
       setTagsInput((project.tags || []).join(", "));
@@ -472,6 +474,12 @@ export default function ManageLabPage() {
                         >
                           {project.isPublic ? "PUBLIC" : "HIDDEN"}
                         </span>
+                        {project.youtubeUrl && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 font-mono flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">play_circle</span>
+                            Demo Video
+                          </span>
+                        )}
                       </div>
                       <h3 className="font-bold text-lg text-white truncate">
                         {project.title}
@@ -782,6 +790,36 @@ export default function ManageLabPage() {
                       className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-4 text-white text-xs font-mono focus:outline-none transition-colors"
                     />
                   </div>
+                </div>
+
+                {/* Demo Video YouTube Link (Optional) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-mono text-gray-300">
+                      Demo Video (YouTube URL) — <span className="text-gray-500 font-normal">Optional</span>
+                    </label>
+                    {form.youtubeUrl && (
+                      <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[12px]">play_circle</span>
+                        &quot;Watch Demo&quot; button active on card
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                      value={form.youtubeUrl || ""}
+                      onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
+                      className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl pl-10 pr-4 text-white text-xs font-mono focus:outline-none transition-colors"
+                    />
+                    <span className="material-symbols-outlined text-gray-500 text-sm absolute left-3.5 top-3.5 pointer-events-none">
+                      smart_display
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-mono text-gray-500 mt-1">
+                    If provided, a &quot;Watch Demo&quot; button will display on the user-facing project card to open an interactive video popup.
+                  </p>
                 </div>
 
                 {/* Row 5: Tech Stack & Tags */}

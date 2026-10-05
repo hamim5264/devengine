@@ -132,21 +132,12 @@ export default function CommercialLicensePage() {
 
           <div className="flex items-center gap-4">
             <Link
-              href="/checkout"
-              className="px-3.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-mono text-gray-300 hover:text-white transition flex items-center gap-2"
+              href="/home"
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-xs font-mono text-gray-300 hover:text-white transition flex items-center gap-2 group"
             >
-              <span className="material-symbols-outlined text-sm">arrow_back</span>
-              <span>Back to Checkout</span>
+              <span className="material-symbols-outlined text-sm group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
+              <span>Back to Home</span>
             </Link>
-
-            <button
-              onClick={() => window.print()}
-              className="px-3.5 py-1.5 rounded-lg bg-[#38f2ff]/10 hover:bg-[#38f2ff]/20 border border-[#38f2ff]/30 text-xs font-mono text-[#38f2ff] transition flex items-center gap-1.5"
-              title="Print or Save as PDF"
-            >
-              <span className="material-symbols-outlined text-sm">print</span>
-              <span className="hidden sm:inline">Print / PDF</span>
-            </button>
           </div>
         </header>
 

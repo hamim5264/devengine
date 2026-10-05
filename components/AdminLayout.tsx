@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { signOut } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { getCachedStaffByUid } from "@/lib/services/staffAuth";
+import type { StaffMember } from "@/types/staff";
 
 interface NavItem { label: string; href: string; badge?: string; }
 interface NavGroup {
   label: string;
+  moduleKey?: string;
   color: string;        // accent color for the group
   icon: React.ReactNode;
   items: NavItem[];
@@ -68,15 +71,25 @@ function IconSettings({ size = 16 }: { size?: number }) {
   );
 }
 
+function IconUserCheck({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>
+    </svg>
+  );
+}
+
 const NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
+    moduleKey: "overview",
     color: "#14b8a6",
     icon: <IconGrid />,
     items: [{ label: "Dashboard", href: "/admin/dashboard" }],
   },
   {
     label: "Commerce",
+    moduleKey: "commerce",
     color: "#34d399",
     icon: <IconBag />,
     items: [
@@ -86,6 +99,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Projects",
+    moduleKey: "projects",
     color: "#60a5fa",
     icon: <IconFolder />,
     items: [
@@ -98,6 +112,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Content CMS",
+    moduleKey: "content_cms",
     color: "#a78bfa",
     icon: <IconEdit />,
     items: [
@@ -117,6 +132,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Social & Network",
+    moduleKey: "social_network",
     color: "#38bdf8",
     icon: <IconShare />,
     items: [
@@ -126,9 +142,11 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Legal",
+    moduleKey: "legal",
     color: "#fb923c",
     icon: <IconDoc />,
     items: [
+      { label: "App Policies & Hub", href: "/admin/manage-app-legal", badge: "new" },
       { label: "Terms & Conditions", href: "/admin/manage-terms" },
       { label: "Privacy Policy", href: "/admin/manage-privacy" },
       { label: "License Agreement", href: "/admin/manage-license" },
@@ -137,11 +155,24 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "Staff Operations",
+    moduleKey: "staff_operations",
+    color: "#a855f7",
+    icon: <IconUserCheck />,
+    items: [
+      { label: "Staff Members", href: "/admin/manage-staff" },
+      { label: "Staff Roles", href: "/admin/manage-staff-roles" },
+      { label: "Staff Attendance", href: "/admin/manage-attendance", badge: "new" },
+      { label: "Work Updates", href: "/admin/manage-work-updates", badge: "new" },
+      { label: "Leave Requests", href: "/admin/manage-leaves", badge: "new" },
+    ],
+  },
+  {
     label: "System",
+    moduleKey: "system",
     color: "#f59e0b",
     icon: <IconSettings />,
     items: [
-      { label: "Staff Management", href: "/admin/manage-staff", badge: "new" },
       { label: "Maintenance Mode", href: "/admin/manage-maintenance" },
       { label: "Recycle Bin", href: "/admin/manage-bin" },
     ],
@@ -157,6 +188,54 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
   const router = useRouter();
   const navScrollRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isStaffUser, setIsStaffUser] = useState(false);
+  const [staffRecord, setStaffRecord] = useState<StaffMember | null>(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsStaffUser(false);
+        setStaffRecord(null);
+        return;
+      }
+      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com").toLowerCase();
+      if (user.email?.toLowerCase() === adminEmail) {
+        setIsStaffUser(false);
+        setStaffRecord(null);
+        return;
+      }
+      const staff = await getCachedStaffByUid(user.uid);
+      if (staff && staff.status === "active") {
+        setIsStaffUser(true);
+        setStaffRecord(staff);
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const visibleGroups = useMemo(() => {
+    if (!isStaffUser || !staffRecord) return NAV_GROUPS;
+
+    const workspaceGroup: NavGroup = {
+      label: "My Workspace",
+      color: "#a855f7",
+      icon: <IconUserCheck />,
+      items: [
+        { label: "Dashboard", href: "/staff/dashboard" },
+        { label: "My Attendance", href: "/staff/attendance" },
+        { label: "Daily Work Updates", href: "/staff/work-updates" },
+        { label: "Leave Applications", href: "/staff/leaves" },
+      ],
+    };
+
+    const allowed = new Set(staffRecord.allowedModules || []);
+    const allowedGroups = NAV_GROUPS.filter(
+      (g) => g.moduleKey && (allowed.has(g.moduleKey) || allowed.has("all"))
+    );
+
+    return [workspaceGroup, ...allowedGroups];
+  }, [isStaffUser, staffRecord]);
+
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
     if (typeof window !== "undefined") {
       try {
@@ -170,7 +249,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
 
   // Auto-expand group that contains current active page
   useEffect(() => {
-    const activeGroup = NAV_GROUPS.find(g => g.items.some(it => it.href === router.pathname));
+    const activeGroup = visibleGroups.find(g => g.items.some(it => it.href === router.pathname));
     if (activeGroup) {
       setExpandedGroups(prev => {
         if (!prev.has(activeGroup.label)) {
@@ -184,7 +263,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
         return prev;
       });
     }
-  }, [router.pathname]);
+  }, [router.pathname, visibleGroups]);
 
   // Restore drawer scroll position on mount & after route transitions
   useEffect(() => {
@@ -201,9 +280,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
       }
     };
 
-    // Immediate attempt
     restoreNavScroll();
-    // Subsequent frame attempt after layout and DOM updates
     const animFrame = requestAnimationFrame(restoreNavScroll);
     return () => cancelAnimationFrame(animFrame);
   }, [router.pathname]);
@@ -246,7 +323,16 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
     });
   };
 
-  const handleSignOut = async () => { await signOut(auth); router.push("/login"); };
+  const handleSignOut = async () => {
+    await signOut(auth);
+    if (isStaffUser) {
+      localStorage.removeItem("isStaff");
+      localStorage.removeItem("staffUid");
+      router.push("/staff");
+    } else {
+      router.push("/login");
+    }
+  };
 
   return (
     <>
@@ -263,18 +349,47 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
             </svg>
           </button>
 
-          <Link href="/admin/dashboard" className="flex items-center gap-2.5 flex-shrink-0">
+          <Link href={isStaffUser ? "/staff/dashboard" : "/admin/dashboard"} className="flex items-center gap-2.5 flex-shrink-0">
             <span className="text-[15px] font-bold tracking-tight"
               style={{ background: "linear-gradient(90deg,#38f2ff,#14b8a6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               DevEngine
             </span>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
-              style={{ background: "rgba(56,242,255,0.12)", color: "#38f2ff", border: "1px solid rgba(56,242,255,0.25)" }}>
-              Admin
-            </span>
+            {isStaffUser ? (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
+                style={{ background: "rgba(168,85,247,0.15)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.3)" }}>
+                Staff
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
+                style={{ background: "rgba(56,242,255,0.12)", color: "#38f2ff", border: "1px solid rgba(56,242,255,0.25)" }}>
+                Admin
+              </span>
+            )}
           </Link>
 
+          {isStaffUser && staffRecord && (
+            <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs text-white/70">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="font-medium text-white/90">{staffRecord.name}</span>
+              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                {staffRecord.staffType}
+              </span>
+            </div>
+          )}
+
           <div className="flex-1"/>
+
+          {isStaffUser && (
+            <Link href="/staff/dashboard"
+              className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+              style={{ background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", color: "#c084fc" }}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+              </svg>
+              Staff Portal
+            </Link>
+          )}
 
           <a href="/" target="_blank" rel="noopener noreferrer"
             className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
@@ -312,7 +427,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
               className="flex-1 overflow-y-auto themed-scroll py-3"
               style={{ width: 240 }}
             >
-              {NAV_GROUPS.map((group, gi) => {
+              {visibleGroups.map((group, gi) => {
                 const isExpanded = expandedGroups.has(group.label);
                 return (
                   <div key={group.label} className={gi > 0 ? "mt-1" : ""}>

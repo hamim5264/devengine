@@ -59,6 +59,7 @@ export const DEFAULT_LAB_PROJECTS: LabProject[] = [
     icon: "psychology",
     isPublic: true,
     order: 2,
+    youtubeUrl: "https://www.youtube.com/watch?v=d_kHk7cMpm0",
   },
   {
     id: "pulse-mobile",

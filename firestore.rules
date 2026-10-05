@@ -14,6 +14,16 @@ service cloud.firestore {
         request.auth.token.email == "hamim.leon@gmail.com";
     }
 
+    function isStaff() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/staff_members/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/staff_members/$(request.auth.uid)).data.status == "active";
+    }
+
+    function isAdminOrStaff() {
+      return isAdmin() || isStaff();
+    }
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -30,91 +40,114 @@ service cloud.firestore {
     }
 
     /* =========================
+       STAFF ROLES
+    ========================== */
+    match /staff_roles/{roleId} {
+      // Admin has full CRUD access
+      allow read, write: if isAdmin();
+
+      // Signed in users can read roles
+      allow read: if isSignedIn();
+    }
+
+    /* =========================
+       STAFF ATTENDANCE
+    ========================== */
+    match /staff_attendance/{attendanceId} {
+      allow read, write: if isAdmin();
+      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create, update: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+    }
+
+    /* =========================
+       STAFF ATTENDANCE REQUESTS (MISSED DATES)
+    ========================== */
+    match /staff_attendance_requests/{requestId} {
+      allow read, write: if isAdmin();
+      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+    }
+
+    /* =========================
+       STAFF DAILY WORK UPDATES
+    ========================== */
+    match /staff_work_updates/{updateId} {
+      allow read, write: if isAdmin();
+      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create, update: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+    }
+
+    /* =========================
+       STAFF LEAVE APPLICATIONS
+    ========================== */
+    match /staff_leave_requests/{leaveId} {
+      allow read, write: if isAdmin();
+      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+    }
+
+    /* =========================
        SYSTEM UPDATE LOGS (NEW)
     ========================== */
     match /update_logs/{logId} {
-      // Public can read system updates and changelogs
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        NETWORK HUBS (NEW)
     ========================== */
     match /network_hubs/{hubId} {
-      // Public can read network routing nodes and status
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        LANDING SECTIONS CMS (NEW)
     ========================== */
     match /landing_sections/{sectionId} {
-      // Public can read landing page configurations
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        TERMS & CONDITIONS CMS (NEW)
     ========================== */
     match /terms_config/{docId} {
-      // Public can read terms and conditions
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        PRIVACY POLICY CMS (NEW)
     ========================== */
     match /privacy_config/{docId} {
-      // Public can read privacy policy
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        SECURITY PROTOCOL CMS (NEW)
     ========================== */
     match /security_config/{docId} {
-      // Public can read security protocol
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        DOCUMENTATION & API CMS (NEW)
     ========================== */
     match /documentation_config/{docId} {
-      // Public can read documentation & API access
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        COMMERCIAL LICENSE CMS (NEW)
     ========================== */
     match /license_config/{docId} {
-      // Public can read commercial license agreement
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
@@ -129,63 +162,45 @@ service cloud.firestore {
        STRICT NO-RETURN & REFUND POLICY CMS (NEW)
     ========================== */
     match /refund_config/{docId} {
-      // Public can read refund policy
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        ARCHIVE & PROJECTS CMS (NEW)
     ========================== */
     match /archive_config/{docId} {
-      // Public can read archive configuration
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        LAUNCHPAD & APP LAB CMS (NEW)
     ========================== */
     match /launchpad_config/{docId} {
-      // Public can read launchpad configuration
       allow read: if true;
-
-      // Only admin can create, update, or delete
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        SERVICES & INQUIRIES
     ========================== */
     match /services/{serviceId} {
-      // Public can read services catalog
       allow read: if true;
-
-      // Only admin can manage services
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     match /service_inquiries/{inquiryId} {
-      // Public can submit project inquiries
       allow create: if true;
-
-      // Only admin can read or manage inquiries
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        LAB PROJECTS (Upcoming / Ongoing)
     ========================== */
     match /lab_projects/{projectId} {
-      // Public can read lab projects (visibility filtered client-side)
       allow read: if true;
-
-      // Only admin can manage lab projects
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
@@ -193,35 +208,28 @@ service cloud.firestore {
     ========================== */
     match /lab_categories/{catId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     match /categories/{catId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     /* =========================
        PROJECTS
     ========================== */
     match /projects/{projectId} {
-      // Admin can list/get all projects; public can only get published ones
-      allow list: if isAdmin();
-      allow get: if resource.data.isPublic == true || isAdmin();
-
-      // Only admin can create/update/delete
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        APP LAB
     ========================== */
     match /appLab/{appId} {
-      // Public can read apps; admin can manage
       allow read: if true;
-
-      // Only admin can manage App Lab entries
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
@@ -229,7 +237,7 @@ service cloud.firestore {
     ========================== */
     match /tags/{tagId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
@@ -237,6 +245,8 @@ service cloud.firestore {
     ========================== */
     match /currencies/{currencyId} {
       allow read: if true;
+      allow create, update, delete: if isAdminOrStaff();
+    }
       allow create, update, delete: if isAdmin();
     }
 
@@ -292,19 +302,16 @@ service cloud.firestore {
       // Public can read orders (for confirmation & order tracking by ID)
       allow read: if true;
 
-      // Only admin can update status or delete
-      allow update, delete: if isAdmin();
+      // Admin or authorized staff can update status or delete
+      allow update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        BLOGS & CHRONICLES
     ========================== */
     match /blogs/{blogId} {
-      // Public can read all published or individual blogs
       allow read: if true;
-
-      // Only admin can create, update, or delete blog posts
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     /* =========================
@@ -312,52 +319,44 @@ service cloud.firestore {
     ========================== */
     match /team_members/{memberId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     match /studio_about/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     /* =========================
        CAREER & JOB CIRCULARS
     ========================== */
     match /job_circulars/{circularId} {
-      // Public can read all active circulars
       allow read: if true;
-      // Only admin can create, update, or delete circulars
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     /* =========================
        CANDIDATE APPLICATIONS
     ========================== */
     match /job_applications/{applicationId} {
-      // Anyone can submit a job application without logging in
       allow create: if true;
-      // Only admin can read, review, update status, or delete candidate submissions
-      allow read, update, delete: if isAdmin();
+      allow read, update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        FOOTER SOCIAL LINKS
     ========================== */
     match /footer_socials/{linkId} {
-      // Public can read social channels
       allow read: if true;
-      // Only admin can create, update, or delete social channels
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     /* =========================
        SYSTEM SETTINGS & MAINTENANCE
     ========================== */
     match /system_settings/{settingId} {
-      // Public can read maintenance state
       allow read: if true;
-      // Only admin can configure maintenance mode
-      allow write: if isAdmin();
+      allow write: if isAdminOrStaff();
     }
 
     /* =========================
@@ -374,15 +373,32 @@ service cloud.firestore {
     match /activity_logs/{logId} {
       allow read: if true;
       allow create: if true;
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAdminOrStaff();
     }
 
     /* =========================
        RECYCLE BIN (TRASH & RECOVERY)
     ========================== */
     match /recycle_bin/{binId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAdminOrStaff();
+    }
+
+    /* =========================
+       APP POLICIES & LEGAL HUB (GOOGLE PLAY / APP STORE)
+    ========================== */
+    match /app_policies/{policyId} {
+      allow read: if true;
+      allow create, update, delete: if isAdminOrStaff();
+    }
+
+    /* =========================
+       APP USER DATA DELETION REQUESTS
+    ========================== */
+    match /app_data_deletion_requests/{requestId} {
+      allow create: if true;
+      allow read, update, delete: if isAdminOrStaff();
     }
   }
 }
+
 

@@ -109,30 +109,38 @@ export default function ViewAllProjectsPage() {
     async function loadData() {
       try {
         setLoading(true);
-        const [archiveData, snap] = await Promise.all([
+        const colRef = collection(db, "projects");
+        let [archiveData, snap] = await Promise.all([
           getArchiveConfig(),
-          getDocs(query(collection(db, "projects"), where("isPublic", "==", true))),
+          getDocs(query(colRef, where("isPublic", "==", true))),
         ]);
+
+        // Fallback in case existing projects in Firestore do not have explicit isPublic: true
+        if (snap.empty) {
+          snap = await getDocs(colRef);
+        }
 
         if (isMounted) setConfig(archiveData);
 
-        const list = snap.docs.map((d) => {
-          const data = d.data() as any;
-          return {
-            id: d.id,
-            slug: d.id,
-            title: data.title || "",
-            subtitle: data.subtitle || "",
-            category: data.category || "android",
-            price: data.price ?? "0",
-            discount: data.discount,
-            pricing: Array.isArray(data.pricing) ? data.pricing : undefined,
-            tags: Array.isArray(data.tags) ? data.tags : [],
-            isPublic: !!data.isPublic,
-            imageUrl: data.imageUrl || data.image || "",
-            details: data.details || "",
-          } as ProjectItem;
-        });
+        const list = snap.docs
+          .filter((d) => (d.data() as any).isPublic !== false)
+          .map((d) => {
+            const data = d.data() as any;
+            return {
+              id: d.id,
+              slug: data.slug || d.id,
+              title: data.title || "Untitled System",
+              subtitle: data.subtitle || "",
+              category: data.category || "android",
+              price: data.price ?? "0",
+              discount: data.discount,
+              pricing: Array.isArray(data.pricing) ? data.pricing : undefined,
+              tags: Array.isArray(data.tags) ? data.tags : [],
+              isPublic: data.isPublic !== false,
+              imageUrl: data.imageUrl || data.image || "",
+              details: data.details || "",
+            } as ProjectItem;
+          });
 
         if (isMounted) setProjects(list);
       } catch (err) {

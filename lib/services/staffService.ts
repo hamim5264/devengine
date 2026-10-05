@@ -8,19 +8,23 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where,
   orderBy,
 } from "firebase/firestore";
 import { initializeApp, getApps } from "firebase/app";
 import {
   getAuth,
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updatePassword,
   signOut as firebaseSignOut,
 } from "firebase/auth";
-import { db } from "@/lib/firebase";
-import type { StaffMember, StaffType } from "@/types/staff";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
+import type { StaffMember, StaffType, StaffRole } from "@/types/staff";
+import { DEFAULT_STAFF_ROLES, ROLE_COLOR_PRESETS } from "@/types/staff";
 
 const STAFF_COLLECTION = "staff_members";
+const STAFF_ROLES_COLLECTION = "staff_roles";
 
 // ── Secondary Firebase App (avoids signing out admin) ──
 function getSecondaryAuth() {
@@ -47,7 +51,7 @@ function getSecondaryAuth() {
 /** Generate email from full name: "John Smith" → "john.devengine@gmail.com" */
 export function generateStaffEmail(name: string): string {
   const firstName = name.trim().split(/\s+/)[0] || "staff";
-  return `${firstName.toLowerCase()}.devengine@gmail.com`;
+  return `${firstName.toLowerCase().replace(/[^a-z0-9]/g, "")}.devengine@gmail.com`;
 }
 
 /** Generate random 8-char alphanumeric password */
@@ -60,7 +64,57 @@ export function generateStaffPassword(): string {
   return pw;
 }
 
-// ── CRUD ──
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (err) => reject(err);
+  });
+}
+
+/** Upload staff avatar via Firebase Storage with fallback to /api/upload-image */
+export async function uploadStaffAvatar(
+  file: File,
+  staffIdentifier: string = "staff"
+): Promise<string> {
+  const cleanExt = (file.name.split(".").pop() || "png").toLowerCase();
+  const filename = `${staffIdentifier.replace(/[^a-zA-Z0-9_-]/g, "_")}_${Date.now()}.${cleanExt}`;
+
+  // 1. Try Firebase Storage
+  try {
+    const storageRef = ref(storage, `staff/${filename}`);
+    await uploadBytes(storageRef, file);
+    const downloadUrl = await getDownloadURL(storageRef);
+    if (downloadUrl) return downloadUrl;
+  } catch (storageErr) {
+    console.warn("[StaffService] Firebase Storage upload failed, trying local fallback:", storageErr);
+  }
+
+  // 2. Fallback to API endpoint
+  try {
+    const base64Data = await fileToBase64(file);
+    const res = await fetch("/api/upload-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename,
+        base64Data,
+        folder: "staff",
+      }),
+    });
+    const data = await res.json();
+    if (res.ok && data?.url) {
+      return data.url;
+    }
+    throw new Error(data?.error || "Upload fallback failed");
+  } catch (apiErr: any) {
+    console.error("[StaffService] Fallback upload error:", apiErr);
+    throw new Error(apiErr?.message || "Failed to upload avatar image.");
+  }
+}
+
+// ── CRUD Staff Accounts ──
 
 /** Create a new staff account (Firebase Auth + Firestore) */
 export async function createStaffAccount(data: {
@@ -69,6 +123,7 @@ export async function createStaffAccount(data: {
   password: string;
   staffType: StaffType;
   allowedModules: string[];
+  avatarUrl?: string;
 }): Promise<StaffMember> {
   const secondaryAuth = getSecondaryAuth();
 
@@ -83,14 +138,16 @@ export async function createStaffAccount(data: {
   // Sign out secondary immediately
   await firebaseSignOut(secondaryAuth);
 
-  // 2. Save to Firestore
-  const id = uid; // Use auth UID as document ID for easy lookup
+  // 2. Save to Firestore (Doc ID = Auth UID)
+  const id = uid;
   const now = new Date().toISOString();
   const staffMember: StaffMember = {
     id,
     uid,
     name: data.name,
     email: data.email,
+    password: data.password, // Persisted for admin visibility, edit and recovery
+    avatarUrl: data.avatarUrl || "",
     staffType: data.staffType,
     allowedModules: data.allowedModules,
     status: "active",
@@ -136,18 +193,105 @@ export async function getStaffByUid(uid: string): Promise<StaffMember | null> {
   }
 }
 
-/** Update staff member */
+/** Update staff member (Firestore + Firebase Auth password if changed) */
 export async function updateStaffMember(
   id: string,
-  data: Partial<Pick<StaffMember, "name" | "staffType" | "allowedModules" | "status">>,
+  data: Partial<Pick<StaffMember, "name" | "staffType" | "allowedModules" | "status" | "password" | "avatarUrl">>,
+  credentials?: { email: string; oldPassword?: string }
 ): Promise<void> {
+  // If password was edited and we know the previous password, update secondary Firebase Auth
+  if (data.password && credentials?.email && credentials?.oldPassword && data.password !== credentials.oldPassword) {
+    try {
+      const secondaryAuth = getSecondaryAuth();
+      const userCred = await signInWithEmailAndPassword(secondaryAuth, credentials.email, credentials.oldPassword);
+      await updatePassword(userCred.user, data.password);
+      await firebaseSignOut(secondaryAuth);
+    } catch (authErr) {
+      console.warn("[StaffService] Secondary Firebase Auth password sync warning:", authErr);
+      // Secondary auth sign-in might fail if password was already changed; Firestore update still proceeds.
+    }
+  }
+
   await updateDoc(doc(db, STAFF_COLLECTION, id), {
     ...data,
     updatedAt: new Date().toISOString(),
   });
 }
 
-/** Delete staff member from Firestore (does not delete Firebase Auth user) */
+/** Delete staff member from Firestore */
 export async function deleteStaffMember(id: string): Promise<void> {
   await deleteDoc(doc(db, STAFF_COLLECTION, id));
+}
+
+// ── CRUD Staff Roles ──
+
+/** Fetch all staff roles (Default roles merged with Firestore custom roles) */
+export async function getStaffRoles(): Promise<StaffRole[]> {
+  try {
+    const colRef = collection(db, STAFF_ROLES_COLLECTION);
+    const snap = await getDocs(colRef);
+    const customRoles: StaffRole[] = snap.docs.map((d) => ({
+      ...d.data(),
+      id: d.id,
+      isCustom: true,
+    } as StaffRole));
+
+    // Map default roles, allowing custom roles to override if same key exists
+    const rolesMap = new Map<string, StaffRole>();
+    for (const def of DEFAULT_STAFF_ROLES) {
+      rolesMap.set(def.key, { ...def });
+    }
+    for (const cust of customRoles) {
+      rolesMap.set(cust.key, cust);
+    }
+
+    return Array.from(rolesMap.values());
+  } catch (err) {
+    console.error("[StaffService] Error loading roles:", err);
+    return DEFAULT_STAFF_ROLES;
+  }
+}
+
+/** Create a new custom role */
+export async function createStaffRole(data: {
+  label: string;
+  key?: string;
+  description?: string;
+  color?: { bg: string; text: string; border: string; hex?: string };
+  defaultModules?: string[];
+}): Promise<StaffRole> {
+  const rawKey = data.key || data.label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const key = rawKey || `role_${Date.now()}`;
+  const now = new Date().toISOString();
+
+  // If no color provided, assign one from presets
+  const color = data.color || ROLE_COLOR_PRESETS[Math.floor(Math.random() * ROLE_COLOR_PRESETS.length)];
+
+  const role: StaffRole = {
+    id: key,
+    key,
+    label: data.label.trim(),
+    description: data.description || "",
+    color,
+    defaultModules: data.defaultModules || ["overview"],
+    isCustom: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await setDoc(doc(db, STAFF_ROLES_COLLECTION, key), role);
+  return role;
+}
+
+/** Update an existing custom role */
+export async function updateStaffRole(id: string, data: Partial<StaffRole>): Promise<void> {
+  await updateDoc(doc(db, STAFF_ROLES_COLLECTION, id), {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/** Delete a custom role */
+export async function deleteStaffRole(id: string): Promise<void> {
+  await deleteDoc(doc(db, STAFF_ROLES_COLLECTION, id));
 }

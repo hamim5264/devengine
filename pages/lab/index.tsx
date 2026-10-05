@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
-import { LabProject, LabProjectStatus } from "@/types/lab";
+import { LabProject, LabProjectStatus, getYouTubeVideoId } from "@/types/lab";
 import {
   getPublicLabProjects,
   DEFAULT_LAB_PROJECTS,
@@ -213,6 +213,18 @@ export default function LabPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeVideoProject, setActiveVideoProject] = useState<LabProject | null>(null);
+
+  // Close video popup on ESC key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setActiveVideoProject(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -581,6 +593,26 @@ export default function LabPage() {
                             </span>
                           ))}
                         </div>
+
+                        {/* Watch Demo Button (Optional - shown only when admin provided YouTube link) */}
+                        {getYouTubeVideoId(project.youtubeUrl) && (
+                          <div className="mt-5 pt-4 border-t border-white/[0.08] flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideoProject(project)}
+                              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-gradient-to-r from-red-500/15 via-[#38f2ff]/15 to-red-500/15 hover:from-red-500/25 hover:via-[#38f2ff]/25 hover:to-red-500/25 border border-red-500/30 hover:border-[#38f2ff]/50 text-white font-space font-semibold text-xs tracking-wider transition-all duration-300 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:shadow-[0_0_25px_rgba(56,242,255,0.4)] cursor-pointer group/btn active:scale-95"
+                            >
+                              <span className="w-5 h-5 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 group-hover/btn:scale-110 group-hover/btn:bg-red-500 group-hover/btn:text-white transition-all">
+                                <span className="material-symbols-outlined text-[13px] translate-x-[0.5px]">play_arrow</span>
+                              </span>
+                              <span className="text-gray-100 group-hover/btn:text-white font-bold">Watch Demo</span>
+                            </button>
+                            <span className="text-[10px] font-jetbrains text-gray-500 uppercase tracking-widest hidden sm:inline flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                              Video Preview
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -631,6 +663,86 @@ export default function LabPage() {
           </section>
         </main>
       </div>
+
+      {/* ═══ WATCH DEMO VIDEO POPUP MODAL ═══ */}
+      {activeVideoProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-xl animate-fadeIn">
+          {/* Backdrop Click */}
+          <div
+            className="absolute inset-0 cursor-pointer"
+            onClick={() => setActiveVideoProject(null)}
+          />
+
+          {/* Modal Container */}
+          <div className="relative w-full max-w-4xl bg-[#0a0f1d] border border-white/[0.12] rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_30px_rgba(56,242,255,0.15)] overflow-hidden z-10 flex flex-col">
+            {/* Header */}
+            <div className="px-5 sm:px-7 py-4 border-b border-white/[0.08] bg-white/[0.02] flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400 shrink-0">
+                  <span className="material-symbols-outlined text-lg">smart_display</span>
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-jetbrains text-[9px] text-[#38f2ff] bg-[#38f2ff]/10 px-2 py-0.5 rounded uppercase tracking-widest font-bold">
+                      LAB-{String(activeVideoProject.order).padStart(3, "0")}
+                    </span>
+                    <h3 className="font-space font-bold text-sm sm:text-base text-white truncate">
+                      {activeVideoProject.title}
+                    </h3>
+                  </div>
+                  <p className="font-sans text-xs text-gray-400 truncate mt-0.5">
+                    {activeVideoProject.tagline}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveVideoProject(null)}
+                className="w-9 h-9 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-gray-400 hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0"
+                title="Close Video (Esc)"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            {/* 16:9 Video Frame */}
+            <div className="relative w-full aspect-video bg-black">
+              {getYouTubeVideoId(activeVideoProject.youtubeUrl) ? (
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${getYouTubeVideoId(activeVideoProject.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1`}
+                  title={`${activeVideoProject.title} Demo Video`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-6 text-center">
+                  <span className="material-symbols-outlined text-4xl text-gray-600 mb-2">
+                    error
+                  </span>
+                  <p className="font-space text-sm">Unable to parse YouTube video stream.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 sm:px-7 py-3 bg-[#070b14] border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono text-gray-400">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Demo Player
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveVideoProject(null)}
+                className="hover:text-white text-gray-400 transition-colors cursor-pointer"
+              >
+                Close Preview ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <LandingFooter />
 

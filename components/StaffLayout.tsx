@@ -79,23 +79,38 @@ function IconSettings({ size = 16 }: { size?: number }) {
   );
 }
 
-// All possible nav groups (same structure as admin but with staff paths)
+function IconUserCheck({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>
+    </svg>
+  );
+}
+
+// Dedicated Workspace section available to all staff members
+const STAFF_WORKSPACE_GROUP: NavGroup = {
+  label: "My Workspace",
+  moduleKey: "__workspace__",
+  color: "#a855f7",
+  icon: <IconUserCheck />,
+  items: [
+    { label: "Dashboard", href: "/admin/dashboard", staffHref: "/staff/dashboard" },
+    { label: "My Attendance", href: "/admin/manage-attendance", staffHref: "/staff/attendance" },
+    { label: "Daily Work Updates", href: "/admin/manage-work-updates", staffHref: "/staff/work-updates" },
+    { label: "Leave Applications", href: "/admin/manage-leaves", staffHref: "/staff/leaves" },
+  ],
+};
+
+// All possible module nav groups (filtered by allowedModules)
 const ALL_NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Overview",
-    moduleKey: "overview",
-    color: "#14b8a6",
-    icon: <IconGrid />,
-    items: [{ label: "Dashboard", href: "/admin/dashboard", staffHref: "/staff/dashboard" }],
-  },
   {
     label: "Commerce",
     moduleKey: "commerce",
     color: "#34d399",
     icon: <IconBag />,
     items: [
-      { label: "Orders & Payments", href: "/admin/manage-orders", staffHref: "/staff/manage-orders" },
-      { label: "Currencies", href: "/admin/manage-currencies", staffHref: "/staff/manage-currencies" },
+      { label: "Orders & Payments", href: "/admin/manage-orders", staffHref: "/admin/manage-orders" },
+      { label: "Currencies", href: "/admin/manage-currencies", staffHref: "/admin/manage-currencies" },
     ],
   },
   {
@@ -104,11 +119,11 @@ const ALL_NAV_GROUPS: NavGroup[] = [
     color: "#60a5fa",
     icon: <IconFolder />,
     items: [
-      { label: "Add Project", href: "/admin/add-project", staffHref: "/staff/add-project" },
-      { label: "Manage Projects", href: "/admin/manage-projects", staffHref: "/staff/manage-projects" },
-      { label: "Manage Categories", href: "/admin/manage-categories", staffHref: "/staff/manage-categories" },
-      { label: "Agreements", href: "/admin/agreements", staffHref: "/staff/agreements" },
-      { label: "Manage Tags", href: "/admin/manage-tags", staffHref: "/staff/manage-tags" },
+      { label: "Add Project", href: "/admin/add-project", staffHref: "/admin/add-project" },
+      { label: "Manage Projects", href: "/admin/manage-projects", staffHref: "/admin/manage-projects" },
+      { label: "Manage Categories", href: "/admin/manage-categories", staffHref: "/admin/manage-categories" },
+      { label: "Agreements", href: "/admin/agreements", staffHref: "/admin/agreements" },
+      { label: "Manage Tags", href: "/admin/manage-tags", staffHref: "/admin/manage-tags" },
     ],
   },
   {
@@ -117,18 +132,18 @@ const ALL_NAV_GROUPS: NavGroup[] = [
     color: "#a78bfa",
     icon: <IconEdit />,
     items: [
-      { label: "Landing", href: "/admin/manage-landing", staffHref: "/staff/manage-landing" },
-      { label: "Archive", href: "/admin/manage-archive", staffHref: "/staff/manage-archive" },
-      { label: "Launchpad", href: "/admin/manage-launchpad", staffHref: "/staff/manage-launchpad" },
-      { label: "Services", href: "/admin/manage-services", staffHref: "/staff/manage-services" },
-      { label: "Blog", href: "/admin/manage-blog", staffHref: "/staff/manage-blog" },
-      { label: "Reviews", href: "/admin/manage-reviews", staffHref: "/staff/manage-reviews" },
-      { label: "About & Team", href: "/admin/manage-about", staffHref: "/staff/manage-about" },
-      { label: "Careers", href: "/admin/manage-careers", staffHref: "/staff/manage-careers" },
-      { label: "Docs & API", href: "/admin/manage-documentation", staffHref: "/staff/manage-documentation" },
-      { label: "Update Logs", href: "/admin/manage-update-logs", staffHref: "/staff/manage-update-logs" },
-      { label: "Lab", href: "/admin/manage-lab", staffHref: "/staff/manage-lab" },
-      { label: "Lab Categories", href: "/admin/manage-lab-categories", staffHref: "/staff/manage-lab-categories" },
+      { label: "Landing", href: "/admin/manage-landing", staffHref: "/admin/manage-landing" },
+      { label: "Archive", href: "/admin/manage-archive", staffHref: "/admin/manage-archive" },
+      { label: "Launchpad", href: "/admin/manage-launchpad", staffHref: "/admin/manage-launchpad" },
+      { label: "Services", href: "/admin/manage-services", staffHref: "/admin/manage-services" },
+      { label: "Blog", href: "/admin/manage-blog", staffHref: "/admin/manage-blog" },
+      { label: "Reviews", href: "/admin/manage-reviews", staffHref: "/admin/manage-reviews" },
+      { label: "About & Team", href: "/admin/manage-about", staffHref: "/admin/manage-about" },
+      { label: "Careers", href: "/admin/manage-careers", staffHref: "/admin/manage-careers" },
+      { label: "Docs & API", href: "/admin/manage-documentation", staffHref: "/admin/manage-documentation" },
+      { label: "Update Logs", href: "/admin/manage-update-logs", staffHref: "/admin/manage-update-logs" },
+      { label: "Lab", href: "/admin/manage-lab", staffHref: "/admin/manage-lab" },
+      { label: "Lab Categories", href: "/admin/manage-lab-categories", staffHref: "/admin/manage-lab-categories" },
     ],
   },
   {
@@ -137,8 +152,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
     color: "#38bdf8",
     icon: <IconShare />,
     items: [
-      { label: "Socials & Follow Us", href: "/admin/manage-socials", staffHref: "/staff/manage-socials" },
-      { label: "Network Hubs", href: "/admin/manage-network", staffHref: "/staff/manage-network" },
+      { label: "Socials & Follow Us", href: "/admin/manage-socials", staffHref: "/admin/manage-socials" },
+      { label: "Network Hubs", href: "/admin/manage-network", staffHref: "/admin/manage-network" },
     ],
   },
   {
@@ -147,11 +162,12 @@ const ALL_NAV_GROUPS: NavGroup[] = [
     color: "#fb923c",
     icon: <IconDoc />,
     items: [
-      { label: "Terms & Conditions", href: "/admin/manage-terms", staffHref: "/staff/manage-terms" },
-      { label: "Privacy Policy", href: "/admin/manage-privacy", staffHref: "/staff/manage-privacy" },
-      { label: "License Agreement", href: "/admin/manage-license", staffHref: "/staff/manage-license" },
-      { label: "Refund Policy", href: "/admin/manage-refund", staffHref: "/staff/manage-refund" },
-      { label: "Security Protocol", href: "/admin/manage-security", staffHref: "/staff/manage-security" },
+      { label: "App Policies & Hub", href: "/admin/manage-app-legal", staffHref: "/admin/manage-app-legal" },
+      { label: "Terms & Conditions", href: "/admin/manage-terms", staffHref: "/admin/manage-terms" },
+      { label: "Privacy Policy", href: "/admin/manage-privacy", staffHref: "/admin/manage-privacy" },
+      { label: "License Agreement", href: "/admin/manage-license", staffHref: "/admin/manage-license" },
+      { label: "Refund Policy", href: "/admin/manage-refund", staffHref: "/admin/manage-refund" },
+      { label: "Security Protocol", href: "/admin/manage-security", staffHref: "/admin/manage-security" },
     ],
   },
   {
@@ -160,8 +176,8 @@ const ALL_NAV_GROUPS: NavGroup[] = [
     color: "#f59e0b",
     icon: <IconSettings />,
     items: [
-      { label: "Maintenance Mode", href: "/admin/manage-maintenance", staffHref: "/staff/manage-maintenance" },
-      { label: "Recycle Bin", href: "/admin/manage-bin", staffHref: "/staff/manage-bin" },
+      { label: "Maintenance Mode", href: "/admin/manage-maintenance", staffHref: "/admin/manage-maintenance" },
+      { label: "Recycle Bin", href: "/admin/manage-bin", staffHref: "/admin/manage-bin" },
     ],
   },
 ];
@@ -209,9 +225,10 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
         return;
       }
       setStaffData(staff);
-      // Filter nav groups by allowed modules
+      // Filter nav groups by allowed modules and prepend dedicated workspace
       const allowed = new Set(staff.allowedModules);
-      setFilteredGroups(ALL_NAV_GROUPS.filter((g) => allowed.has(g.moduleKey)));
+      const moduleGroups = ALL_NAV_GROUPS.filter((g) => allowed.has(g.moduleKey));
+      setFilteredGroups([STAFF_WORKSPACE_GROUP, ...moduleGroups]);
       setAuthReady(true);
     });
     return () => unsub();
@@ -442,16 +459,20 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
             <div className="flex-shrink-0 p-3" style={{ width: 240, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
               <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
                 <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-violet-400/40 bg-violet-500/10 shadow-sm flex items-center justify-center">
-                  <span className="text-sm font-bold text-violet-300">
-                    {staffData?.name.charAt(0).toUpperCase() || "S"}
-                  </span>
+                  {staffData?.avatarUrl ? (
+                    <img src={staffData.avatarUrl} alt={staffData.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-bold text-violet-300">
+                      {staffData?.name.charAt(0).toUpperCase() || "S"}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-white truncate leading-tight">
                     {staffData?.name || "Staff"}
                   </p>
                   <p className="text-[10px] truncate leading-tight mt-0.5" style={{ color: "#a855f7" }}>
-                    {staffData ? STAFF_TYPE_LABELS[staffData.staffType] : "Staff Member"}
+                    {staffData ? (STAFF_TYPE_LABELS[staffData.staffType] || staffData.staffType) : "Staff Member"}
                   </p>
                 </div>
                 <div className="w-2 h-2 rounded-full bg-violet-400 flex-shrink-0 shadow-[0_0_6px_rgba(168,85,247,0.8)]" />

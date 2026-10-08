@@ -172,7 +172,7 @@ export default function ManageStaffRolesPage() {
     const assignedCount = staff.filter((s) => s.staffType === role.key).length;
     if (assignedCount > 0) {
       const confirmDelete = window.confirm(
-        `Warning: There are currently ${assignedCount} staff member(s) assigned to "${role.label}".\n\nDeleting this role will keep the staff members but remove this role configuration. Proceed?`
+        `Warning: There are currently ${assignedCount} employee(s) assigned to "${role.label}".\n\nDeleting this role will keep the employees but remove this role configuration. Proceed?`
       );
       if (!confirmDelete) return;
     } else {
@@ -232,7 +232,7 @@ export default function ManageStaffRolesPage() {
   }
 
   return (
-    <AdminLayout title="Staff Roles Management | DevEngine Admin">
+    <AdminLayout title="Employee Roles Management | DevEngine Admin">
       <Head>
         <link
           rel="stylesheet"
@@ -251,7 +251,7 @@ export default function ManageStaffRolesPage() {
                 </div>
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold font-['Space_Grotesk'] text-white">
-                    Staff Roles Management
+                    Employee Roles Management
                   </h1>
                   <p className="text-xs text-gray-400 font-mono mt-0.5">
                     Create custom roles, assign default module permissions & manage team positions
@@ -266,7 +266,7 @@ export default function ManageStaffRolesPage() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-mono font-bold text-gray-300 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-all cursor-pointer active:scale-95"
               >
                 <span className="material-symbols-outlined text-base">group</span>
-                Back to Staff
+                Back to Employees
               </Link>
               <button
                 type="button"
@@ -325,7 +325,7 @@ export default function ManageStaffRolesPage() {
               <p className="text-2xl font-bold font-mono text-violet-300 mt-1">{metrics.system}</p>
             </div>
             <div className="p-5 rounded-2xl bg-[#0c0c16]/95 border border-white/[0.08] backdrop-blur-xl shadow-xl">
-              <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider">Total Staff</span>
+              <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider">Total Employees</span>
               <p className="text-2xl font-bold font-mono text-emerald-300 mt-1">{metrics.assignedStaff}</p>
             </div>
           </div>
@@ -398,7 +398,7 @@ export default function ManageStaffRolesPage() {
                   No roles found
                 </h3>
                 <p className="text-sm text-gray-400">
-                  {searchQuery ? "Try a different search term." : "Create your first custom role to assign to staff."}
+                  {searchQuery ? "Try a different search term." : "Create your first custom role to assign to employees."}
                 </p>
               </div>
               <button

@@ -1,4 +1,3 @@
-// lib/services/staffEcoService.ts
 import {
   collection,
   doc,
@@ -19,12 +18,16 @@ import type {
   LeaveRequest,
   RequestStatus,
   AttendanceStatus,
+  AttendanceBreak,
+  BreakType,
+  OffDaySwapRequest,
 } from "@/types/staffEcoSystem";
 
 const ATTENDANCE_COLLECTION = "staff_attendance";
 const ATTENDANCE_REQ_COLLECTION = "staff_attendance_requests";
 const WORK_UPDATES_COLLECTION = "staff_work_updates";
 const LEAVES_COLLECTION = "staff_leave_requests";
+const OFFDAY_SWAP_COLLECTION = "staff_offday_swap_requests";
 
 // Helper: Get local date string YYYY-MM-DD
 export function getTodayDateString(): string {
@@ -44,7 +47,7 @@ export function formatTimeString(date: Date = new Date()): string {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 1. ATTENDANCE OPERATIONS
+// 1. ATTENDANCE OPERATIONS & BREAK TRACKING
 // ─────────────────────────────────────────────────────────────
 
 /**
@@ -86,6 +89,10 @@ export async function clockInStaff(params: {
     clockInTimestamp: nowIso,
     status: params.status || "present",
     note: params.note || "",
+    breaks: [],
+    currentBreak: null,
+    totalBreakMinutes: 0,
+    netWorkHours: 0,
     isRegularized: false,
     createdAt: nowIso,
     updatedAt: nowIso,
@@ -93,6 +100,100 @@ export async function clockInStaff(params: {
 
   await setDoc(ref, record);
   return record;
+}
+
+/**
+ * Start a break for today's active session
+ */
+export async function startStaffBreak(
+  staffId: string,
+  breakType: BreakType = "lunch",
+  note?: string
+): Promise<AttendanceRecord> {
+  const today = getTodayDateString();
+  const docId = `att_${staffId}_${today}`;
+  const ref = doc(db, ATTENDANCE_COLLECTION, docId);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    throw new Error("Must clock in before taking a break.");
+  }
+
+  const current = snap.data() as AttendanceRecord;
+  if (current.currentBreak) {
+    return current; // already on break
+  }
+
+  const nowIso = new Date().toISOString();
+  const newBreak: AttendanceBreak = {
+    id: `brk_${Date.now()}`,
+    startTime: nowIso,
+    breakType,
+    note: note || "",
+  };
+
+  const updatedBreaks = [...(current.breaks || []), newBreak];
+
+  const updates: Partial<AttendanceRecord> = {
+    status: "on_break",
+    currentBreak: newBreak,
+    breaks: updatedBreaks,
+    updatedAt: nowIso,
+  };
+
+  await updateDoc(ref, updates);
+  return { ...current, ...updates };
+}
+
+/**
+ * End an active break and resume work
+ */
+export async function endStaffBreak(staffId: string): Promise<AttendanceRecord> {
+  const today = getTodayDateString();
+  const docId = `att_${staffId}_${today}`;
+  const ref = doc(db, ATTENDANCE_COLLECTION, docId);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    throw new Error("Attendance record not found.");
+  }
+
+  const current = snap.data() as AttendanceRecord;
+  if (!current.currentBreak) {
+    return current; // not on break
+  }
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const startTime = new Date(current.currentBreak.startTime);
+  const durationMs = Math.max(0, now.getTime() - startTime.getTime());
+  const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
+
+  const completedBreak: AttendanceBreak = {
+    ...current.currentBreak,
+    endTime: nowIso,
+    durationMinutes,
+  };
+
+  const updatedBreaks = (current.breaks || []).map((b) =>
+    b.id === current.currentBreak?.id ? completedBreak : b
+  );
+
+  const totalBreakMinutes = updatedBreaks.reduce(
+    (sum, b) => sum + (b.durationMinutes || 0),
+    0
+  );
+
+  const updates: Partial<AttendanceRecord> = {
+    status: "present",
+    currentBreak: null,
+    breaks: updatedBreaks,
+    totalBreakMinutes,
+    updatedAt: nowIso,
+  };
+
+  await updateDoc(ref, updates);
+  return { ...current, ...updates };
 }
 
 /**
@@ -104,22 +205,111 @@ export async function clockOutStaff(
 ): Promise<AttendanceRecord | null> {
   const today = getTodayDateString();
   const docId = `att_${staffId}_${today}`;
-  const nowIso = new Date().toISOString();
-  const timeStr = formatTimeString();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const timeStr = formatTimeString(now);
 
   const ref = doc(db, ATTENDANCE_COLLECTION, docId);
   const existing = await getDoc(ref);
   if (!existing.exists()) return null;
 
   const current = existing.data() as AttendanceRecord;
+
+  // If currently on break, auto-close the break
+  let updatedBreaks = [...(current.breaks || [])];
+  if (current.currentBreak) {
+    const breakStart = new Date(current.currentBreak.startTime);
+    const durationMs = Math.max(0, now.getTime() - breakStart.getTime());
+    const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
+    const closedBreak: AttendanceBreak = {
+      ...current.currentBreak,
+      endTime: nowIso,
+      durationMinutes,
+    };
+    updatedBreaks = updatedBreaks.map((b) =>
+      b.id === current.currentBreak?.id ? closedBreak : b
+    );
+  }
+
+  const totalBreakMinutes = updatedBreaks.reduce(
+    (sum, b) => sum + (b.durationMinutes || 0),
+    0
+  );
+
+  // Calculate gross total hours
+  let totalHours = 0;
+  if (current.clockInTimestamp) {
+    const inTime = new Date(current.clockInTimestamp);
+    totalHours = Math.round(((now.getTime() - inTime.getTime()) / 3600000) * 100) / 100;
+  }
+
+  const netWorkHours = Math.max(
+    0,
+    Math.round((totalHours - totalBreakMinutes / 60) * 100) / 100
+  );
+
+  // If employee worked less than 5 hours (half-day threshold), classify as half_day
+  let finalStatus: AttendanceStatus = current.status;
+  if (netWorkHours > 0 && netWorkHours < 5) {
+    finalStatus = "half_day";
+  } else if (finalStatus === "on_break" || !finalStatus || finalStatus === "absent") {
+    finalStatus = "present";
+  }
+
   const updates: Partial<AttendanceRecord> = {
     clockOutTime: timeStr,
+    clockOutTimestamp: nowIso,
+    status: finalStatus,
+    currentBreak: null,
+    breaks: updatedBreaks,
+    totalBreakMinutes,
+    totalHours,
+    netWorkHours,
     updatedAt: nowIso,
   };
   if (note) updates.note = note;
 
   await updateDoc(ref, updates);
   return { ...current, ...updates };
+}
+
+/**
+ * Auto-correct attendance record: If employee has clocked out and worked less than 5 hours,
+ * status is guaranteed to be "half_day".
+ */
+export function normalizeAttendanceRecord(record: AttendanceRecord): AttendanceRecord {
+  if (!record) return record;
+  const hours = record.netWorkHours !== undefined ? record.netWorkHours : (record.totalHours || 0);
+  if (
+    record.clockOutTime &&
+    hours < 5 &&
+    (record.status === "present" || record.status === "on_break" || !record.status)
+  ) {
+    const docId = record.id || `att_${record.staffId}_${record.date}`;
+    try {
+      updateDoc(doc(db, ATTENDANCE_COLLECTION, docId), { status: "half_day" }).catch(() => {});
+    } catch {}
+    return { ...record, status: "half_day" };
+  }
+  return record;
+}
+
+/**
+ * Admin: Get all attendance records across all dates for reporting
+ */
+export async function getAllAttendanceRecords(
+  limitCount: number = 1000
+): Promise<AttendanceRecord[]> {
+  try {
+    const colRef = collection(db, ATTENDANCE_COLLECTION);
+    const snap = await getDocs(query(colRef, limit(limitCount)));
+    const records = snap.docs.map((d) => normalizeAttendanceRecord(d.data() as AttendanceRecord));
+    records.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    return records;
+  } catch (err) {
+    console.error("[staffEcoService] getAllAttendanceRecords err:", err);
+    return [];
+  }
 }
 
 /**
@@ -133,7 +323,7 @@ export async function getStaffAttendanceForDate(
     const docId = `att_${staffId}_${date}`;
     const snap = await getDoc(doc(db, ATTENDANCE_COLLECTION, docId));
     if (!snap.exists()) return null;
-    return snap.data() as AttendanceRecord;
+    return normalizeAttendanceRecord(snap.data() as AttendanceRecord);
   } catch {
     return null;
   }
@@ -148,14 +338,17 @@ export async function getStaffAttendanceHistory(
 ): Promise<AttendanceRecord[]> {
   try {
     const colRef = collection(db, ATTENDANCE_COLLECTION);
-    const q = query(
-      colRef,
-      where("staffId", "==", staffId),
-      orderBy("date", "desc"),
-      limit(maxRecords)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as AttendanceRecord);
+    const q1 = query(colRef, where("staffId", "==", staffId));
+    const snap1 = await getDocs(q1);
+    let docs = snap1.docs;
+    if (docs.length === 0) {
+      const q2 = query(colRef, where("staffUid", "==", staffId));
+      const snap2 = await getDocs(q2);
+      docs = snap2.docs;
+    }
+    const records = docs.map((d) => normalizeAttendanceRecord({ id: d.id, ...d.data() } as AttendanceRecord));
+    records.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    return records.slice(0, maxRecords);
   } catch (err) {
     console.error("[staffEcoService] getStaffAttendanceHistory err:", err);
     return [];
@@ -172,7 +365,7 @@ export async function getAllAttendanceForDate(
     const colRef = collection(db, ATTENDANCE_COLLECTION);
     const q = query(colRef, where("date", "==", date));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as AttendanceRecord);
+    return snap.docs.map((d) => normalizeAttendanceRecord(d.data() as AttendanceRecord));
   } catch (err) {
     console.error("[staffEcoService] getAllAttendanceForDate err:", err);
     return [];
@@ -263,13 +456,17 @@ export async function getStaffAttendanceRequests(
 ): Promise<AttendanceRegularizationRequest[]> {
   try {
     const colRef = collection(db, ATTENDANCE_REQ_COLLECTION);
-    const q = query(
-      colRef,
-      where("staffId", "==", staffId),
-      orderBy("createdAt", "desc")
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as AttendanceRegularizationRequest);
+    const q1 = query(colRef, where("staffId", "==", staffId));
+    const snap1 = await getDocs(q1);
+    let docs = snap1.docs;
+    if (docs.length === 0) {
+      const q2 = query(colRef, where("staffUid", "==", staffId));
+      const snap2 = await getDocs(q2);
+      docs = snap2.docs;
+    }
+    const reqs = docs.map((d) => ({ id: d.id, ...d.data() } as AttendanceRegularizationRequest));
+    reqs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return reqs;
   } catch (err) {
     console.error("[staffEcoService] getStaffAttendanceRequests err:", err);
     return [];
@@ -284,16 +481,13 @@ export async function getAllAttendanceRequests(
 ): Promise<AttendanceRegularizationRequest[]> {
   try {
     const colRef = collection(db, ATTENDANCE_REQ_COLLECTION);
-    let q = query(colRef, orderBy("createdAt", "desc"));
+    const snap = await getDocs(colRef);
+    let reqs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as AttendanceRegularizationRequest));
     if (statusFilter) {
-      q = query(
-        colRef,
-        where("status", "==", statusFilter),
-        orderBy("createdAt", "desc")
-      );
+      reqs = reqs.filter((r) => r.status === statusFilter);
     }
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as AttendanceRegularizationRequest);
+    reqs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return reqs;
   } catch (err) {
     console.error("[staffEcoService] getAllAttendanceRequests err:", err);
     return [];
@@ -424,14 +618,17 @@ export async function getStaffWorkUpdates(
 ): Promise<DailyWorkUpdate[]> {
   try {
     const colRef = collection(db, WORK_UPDATES_COLLECTION);
-    const q = query(
-      colRef,
-      where("staffId", "==", staffId),
-      orderBy("date", "desc"),
-      limit(maxCount)
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as DailyWorkUpdate);
+    const q1 = query(colRef, where("staffId", "==", staffId));
+    const snap1 = await getDocs(q1);
+    let docs = snap1.docs;
+    if (docs.length === 0) {
+      const q2 = query(colRef, where("staffUid", "==", staffId));
+      const snap2 = await getDocs(q2);
+      docs = snap2.docs;
+    }
+    const updates = docs.map((d) => ({ id: d.id, ...d.data() } as DailyWorkUpdate));
+    updates.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    return updates.slice(0, maxCount);
   } catch (err) {
     console.error("[staffEcoService] getStaffWorkUpdates err:", err);
     return [];
@@ -543,13 +740,17 @@ export async function submitLeaveRequest(params: {
 export async function getStaffLeaveRequests(staffId: string): Promise<LeaveRequest[]> {
   try {
     const colRef = collection(db, LEAVES_COLLECTION);
-    const q = query(
-      colRef,
-      where("staffId", "==", staffId),
-      orderBy("createdAt", "desc")
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as LeaveRequest);
+    const q1 = query(colRef, where("staffId", "==", staffId));
+    const snap1 = await getDocs(q1);
+    let docs = snap1.docs;
+    if (docs.length === 0) {
+      const q2 = query(colRef, where("staffUid", "==", staffId));
+      const snap2 = await getDocs(q2);
+      docs = snap2.docs;
+    }
+    const leaves = docs.map((d) => ({ id: d.id, ...d.data() } as LeaveRequest));
+    leaves.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return leaves;
   } catch (err) {
     console.error("[staffEcoService] getStaffLeaveRequests err:", err);
     return [];
@@ -564,16 +765,13 @@ export async function getAllLeaveRequests(
 ): Promise<LeaveRequest[]> {
   try {
     const colRef = collection(db, LEAVES_COLLECTION);
-    let q = query(colRef, orderBy("createdAt", "desc"));
+    const snap = await getDocs(colRef);
+    let reqs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as LeaveRequest));
     if (statusFilter) {
-      q = query(
-        colRef,
-        where("status", "==", statusFilter),
-        orderBy("createdAt", "desc")
-      );
+      reqs = reqs.filter((r) => r.status === statusFilter);
     }
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data() as LeaveRequest);
+    reqs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return reqs;
   } catch (err) {
     console.error("[staffEcoService] getAllLeaveRequests err:", err);
     return [];
@@ -601,3 +799,156 @@ export async function reviewLeaveRequest(params: {
     reviewedAt: nowIso,
   });
 }
+
+// ─────────────────────────────────────────────────────────────
+// 5. YEARLY ATTENDANCE HISTORY (HEATMAP)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Fetch attendance history for an entire year (e.g. for GitHub-style Heatmap)
+ */
+export async function getYearlyAttendanceHistory(
+  staffId: string,
+  year: number = new Date().getFullYear()
+): Promise<AttendanceRecord[]> {
+  try {
+    const colRef = collection(db, ATTENDANCE_COLLECTION);
+    const startDate = `${year}-01-01`;
+    const endDate = `${year}-12-31`;
+
+    const q1 = query(colRef, where("staffId", "==", staffId));
+    const snap1 = await getDocs(q1);
+
+    const docMap = new Map<string, AttendanceRecord>();
+    snap1.docs.forEach((d) => {
+      const data = { id: d.id, ...d.data() } as AttendanceRecord;
+      if (data.date) docMap.set(data.date, data);
+    });
+
+    // Also check if staffId might be staffUid
+    if (docMap.size === 0) {
+      const q2 = query(colRef, where("staffUid", "==", staffId));
+      const snap2 = await getDocs(q2);
+      snap2.docs.forEach((d) => {
+        const data = { id: d.id, ...d.data() } as AttendanceRecord;
+        if (data.date) docMap.set(data.date, data);
+      });
+    }
+
+    const records = Array.from(docMap.values())
+      .filter((r) => r.date && r.date >= startDate && r.date <= endDate)
+      .map(normalizeAttendanceRecord);
+    records.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    return records;
+  } catch (err) {
+    console.error("[staffEcoService] getYearlyAttendanceHistory err:", err);
+    return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 6. OFF-DAY SWAP REQUEST OPERATIONS
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Staff submits an Off-day swap request
+ */
+export async function submitOffDaySwapRequest(params: {
+  staffId: string;
+  staffUid: string;
+  staffName: string;
+  staffEmail: string;
+  staffType: string;
+  currentOffDate: string; // YYYY-MM-DD
+  requestedWorkDate: string; // YYYY-MM-DD
+  reason: string;
+}): Promise<OffDaySwapRequest> {
+  const reqId = `swap_${params.staffId}_${Date.now()}`;
+  const nowIso = new Date().toISOString();
+
+  const req: OffDaySwapRequest = {
+    id: reqId,
+    staffId: params.staffId,
+    staffUid: params.staffUid,
+    staffName: params.staffName,
+    staffEmail: params.staffEmail,
+    staffType: params.staffType,
+    currentOffDate: params.currentOffDate,
+    requestedWorkDate: params.requestedWorkDate,
+    reason: params.reason,
+    status: "pending",
+    createdAt: nowIso,
+  };
+
+  await setDoc(doc(db, OFFDAY_SWAP_COLLECTION, reqId), req);
+  return req;
+}
+
+/**
+ * Get staff's off-day swap requests
+ */
+export async function getStaffOffDaySwapRequests(
+  staffId: string
+): Promise<OffDaySwapRequest[]> {
+  try {
+    const colRef = collection(db, OFFDAY_SWAP_COLLECTION);
+    const q1 = query(colRef, where("staffId", "==", staffId));
+    const snap1 = await getDocs(q1);
+    let docs = snap1.docs;
+    if (docs.length === 0) {
+      const q2 = query(colRef, where("staffUid", "==", staffId));
+      const snap2 = await getDocs(q2);
+      docs = snap2.docs;
+    }
+    const reqs = docs.map((d) => ({ id: d.id, ...d.data() } as OffDaySwapRequest));
+    reqs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return reqs;
+  } catch (err) {
+    console.error("[staffEcoService] getStaffOffDaySwapRequests err:", err);
+    return [];
+  }
+}
+
+/**
+ * Admin: Get all off-day swap requests
+ */
+export async function getAllOffDaySwapRequests(
+  statusFilter?: RequestStatus
+): Promise<OffDaySwapRequest[]> {
+  try {
+    const colRef = collection(db, OFFDAY_SWAP_COLLECTION);
+    const snap = await getDocs(colRef);
+    let reqs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as OffDaySwapRequest));
+    if (statusFilter) {
+      reqs = reqs.filter((r) => r.status === statusFilter);
+    }
+    reqs.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    return reqs;
+  } catch (err) {
+    console.error("[staffEcoService] getAllOffDaySwapRequests err:", err);
+    return [];
+  }
+}
+
+/**
+ * Admin: Review off-day swap request (Approve / Reject)
+ */
+export async function reviewOffDaySwapRequest(params: {
+  requestId: string;
+  decision: "approved" | "rejected";
+  adminRemark?: string;
+  adminEmail: string;
+}): Promise<void> {
+  const reqRef = doc(db, OFFDAY_SWAP_COLLECTION, params.requestId);
+  const snap = await getDoc(reqRef);
+  if (!snap.exists()) throw new Error("Swap request not found");
+
+  const nowIso = new Date().toISOString();
+  await updateDoc(reqRef, {
+    status: params.decision,
+    adminRemark: params.adminRemark || "",
+    reviewedBy: params.adminEmail,
+    reviewedAt: nowIso,
+  });
+}
+

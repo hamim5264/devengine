@@ -35,6 +35,11 @@ export interface StaffMember {
   staffType: StaffType;
   allowedModules: string[]; // Array of MODULE_KEY values
   status: StaffStatus;
+  phone?: string;
+  designation?: string;
+  assignedOffDays?: string[]; // e.g. ["Friday", "Saturday"]
+  shiftHours?: { start: string; end: string; name?: string }; // e.g. { start: "09:00", end: "18:00", name: "Day Shift" }
+  agreementId?: string; // ID of linked agreement in agreements collection
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
 }

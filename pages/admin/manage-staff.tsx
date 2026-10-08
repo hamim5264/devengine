@@ -23,6 +23,26 @@ import {
   getRoleLabel,
   getRoleBadgeColor,
 } from "@/types/staff";
+import {
+  createEmployeeTask,
+  getEmployeeTasks,
+  adminReviewTask,
+  deleteEmployeeTask,
+} from "@/lib/services/employeeTaskService";
+import {
+  createAgreement,
+  generateNextAgreementNumber,
+} from "@/lib/services/agreementService";
+import type {
+  EmployeeTask,
+  TaskPriority,
+  TaskStatus,
+} from "@/types/staffEcoSystem";
+import {
+  TASK_PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
+} from "@/types/staffEcoSystem";
+import type { AgreementType } from "@/types/agreement";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
@@ -90,7 +110,7 @@ function RoleSelector({
   return (
     <div className="relative space-y-1.5" ref={wrapperRef}>
       <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block">
-        Staff Role
+        Employee Role
       </label>
 
       {/* Trigger Button */}
@@ -400,6 +420,45 @@ export default function ManageStaffPage() {
   const [createModules, setCreateModules] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
 
+  // Agreement and Shift options during creation
+  const [createWithAgreement, setCreateWithAgreement] = useState(true);
+  const [agreementSalary, setAgreementSalary] = useState(50000);
+  const [agreementCurrency, setAgreementCurrency] = useState("BDT");
+  const [agreementTypeChoice, setAgreementTypeChoice] = useState<AgreementType>("retainer");
+  const [shiftStart, setShiftStart] = useState("09:00");
+  const [shiftEnd, setShiftEnd] = useState("18:00");
+  const [offDaysChoice, setOffDaysChoice] = useState<string[]>(["Friday", "Saturday"]);
+
+  // Task assignment modal
+  const [showAssignTaskModal, setShowAssignTaskModal] = useState(false);
+  const [taskAssigneeStaff, setTaskAssigneeStaff] = useState<StaffMember | null>(null);
+  const [taskForm, setTaskForm] = useState<{
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    category: string;
+    dueDate: string;
+    dueTime: string;
+    estimatedHours: number;
+  }>({
+    title: "",
+    description: "",
+    priority: "normal",
+    category: "General",
+    dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
+    dueTime: "18:00",
+    estimatedHours: 8,
+  });
+  const [assigningTask, setAssigningTask] = useState(false);
+
+  // View employee tasks modal
+  const [showTasksModal, setShowTasksModal] = useState(false);
+  const [tasksStaff, setTasksStaff] = useState<StaffMember | null>(null);
+  const [staffTasksList, setStaffTasksList] = useState<EmployeeTask[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [feedbackInputs, setFeedbackInputs] = useState<Record<string, string>>({});
+  const [processingTaskId, setProcessingTaskId] = useState<string | null>(null);
+
   // Edit form state
   const [editName, setEditName] = useState("");
   const [editPassword, setEditPassword] = useState("");
@@ -417,6 +476,24 @@ export default function ManageStaffPage() {
 
   // Action in progress
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+
+  // Employee Comprehensive Details Modal
+  const [selectedDetailStaff, setSelectedDetailStaff] = useState<StaffMember | null>(null);
+  const [detailStaffTasks, setDetailStaffTasks] = useState<EmployeeTask[]>([]);
+  const [loadingDetailTasks, setLoadingDetailTasks] = useState(false);
+
+  const openEmployeeDetailsModal = async (member: StaffMember) => {
+    setSelectedDetailStaff(member);
+    setLoadingDetailTasks(true);
+    try {
+      const list = await getEmployeeTasks(member.id);
+      setDetailStaffTasks(list);
+    } catch (err) {
+      console.error("Failed to load tasks for employee details:", err);
+    } finally {
+      setLoadingDetailTasks(false);
+    }
+  };
 
   // ── Auth ──
   useEffect(() => {
@@ -440,7 +517,7 @@ export default function ManageStaffPage() {
       setStaff(staffData);
       setRoles(rolesData);
     } catch {
-      setNotice({ type: "error", text: "Failed to load staff and roles data." });
+      setNotice({ type: "error", text: "Failed to load employee and roles data." });
     } finally {
       setLoading(false);
     }
@@ -489,7 +566,7 @@ export default function ManageStaffPage() {
   // ── Create staff ──
   const handleCreate = async () => {
     if (!createName.trim()) {
-      setNotice({ type: "error", text: "Please enter a staff name." });
+      setNotice({ type: "error", text: "Please enter an employee name." });
       return;
     }
     if (!createPassword.trim()) {
@@ -503,6 +580,77 @@ export default function ManageStaffPage() {
 
     setCreating(true);
     try {
+      let agreementId = "";
+      if (createWithAgreement) {
+        try {
+          const agrNum = await generateNextAgreementNumber();
+          const today = new Date().toISOString().split("T")[0];
+          agreementId = await createAgreement({
+            agreementNumber: agrNum,
+            version: "1.0",
+            status: "active",
+            agreementType: agreementTypeChoice,
+            agreementTypeLabel:
+              agreementTypeChoice === "retainer"
+                ? "Employment & Retainer Agreement"
+                : "Professional Contributor Agreement",
+            project: {
+              projectId: "devengine_internal",
+              projectName: "DevEngine Operations & Engineering",
+              projectType: "Employment",
+              startDate: today,
+              expectedCompletionDate: "",
+              agreementEffectiveDate: today,
+              projectStatus: "Active",
+              description: `Official employment agreement for ${createName.trim()} (${createType}).`,
+            },
+            developer: {
+              fullName: createName.trim(),
+              email: createEmail,
+              role: createType,
+              phone: "",
+              address: "",
+            },
+            devengine: {
+              companyName: "DevEngine Systems Inc.",
+              ceoName: "Hamim Leon",
+              ceoTitle: "Chief Executive Officer",
+              companyEmail: "hamim.leon@gmail.com",
+              companyWebsite: "https://thedevengine.vercel.app",
+              companyAddress: "Dhaka, Bangladesh",
+            },
+            compensation: {
+              model: agreementTypeChoice,
+              currency: agreementCurrency,
+              monthlyRetainerAmount: agreementSalary,
+              fixedAmount: agreementSalary,
+              totalContractValue: agreementSalary * 12,
+              paymentFrequency: "Monthly",
+              availabilityHoursPerWeek: 40,
+            },
+            deliverables: [],
+            terms: {
+              noticePeriodDays: 30,
+              bugFixPeriodDays: 30,
+              confidentialityDurationYears: 3,
+              paymentDuePeriodDays: 7,
+              acceptancePeriodDays: 7,
+              terminationNoticeDays: 30,
+              disputeResolutionMethod: "Amicable Negotiation, followed by Arbitral Conciliation",
+              governingLaw: "Laws of the People's Republic of Bangladesh",
+              jurisdiction: "Competent Courts of Dhaka, Bangladesh",
+              nonSolicitationYears: 2,
+            },
+            createdBy: "hamim.leon@gmail.com",
+            createdAt: today,
+            updatedBy: "hamim.leon@gmail.com",
+            updatedAt: today,
+          } as any);
+        } catch (agrErr) {
+          console.warn("Failed to auto-generate agreement:", agrErr);
+        }
+      }
+
       await createStaffAccount({
         name: createName.trim(),
         email: createEmail,
@@ -510,23 +658,107 @@ export default function ManageStaffPage() {
         avatarUrl: createAvatarUrl,
         staffType: createType,
         allowedModules: createModules,
+        assignedOffDays: offDaysChoice,
+        shiftHours: { start: shiftStart, end: shiftEnd, name: "Standard Shift" },
+        agreementId,
       });
+
       setCreatedCreds({
         name: createName.trim(),
         email: createEmail,
         password: createPassword,
         avatarUrl: createAvatarUrl,
       });
-      setNotice({ type: "success", text: `Staff account "${createName.trim()}" created successfully!` });
+      setNotice({
+        type: "success",
+        text: `Employee account "${createName.trim()}" created successfully${
+          agreementId ? " with official agreement attached" : ""
+        }!`,
+      });
       await loadData();
     } catch (err: any) {
       const msg =
         err?.code === "auth/email-already-in-use"
           ? "This email is already registered. Try modifying the name."
-          : err?.message || "Failed to create staff account.";
+          : err?.message || "Failed to create employee account.";
       setNotice({ type: "error", text: msg });
     } finally {
       setCreating(false);
+    }
+  };
+
+  // ── Open task assignment modal ──
+  const openAssignTaskModal = (member: StaffMember) => {
+    setTaskAssigneeStaff(member);
+    setTaskForm({
+      title: "",
+      description: "",
+      priority: "normal",
+      category: "General",
+      dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
+      dueTime: "18:00",
+      estimatedHours: 8,
+    });
+    setShowAssignTaskModal(true);
+  };
+
+  const handleAssignTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!taskAssigneeStaff || !taskForm.title.trim()) return;
+    setAssigningTask(true);
+    try {
+      await createEmployeeTask({
+        title: taskForm.title.trim(),
+        description: taskForm.description,
+        assignedToStaffId: taskAssigneeStaff.id,
+        assignedToStaffUid: taskAssigneeStaff.uid,
+        assignedToName: taskAssigneeStaff.name,
+        assignedToEmail: taskAssigneeStaff.email,
+        priority: taskForm.priority,
+        category: taskForm.category,
+        dueDate: taskForm.dueDate,
+        dueTime: taskForm.dueTime,
+        estimatedHours: taskForm.estimatedHours,
+      });
+      setNotice({ type: "success", text: `Task assigned to ${taskAssigneeStaff.name} successfully!` });
+      setShowAssignTaskModal(false);
+    } catch (err) {
+      console.error("Assign task error:", err);
+      setNotice({ type: "error", text: "Failed to assign task." });
+    } finally {
+      setAssigningTask(false);
+    }
+  };
+
+  // ── Open view employee tasks modal ──
+  const openEmployeeTasksModal = async (member: StaffMember) => {
+    setTasksStaff(member);
+    setShowTasksModal(true);
+    setLoadingTasks(true);
+    try {
+      const list = await getEmployeeTasks(member.id);
+      setStaffTasksList(list);
+    } catch (err) {
+      console.error("Load employee tasks error:", err);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
+
+  const handleAdminFeedbackSubmit = async (taskId: string, newStatus?: TaskStatus) => {
+    const feedback = feedbackInputs[taskId] || "";
+    setProcessingTaskId(taskId);
+    try {
+      await adminReviewTask(taskId, feedback, newStatus);
+      if (tasksStaff) {
+        const updated = await getEmployeeTasks(tasksStaff.id);
+        setStaffTasksList(updated);
+      }
+      setNotice({ type: "success", text: "Task review submitted successfully!" });
+    } catch (err) {
+      console.error("Review task error:", err);
+    } finally {
+      setProcessingTaskId(null);
     }
   };
 
@@ -563,12 +795,12 @@ export default function ManageStaffPage() {
           oldPassword: editingStaff.password,
         }
       );
-      setNotice({ type: "success", text: `Staff "${editingStaff.name}" updated successfully.` });
+      setNotice({ type: "success", text: `Employee "${editingStaff.name}" updated successfully.` });
       setShowEditModal(false);
       setEditingStaff(null);
       await loadData();
     } catch {
-      setNotice({ type: "error", text: "Failed to update staff member." });
+      setNotice({ type: "error", text: "Failed to update employee." });
     } finally {
       setSaving(false);
     }
@@ -599,10 +831,10 @@ export default function ManageStaffPage() {
     setActionInProgress(member.id);
     try {
       await deleteStaffMember(member.id);
-      setNotice({ type: "success", text: `"${member.name}" removed from staff.` });
+      setNotice({ type: "success", text: `"${member.name}" removed from employees.` });
       await loadData();
     } catch {
-      setNotice({ type: "error", text: "Failed to remove staff member." });
+      setNotice({ type: "error", text: "Failed to remove employee." });
     } finally {
       setActionInProgress(null);
     }
@@ -731,7 +963,7 @@ export default function ManageStaffPage() {
   );
 
   return (
-    <AdminLayout title="Staff Management | DevEngine Admin">
+    <AdminLayout title="Employee Management | DevEngine Admin">
       <Head>
         <link
           rel="stylesheet"
@@ -750,7 +982,7 @@ export default function ManageStaffPage() {
                 </div>
                 <div>
                   <h1 className="text-xl sm:text-2xl font-bold font-['Space_Grotesk'] text-white">
-                    Staff Management
+                    Employee Management
                   </h1>
                   <p className="text-xs text-gray-400 font-mono mt-0.5">
                     Create accounts, assign modules, track passwords & manage team access
@@ -777,7 +1009,7 @@ export default function ManageStaffPage() {
                 }}
               >
                 <span className="material-symbols-outlined text-base">person_add</span>
-                Add Staff Member
+                Add Employee
               </button>
             </div>
           </div>
@@ -812,7 +1044,7 @@ export default function ManageStaffPage() {
           {/* ── Metric Cards ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="p-5 rounded-2xl bg-[#0c0c16]/95 border border-white/[0.08] backdrop-blur-xl shadow-xl">
-              <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider">Total Staff</span>
+              <span className="text-[11px] font-mono text-gray-400 uppercase tracking-wider">Total Employees</span>
               <p className="text-2xl font-bold font-mono text-white mt-1">{metrics.total}</p>
             </div>
             <div className="p-5 rounded-2xl bg-[#0c0c16]/95 border border-white/[0.08] backdrop-blur-xl shadow-xl">
@@ -841,7 +1073,7 @@ export default function ManageStaffPage() {
                   <span className="material-symbols-outlined text-lg">alarm_on</span>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-white block">Staff Attendance & Roster</span>
+                  <span className="text-xs font-bold text-white block">Employee Attendance & Roster</span>
                   <span className="text-[10px] text-gray-400 font-mono">Daily check-ins & missed dates</span>
                 </div>
               </div>
@@ -897,14 +1129,14 @@ export default function ManageStaffPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search staff by name, email, or role…"
+                placeholder="Search employees by name, email, or role…"
                 className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
               />
             </div>
 
             <div className="hidden sm:flex items-center gap-2">
               <span className="text-xs font-mono text-gray-400">
-                Showing {filteredStaff.length} of {staff.length} staff
+                Showing {filteredStaff.length} of {staff.length} employees
               </span>
             </div>
           </div>
@@ -913,7 +1145,7 @@ export default function ManageStaffPage() {
           {loading ? (
             <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3 bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl p-12">
               <HelixLoader size={44} color="#38f2ff" />
-              <p className="text-xs font-mono text-gray-400 tracking-wider uppercase">Loading Staff…</p>
+              <p className="text-xs font-mono text-gray-400 tracking-wider uppercase">Loading Employees…</p>
             </div>
           ) : filteredStaff.length === 0 ? (
             <div className="p-12 sm:p-16 rounded-3xl bg-[#0c0c16]/95 border border-white/[0.08] text-center space-y-5 shadow-2xl">
@@ -922,12 +1154,12 @@ export default function ManageStaffPage() {
               </div>
               <div className="max-w-md mx-auto space-y-1.5">
                 <h3 className="text-xl font-bold font-['Space_Grotesk'] text-white">
-                  {searchQuery ? "No matching staff found" : "No staff members yet"}
+                  {searchQuery ? "No matching employees found" : "No employees yet"}
                 </h3>
                 <p className="text-sm text-gray-400">
                   {searchQuery
                     ? "Try adjusting your search query."
-                    : "Create your first staff account to grant team members controlled access to admin modules."}
+                    : "Create your first employee account to grant team members controlled access to admin modules."}
                 </p>
               </div>
               {!searchQuery && (
@@ -941,38 +1173,38 @@ export default function ManageStaffPage() {
                   }}
                 >
                   <span className="material-symbols-outlined text-base">person_add</span>
-                  Add Staff Member
+                  Add Employee
                 </button>
               )}
             </div>
           ) : (
-            <div className="rounded-3xl bg-[#0c0c16]/95 border border-white/[0.08] overflow-hidden shadow-2xl backdrop-blur-xl">
+            <div className="rounded-2xl bg-[#0b0c16] border border-white/10 overflow-hidden shadow-xl">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1100px] text-left border-collapse">
+                <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
                   <thead>
-                    <tr className="border-b border-white/[0.08] bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-gray-400">
-                      <th className="py-4 px-5 min-w-[220px]">Staff Member</th>
-                      <th className="py-4 px-5 whitespace-nowrap min-w-[210px]">Email</th>
-                      <th className="py-4 px-5 whitespace-nowrap min-w-[170px]">Password (Admin)</th>
-                      <th className="py-4 px-5 whitespace-nowrap min-w-[140px]">Role</th>
-                      <th className="py-4 px-5 min-w-[180px]">Module Access</th>
-                      <th className="py-4 px-5 whitespace-nowrap min-w-[110px]">Status</th>
-                      <th className="py-4 px-5 text-right whitespace-nowrap min-w-[130px]">Actions</th>
+                    <tr className="border-b border-white/10 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-gray-400">
+                      <th className="py-3.5 px-5 w-[30%]">Employee & Contact</th>
+                      <th className="py-3.5 px-4 w-[18%]">Role & Shift</th>
+                      <th className="py-3.5 px-4 w-[18%]">Permissions</th>
+                      <th className="py-3.5 px-4 w-[14%]">Status</th>
+                      <th className="py-3.5 px-5 w-[20%] text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/[0.04] text-xs font-mono">
+                  <tbody className="divide-y divide-white/[0.05] text-xs">
                     {filteredStaff.map((member) => {
                       const typeColor = getRoleBadgeColor(member.staffType, roles);
                       const roleLabel = getRoleLabel(member.staffType, roles);
-                      const isPasswordRevealed = !!revealedPasswords[member.id];
                       const initial = member.name.charAt(0).toUpperCase();
 
                       return (
-                        <tr key={member.id} className="hover:bg-white/[0.02] transition-colors group">
-                          {/* Staff Member (Avatar + Name) */}
-                          <td className="py-4 px-5">
+                        <tr
+                          key={member.id}
+                          className="hover:bg-white/[0.02] transition-colors"
+                        >
+                          {/* 1. Employee & Contact */}
+                          <td className="py-4 px-5 align-middle">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-white/[0.1] flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
                                 {member.avatarUrl ? (
                                   <img
                                     src={member.avatarUrl}
@@ -983,103 +1215,76 @@ export default function ManageStaffPage() {
                                   <span className="text-sm font-bold text-white">{initial}</span>
                                 )}
                               </div>
-                              <div>
-                                <span className="text-white font-bold text-sm block">{member.name}</span>
-                                <span className="text-[10px] text-gray-500 block mt-0.5">
-                                  Joined {new Date(member.createdAt).toLocaleDateString()}
+
+                              <div className="min-w-0">
+                                <span className="text-white font-semibold text-sm block truncate">
+                                  {member.name}
                                 </span>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Email */}
-                          <td className="py-4 px-5 whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(member.email, `email-${member.id}`)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-cyan-500/15 text-gray-300 hover:text-cyan-200 border border-white/[0.08] hover:border-cyan-500/30 transition-all text-[11px] font-mono cursor-pointer active:scale-95"
-                              title="Click to copy email"
-                            >
-                              <span className="material-symbols-outlined text-[13px] text-cyan-400 shrink-0">
-                                {copiedId === `email-${member.id}` ? "check" : "mail"}
-                              </span>
-                              <span className="truncate max-w-[160px]">{member.email}</span>
-                              {copiedId === `email-${member.id}` && (
-                                <span className="text-[10px] text-emerald-400 font-bold shrink-0">Copied!</span>
-                              )}
-                            </button>
-                          </td>
-
-                          {/* Password (Admin Visible & Copyable) */}
-                          <td className="py-4 px-5 whitespace-nowrap">
-                            {member.password ? (
-                              <div className="inline-flex items-center gap-1.5 bg-black/40 border border-white/[0.08] px-2.5 py-1 rounded-xl">
-                                <span className="font-mono text-xs text-cyan-300 min-w-[70px] select-all">
-                                  {isPasswordRevealed ? member.password : "••••••••"}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => togglePasswordReveal(member.id)}
-                                  className="text-gray-400 hover:text-white transition-colors p-0.5 cursor-pointer"
-                                  title={isPasswordRevealed ? "Hide password" : "Show password"}
-                                >
-                                  <span className="material-symbols-outlined text-sm">
-                                    {isPasswordRevealed ? "visibility_off" : "visibility"}
-                                  </span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => copyToClipboard(member.password || "", `pwd-${member.id}`)}
-                                  className="text-gray-400 hover:text-cyan-300 transition-colors p-0.5 cursor-pointer"
-                                  title="Copy password"
-                                >
-                                  <span className="material-symbols-outlined text-sm">
-                                    {copiedId === `pwd-${member.id}` ? "check" : "content_copy"}
-                                  </span>
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-[11px] text-gray-500 italic">Not recorded</span>
-                            )}
-                          </td>
-
-                          {/* Role */}
-                          <td className="py-4 px-5 whitespace-nowrap">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[11px] font-mono font-medium whitespace-nowrap ${typeColor.bg} ${typeColor.text} ${typeColor.border}`}
-                            >
-                              <span className="material-symbols-outlined text-sm">badge</span>
-                              {roleLabel}
-                            </span>
-                          </td>
-
-                          {/* Modules */}
-                          <td className="py-4 px-5">
-                            <div className="flex flex-wrap gap-1.5">
-                              {member.allowedModules.map((key) => {
-                                const cfg = MODULE_CONFIG[key];
-                                if (!cfg) return null;
-                                return (
-                                  <span
-                                    key={key}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono bg-white/[0.04] border border-white/[0.08]"
-                                    style={{ color: cfg.color }}
+                                <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 font-mono">
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(member.email, `email-${member.id}`)}
+                                    className="inline-flex items-center gap-1 text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer"
+                                    title="Click to copy email"
                                   >
-                                    <span className="material-symbols-outlined text-[11px]">{cfg.icon}</span>
-                                    {cfg.label}
+                                    <span className="material-symbols-outlined text-[13px] text-cyan-400">
+                                      {copiedId === `email-${member.id}` ? "check" : "mail"}
+                                    </span>
+                                    <span className="truncate max-w-[150px]">{member.email}</span>
+                                  </button>
+                                  <span className="text-gray-600">•</span>
+                                  <span className="text-[11px] text-gray-500">
+                                    Joined {new Date(member.createdAt).toLocaleDateString()}
                                   </span>
-                                );
-                              })}
-                              {member.allowedModules.length === 0 && (
-                                <span className="text-[10px] text-gray-500 italic">No modules</span>
-                              )}
+                                </div>
+                              </div>
                             </div>
                           </td>
 
-                          {/* Status */}
-                          <td className="py-4 px-5 whitespace-nowrap">
+                          {/* 2. Role & Shift */}
+                          <td className="py-4 px-4 align-middle">
+                            <div className="space-y-1">
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border text-xs font-mono font-medium ${typeColor.bg} ${typeColor.text} ${typeColor.border}`}
+                              >
+                                <span className="material-symbols-outlined text-xs">badge</span>
+                                <span>{roleLabel}</span>
+                              </span>
+                              <div className="flex items-center gap-1.5 text-xs text-gray-400 font-mono">
+                                <span className="material-symbols-outlined text-[13px] text-cyan-400">schedule</span>
+                                <span>{member.shiftHours ? `${member.shiftHours.start} - ${member.shiftHours.end}` : "09:00 - 18:00"}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 3. Permissions */}
+                          <td className="py-4 px-4 align-middle">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-mono">
+                                  <span className="text-cyan-400 font-semibold">{member.allowedModules.length}</span>
+                                  <span>Modules</span>
+                                </span>
+                                {member.agreementId && (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono"
+                                    title="Employment Agreement Linked"
+                                  >
+                                    <span className="material-symbols-outlined text-[11px]">verified</span>
+                                    <span>Agreement</span>
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-400 font-mono truncate max-w-[170px]">
+                                Off: {(member.assignedOffDays || ["Friday", "Saturday"]).join(", ")}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 4. Status */}
+                          <td className="py-4 px-4 align-middle">
                             <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wider border whitespace-nowrap ${
                                 member.status === "active"
                                   ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                                   : "bg-rose-500/10 border-rose-500/30 text-rose-400"
@@ -1087,47 +1292,70 @@ export default function ManageStaffPage() {
                             >
                               <span
                                 className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                  member.status === "active"
-                                    ? "bg-emerald-400 animate-pulse"
-                                    : "bg-rose-400"
+                                  member.status === "active" ? "bg-emerald-400" : "bg-rose-400"
                                 }`}
                               />
-                              {member.status === "active" ? "Active" : "Suspended"}
+                              <span>{member.status === "active" ? "Active" : "Suspended"}</span>
                             </span>
                           </td>
 
-                          {/* Actions */}
-                          <td className="py-4 px-5 text-right">
+                          {/* 5. Actions */}
+                          <td className="py-4 px-5 text-right align-middle">
                             <div className="flex items-center justify-end gap-1.5">
+                              {/* View Details */}
+                              <button
+                                type="button"
+                                onClick={() => openEmployeeDetailsModal(member)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition cursor-pointer active:scale-95"
+                              >
+                                <span className="material-symbols-outlined text-[15px]">visibility</span>
+                                <span>View Details</span>
+                              </button>
+
+                              {/* Assign Task */}
+                              <button
+                                type="button"
+                                onClick={() => openAssignTaskModal(member)}
+                                title="Assign Task"
+                                className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-purple-500/10 text-gray-400 hover:text-purple-300 border border-white/10 hover:border-purple-500/30 flex items-center justify-center transition cursor-pointer active:scale-95"
+                              >
+                                <span className="material-symbols-outlined text-base">assignment_add</span>
+                              </button>
+
+                              {/* Edit */}
                               <button
                                 type="button"
                                 onClick={() => openEditModal(member)}
-                                title="Edit Staff Member"
-                                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 hover:text-cyan-300 text-gray-400 transition-all border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center cursor-pointer active:scale-90"
+                                title="Edit Employee"
+                                className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-400 hover:text-white border border-white/10 hover:border-white/20 flex items-center justify-center transition cursor-pointer active:scale-95"
                               >
                                 <span className="material-symbols-outlined text-base">edit</span>
                               </button>
+
+                              {/* Suspend / Reactivate */}
                               <button
                                 type="button"
                                 onClick={() => handleToggleSuspend(member)}
                                 disabled={actionInProgress === member.id}
-                                title={member.status === "active" ? "Suspend" : "Reactivate"}
-                                className={`w-8 h-8 rounded-xl bg-white/[0.04] transition-all border border-white/[0.08] flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90 ${
+                                title={member.status === "active" ? "Suspend Employee" : "Reactivate Employee"}
+                                className={`w-8 h-8 rounded-lg border flex items-center justify-center transition cursor-pointer disabled:opacity-50 active:scale-95 ${
                                   member.status === "active"
-                                    ? "hover:bg-amber-500/15 hover:text-amber-300 text-gray-400 hover:border-amber-500/30"
-                                    : "hover:bg-emerald-500/15 hover:text-emerald-300 text-gray-400 hover:border-emerald-500/30"
+                                    ? "bg-white/[0.04] hover:bg-amber-500/10 text-gray-400 hover:text-amber-300 border-white/10 hover:border-amber-500/30"
+                                    : "bg-white/[0.04] hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-300 border-white/10 hover:border-emerald-500/30"
                                 }`}
                               >
                                 <span className="material-symbols-outlined text-base">
                                   {member.status === "active" ? "block" : "check_circle"}
                                 </span>
                               </button>
+
+                              {/* Delete */}
                               <button
                                 type="button"
                                 onClick={() => handleDelete(member)}
                                 disabled={actionInProgress === member.id}
-                                title="Remove Staff Member"
-                                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-rose-500/15 hover:text-rose-400 text-gray-500 transition-all border border-white/[0.08] hover:border-rose-500/30 flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90"
+                                title="Remove Employee"
+                                className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 flex items-center justify-center transition cursor-pointer disabled:opacity-50 active:scale-95"
                               >
                                 <span className="material-symbols-outlined text-base">delete</span>
                               </button>
@@ -1167,10 +1395,10 @@ export default function ManageStaffPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold font-['Space_Grotesk'] text-white">
-                    {createdCreds ? "Account Created!" : "Create Staff Account"}
+                    {createdCreds ? "Account Created!" : "Create Employee Account"}
                   </h2>
                   <p className="text-[11px] text-gray-400 font-mono">
-                    {createdCreds ? "Save and share credentials with the staff member" : "Set up a new team member with custom role & permissions"}
+                    {createdCreds ? "Save and share credentials with the employee" : "Set up a new team member with custom role & permissions"}
                   </p>
                 </div>
               </div>
@@ -1240,16 +1468,16 @@ export default function ManageStaffPage() {
 
                   {/* Login URL */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Staff Portal URL</span>
+                    <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Employee Portal URL</span>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.1] text-xs text-cyan-300 font-mono truncate">
-                        {typeof window !== "undefined" ? `${window.location.origin}/staff` : "/staff"}
+                        {typeof window !== "undefined" ? `${window.location.origin}/employee` : "/employee"}
                       </code>
                       <button
                         type="button"
                         onClick={() =>
                           copyToClipboard(
-                            typeof window !== "undefined" ? `${window.location.origin}/staff` : "/staff",
+                            typeof window !== "undefined" ? `${window.location.origin}/employee` : "/employee",
                             "cred-url"
                           )
                         }
@@ -1386,6 +1614,123 @@ export default function ManageStaffPage() {
                   onToggleAll={() => toggleAllModules(createModules, setCreateModules)}
                 />
 
+                {/* Shift Hours & Rostered Off-Days */}
+                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
+                  <div className="flex items-center gap-2 text-cyan-400">
+                    <span className="material-symbols-outlined text-[16px]">schedule</span>
+                    <span className="text-[11px] font-mono uppercase tracking-wider font-bold">
+                      Workplace Shift & Schedule
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-gray-400 font-mono block mb-1">Shift Start</label>
+                      <input
+                        type="time"
+                        value={shiftStart}
+                        onChange={(e) => setShiftStart(e.target.value)}
+                        className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-400 font-mono block mb-1">Shift End</label>
+                      <input
+                        type="time"
+                        value={shiftEnd}
+                        onChange={(e) => setShiftEnd(e.target.value)}
+                        className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-mono block mb-1">
+                      Assigned Off-Days (Rostered)
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => {
+                        const selected = offDaysChoice.includes(day);
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => {
+                              setOffDaysChoice((prev) =>
+                                selected ? prev.filter((d) => d !== day) : [...prev, day]
+                              );
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono border transition-all ${
+                              selected
+                                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                                : "bg-black/30 border-white/[0.08] text-gray-400 hover:text-white"
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Auto-Generate Employment Agreement Option */}
+                <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-purple-300">
+                      <span className="material-symbols-outlined text-[18px]">gavel</span>
+                      <span className="text-[11px] font-mono uppercase tracking-wider font-bold">
+                        Attach Official Employment Agreement
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={createWithAgreement}
+                      onChange={(e) => setCreateWithAgreement(e.target.checked)}
+                      className="w-4 h-4 accent-purple-500 cursor-pointer"
+                    />
+                  </div>
+
+                  {createWithAgreement && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                      <div>
+                        <label className="text-[10px] text-gray-400 font-mono block mb-1">
+                          Salary / Retainer
+                        </label>
+                        <input
+                          type="number"
+                          value={agreementSalary}
+                          onChange={(e) => setAgreementSalary(Number(e.target.value))}
+                          className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-400 font-mono block mb-1">Currency</label>
+                        <select
+                          value={agreementCurrency}
+                          onChange={(e) => setAgreementCurrency(e.target.value)}
+                          className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
+                        >
+                          <option value="BDT">BDT (৳)</option>
+                          <option value="USD">USD ($)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-400 font-mono block mb-1">Contract Model</label>
+                        <select
+                          value={agreementTypeChoice}
+                          onChange={(e) => setAgreementTypeChoice(e.target.value as AgreementType)}
+                          className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
+                        >
+                          <option value="retainer">Monthly Retainer</option>
+                          <option value="hourly">Hourly Rate</option>
+                          <option value="fixed_completion">Fixed Completion</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Create Button */}
                 <button
                   type="button"
@@ -1405,7 +1750,7 @@ export default function ManageStaffPage() {
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-base">person_add</span>
-                      Create Staff Account
+                      Create Employee Account
                     </>
                   )}
                 </button>
@@ -1434,7 +1779,7 @@ export default function ManageStaffPage() {
                   <span className="material-symbols-outlined text-violet-400 text-xl">edit</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold font-['Space_Grotesk'] text-white">Edit Staff Member</h2>
+                  <h2 className="text-lg font-bold font-['Space_Grotesk'] text-white">Edit Employee</h2>
                   <p className="text-[11px] text-gray-400 font-mono">{editingStaff.email}</p>
                 </div>
               </div>
@@ -1516,7 +1861,7 @@ export default function ManageStaffPage() {
                   )}
                 </div>
                 <p className="text-[10px] text-gray-500 font-mono">
-                  Changing the password updates both Firestore and the staff member&apos;s login credentials.
+                  Changing the password updates both Firestore and the employee&apos;s login credentials.
                 </p>
               </div>
 
@@ -1587,6 +1932,652 @@ export default function ManageStaffPage() {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ASSIGN TASK MODAL
+      ═══════════════════════════════════════════════════════════════════ */}
+      {showAssignTaskModal && taskAssigneeStaff && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => !assigningTask && setShowAssignTaskModal(false)}
+          />
+          <div className="relative w-full max-w-lg rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-cyan-400 text-xl">assignment</span>
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Assign Task / Deliverable</h2>
+                  <p className="text-xs text-cyan-400 font-mono">Assignee: {taskAssigneeStaff.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAssignTaskModal(false)}
+                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-400 hover:text-white flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignTaskSubmit} className="space-y-4">
+              <div>
+                <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+                  Task Title (Required)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={taskForm.title}
+                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                  placeholder="e.g. Build Payment Gateway Webhooks Integration"
+                  className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+                  Task Description & Requirements
+                </label>
+                <textarea
+                  rows={3}
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                  placeholder="Specify task deliverables, expectations, API docs..."
+                  className="w-full bg-black/40 border border-white/[0.1] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-400 resize-none font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+                    Priority
+                  </label>
+                  <select
+                    value={taskForm.priority}
+                    onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
+                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                  >
+                    <option value="urgent">Urgent</option>
+                    <option value="high">High</option>
+                    <option value="normal">Normal</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+                    Category
+                  </label>
+                  <input
+                    type="text"
+                    value={taskForm.category}
+                    onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}
+                    placeholder="e.g. Frontend, Backend, QA"
+                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                <div>
+                  <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={taskForm.dueDate}
+                    onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+                    Due Time
+                  </label>
+                  <input
+                    type="time"
+                    value={taskForm.dueTime}
+                    onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
+                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
+                    Est. Hours
+                  </label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="1"
+                    value={taskForm.estimatedHours}
+                    onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
+                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAssignTaskModal(false)}
+                  className="flex-1 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-gray-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={assigningTask || !taskForm.title.trim()}
+                  className="flex-1 h-11 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-xs font-mono font-bold text-white transition-all shadow-lg shadow-cyan-600/20 disabled:opacity-50"
+                >
+                  {assigningTask ? "Assigning..." : "Assign Task"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          VIEW EMPLOYEE TASKS & PROGRESS MODAL
+      ═══════════════════════════════════════════════════════════════════ */}
+      {showTasksModal && tasksStaff && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowTasksModal(false)}
+          />
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-purple-400 text-xl">checklist</span>
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Tasks & Deadlines: {tasksStaff.name}</h2>
+                  <p className="text-xs text-neutral-400 font-mono">
+                    {staffTasksList.length} Total Tasks • {staffTasksList.filter((t) => t.status === "completed").length} Completed
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTasksModal(false)}
+                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-400 hover:text-white flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            {loadingTasks ? (
+              <div className="py-16 flex flex-col items-center justify-center gap-2">
+                <HelixLoader size={36} color="#a855f7" />
+                <span className="text-xs text-neutral-400 font-mono">Loading employee tasks...</span>
+              </div>
+            ) : staffTasksList.length === 0 ? (
+              <div className="py-12 text-center text-xs text-neutral-400 font-mono bg-white/[0.02] border border-white/[0.05] rounded-2xl p-6">
+                No tasks currently assigned to {tasksStaff.name}. Use the &ldquo;Assign Task&rdquo; button to create one.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {staffTasksList.map((task) => (
+                  <div
+                    key={task.id}
+                    className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.08] space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                            task.priority === "urgent"
+                              ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                              : task.priority === "high"
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                              : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                          }`}
+                        >
+                          {task.priority}
+                        </span>
+                        {task.category && (
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-neutral-400">
+                            {task.category}
+                          </span>
+                        )}
+                        <span className="text-xs text-neutral-400 font-mono">
+                          Due: {task.dueDate} {task.dueTime ? `@ ${task.dueTime}` : ""}
+                        </span>
+                      </div>
+
+                      <span
+                        className={`px-2.5 py-0.5 rounded-lg text-xs font-mono font-semibold ${
+                          task.status === "completed"
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                            : task.status === "in_progress"
+                            ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30"
+                            : task.status === "in_review"
+                            ? "bg-purple-500/10 text-purple-400 border border-purple-500/30"
+                            : "bg-white/5 text-neutral-400 border border-white/10"
+                        }`}
+                      >
+                        {TASK_STATUS_LABELS[task.status] || task.status}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{task.title}</h4>
+                      {task.description && (
+                        <p className="text-xs text-neutral-300 mt-1 leading-relaxed">{task.description}</p>
+                      )}
+                    </div>
+
+                    {/* Progress Bar & Logged Hours */}
+                    <div>
+                      <div className="flex justify-between text-[11px] text-neutral-400 mb-1 font-mono">
+                        <span>Progress: {task.progressPercent || 0}%</span>
+                        <span>
+                          Hours: {task.actualHours || 0}h logged / {task.estimatedHours || 0}h est.
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all"
+                          style={{ width: `${task.progressPercent || 0}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Employee Notes & Submission Link */}
+                    {(task.employeeNotes || task.submissionUrl) && (
+                      <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-xs text-neutral-300 space-y-1 font-mono">
+                        {task.employeeNotes && (
+                          <div>
+                            <span className="text-neutral-500 font-bold block text-[10px]">Employee Notes:</span>
+                            <p className="text-neutral-200 mt-0.5">{task.employeeNotes}</p>
+                          </div>
+                        )}
+                        {task.submissionUrl && (
+                          <div className="pt-1">
+                            <a
+                              href={task.submissionUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-cyan-400 hover:underline flex items-center gap-1 text-[11px]"
+                            >
+                              <span className="material-symbols-outlined text-sm">link</span>
+                              <span>Open Deliverable Submission Link</span>
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Admin Review & Feedback Box */}
+                    <div className="pt-2 border-t border-white/5 space-y-2">
+                      {task.adminFeedback && (
+                        <div className="text-[11px] text-purple-300 font-mono">
+                          <span className="text-neutral-400">Current Feedback:</span> “{task.adminFeedback}”
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Write admin feedback or requested changes..."
+                          value={feedbackInputs[task.id] || ""}
+                          onChange={(e) =>
+                            setFeedbackInputs({ ...feedbackInputs, [task.id]: e.target.value })
+                          }
+                          className="flex-1 h-9 bg-black/40 border border-white/[0.08] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-purple-400 font-mono"
+                        />
+                        <button
+                          type="button"
+                          disabled={processingTaskId === task.id}
+                          onClick={() => handleAdminFeedbackSubmit(task.id)}
+                          className="px-3 h-9 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-xs font-mono font-medium transition-all"
+                        >
+                          Send Feedback
+                        </button>
+                        <button
+                          type="button"
+                          disabled={processingTaskId === task.id}
+                          onClick={() => handleAdminFeedbackSubmit(task.id, "completed")}
+                          className="px-3 h-9 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-medium transition-all"
+                        >
+                          Mark Completed
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          EMPLOYEE EXECUTIVE DETAILS MODAL (VIEW DETAILS)
+      ═══════════════════════════════════════════════════════════════════ */}
+      {selectedDetailStaff && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            onClick={() => setSelectedDetailStaff(null)}
+          />
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.1] shadow-2xl space-y-6 themed-scroll">
+            {/* Header Banner */}
+            <div className="relative p-6 sm:p-7 bg-gradient-to-br from-cyan-600/20 via-[#0c0c16] to-purple-600/15 border-b border-white/[0.08]">
+              <button
+                type="button"
+                onClick={() => setSelectedDetailStaff(null)}
+                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+              >
+                ✕
+              </button>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gradient-to-br from-cyan-500/30 to-purple-500/30 border-2 border-cyan-400/40 flex items-center justify-center flex-shrink-0 shadow-lg">
+                    {selectedDetailStaff.avatarUrl ? (
+                      <img
+                        src={selectedDetailStaff.avatarUrl}
+                        alt={selectedDetailStaff.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl font-bold text-white">
+                        {selectedDetailStaff.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
+                        Employee Dossier
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                          selectedDetailStaff.status === "active"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                            : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            selectedDetailStaff.status === "active" ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                          }`}
+                        />
+                        {selectedDetailStaff.status === "active" ? "Active" : "Suspended"}
+                      </span>
+                    </div>
+
+                    <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
+                      {selectedDetailStaff.name}
+                    </h2>
+                    <p className="text-xs font-mono text-gray-400 mt-0.5">
+                      Joined on {new Date(selectedDetailStaff.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Role Pill */}
+                <div className="sm:text-right">
+                  {(() => {
+                    const c = getRoleBadgeColor(selectedDetailStaff.staffType, roles);
+                    return (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-medium ${c.bg} ${c.text} ${c.border}`}>
+                        <span className="material-symbols-outlined text-sm">badge</span>
+                        {getRoleLabel(selectedDetailStaff.staffType, roles)}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-7 space-y-6 pt-0">
+              {/* 1. Admin Credentials & System Identity */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-cyan-400 text-sm">key</span>
+                    <span>Admin Security Credentials</span>
+                  </span>
+                  <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                    Admin Eyes Only
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                  {/* Email */}
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Login Email</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-white truncate">{selectedDetailStaff.email}</span>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(selectedDetailStaff.email, `det-email-${selectedDetailStaff.id}`)}
+                        className="text-gray-400 hover:text-cyan-300 p-1 rounded transition"
+                        title="Copy email"
+                      >
+                        <span className="material-symbols-outlined text-sm">
+                          {copiedId === `det-email-${selectedDetailStaff.id}` ? "check" : "content_copy"}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Password</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-cyan-300 select-all font-mono font-bold">
+                        {revealedPasswords[selectedDetailStaff.id]
+                          ? (selectedDetailStaff.password || "Not recorded")
+                          : "••••••••••••"}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => togglePasswordReveal(selectedDetailStaff.id)}
+                          className="text-gray-400 hover:text-white p-1 rounded transition"
+                          title="Toggle visibility"
+                        >
+                          <span className="material-symbols-outlined text-sm">
+                            {revealedPasswords[selectedDetailStaff.id] ? "visibility_off" : "visibility"}
+                          </span>
+                        </button>
+                        {selectedDetailStaff.password && (
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(selectedDetailStaff.password || "", `det-pwd-${selectedDetailStaff.id}`)}
+                            className="text-gray-400 hover:text-cyan-300 p-1 rounded transition"
+                            title="Copy password"
+                          >
+                            <span className="material-symbols-outlined text-sm">
+                              {copiedId === `det-pwd-${selectedDetailStaff.id}` ? "check" : "content_copy"}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Shift Schedule & Official Agreement */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Working Timetable */}
+                <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-2.5">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-purple-400 text-sm">schedule</span>
+                    <span>Shift Timetable & Roster</span>
+                  </span>
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Shift Timings:</span>
+                      <span className="text-white font-semibold">
+                        {selectedDetailStaff.shiftHours
+                          ? `${selectedDetailStaff.shiftHours.start} - ${selectedDetailStaff.shiftHours.end}`
+                          : "09:00 AM - 06:00 PM"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Off-Days:</span>
+                      <span className="text-cyan-300 font-semibold">
+                        {(selectedDetailStaff.assignedOffDays || ["Friday", "Saturday"]).join(", ")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employment Agreement */}
+                <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-2.5">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-emerald-400 text-sm">verified_user</span>
+                    <span>Official Agreement</span>
+                  </span>
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Status:</span>
+                      <span className="text-emerald-400 font-semibold">
+                        {selectedDetailStaff.agreementId ? "Active Agreement Attached" : "Standard Retainer"}
+                      </span>
+                    </div>
+                    <div className="pt-1">
+                      <Link
+                        href={selectedDetailStaff.agreementId ? `/admin/agreements` : `/admin/agreements`}
+                        className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 hover:underline"
+                      >
+                        <span className="material-symbols-outlined text-sm">description</span>
+                        <span>Manage Agreement Documents →</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. System Module Permissions */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-cyan-400 text-sm">lock_open</span>
+                    <span>Authorized Modules ({selectedDetailStaff.allowedModules.length})</span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedDetailStaff.allowedModules.map((key) => {
+                    const cfg = MODULE_CONFIG[key];
+                    if (!cfg) return null;
+                    return (
+                      <span
+                        key={key}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono bg-white/[0.04] border border-white/[0.08]"
+                        style={{ color: cfg.color }}
+                      >
+                        <span className="material-symbols-outlined text-sm">{cfg.icon}</span>
+                        {cfg.label}
+                      </span>
+                    );
+                  })}
+                  {selectedDetailStaff.allowedModules.length === 0 && (
+                    <span className="text-xs text-gray-500 italic">No module permissions assigned.</span>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. Active Tasks Preview */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-purple-400 text-sm">task_alt</span>
+                    <span>Assigned Tasks & Sprints</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const member = selectedDetailStaff;
+                      setSelectedDetailStaff(null);
+                      openAssignTaskModal(member);
+                    }}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 font-mono font-semibold flex items-center gap-1"
+                  >
+                    <span>+ Assign New Task</span>
+                  </button>
+                </div>
+
+                {loadingDetailTasks ? (
+                  <div className="py-4 text-center text-xs text-gray-400 font-mono">
+                    Loading task status...
+                  </div>
+                ) : detailStaffTasks.length === 0 ? (
+                  <div className="py-3 text-xs text-gray-500 font-mono italic">
+                    No active tasks assigned to this employee.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {detailStaffTasks.slice(0, 3).map((t) => (
+                      <div
+                        key={t.id}
+                        className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-3 text-xs font-mono"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-white font-semibold truncate">{t.title}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            Due: {t.dueDate} • Priority: <span className="uppercase text-purple-400">{t.priority}</span>
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-white/[0.05] text-cyan-300">
+                            {t.progressPercent}%
+                          </span>
+                          <span className="capitalize px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                            {t.status.replace("_", " ")}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Actions Footer */}
+              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08]">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const member = selectedDetailStaff;
+                      setSelectedDetailStaff(null);
+                      openEditModal(member);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] text-xs font-mono font-semibold text-white transition cursor-pointer"
+                  >
+                    Edit Profile
+                  </button>
+                  <Link
+                    href={`/admin/manage-attendance`}
+                    className="px-3.5 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-xs font-mono font-semibold text-violet-300 transition"
+                  >
+                    View Attendance
+                  </Link>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedDetailStaff(null)}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 text-slate-950 font-bold text-xs font-mono transition cursor-pointer"
+                >
+                  Close Dossier
+                </button>
+              </div>
             </div>
           </div>
         </div>

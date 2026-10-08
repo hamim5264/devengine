@@ -8,6 +8,8 @@ import { getStaffByUid } from "@/lib/services/staffService";
 import type { StaffMember } from "@/types/staff";
 import { STAFF_TYPE_LABELS, MODULE_CONFIG } from "@/types/staff";
 import HelixLoader from "@/components/HelixLoader";
+import ThemeToggle from "@/components/ThemeToggle";
+import { useTheme } from "@/context/ThemeContext";
 
 // ── Nav structure matching AdminLayout, keyed by module ──
 interface NavItem {
@@ -95,9 +97,11 @@ const STAFF_WORKSPACE_GROUP: NavGroup = {
   icon: <IconUserCheck />,
   items: [
     { label: "Dashboard", href: "/admin/dashboard", staffHref: "/staff/dashboard" },
-    { label: "My Attendance", href: "/admin/manage-attendance", staffHref: "/staff/attendance" },
+    { label: "Attendance & Heatmap", href: "/admin/manage-attendance", staffHref: "/staff/attendance" },
+    { label: "Tasks & Deadlines", href: "/staff/tasks", staffHref: "/staff/tasks" },
+    { label: "My Agreement", href: "/staff/agreement", staffHref: "/staff/agreement" },
+    { label: "Leaves & Off-Day Swap", href: "/admin/manage-leaves", staffHref: "/staff/leaves" },
     { label: "Daily Work Updates", href: "/admin/manage-work-updates", staffHref: "/staff/work-updates" },
-    { label: "Leave Applications", href: "/admin/manage-leaves", staffHref: "/staff/leaves" },
   ],
 };
 
@@ -190,8 +194,10 @@ interface StaffLayoutProps {
 const SCROLL_STORAGE_KEY = "staff_nav_scroll";
 const EXPANDED_STORAGE_KEY = "staff_nav_expanded";
 
-export default function StaffLayout({ children, title = "Staff Portal | DevEngine" }: StaffLayoutProps) {
+export default function StaffLayout({ children, title = "Employee Portal | DevEngine" }: StaffLayoutProps) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const navScrollRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -209,6 +215,11 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
     return new Set(ALL_NAV_GROUPS.map((g) => g.label));
   });
 
+  // ── Profile & DevKitty Visibility State ──
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [devKittyEnabled, setDevKittyEnabled] = useState(true);
+  const [profileCopied, setProfileCopied] = useState(false);
+
   // ── Auth + Staff data ──
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -225,6 +236,15 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
         return;
       }
       setStaffData(staff);
+
+      // Check DevKitty preference for this employee
+      try {
+        const isHidden =
+          localStorage.getItem(`devkitty_hidden_${staff.uid}`) === "true" ||
+          (staff.id && localStorage.getItem(`devkitty_hidden_${staff.id}`) === "true");
+        setDevKittyEnabled(!isHidden);
+      } catch {}
+
       // Filter nav groups by allowed modules and prepend dedicated workspace
       const allowed = new Set(staff.allowedModules);
       const moduleGroups = ALL_NAV_GROUPS.filter((g) => allowed.has(g.moduleKey));
@@ -233,6 +253,30 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
     });
     return () => unsub();
   }, [router]);
+
+  const handleToggleDevKitty = () => {
+    if (!staffData) return;
+    const newEnabled = !devKittyEnabled;
+    setDevKittyEnabled(newEnabled);
+    try {
+      if (newEnabled) {
+        localStorage.removeItem(`devkitty_hidden_${staffData.uid}`);
+        if (staffData.id) localStorage.removeItem(`devkitty_hidden_${staffData.id}`);
+      } else {
+        localStorage.setItem(`devkitty_hidden_${staffData.uid}`, "true");
+        if (staffData.id) localStorage.setItem(`devkitty_hidden_${staffData.id}`, "true");
+      }
+      window.dispatchEvent(new Event("devkitty_visibility_change"));
+    } catch (e) {
+      console.error("Toggle devkitty visibility error:", e);
+    }
+  };
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard?.writeText(text);
+    setProfileCopied(true);
+    setTimeout(() => setProfileCopied(false), 2000);
+  };
 
   // ── Auto-expand active group ──
   useEffect(() => {
@@ -324,14 +368,21 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
         <title>{title}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <div style={{ fontFamily: "'Poppins', sans-serif" }} className="min-h-screen bg-[#07070f] text-white flex flex-col">
+      <div style={{ fontFamily: "'Poppins', sans-serif" }} className={`min-h-screen flex flex-col ${isLight ? "bg-[#f8fafc] text-slate-900" : "bg-[#07070f] text-white"}`}>
 
         {/* ── TOP HEADER ── */}
         <header
           className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 gap-3"
-          style={{ background: "rgba(7,7,15,0.96)", borderBottom: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(20px)" }}
+          style={{
+            background: isLight ? "rgba(255,255,255,0.96)" : "rgba(7,7,15,0.96)",
+            borderBottom: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.06)",
+            backdropFilter: "blur(20px)"
+          }}
         >
-          <button onClick={() => setSidebarOpen((p) => !p)} className="p-2 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0 cursor-pointer">
+          <button onClick={() => setSidebarOpen((p) => !p)}
+            className={`p-2 rounded-lg transition-colors flex-shrink-0 cursor-pointer ${
+              isLight ? "text-slate-700 hover:bg-slate-100" : "text-white hover:bg-white/5"
+            }`}>
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
@@ -346,20 +397,26 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
             </span>
             <span
               className="text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
-              style={{ background: "rgba(168,85,247,0.12)", color: "#a855f7", border: "1px solid rgba(168,85,247,0.25)" }}
+              style={{
+                background: isLight ? "#f3e8ff" : "rgba(168,85,247,0.12)",
+                color: isLight ? "#7e22ce" : "#a855f7",
+                border: isLight ? "1px solid #d8b4fe" : "1px solid rgba(168,85,247,0.25)"
+              }}
             >
-              Staff
+              Employee
             </span>
           </Link>
 
           <div className="flex-1" />
+
+          <ThemeToggle showLabel={false} />
 
           <a
             href="/"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
-            style={{ background: "rgba(168,85,247,0.07)", border: "1px solid rgba(168,85,247,0.15)", color: "#a855f7" }}
+            style={isLight ? { background: "#f3e8ff", border: "1px solid #d8b4fe", color: "#7e22ce" } : { background: "rgba(168,85,247,0.07)", border: "1px solid rgba(168,85,247,0.15)", color: "#a855f7" }}
           >
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
@@ -371,7 +428,7 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
           <button
             onClick={handleSignOut}
             className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
-            style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)", color: "#f87171" }}
+            style={isLight ? { background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" } : { background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)", color: "#f87171" }}
           >
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
@@ -388,7 +445,11 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
           {/* ── SIDEBAR ── */}
           <aside
             className="fixed top-14 left-0 bottom-0 z-40 overflow-hidden transition-all duration-300 ease-in-out flex flex-col"
-            style={{ width: sidebarOpen ? 240 : 0, background: "#0b0b18", borderRight: "1px solid rgba(255,255,255,0.05)" }}
+            style={{
+              width: sidebarOpen ? 240 : 0,
+              background: isLight ? "#ffffff" : "#0b0b18",
+              borderRight: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.05)"
+            }}
           >
             <div ref={navScrollRef} onScroll={handleNavScroll} className="flex-1 overflow-y-auto themed-scroll py-3" style={{ width: 240 }}>
               {filteredGroups.map((group, gi) => {
@@ -396,7 +457,7 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
                 return (
                   <div key={group.label} className={gi > 0 ? "mt-1" : ""}>
                     {gi > 0 && (
-                      <div className="mx-3 mb-1" style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
+                      <div className="mx-3 mb-1" style={{ height: 1, background: isLight ? "#e2e8f0" : "rgba(255,255,255,0.05)" }} />
                     )}
 
                     <button onClick={() => toggleGroup(group.label)} className="w-full flex items-center justify-between px-3 py-2 mx-0 text-left group cursor-pointer">
@@ -404,13 +465,13 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
                         <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-all" style={{ background: `${group.color}18`, color: group.color }}>
                           {group.icon}
                         </div>
-                        <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: isExpanded ? group.color : "rgba(156,163,175,0.7)" }}>
+                        <span className="text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: isExpanded ? group.color : (isLight ? "#475569" : "rgba(156,163,175,0.7)") }}>
                           {group.label}
                         </span>
                       </div>
                       <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}
                         className={`transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                        style={{ color: isExpanded ? group.color : "rgba(107,114,128,0.6)" }}>
+                        style={{ color: isExpanded ? group.color : (isLight ? "#64748b" : "rgba(107,114,128,0.6)") }}>
                         <polyline points="6 9 12 15 18 9" />
                       </svg>
                     </button>
@@ -428,19 +489,19 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
                               className="flex items-center justify-between mx-2 px-2.5 py-[7px] rounded-lg my-0.5 text-[13px] font-medium transition-all duration-150"
                               style={
                                 isActive
-                                  ? { background: `${group.color}14`, color: group.color, borderLeft: `2px solid ${group.color}`, paddingLeft: "9px" }
-                                  : { color: "rgba(156,163,175,0.85)", borderLeft: "2px solid transparent", paddingLeft: "9px" }
+                                  ? { background: `${group.color}18`, color: group.color, borderLeft: `2px solid ${group.color}`, paddingLeft: "9px", fontWeight: 600 }
+                                  : { color: isLight ? "#334155" : "rgba(156,163,175,0.85)", borderLeft: "2px solid transparent", paddingLeft: "9px" }
                               }
                               onMouseEnter={(e) => {
                                 if (!isActive) {
-                                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-                                  (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.9)";
+                                  (e.currentTarget as HTMLElement).style.background = isLight ? "rgba(15,23,42,0.05)" : "rgba(255,255,255,0.04)";
+                                  (e.currentTarget as HTMLElement).style.color = isLight ? "#0f172a" : "rgba(255,255,255,0.9)";
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (!isActive) {
                                   (e.currentTarget as HTMLElement).style.background = "transparent";
-                                  (e.currentTarget as HTMLElement).style.color = "rgba(156,163,175,0.85)";
+                                  (e.currentTarget as HTMLElement).style.color = isLight ? "#334155" : "rgba(156,163,175,0.85)";
                                 }
                               }}
                             >
@@ -455,36 +516,211 @@ export default function StaffLayout({ children, title = "Staff Portal | DevEngin
               })}
             </div>
 
-            {/* Sidebar Footer — Staff info */}
-            <div className="flex-shrink-0 p-3" style={{ width: 240, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-              <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
-                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-violet-400/40 bg-violet-500/10 shadow-sm flex items-center justify-center">
+            {/* Sidebar Footer — Staff info (Interactive Profile Trigger) */}
+            <div className="flex-shrink-0 p-3" style={{ width: 240, borderTop: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.05)" }}>
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(true)}
+                title="View your profile & preferences"
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-all duration-200 active:scale-[0.98] group text-left cursor-pointer border ${
+                  isLight
+                    ? "bg-[#f8fafc] border-slate-200 hover:bg-slate-100 hover:border-violet-300"
+                    : "bg-white/[0.03] border-transparent hover:bg-white/[0.08] hover:border-violet-500/20"
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-violet-400/40 bg-violet-500/10 shadow-sm flex items-center justify-center group-hover:border-violet-400 transition-colors">
                   {staffData?.avatarUrl ? (
                     <img src={staffData.avatarUrl} alt={staffData.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-sm font-bold text-violet-300">
+                    <span className="text-sm font-bold text-violet-500 dark:text-violet-300">
                       {staffData?.name.charAt(0).toUpperCase() || "S"}
                     </span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-white truncate leading-tight">
-                    {staffData?.name || "Staff"}
-                  </p>
-                  <p className="text-[10px] truncate leading-tight mt-0.5" style={{ color: "#a855f7" }}>
+                  <div className="flex items-center justify-between gap-1">
+                    <p className={`text-[12px] font-semibold truncate leading-tight ${isLight ? "text-slate-900 group-hover:text-violet-700" : "text-white group-hover:text-violet-200"} transition-colors`}>
+                      {staffData?.name || "Staff"}
+                    </p>
+                    <span className="text-[10px] text-gray-500 group-hover:text-violet-500 transition-colors">⚙️</span>
+                  </div>
+                  <p className="text-[10px] truncate leading-tight mt-0.5 font-medium" style={{ color: isLight ? "#9333ea" : "#a855f7" }}>
                     {staffData ? (STAFF_TYPE_LABELS[staffData.staffType] || staffData.staffType) : "Staff Member"}
                   </p>
                 </div>
-                <div className="w-2 h-2 rounded-full bg-violet-400 flex-shrink-0 shadow-[0_0_6px_rgba(168,85,247,0.8)]" />
-              </div>
+                <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+              </button>
             </div>
           </aside>
 
           {/* ── MAIN CONTENT ── */}
-          <main className="flex-1 transition-all duration-300 ease-in-out min-h-[calc(100vh-56px)]" style={{ marginLeft: !isMobile && sidebarOpen ? 240 : 0 }}>
+          <main className="flex-1 min-w-0 transition-all duration-300 ease-in-out min-h-[calc(100vh-56px)] overflow-x-hidden" style={{ marginLeft: !isMobile && sidebarOpen ? 240 : 0 }}>
             {children}
           </main>
         </div>
+
+        {/* ── EMPLOYEE PROFILE & PREFERENCES MODAL ── */}
+        {showProfileModal && staffData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="w-full max-w-lg bg-[#0d0d1b] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="relative p-6 bg-gradient-to-br from-violet-600/20 via-[#0d0d1b] to-cyan-500/10 border-b border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                >
+                  ✕
+                </button>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-violet-500/20 border-2 border-violet-400/40 flex items-center justify-center flex-shrink-0 shadow-lg">
+                    {staffData.avatarUrl ? (
+                      <img src={staffData.avatarUrl} alt={staffData.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-2xl font-bold text-violet-300">
+                        {staffData.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-violet-400 bg-violet-500/10 px-2.5 py-0.5 rounded-full border border-violet-500/20">
+                      Official Employee Profile
+                    </span>
+                    <h3 className="text-xl font-bold text-white mt-1 truncate">{staffData.name}</h3>
+                    <p className="text-xs font-mono text-gray-400 flex items-center gap-1.5 mt-0.5">
+                      <span>{staffData.email}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyText(staffData.email)}
+                        className="text-gray-500 hover:text-cyan-400 transition"
+                        title="Copy email"
+                      >
+                        {profileCopied ? "✓" : "📋"}
+                      </button>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto themed-scroll">
+                {/* Employee Details Grid */}
+                <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Assigned Role</span>
+                    <span className="text-violet-300 font-semibold block capitalize">
+                      {STAFF_TYPE_LABELS[staffData.staffType] || staffData.staffType}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Status</span>
+                    <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Active Member
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Shift Timings</span>
+                    <span className="text-white font-semibold block">
+                      {staffData.shiftHours ? `${staffData.shiftHours.start} - ${staffData.shiftHours.end}` : "09:00 AM - 06:00 PM"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Weekly Off-Days</span>
+                    <span className="text-cyan-300 font-semibold block">
+                      {(staffData.assignedOffDays || ["Friday", "Saturday"]).join(", ")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Agreement Shortcut */}
+                <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center shrink-0">
+                      📄
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">Employment Agreement</p>
+                      <p className="text-[11px] text-gray-400">View terms, remuneration & signed contract</p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/staff/agreement"
+                    onClick={() => setShowProfileModal(false)}
+                    className="px-3 py-1.5 rounded-xl bg-violet-500/15 hover:bg-violet-500/25 border border-violet-500/30 text-violet-300 text-xs font-semibold transition"
+                  >
+                    View
+                  </Link>
+                </div>
+
+                {/* ── DEVKITTY MASCOT WIDGET TOGGLE (REQUESTED FEATURE) ── */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-transparent border border-cyan-500/20 space-y-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-indigo-500 p-[1px] shrink-0">
+                        <div className="w-full h-full rounded-xl bg-[#080e1a] flex items-center justify-center text-xs">
+                          🐱
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-white block">DevKitty Mascot Widget</span>
+                        <span className="text-[10px] text-gray-400">Floating assistant in workspace corner</span>
+                      </div>
+                    </div>
+
+                    {/* Interactive Switch */}
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={devKittyEnabled}
+                      onClick={handleToggleDevKitty}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        devKittyEnabled ? "bg-gradient-to-r from-cyan-400 to-emerald-400" : "bg-neutral-800"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          devKittyEnabled ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-gray-300 leading-relaxed font-sans">
+                    {devKittyEnabled ? (
+                      <span className="text-emerald-400 font-medium">✓ Enabled:</span>
+                    ) : (
+                      <span className="text-amber-400 font-medium">✕ Hidden:</span>
+                    )}{" "}
+                    DevKitty is currently {devKittyEnabled ? "visible" : "hidden"} for your account. Toggle this anytime to show or hide the mascot without affecting other team members.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-white/[0.02] border-t border-white/10 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-300 text-xs font-semibold transition"
+                >
+                  Sign Out
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowProfileModal(false)}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 hover:opacity-90 text-white font-bold text-xs transition cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

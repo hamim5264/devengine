@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import QRCode from "qrcode";
 import { OrderRecord } from "@/types/order";
+import { getPdfBrandingSettings, DEFAULT_PDF_BRANDING } from "@/lib/services/pdfSettingsService";
 
 /**
  * Fetch base64 data for DevEngine logo and Founder signature from API
@@ -60,11 +61,13 @@ export async function generatePdfInvoice(order: OrderRecord): Promise<void> {
   const numAmount = Number(String(order.amount).replace(/[^0-9.]/g, ""));
   const displayAmount = !isNaN(numAmount) && numAmount > 0 ? numAmount.toLocaleString() : order.amount;
 
-  // Fetch brand assets and generate QR code in parallel
-  const [assets, qrDataUrl] = await Promise.all([
+  // Fetch brand assets, QR code, and PDF branding settings in parallel
+  const [assets, qrDataUrl, branding] = await Promise.all([
     getReceiptAssets(),
     generateQrCode(qrMessage),
+    getPdfBrandingSettings().catch(() => ({ ...DEFAULT_PDF_BRANDING })),
   ]);
+  const portfolioUrl = branding.developerPortfolioUrl;
 
   // ==========================================
   // 1. TOP BRAND HEADER
@@ -520,7 +523,7 @@ export async function generatePdfInvoice(order: OrderRecord): Promise<void> {
   doc.setTextColor(2, 132, 199);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
-  doc.text("https://thedevhamim.vercel.app/", col2X, bottomY + 22.5);
+  doc.text(portfolioUrl, col2X, bottomY + 22.5);
 
   // Vertical Separator 2
   doc.setDrawColor(226, 232, 240);

@@ -124,6 +124,9 @@ export async function createStaffAccount(data: {
   staffType: StaffType;
   allowedModules: string[];
   avatarUrl?: string;
+  assignedOffDays?: string[];
+  shiftHours?: { start: string; end: string; name?: string };
+  agreementId?: string;
 }): Promise<StaffMember> {
   const secondaryAuth = getSecondaryAuth();
 
@@ -151,6 +154,9 @@ export async function createStaffAccount(data: {
     staffType: data.staffType,
     allowedModules: data.allowedModules,
     status: "active",
+    assignedOffDays: data.assignedOffDays || ["Friday", "Saturday"],
+    shiftHours: data.shiftHours || { start: "09:00", end: "18:00", name: "Standard Shift" },
+    agreementId: data.agreementId || "",
     createdAt: now,
     updatedAt: now,
   };

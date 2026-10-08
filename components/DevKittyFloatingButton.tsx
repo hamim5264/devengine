@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
 import devKittyAnimationData from "@/assets/DevKitty.json";
 
 export default function DevKittyFloatingButton() {
@@ -9,14 +10,45 @@ export default function DevKittyFloatingButton() {
   const animInstanceRef = useRef<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [showPill, setShowPill] = useState(false);
+  const [isHiddenByUser, setIsHiddenByUser] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Exclude admin pages from showing DevKitty
+  // Check per-user visibility toggle
+  useEffect(() => {
+    const checkHidden = () => {
+      try {
+        const currentUid = auth.currentUser?.uid;
+        if (currentUid && localStorage.getItem(`devkitty_hidden_${currentUid}`) === "true") {
+          setIsHiddenByUser(true);
+          return;
+        }
+        const staffUid = localStorage.getItem("devengine_staff_uid");
+        if (staffUid && localStorage.getItem(`devkitty_hidden_${staffUid}`) === "true") {
+          setIsHiddenByUser(true);
+          return;
+        }
+        setIsHiddenByUser(false);
+      } catch {
+        setIsHiddenByUser(false);
+      }
+    };
+
+    checkHidden();
+    window.addEventListener("devkitty_visibility_change", checkHidden);
+    const unsub = auth.onAuthStateChanged(() => checkHidden());
+    return () => {
+      window.removeEventListener("devkitty_visibility_change", checkHidden);
+      unsub();
+    };
+  }, []);
+
+  // Exclude admin pages or user-hidden state from showing DevKitty
   const isAdminRoute = router.pathname.startsWith("/admin");
+  const shouldRender = !isAdminRoute && !isHiddenByUser;
 
   // Periodic speech bubble: shows for 3s, hides for 5s, repeats
   useEffect(() => {
-    if (isAdminRoute) return;
+    if (!shouldRender) return;
 
     let timeoutId: NodeJS.Timeout;
     let isMounted = true;
@@ -50,7 +82,7 @@ export default function DevKittyFloatingButton() {
 
   // Load Lottie animation safely on client
   useEffect(() => {
-    if (isAdminRoute) return;
+    if (!shouldRender) return;
 
     let isMounted = true;
 
@@ -85,7 +117,7 @@ export default function DevKittyFloatingButton() {
         animInstanceRef.current = null;
       }
     };
-  }, [isAdminRoute]);
+  }, [shouldRender]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -108,7 +140,7 @@ export default function DevKittyFloatingButton() {
     };
   }, [isOpen]);
 
-  if (isAdminRoute) {
+  if (!shouldRender) {
     return null;
   }
 
@@ -117,7 +149,7 @@ export default function DevKittyFloatingButton() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9990] flex flex-col items-end select-none">
+    <div className="fixed bottom-6 right-6 z-[9990] flex flex-col items-end select-none pointer-events-none">
       {/* ═════════════════════════════════════════════════════════════════
           DEVKITTY INTERACTIVE SPEECH POPOVER (FORMAL COMING SOON MESSAGE)
       ═════════════════════════════════════════════════════════════════ */}
@@ -126,7 +158,7 @@ export default function DevKittyFloatingButton() {
           ref={popoverRef}
           role="dialog"
           aria-label="DevKitty AI Assistant Notice"
-          className="mb-3 w-[340px] sm:w-[380px] bg-[#0c1220]/95 backdrop-blur-2xl border border-[#38f2ff]/30 rounded-3xl p-5 sm:p-6 shadow-[0_15px_60px_rgba(0,0,0,0.8),0_0_30px_rgba(56,242,255,0.2)] animate-in fade-in zoom-in-95 duration-200 relative overflow-hidden"
+          className="mb-3 w-[340px] sm:w-[380px] bg-[#0c1220]/95 backdrop-blur-2xl border border-[#38f2ff]/30 rounded-3xl p-5 sm:p-6 shadow-[0_15px_60px_rgba(0,0,0,0.8),0_0_30px_rgba(56,242,255,0.2)] animate-in fade-in zoom-in-95 duration-200 relative overflow-hidden pointer-events-auto"
         >
           {/* Ambient Glow Orbs inside Popover */}
           <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#38f2ff]/15 rounded-full blur-2xl pointer-events-none" />
@@ -236,7 +268,7 @@ export default function DevKittyFloatingButton() {
       {/* ═════════════════════════════════════════════════════════════════
           FLOATING ANIMATED DEVKITTY (FREEDOM / BORDERLESS WITH SHADOW & TEXT)
       ═════════════════════════════════════════════════════════════════ */}
-      <div className="relative flex items-center select-none">
+      <div className="relative flex items-center select-none pointer-events-auto">
         {/* Floating Text Pill with Shadow (Top-Left of Kitty, shows 3s every 5s) */}
         <div
           className={`absolute right-[82px] sm:right-[100px] -top-2 sm:-top-3 transition-all duration-500 ease-out z-20 ${

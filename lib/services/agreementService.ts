@@ -310,3 +310,42 @@ export async function deleteAgreement(id: string): Promise<void> {
     throw err;
   }
 }
+
+/**
+ * Find agreement linked to a staff member (by agreementId, staffId, or contributorEmail)
+ */
+export async function getAgreementForStaff(params: {
+  agreementId?: string;
+  staffId?: string;
+  staffEmail?: string;
+}): Promise<AgreementRecord | null> {
+  try {
+    if (params.agreementId) {
+      const agr = await getAgreement(params.agreementId);
+      if (agr) return agr;
+    }
+
+    const colRef = collection(db, AGREEMENTS_COLLECTION);
+    const snap = await getDocs(colRef);
+    const emailNorm = params.staffEmail?.trim().toLowerCase();
+
+    for (const docSnap of snap.docs) {
+      const data = { id: docSnap.id, ...docSnap.data() } as AgreementRecord;
+      if (
+        (data as any).staffId === params.staffId ||
+        (data as any).staffUid === params.staffId ||
+        (emailNorm && (
+          data.developer?.email?.trim().toLowerCase() === emailNorm ||
+          (data as any).contributor?.contributorEmail?.trim().toLowerCase() === emailNorm
+        ))
+      ) {
+        return data;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("Error in getAgreementForStaff:", err);
+    return null;
+  }
+}
+

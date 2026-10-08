@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import { AgreementRecord } from "@/types/agreement";
 import { buildAgreementClauses, AgreementClauseSection } from "@/lib/agreements/agreementClauses";
+import { getPdfBrandingSettings, PdfBrandingSettings, DEFAULT_PDF_BRANDING } from "@/lib/services/pdfSettingsService";
 
 /**
  * Fetch base64 data for DevEngine logo and CEO signature from API
@@ -204,6 +205,16 @@ export async function generateAgreementPdf(
 
   const assets = await getBrandAssets();
 
+  // Fetch dynamic PDF branding settings (company URL & email)
+  let branding: PdfBrandingSettings;
+  try {
+    branding = await getPdfBrandingSettings();
+  } catch {
+    branding = { ...DEFAULT_PDF_BRANDING };
+  }
+  const pdfWebsiteUrl = branding.companyWebsiteUrl;
+  const pdfEmail = branding.companyEmail;
+
   // Running Header on Pages 2+
   const drawRunningHeader = () => {
     doc.setFont("times", "bold");
@@ -280,7 +291,7 @@ export async function generateAgreementPdf(
   doc.setFont("times", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(14, 116, 144); // cyan-700
-  doc.text("https://thedevengine.vercel.app  •  hamim.leon@gmail.com", pageWidth - margin, currentY + 11.2, { align: "right" });
+  doc.text(`${pdfWebsiteUrl}  •  ${pdfEmail}`, pageWidth - margin, currentY + 11.2, { align: "right" });
 
   currentY += 17.5;
 
@@ -417,7 +428,7 @@ export async function generateAgreementPdf(
         currentY + 15
       );
       doc.text(
-        `Official Website: https://thedevengine.vercel.app  •  Official Contact: hamim.leon@gmail.com`,
+        `Official Website: ${pdfWebsiteUrl}  •  Official Contact: ${pdfEmail}`,
         margin + 6,
         currentY + 19
       );
@@ -884,7 +895,7 @@ export async function generateAgreementPdf(
     doc.setFont("times", "normal");
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(" • https://thedevengine.vercel.app", margin + 17, footerY);
+    doc.text(` • ${pdfWebsiteUrl}`, margin + 17, footerY);
 
     // Center: Confidential Notice
     doc.setFont("times", "bold");

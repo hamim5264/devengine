@@ -120,7 +120,7 @@ export default function ManageLeavesPage() {
   });
 
   return (
-    <AdminLayout title="Staff Leave Requests | Admin">
+    <AdminLayout title="Employee Leave Requests | Admin">
       <Head>
         <link
           rel="stylesheet"
@@ -134,10 +134,10 @@ export default function ManageLeavesPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold font-['Space_Grotesk'] text-white">
-                Staff Leave Management
+                Employee Leave Management
               </h1>
               <p className="text-xs text-gray-400 mt-1">
-                Review staff absence applications, authorize planned leaves, and track time-off balances.
+                Review employee absence applications, authorize planned leaves, and track time-off balances.
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -220,14 +220,14 @@ export default function ManageLeavesPage() {
 
               <div>
                 <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
-                  Staff Member:
+                  Employee:
                 </label>
                 <select
                   value={staffFilter}
                   onChange={(e) => setStaffFilter(e.target.value)}
                   className="h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-amber-500"
                 >
-                  <option value="all" className="bg-[#0e0e1a] text-white">All Staff Members</option>
+                  <option value="all" className="bg-[#0e0e1a] text-white">All Employees</option>
                   {staffList.map((s) => (
                     <option key={s.id} value={s.id} className="bg-[#0e0e1a] text-white">
                       {s.name} ({s.staffType})
@@ -244,7 +244,7 @@ export default function ManageLeavesPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-white/[0.02] border-b border-white/[0.06] text-gray-400 font-mono uppercase text-[10px]">
                   <tr>
-                    <th className="py-3 px-4">Staff Member</th>
+                    <th className="py-3 px-4">Employee</th>
                     <th className="py-3 px-4">Type</th>
                     <th className="py-3 px-4">Date Range</th>
                     <th className="py-3 px-4">Duration</th>

@@ -158,7 +158,7 @@ export default function StaffWorkUpdatesPage() {
   });
 
   return (
-    <StaffLayout title="Daily Work Updates | Staff Portal">
+    <StaffLayout title="Daily Work Updates | Employee Portal">
       <Head>
         <link
           rel="stylesheet"

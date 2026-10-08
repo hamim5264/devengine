@@ -45,7 +45,7 @@ export default function StaffLoginPage() {
 
       if (!staff) {
         await signOut(auth);
-        setError("Access denied. This account is not registered as a staff member.");
+        setError("Access denied. This account is not registered as an employee.");
         setLoading(false);
         return;
       }
@@ -92,7 +92,7 @@ export default function StaffLoginPage() {
   return (
     <>
       <Head>
-        <title>Staff Portal | DevEngine</title>
+        <title>Employee Portal | DevEngine</title>
         <meta name="robots" content="noindex, nofollow" />
         <link
           rel="stylesheet"
@@ -137,10 +137,10 @@ export default function StaffLoginPage() {
                   border: "1px solid rgba(168,85,247,0.3)",
                 }}
               >
-                Staff Portal
+                Employee Portal
               </span>
             </Link>
-            <p className="text-gray-400 text-sm mt-3">Sign in with your staff credentials</p>
+            <p className="text-gray-400 text-sm mt-3">Sign in with your employee credentials</p>
           </div>
 
           {/* Login Card */}
@@ -228,7 +228,7 @@ export default function StaffLoginPage() {
             {/* Footer hint */}
             <div className="text-center pt-2">
               <p className="text-[11px] text-gray-500">
-                Staff credentials are provided by your administrator.
+                Employee credentials are provided by your administrator.
               </p>
               <p className="text-[11px] text-gray-500 mt-1">
                 Contact your admin if you&apos;ve forgotten your password.

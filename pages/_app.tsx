@@ -11,6 +11,7 @@ import {
 import { recordPageView } from "@/lib/services/analyticsService";
 import MaintenanceScreen from "@/components/maintenance/MaintenanceScreen";
 import DevKittyFloatingButton from "@/components/DevKittyFloatingButton";
+import { ThemeProvider } from "@/context/ThemeContext";
 import "../styles/globals.css";
 
 const ADMIN_EMAIL =
@@ -61,7 +62,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     (!isAdmin || !adminBypass);
 
   return (
-    <>
+    <ThemeProvider>
       {/* Discreet Admin Floating Pill (ONLY visible to admin hamim.leon@gmail.com, NEVER to end users) */}
       {maintenanceConfig?.isEnabled && isAdmin && (
         <aside
@@ -98,7 +99,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <DevKittyFloatingButton />
         </>
       )}
-    </>
+    </ThemeProvider>
   );
 }
 

@@ -12,7 +12,7 @@ async function main() {
     id: "test_sample_001",
     agreementNumber: "DEV-AGR-2026-0002",
     status: "finalized",
-    version: "1.0",
+    version: "2.1",
     project: {
       projectName: "BLUME — Autonomous Neural Agent & Distributed Emotional Memory Platform V2",
       description: "Autonomous cognitive neural engine supporting multimodal streaming context memory and real-time safe alignment.",

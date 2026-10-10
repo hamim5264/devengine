@@ -537,33 +537,41 @@ export default function AgreementAddendumPage() {
                     Executing this Addendum links it permanently to {agreement.agreementNumber} without modifying historical records.
                   </p>
 
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                  <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
+                    {/* Preview Button */}
                     <button
                       type="button"
                       onClick={handlePreviewPdf}
-                      className="px-4 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-mono text-xs font-semibold transition-all border border-cyan-500/30 flex items-center gap-1.5 cursor-pointer"
+                      className="h-11 px-5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 active:bg-cyan-500/25 text-cyan-300 hover:text-cyan-200 font-mono text-xs font-bold transition-all border border-cyan-500/30 hover:border-cyan-400/50 flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10 whitespace-nowrap shrink-0"
                     >
-                      <span className="material-symbols-outlined text-base">visibility</span>
+                      <span className="material-symbols-outlined text-lg">visibility</span>
                       <span>Preview Addendum PDF</span>
                     </button>
 
+                    {/* Save Draft Button */}
                     <button
                       type="button"
                       onClick={() => handleSaveAddendum(false)}
                       disabled={saving}
-                      className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-gray-200 hover:text-white font-mono text-xs transition-all border border-white/[0.1] cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                      className="h-11 px-5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.15] text-gray-200 hover:text-white font-mono text-xs font-semibold transition-all border border-white/[0.12] hover:border-white/[0.2] cursor-pointer disabled:opacity-50 flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm"
                     >
+                      {saving ? (
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <span className="material-symbols-outlined text-lg text-gray-400">save</span>
+                      )}
                       <span>Save Draft</span>
                     </button>
 
+                    {/* Execute Addendum Button */}
                     <button
                       type="button"
                       onClick={() => handleSaveAddendum(true)}
                       disabled={saving}
-                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-black font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                      className="h-11 px-6 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 hover:from-amber-300 hover:via-amber-400 hover:to-orange-400 text-black font-mono text-xs font-extrabold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/35 active:scale-[0.98] cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 disabled:opacity-50"
                     >
-                      <span className="material-symbols-outlined text-base">history_edu</span>
-                      <span>{saving ? "Processing…" : "Execute Addendum"}</span>
+                      <span className="material-symbols-outlined text-lg font-bold">draw</span>
+                      <span>{saving ? "Executing…" : "Execute Addendum"}</span>
                     </button>
                   </div>
                 </div>

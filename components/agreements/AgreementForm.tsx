@@ -385,6 +385,60 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
         </div>
       )}
 
+      {/* Document Meta & Version Header */}
+      <div className="bg-[#0c0c16]/95 border border-white/[0.08] rounded-2xl p-4 backdrop-blur-xl shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Doc Ref:</span>
+            <span className="text-xs font-mono font-bold text-white bg-white/[0.05] border border-white/[0.08] px-2.5 py-1 rounded-lg">
+              {formData.agreementNumber || "Pending Draft"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Status:</span>
+            <span className="text-xs font-mono uppercase px-2.5 py-1 rounded-lg border bg-cyan-500/10 border-cyan-500/30 text-cyan-300 font-bold">
+              {AGREEMENT_STATUS_LABELS[formData.status] || formData.status}
+            </span>
+          </div>
+        </div>
+
+        {/* Editable Agreement Version Control */}
+        <div className="flex items-center gap-2.5 bg-white/[0.02] border border-white/[0.08] rounded-xl px-3 py-1.5">
+          <label htmlFor="top-doc-version" className="text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">edit_document</span>
+            <span>Version:</span>
+          </label>
+          <div className="flex items-center gap-1 bg-black/60 border border-white/[0.12] focus-within:border-cyan-400 rounded-lg px-2 py-0.5 transition-colors">
+            <span className="text-xs font-mono text-gray-400 font-bold">v</span>
+            <input
+              id="top-doc-version"
+              type="text"
+              value={formData.version || "1.0"}
+              onChange={(e) => setFormData((prev) => ({ ...prev, version: e.target.value }))}
+              placeholder="1.0"
+              aria-label="Agreement Document Version"
+              className="w-16 bg-transparent text-xs font-mono font-bold text-white focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            {["1.0", "1.1", "1.2", "2.0"].map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, version: v }))}
+                className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                  formData.version === v
+                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
+                    : "bg-white/[0.04] text-gray-400 hover:text-white hover:bg-white/[0.08]"
+                }`}
+              >
+                v{v}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Step Wizard Header */}
       <div className="bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl p-4 sm:p-6 backdrop-blur-xl shadow-xl">
         <div className="flex items-center justify-between overflow-x-auto gap-2 pb-1 custom-scrollbar">
@@ -621,6 +675,48 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                 placeholder="e.g. AI System / Web Platform / Microservice Architecture"
                 className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-cyan-400 rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
+                Agreement Document Version *
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    required
+                    value={formData.version || "1.0"}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        version: e.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 1.0, 1.1, 2.0"
+                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-cyan-400 rounded-xl px-4 text-sm text-white focus:outline-none transition-colors font-mono"
+                  />
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {["1.0", "1.1", "2.0"].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, version: v }))}
+                      className={`px-2.5 py-2 rounded-lg text-xs font-mono transition-colors border cursor-pointer ${
+                        formData.version === v
+                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold"
+                          : "bg-white/[0.03] text-gray-400 border-white/[0.08] hover:text-white hover:bg-white/[0.08]"
+                      }`}
+                    >
+                      v{v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <span className="text-[10px] font-mono text-gray-500">
+                Printed in the legal document header, metadata ribbon, and running footers
+              </span>
             </div>
 
             {/* DATE DISTINCTION GRID */}
@@ -2023,6 +2119,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                 {formData.project.projectName || "Untitled Project"}
               </p>
               <div className="text-xs font-mono text-gray-400 space-y-1">
+                <p>Version: <span className="text-cyan-300 font-bold">v{formData.version || "1.0"}</span></p>
                 <p>Model: {formData.agreementTypeLabel}</p>
                 <p>Effective Date: {formData.project.agreementEffectiveDate}</p>
                 <p>Commencement: {formData.project.workCommencementDate || formData.project.agreementEffectiveDate}</p>
@@ -2100,17 +2197,17 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
         </div>
 
         {/* Right: Save Draft / Update Changes, Preview, Finalize */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-end">
           <button
             type="button"
             onClick={() => handleSaveDraft(false)}
             disabled={saving}
-            className="px-4 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-gray-200 hover:text-white font-mono text-xs transition-all border border-white/[0.1] cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            className="h-11 px-5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] active:bg-white/[0.15] text-gray-200 hover:text-white font-mono text-xs font-semibold transition-all border border-white/[0.12] hover:border-white/[0.2] cursor-pointer disabled:opacity-50 flex items-center gap-2 whitespace-nowrap shrink-0 shadow-sm"
           >
             {saving ? (
-              <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <span className="material-symbols-outlined text-base">save</span>
+              <span className="material-symbols-outlined text-lg text-gray-400">save</span>
             )}
             <span>{isEditing ? "Save Changes" : "Save Draft"}</span>
           </button>
@@ -2118,9 +2215,9 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 font-mono text-xs font-semibold tracking-wider transition-all border border-cyan-500/30 flex items-center gap-1.5 cursor-pointer shadow-lg shadow-cyan-500/10"
+            className="h-11 px-5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 active:bg-cyan-500/25 text-cyan-300 hover:text-cyan-200 font-mono text-xs font-bold transition-all border border-cyan-500/30 hover:border-cyan-400/50 flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10 whitespace-nowrap shrink-0"
           >
-            <span className="material-symbols-outlined text-base">visibility</span>
+            <span className="material-symbols-outlined text-lg">visibility</span>
             <span>Preview Document</span>
           </button>
 
@@ -2128,9 +2225,9 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
             <button
               type="button"
               onClick={() => setFinalizeModalOpen(true)}
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20 active:scale-95 cursor-pointer flex items-center gap-1.5"
+              className="h-11 px-6 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-black font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-cyan-500/20 active:scale-[0.98] cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
             >
-              <span className="material-symbols-outlined text-base">verified</span>
+              <span className="material-symbols-outlined text-lg font-bold">verified</span>
               <span>Finalize</span>
             </button>
           )}

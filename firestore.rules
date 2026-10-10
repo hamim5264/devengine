@@ -180,14 +180,46 @@ service cloud.firestore {
        PROJECT AGREEMENTS & CONTRACTS
     ========================== */
     match /agreements/{agreementId} {
-      // Admin has full CRUD access; staff/contributors can read their own contract
-      allow read: if isAdmin() || (isSignedIn() && (
+      // Admin has full CRUD access
+      allow read, write: if isAdmin();
+
+      // Contributors/Staff can read their own agreement (supports modern & legacy schemas)
+      allow read: if isSignedIn() && (
         resource == null ||
+        resource.data.developer.email == request.auth.token.email ||
+        resource.data.developer.developerId == request.auth.uid ||
         resource.data.contributor.contributorEmail == request.auth.token.email ||
         resource.data.staffId == request.auth.uid ||
         resource.data.staffUid == request.auth.uid
-      ));
+      );
+    }
+
+    /* =========================
+       CONTRACT ADDENDA & AMENDMENTS
+    ========================== */
+    match /agreement_addenda/{addendumId} {
+      // Admin has full CRUD access over amendments
+      allow read, write: if isAdmin();
+
+      // Signed in counterparties can read their associated addenda
+      allow read: if isSignedIn();
+    }
+
+    /* =========================
+       REUSABLE AGREEMENT TEMPLATES
+    ========================== */
+    match /agreement_templates/{templateId} {
+      allow read: if isAdminOrStaff();
       allow write: if isAdmin();
+    }
+
+    /* =========================
+       AGREEMENT AUDIT LOGS (IMMUTABLE)
+    ========================== */
+    match /agreement_audit_logs/{logId} {
+      // Append-only by administrators; immutable
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
     }
 
     /* =========================
@@ -450,37 +482,5 @@ service cloud.firestore {
       // Only admin can write settings
       allow write: if isAdmin();
     }
-
-    /* =========================
-       CONTRACTS & AGREEMENTS MANAGEMENT
-    ========================== */
-    match /agreements/{agreementId} {
-      // Administrators have full control
-      allow read, write: if isAdmin();
-      // Counterparty/Contributor can read their own agreement if authenticated
-      allow read: if isSignedIn() && (
-        resource.data.developer.email == request.auth.token.email ||
-        resource.data.developer.developerId == request.auth.uid
-      );
-    }
-
-    match /agreement_addenda/{addendumId} {
-      // Administrators have full control over addenda
-      allow read, write: if isAdmin();
-      // Counterparty can read associated addenda
-      allow read: if isSignedIn();
-    }
-
-    match /agreement_templates/{templateId} {
-      allow read: if isAdminOrStaff();
-      allow write: if isAdmin();
-    }
-
-    match /agreement_audit_logs/{logId} {
-      // Audit logs are append-only by admins; never editable or deletable
-      allow read, create: if isAdmin();
-      allow update, delete: if false;
-    }
   }
 }
-

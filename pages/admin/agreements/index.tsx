@@ -59,6 +59,16 @@ const CONTRACT_MODEL_CONFIG: Record<
     icon: "calendar_month",
     badgeClass: "bg-sky-500/10 border-sky-500/30 text-sky-300",
   },
+  revenue_sharing: {
+    label: "Revenue Sharing",
+    icon: "receipt_long",
+    badgeClass: "bg-teal-500/10 border-teal-500/30 text-teal-300",
+  },
+  custom: {
+    label: "Custom Terms",
+    icon: "tune",
+    badgeClass: "bg-pink-500/10 border-pink-500/30 text-pink-300",
+  },
 };
 
 export default function AgreementsIndexPage() {
@@ -226,9 +236,9 @@ export default function AgreementsIndexPage() {
   // 4 Metrics
   const metrics = useMemo(() => {
     const total = agreements.length;
-    const drafts = agreements.filter((a) => a.status === "draft" || a.status === "preview").length;
-    const finalized = agreements.filter((a) => a.status === "finalized" || a.status === "signed" || a.status === "active").length;
-    const profitSharingCount = agreements.filter((a) => a.agreementType === "profit_participation" || a.agreementType === "hybrid").length;
+    const drafts = agreements.filter((a) => a.status === "draft" || (a.status as any) === "preview").length;
+    const finalized = agreements.filter((a) => a.status === "finalized" || a.status === "executed" || a.status === "signed" || a.status === "active").length;
+    const profitSharingCount = agreements.filter((a) => a.agreementType === "profit_participation" || a.agreementType === "revenue_sharing" || a.agreementType === "hybrid").length;
 
     return { total, drafts, finalized, profitSharingCount };
   }, [agreements]);
@@ -561,16 +571,20 @@ export default function AgreementsIndexPage() {
                           {/* Status */}
                           <td className="py-4 px-5 whitespace-nowrap min-w-[130px]" style={{ whiteSpace: "nowrap" }}>
                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border whitespace-nowrap ${
-                              item.status === "finalized"
+                              item.status === "executed" || item.status === "finalized"
                                 ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
                                 : item.status === "signed" || item.status === "active"
                                 ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400"
+                                : item.status === "ready_for_signature" || item.status === "partially_signed"
+                                ? "bg-purple-500/10 border-purple-500/30 text-purple-400"
+                                : item.status === "amended"
+                                ? "bg-teal-500/10 border-teal-500/30 text-teal-400"
                                 : item.status === "terminated" || item.status === "cancelled"
                                 ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
                                 : "bg-amber-500/10 border-amber-500/30 text-amber-400"
                             }`} style={{ whiteSpace: "nowrap" }}>
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                item.status === "finalized" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+                                item.status === "finalized" || item.status === "executed" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
                               }`} />
                               <span className="whitespace-nowrap">{AGREEMENT_STATUS_LABELS[item.status] || item.status}</span>
                             </span>
@@ -619,6 +633,15 @@ export default function AgreementsIndexPage() {
                                 className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-300 hover:text-white transition-all border border-white/[0.08] flex items-center justify-center active:scale-90"
                               >
                                 <span className="material-symbols-outlined text-base">edit</span>
+                              </Link>
+
+                              {/* Addendum / Amendments */}
+                              <Link
+                                href={`/admin/agreements/${item.id}/addendum`}
+                                title="Create / View Addendum"
+                                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-amber-500/15 hover:text-amber-300 text-gray-400 transition-all border border-white/[0.08] hover:border-amber-500/30 flex items-center justify-center active:scale-90"
+                              >
+                                <span className="material-symbols-outlined text-base">history_edu</span>
                               </Link>
 
                               {/* Duplicate */}

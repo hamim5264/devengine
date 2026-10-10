@@ -4,7 +4,7 @@ import { buildAgreementClauses, AgreementClauseSection } from "@/lib/agreements/
 import { getPdfBrandingSettings, PdfBrandingSettings, DEFAULT_PDF_BRANDING } from "@/lib/services/pdfSettingsService";
 
 /**
- * Fetch base64 data for DevEngine logo and CEO signature from API
+ * Fetch base64 data for DevEngine logo and CEO signature from API or filesystem
  */
 async function getBrandAssets(): Promise<{ logoBase64: string; signatureBase64: string }> {
   try {
@@ -176,10 +176,9 @@ function renderJustifiedText(
  *
  * Requirements fulfilled:
  * - Font: Classic, prestigious Times New Roman ("times") for formal legal agreements.
- * - Font Size: Increased to 9.2pt - 9.5pt for comfortable, authoritative reading.
- * - Text Justification: Clause content text is justified from side to side (align: "justify") across margins.
- * - Important Points & Lines: BOLD and highlighted (parties, contributor name, dates, percentages, subclauses).
- * - Spacing: Perfect line heights, exact ensureSpace page-break calculations, and repeating table headers.
+ * - Dynamic text measurement: Prevents metadata overlaps by decoupling metadata into dedicated zone.
+ * - Multi-line role & address wrapping: Eliminates text clipping in Contributor and Project cards.
+ * - Orphan protection & smooth page breaks for tables and signature blocks.
  */
 export async function generateAgreementPdf(
   record: AgreementRecord,
@@ -281,7 +280,7 @@ export async function generateAgreementPdf(
   doc.setFont("times", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("DEVENGINE TECHNOLOGY OPERATIONS", pageWidth - margin, currentY + 3, { align: "right" });
+  doc.text(record.devengine.legalEntityName || "DEVENGINE TECHNOLOGY OPERATIONS", pageWidth - margin, currentY + 3, { align: "right" });
 
   doc.setFont("times", "normal");
   doc.setFontSize(7.5);
@@ -293,84 +292,122 @@ export async function generateAgreementPdf(
   doc.setTextColor(14, 116, 144); // cyan-700
   doc.text(`${pdfWebsiteUrl}  •  ${pdfEmail}`, pageWidth - margin, currentY + 11.2, { align: "right" });
 
-  currentY += 17.5;
+  currentY += 16.5;
 
   // Header Divider Rule
   doc.setDrawColor(15, 23, 42);
   doc.setLineWidth(0.8);
   doc.line(margin, currentY, pageWidth - margin, currentY);
-  currentY += 6;
+  currentY += 5;
 
   // ========================================================
-  // 2. FORMAL DOCUMENT TITLE CARD
+  // 2. SEPARATED METADATA CARD (ZERO COLLISION GUARANTEE!)
   // ========================================================
+  // PHASE 5 FIX: Decouple Document Metadata (ID, Effective Date, Version, Status)
+  // into a dedicated horizontal metadata ribbon so it CANNOT overlap dynamic titles.
+  const metaBarH = 7.5;
+  doc.setFillColor(241, 245, 249); // slate-100
+  doc.roundedRect(margin, currentY, contentWidth, metaBarH, 1, 1, "F");
+  doc.setDrawColor(203, 213, 225); // slate-300
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, currentY, contentWidth, metaBarH, 1, 1, "S");
+
+  // Left Tag
+  doc.setFont("times", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(14, 116, 144); // cyan-700
+  doc.text(`DOC REF: ${record.agreementNumber}`, margin + 4, currentY + 5.0);
+
+  // Center Effective Date
+  doc.setFont("times", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(51, 65, 85);
+  doc.text(`EFFECTIVE DATE: ${record.project.agreementEffectiveDate}`, pageWidth / 2 - 10, currentY + 5.0, { align: "center" });
+
+  // Right Version & Status
+  const statusDisplay = record.status === "executed" ? "EXECUTED & BINDING" : record.status.toUpperCase();
+  doc.setFont("times", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(record.status === "executed" ? 4 : 15, record.status === "executed" ? 120 : 23, record.status === "executed" ? 87 : 42);
+  doc.text(`VERSION ${record.version}  •  [${statusDisplay}]`, pageWidth - margin - 4, currentY + 5.0, { align: "right" });
+
+  currentY += metaBarH + 3.5;
+
   // ========================================================
-  // 2. FORMAL DOCUMENT TITLE CARD
+  // 3. DYNAMIC TITLE & PROJECT HERO CARD
   // ========================================================
-  const titleBoxH = 32;
+  // Calculate dynamic heights based on actual text length
+  const titleText = (record.agreementTypeLabel || "PROJECT AGREEMENT").toUpperCase();
+  const titleMaxWidth = contentWidth - 12;
+
+  doc.setFont("times", "bold");
+  doc.setFontSize(13);
+  const titleLines: string[] = doc.splitTextToSize(titleText, titleMaxWidth);
+
+  const projName = record.project.projectName || "Designated Project";
+  const devName = (record.developer.legalName || record.developer.fullName || "Contributor").toUpperCase();
+  const devRole = record.developer.role || "Software Engineer";
+
+  doc.setFont("times", "normal");
+  doc.setFontSize(8.8);
+  const subtitleString = `Project: "${projName}"   •   Contributor: ${devName} (${devRole})`;
+  const subLines: string[] = doc.splitTextToSize(subtitleString, titleMaxWidth);
+
+  // Dynamic box height: topPad(8) + titleLines + gap(3) + subLines + bottomPad(8)
+  const lineH13 = 5.2;
+  const lineH8 = 4.2;
+  const titleBoxH = Math.max(28, 8 + titleLines.length * lineH13 + 3 + subLines.length * lineH8 + 6);
+
   doc.setFillColor(15, 23, 42); // slate-900
   doc.roundedRect(margin, currentY, contentWidth, titleBoxH, 2, 2, "F");
 
-  // Left Title Elements
+  // Top Accent Banner Text inside card
   doc.setFont("times", "bold");
-  doc.setFontSize(8.2);
+  doc.setFontSize(7.5);
   doc.setTextColor(56, 189, 248); // sky-400
-  doc.text("OFFICIAL LEGAL CONTRACT & PROJECT AGREEMENT", margin + 6, currentY + 7.5);
+  doc.text("OFFICIAL LEGAL CONTRACT & PROJECT AGREEMENT", margin + 6, currentY + 6.5);
 
+  // Title Lines
+  let textCursorY = currentY + 12.5;
   doc.setFont("times", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(255, 255, 255);
-  doc.text(record.agreementTypeLabel.toUpperCase(), margin + 6, currentY + 15.5);
+  for (const tLine of titleLines) {
+    doc.text(tLine, margin + 6, textCursorY);
+    textCursorY += lineH13;
+  }
 
-  // Subtitle with Project and Bold Highlighted Contributor Name
+  // Subtitle Lines with highlighted Contributor Name
+  textCursorY += 1.5;
   doc.setFont("times", "normal");
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.8);
   doc.setTextColor(203, 213, 225); // slate-300
-  const projPrefix = `Project: "${record.project.projectName}"   •   Contributor: `;
-  doc.text(projPrefix, margin + 6, currentY + 24);
+  for (let sIdx = 0; sIdx < subLines.length; sIdx++) {
+    doc.text(subLines[sIdx], margin + 6, textCursorY);
+    textCursorY += lineH8;
+  }
 
-  const prefixW = doc.getTextWidth(projPrefix);
-  const devNameDisplay = record.developer.fullName.toUpperCase();
-  doc.setFont("times", "bold");
-  doc.setTextColor(56, 189, 248); // sky-400 bold highlighted
-  doc.text(devNameDisplay, margin + 6 + prefixW, currentY + 24);
-
-  // Right Metadata Badges
-  doc.setFont("times", "bold");
-  doc.setFontSize(9.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text(`ID: ${record.agreementNumber}`, pageWidth - margin - 6, currentY + 8.5, { align: "right" });
-
-  doc.setFont("times", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(203, 213, 225);
-  doc.text(`Effective Date: ${record.project.agreementEffectiveDate}`, pageWidth - margin - 6, currentY + 15.5, { align: "right" });
-
-  doc.setFont("times", "bold");
-  doc.setTextColor(52, 211, 153); // emerald-400
-  doc.text(`Version: ${record.version}  •  Status: ${record.status.toUpperCase()}`, pageWidth - margin - 6, currentY + 22.5, { align: "right" });
-
-  currentY += titleBoxH + 8;
+  currentY += titleBoxH + 6;
 
   // ========================================================
-  // 3. GENERATE AND RENDER LEGAL CLAUSES
+  // 4. GENERATE AND RENDER LEGAL CLAUSES
   // ========================================================
   const clauses: AgreementClauseSection[] = buildAgreementClauses(record);
 
   for (const clause of clauses) {
-    // Calculate required clearance so section banner is NEVER orphaned alone at bottom of page
+    // Dynamic required clearance so section banner is NEVER orphaned alone at bottom of page
     let minSectionSpace = 38;
     if (clause.number === "1") {
-      minSectionSpace = 75; // Banner + preamble + Company Card + Contributor Card
+      minSectionSpace = 65; // Banner + preamble + Company Card + Contributor Card
     } else if (clause.number === "3") {
-      minSectionSpace = 55; // Banner + Specs Card + Synopsis
+      minSectionSpace = 50; // Banner + Specs Card + Synopsis
     } else if (clause.tableData && clause.tableData.rows.length > 0) {
-      minSectionSpace = 48; // Banner + Intro + Table Header + at least 2 rows
+      minSectionSpace = 45; // Banner + Intro + Table Header + at least 2 rows
     }
     ensureSpace(minSectionSpace);
 
     // Section Header Banner (Slate-900 Bar with Cyan Indicator)
-    const bannerH = 8.2;
+    const bannerH = 8.0;
     doc.setFillColor(15, 23, 42); // slate-900
     doc.roundedRect(margin, currentY, contentWidth, bannerH, 1.2, 1.2, "F");
 
@@ -379,10 +416,10 @@ export async function generateAgreementPdf(
     doc.rect(margin, currentY, 3.2, bannerH, "F");
 
     doc.setFont("times", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(9.8);
     doc.setTextColor(255, 255, 255);
-    doc.text(`${clause.number}.  ${clause.title.toUpperCase()}`, margin + 6, currentY + 5.6);
-    currentY += bannerH + 6.0;
+    doc.text(`${clause.number}.  ${clause.title.toUpperCase()}`, margin + 6, currentY + 5.5);
+    currentY += bannerH + 5.5;
 
     // ========================================================
     // SECTION 1: PARTIES & CAPACITY (STRUCTURED CARDS)
@@ -391,7 +428,7 @@ export async function generateAgreementPdf(
       // Preamble sentence
       ensureSpace(8);
       doc.setFont("times", "normal");
-      doc.setFontSize(9.6);
+      doc.setFontSize(9.5);
       doc.setTextColor(30, 41, 59);
       doc.text(
         `This Agreement is entered into and executed as of ${record.project.agreementEffectiveDate} by and between:`,
@@ -417,13 +454,13 @@ export async function generateAgreementPdf(
       doc.setFont("times", "bold");
       doc.setFontSize(10.2);
       doc.setTextColor(15, 23, 42);
-      doc.text("DEVENGINE TECHNOLOGY OPERATIONS", margin + 6, currentY + 10.2);
+      doc.text(record.devengine.legalEntityName || "DEVENGINE TECHNOLOGY OPERATIONS", margin + 6, currentY + 10.2);
 
       doc.setFont("times", "normal");
       doc.setFontSize(8.4);
       doc.setTextColor(51, 65, 85);
       doc.text(
-        `Executive Direction: MD. Abdul Hamim Leon, Chief Executive Officer | Operations: Dhaka, Bangladesh`,
+        `Executive Direction: ${record.devengine.ceoName}, ${record.devengine.ceoTitle} | Operations: ${record.devengine.companyAddress}`,
         margin + 6,
         currentY + 15
       );
@@ -434,9 +471,40 @@ export async function generateAgreementPdf(
       );
       currentY += companyCardH + 5;
 
-      // Party B: Contributor Card - PROMINENTLY HIGHLIGHTED & BOLD
-      ensureSpace(34);
-      const devCardH = 32;
+      // Party B: Contributor Card - DYNAMIC TEXT MEASUREMENT (PHASE 5 FIX)
+      // Allow multi-line role and address to wrap naturally without clipping!
+      const colLeftX = margin + 6;
+      const colRightX = margin + 94;
+      const colMaxW = 80;
+
+      // Measure lines for left column
+      doc.setFont("times", "normal");
+      doc.setFontSize(8.4);
+      const rolePrefix = "Designated Role: ";
+      const rolePrefixW = doc.getTextWidth(rolePrefix);
+      const roleLines = doc.splitTextToSize(record.developer.role || "Software Engineer", colMaxW - rolePrefixW);
+
+      const phonePrefix = "Contact Phone: ";
+      const phonePrefixW = doc.getTextWidth(phonePrefix);
+      const phoneVal = record.developer.phone || "On record";
+
+      // Measure lines for right column
+      const emailPrefix = "Email Address: ";
+      const emailPrefixW = doc.getTextWidth(emailPrefix);
+      const emailLines = doc.splitTextToSize(record.developer.email, colMaxW - emailPrefixW);
+
+      const addrPrefix = "Address: ";
+      const addrPrefixW = doc.getTextWidth(addrPrefix);
+      const addrLines = doc.splitTextToSize(record.developer.address || "On record", colMaxW - addrPrefixW);
+
+      const maxColLines = Math.max(
+        roleLines.length + 1, // role rows + phone row
+        emailLines.length + addrLines.length
+      );
+
+      const devCardH = Math.max(30, 16 + maxColLines * 5.2 + 4);
+      ensureSpace(devCardH + 4);
+
       doc.setFillColor(240, 249, 255); // sky-50 tint
       doc.roundedRect(margin, currentY, contentWidth, devCardH, 1.5, 1.5, "F");
 
@@ -454,71 +522,94 @@ export async function generateAgreementPdf(
       doc.text("PARTY B (THE CONTRIBUTOR / DEVELOPER):", margin + 6, currentY + 5.2);
 
       // Contributor Full Name - Bold, Large & Highlighted
+      const contributorDisplayName = (record.developer.legalName || record.developer.fullName || "Contributor").toUpperCase();
       doc.setFont("times", "bold");
-      doc.setFontSize(12);
+      doc.setFontSize(11.5);
       doc.setTextColor(15, 23, 42);
-      doc.text(record.developer.fullName.toUpperCase(), margin + 6, currentY + 11.5);
+      doc.text(contributorDisplayName, margin + 6, currentY + 11.2);
 
       if (record.developer.professionalName) {
-        const fullNameW = doc.getTextWidth(record.developer.fullName.toUpperCase());
+        const fullNameW = doc.getTextWidth(contributorDisplayName);
         doc.setFont("times", "italic");
         doc.setFontSize(8.8);
         doc.setTextColor(100, 116, 139);
-        doc.text(`(known professionally as "${record.developer.professionalName}")`, margin + 9 + fullNameW, currentY + 11.5);
+        doc.text(`(known professionally as "${record.developer.professionalName}")`, margin + 9 + fullNameW, currentY + 11.2);
       }
 
-      // Column Layout: Left Column & Right Column with strict max widths (Zero overlap!)
-      const colLeftX = margin + 6;
-      const colRightX = margin + 94;
-      const colMaxW = 80;
-
-      // Row 1
+      // Render Left Column
+      let leftY = currentY + 17;
       doc.setFont("times", "bold");
       doc.setFontSize(8.4);
       doc.setTextColor(15, 23, 42);
-      doc.text("Designated Role: ", colLeftX, currentY + 18);
-      const rolePrefixW = doc.getTextWidth("Designated Role: ");
+      doc.text(rolePrefix, colLeftX, leftY);
       doc.setFont("times", "normal");
       doc.setTextColor(51, 65, 85);
-      const roleText = doc.splitTextToSize(record.developer.role, colMaxW - rolePrefixW)[0] || record.developer.role;
-      doc.text(roleText, colLeftX + rolePrefixW, currentY + 18);
+      for (let rIdx = 0; rIdx < roleLines.length; rIdx++) {
+        if (rIdx === 0) {
+          doc.text(roleLines[rIdx], colLeftX + rolePrefixW, leftY);
+        } else {
+          leftY += 4.5;
+          doc.text(roleLines[rIdx], colLeftX + rolePrefixW, leftY);
+        }
+      }
+      leftY += 5.2;
 
       doc.setFont("times", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text("Email Address: ", colRightX, currentY + 18);
-      const emailPrefixW = doc.getTextWidth("Email Address: ");
+      doc.text(phonePrefix, colLeftX, leftY);
       doc.setFont("times", "normal");
       doc.setTextColor(51, 65, 85);
-      doc.text(record.developer.email, colRightX + emailPrefixW, currentY + 18);
+      doc.text(phoneVal, colLeftX + phonePrefixW, leftY);
 
-      // Row 2
+      // Render Right Column
+      let rightY = currentY + 17;
       doc.setFont("times", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text("Contact Phone: ", colLeftX, currentY + 24.5);
-      const phonePrefixW = doc.getTextWidth("Contact Phone: ");
+      doc.text(emailPrefix, colRightX, rightY);
       doc.setFont("times", "normal");
       doc.setTextColor(51, 65, 85);
-      doc.text(record.developer.phone || "On record", colLeftX + phonePrefixW, currentY + 24.5);
+      for (let eIdx = 0; eIdx < emailLines.length; eIdx++) {
+        if (eIdx === 0) {
+          doc.text(emailLines[eIdx], colRightX + emailPrefixW, rightY);
+        } else {
+          rightY += 4.5;
+          doc.text(emailLines[eIdx], colRightX + emailPrefixW, rightY);
+        }
+      }
+      rightY += 5.2;
 
       doc.setFont("times", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text("Residential Address: ", colRightX, currentY + 24.5);
-      const addrPrefixW = doc.getTextWidth("Residential Address: ");
+      doc.text(addrPrefix, colRightX, rightY);
       doc.setFont("times", "normal");
       doc.setTextColor(51, 65, 85);
-      const addrText = doc.splitTextToSize(record.developer.address || "On record", colMaxW - addrPrefixW)[0] || (record.developer.address || "On record");
-      doc.text(addrText, colRightX + addrPrefixW, currentY + 24.5);
+      for (let aIdx = 0; aIdx < addrLines.length; aIdx++) {
+        if (aIdx === 0) {
+          doc.text(addrLines[aIdx], colRightX + addrPrefixW, rightY);
+        } else {
+          rightY += 4.5;
+          doc.text(addrLines[aIdx], colRightX + addrPrefixW, rightY);
+        }
+      }
 
-      currentY += devCardH + 6;
+      currentY += devCardH + 5;
       continue;
     }
 
     // ========================================================
-    // SECTION 3: PROJECT OVERVIEW & TIMELINE (STRUCTURED SPECS)
+    // SECTION 3: PROJECT OVERVIEW & TIMELINE (DYNAMIC SPECS)
     // ========================================================
     if (clause.number === "3") {
-      ensureSpace(32);
-      const gridH = 26;
+      const col1X = margin + 6;
+      const col2X = margin + 94;
+      const colMaxW = 80;
+
+      doc.setFont("times", "bold");
+      doc.setFontSize(9.5);
+      const projNameWrapped = doc.splitTextToSize(record.project.projectName, colMaxW);
+      const gridH = Math.max(26, 18 + projNameWrapped.length * 4.5);
+
+      ensureSpace(gridH + 6);
       doc.setFillColor(248, 250, 252);
       doc.roundedRect(margin, currentY, contentWidth, gridH, 1.5, 1.5, "F");
       doc.setDrawColor(226, 232, 240);
@@ -526,10 +617,6 @@ export async function generateAgreementPdf(
       doc.roundedRect(margin, currentY, contentWidth, gridH, 1.5, 1.5, "S");
 
       // Column 1
-      const col1X = margin + 6;
-      const col2X = margin + 94;
-      const colMaxW = 80;
-
       doc.setFont("times", "bold");
       doc.setFontSize(7.8);
       doc.setTextColor(100, 116, 139);
@@ -537,17 +624,20 @@ export async function generateAgreementPdf(
       doc.setFont("times", "bold");
       doc.setFontSize(9.8);
       doc.setTextColor(15, 23, 42);
-      const projNameLines = doc.splitTextToSize(record.project.projectName, colMaxW);
-      doc.text(projNameLines[0] || record.project.projectName, col1X, currentY + 10.5);
+      let pY = currentY + 10.5;
+      for (const line of projNameWrapped) {
+        doc.text(line, col1X, pY);
+        pY += 4.5;
+      }
 
       doc.setFont("times", "bold");
       doc.setFontSize(7.8);
       doc.setTextColor(100, 116, 139);
-      doc.text("PROJECT NATURE / DOMAIN:", col1X, currentY + 16.5);
+      doc.text("PROJECT NATURE / DOMAIN:", col1X, pY + 2);
       doc.setFont("times", "bold");
       doc.setFontSize(9.2);
       doc.setTextColor(14, 116, 144);
-      doc.text(record.project.projectType || "Full-Stack Web Application", col1X, currentY + 21.5);
+      doc.text(record.project.projectType || "Full-Stack Web Application", col1X, pY + 6.5);
 
       // Column 2
       doc.setFont("times", "bold");
@@ -557,7 +647,7 @@ export async function generateAgreementPdf(
       doc.setFont("times", "bold");
       doc.setFontSize(9.8);
       doc.setTextColor(15, 23, 42);
-      doc.text(record.project.startDate || record.project.agreementEffectiveDate, col2X, currentY + 10.5);
+      doc.text(record.project.workCommencementDate || record.project.startDate || record.project.agreementEffectiveDate, col2X, currentY + 10.5);
 
       doc.setFont("times", "bold");
       doc.setFontSize(7.8);
@@ -566,24 +656,24 @@ export async function generateAgreementPdf(
       doc.setFont("times", "bold");
       doc.setFontSize(9.8);
       doc.setTextColor(15, 23, 42);
-      doc.text(record.project.expectedCompletionDate || "Per sprint delivery", col2X, currentY + 21.5);
+      doc.text(record.project.targetCompletionDate || record.project.expectedCompletionDate || "Per sprint delivery", col2X, currentY + 21.5);
 
-      currentY += gridH + 6;
+      currentY += gridH + 5.5;
 
-      // Render Project Synopsis
+      // Render Technical Scope Synopsis
       if (clause.paragraphs) {
         const lineHeight = (doc.getLineHeight() / doc.internal.scaleFactor) * 1.05;
         for (const p of clause.paragraphs) {
-          const synopsisMatch = p.match(/^(Project Synopsis:)\s*(.*)$/);
+          const synopsisMatch = p.match(/^(Technical Scope & Architecture:)\s*(.*)$/);
           if (synopsisMatch) {
             const prefix = synopsisMatch[1] + " ";
             const body = synopsisMatch[2];
-            ensureSpace(24);
+            ensureSpace(20);
             doc.setFont("times", "normal");
             doc.setFontSize(9.6);
             doc.setTextColor(30, 41, 59);
             currentY = renderJustifiedText(doc, body, margin, currentY, contentWidth, lineHeight, prefix, maxContentY, () => addNewPage());
-            currentY += 5;
+            currentY += 4;
             break;
           }
         }
@@ -599,14 +689,14 @@ export async function generateAgreementPdf(
       const lineHeight = (doc.getLineHeight() / doc.internal.scaleFactor) * 1.05;
 
       for (const p of clause.paragraphs) {
-        // 1. Check if it's an indented formula / bullet line
-        const isBulletOrFormula = p.startsWith("    ") || p.trim().startsWith("MINUS");
+        // Bullet / formula indented lines
+        const isBulletOrFormula = p.startsWith("    ") || p.trim().startsWith("•") || p.trim().startsWith("LESS");
         if (isBulletOrFormula) {
           ensureSpace(lineHeight + 3);
           doc.setFont("times", "normal");
           doc.setFontSize(9.2);
           doc.setTextColor(51, 65, 85);
-          
+
           const cleanText = p.trim();
           doc.setFillColor(14, 116, 144);
           doc.circle(margin + 5, currentY - 1.2, 0.8, "F");
@@ -615,27 +705,24 @@ export async function generateAgreementPdf(
           continue;
         }
 
-        // 2. Check if paragraph starts with a subclause label like "5.1 Title: Body"
+        // Subclause label: e.g. "5.1 Contractual Participation Rate: Body"
         const subMatch = p.match(/^(\d+\.\d+\s+[^:]+:)\s*(.*)$/);
 
         if (subMatch) {
           const prefix = subMatch[1];
           const body = subMatch[2];
 
-          // Calculate space needed so the title is NEVER orphaned without its body
+          // Calculate space needed so title is never orphaned
           const bodyLines = doc.splitTextToSize(body, contentWidth);
-          // Keep at least the title + 3 lines of body (or entire body if smaller)
           const neededSpace = (1 + Math.min(bodyLines.length, 3)) * lineHeight + 4;
           ensureSpace(neededSpace);
 
-          // Draw bold title line in Times Bold
           doc.setFont("times", "bold");
           doc.setFontSize(10);
           doc.setTextColor(15, 23, 42); // slate-900
           doc.text(prefix, margin, currentY);
           currentY += lineHeight;
 
-          // Draw justified body text
           doc.setFont("times", "normal");
           doc.setFontSize(9.6);
           doc.setTextColor(30, 41, 59);
@@ -679,7 +766,7 @@ export async function generateAgreementPdf(
     }
 
     // ========================================================
-    // TABLE DATA (DELIVERABLES & MILESTONES) IN TIMES FONT
+    // TABLE DATA (DELIVERABLES & MILESTONES)
     // ========================================================
     if (clause.tableData && clause.tableData.rows.length > 0) {
       ensureSpace(26);
@@ -771,7 +858,7 @@ export async function generateAgreementPdf(
   }
 
   // ========================================================
-  // 4. FORMAL SIGNATURE SECTION
+  // 5. FORMAL SIGNATURE SECTION
   // ========================================================
   const sigBoxHeight = 52;
   ensureSpace(sigBoxHeight + 6);
@@ -801,29 +888,25 @@ export async function generateAgreementPdf(
   doc.setFont("times", "bold");
   doc.setFontSize(8.2);
   doc.setTextColor(71, 85, 105);
-  doc.text("FOR AND ON BEHALF OF DEVENGINE:", leftX, sigStartY);
+  doc.text(`FOR AND ON BEHALF OF ${record.devengine.companyName.toUpperCase()}:`, leftX, sigStartY);
 
-  // Line Y position
   const sigLineY = sigStartY + 21;
 
   if (assets.signatureBase64) {
     try {
-      // founder_sign.png has aspect ratio 3.51 (1442x411)
       const sigW = 42;
       const sigH = 12;
-      // Position signature so bottom ink rests naturally directly on the line
       const sigImgY = sigLineY - 10.5;
       doc.addImage(assets.signatureBase64, "PNG", leftX + 4, sigImgY, sigW, sigH);
     } catch {
       doc.setFont("times", "italic");
-      doc.text("[MD. Abdul Hamim Leon — Authorized Signature]", leftX + 2, sigLineY - 3);
+      doc.text(`[${record.devengine.ceoName} — Authorized Signature]`, leftX + 2, sigLineY - 3);
     }
   } else {
     doc.setFont("times", "italic");
-    doc.text("[MD. Abdul Hamim Leon — Authorized Signature]", leftX + 2, sigLineY - 3);
+    doc.text(`[${record.devengine.ceoName} — Authorized Signature]`, leftX + 2, sigLineY - 3);
   }
 
-  // Draw DevEngine signature line
   doc.setDrawColor(148, 163, 184);
   doc.setLineWidth(0.35);
   doc.line(leftX, sigLineY, leftX + halfW - 4, sigLineY);
@@ -838,28 +921,27 @@ export async function generateAgreementPdf(
   doc.setFont("times", "normal");
   doc.setFontSize(7.8);
   doc.setTextColor(71, 85, 105);
-  doc.text(`${record.devengine.ceoTitle}, DevEngine`, leftX, nameY + 4);
+  doc.text(`${record.devengine.ceoTitle}, ${record.devengine.companyName}`, leftX, nameY + 4);
 
   doc.setFont("times", "bold");
   doc.setTextColor(30, 41, 59);
   doc.text(`Date Executed: ${record.project.agreementEffectiveDate}`, leftX, nameY + 8);
 
-  // --- Right: For Contributor (Developer Signature Area with Highlight) ---
+  // --- Right: For Contributor Signature Area ---
   doc.setFont("times", "bold");
   doc.setFontSize(8.2);
   doc.setTextColor(71, 85, 105);
   doc.text("FOR AND ON BEHALF OF CONTRIBUTOR:", rightX, sigStartY);
 
-  // Contributor signature line at exact matching height
   doc.setDrawColor(148, 163, 184);
   doc.setLineWidth(0.35);
   doc.line(rightX, sigLineY, rightX + halfW - 4, sigLineY);
 
-  // Contributor Name - BOLD & HIGHLIGHTED
+  const contributorFullName = (record.developer.legalName || record.developer.fullName || "Contributor").toUpperCase();
   doc.setFont("times", "bold");
   doc.setFontSize(10.5);
   doc.setTextColor(14, 116, 144); // cyan-700
-  doc.text(record.developer.fullName.toUpperCase(), rightX, nameY);
+  doc.text(contributorFullName, rightX, nameY);
 
   doc.setFont("times", "bold");
   doc.setFontSize(7.8);
@@ -868,12 +950,15 @@ export async function generateAgreementPdf(
 
   doc.setFont("times", "normal");
   doc.setTextColor(100, 116, 139);
-  doc.text(`Date: ________________________`, rightX, nameY + 8);
+  const signatureDateDisplay = record.signatureMetadata?.signedAt
+    ? `Signed: ${record.signatureMetadata.signedAt.split("T")[0]} (${record.signatureMetadata.signingMethod || "Electronic"})`
+    : "Date: ________________________";
+  doc.text(signatureDateDisplay, rightX, nameY + 8);
 
   currentY += sigBoxHeight + 8;
 
   // ========================================================
-  // 5. RUNNING FOOTERS ON ALL PAGES
+  // 6. RUNNING FOOTERS ON ALL PAGES
   // ========================================================
   const totalPages = doc.getNumberOfPages();
 
@@ -886,18 +971,16 @@ export async function generateAgreementPdf(
     doc.setLineWidth(0.35);
     doc.line(margin, footerY - 4.5, pageWidth - margin, footerY - 4.5);
 
-    // Left: Brand and Vercel URL
     doc.setFont("times", "bold");
     doc.setFontSize(7.5);
     doc.setTextColor(15, 23, 42); // slate-900
-    doc.text("DEVENGINE", margin, footerY);
+    doc.text(record.devengine.companyName.toUpperCase(), margin, footerY);
 
     doc.setFont("times", "normal");
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
     doc.text(` • ${pdfWebsiteUrl}`, margin + 17, footerY);
 
-    // Center: Confidential Notice
     doc.setFont("times", "bold");
     doc.setFontSize(6.8);
     doc.setTextColor(148, 163, 184);
@@ -908,14 +991,13 @@ export async function generateAgreementPdf(
       { align: "center" }
     );
 
-    // Right: Page Number
     doc.setFont("times", "bold");
     doc.setFontSize(7.5);
     doc.setTextColor(51, 65, 85);
     doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, footerY, { align: "right" });
   }
 
-  const filename = `${record.agreementNumber}_${record.project.projectName.replace(
+  const filename = `${record.agreementNumber}_${(record.project.projectName || "Contract").replace(
     /[^a-zA-Z0-9_-]/g,
     "_"
   )}.pdf`;

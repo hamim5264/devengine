@@ -337,7 +337,7 @@ export default function AgreementPreviewModal({
                         <div className="space-y-1">
                           <span className="text-[10px] font-mono uppercase text-gray-400 font-bold block">Target Completion</span>
                           <span className={`font-mono text-xs font-bold ${isDark ? "text-white" : "text-slate-900"}`}>
-                            {record.project.expectedCompletionDate || "Per sprint schedule"}
+                            {record.project.targetCompletionDate || record.project.expectedCompletionDate || "Per sprint schedule"}
                           </span>
                         </div>
                       </div>

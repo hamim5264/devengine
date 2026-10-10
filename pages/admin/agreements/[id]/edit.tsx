@@ -106,13 +106,24 @@ export default function EditAgreementPage() {
               </p>
             </div>
 
-            <Link
-              href="/admin/agreements"
-              className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-gray-300 hover:text-white font-mono text-xs transition-all border border-white/[0.08] flex items-center gap-1.5 self-start sm:self-auto"
-            >
-              <span className="material-symbols-outlined text-sm">arrow_back</span>
-              <span>All Agreements</span>
-            </Link>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              {agreement && (
+                <Link
+                  href={`/admin/agreements/${agreement.id}/addendum`}
+                  className="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-mono text-xs transition-all border border-amber-500/30 flex items-center gap-1.5 font-bold"
+                >
+                  <span className="material-symbols-outlined text-sm">history_edu</span>
+                  <span>Create Addendum</span>
+                </Link>
+              )}
+              <Link
+                href="/admin/agreements"
+                className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-gray-300 hover:text-white font-mono text-xs transition-all border border-white/[0.08] flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-sm">arrow_back</span>
+                <span>All Agreements</span>
+              </Link>
+            </div>
           </div>
 
           {loading ? (

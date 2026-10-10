@@ -475,34 +475,25 @@ export async function generateAgreementPdf(
       // Allow multi-line role and address to wrap naturally without clipping!
       const colLeftX = margin + 6;
       const colRightX = margin + 94;
-      const colMaxW = 80;
+      const colMaxW = 82;
 
       // Measure lines for left column
-      doc.setFont("times", "normal");
-      doc.setFontSize(8.4);
-      const rolePrefix = "Designated Role: ";
-      const rolePrefixW = doc.getTextWidth(rolePrefix);
-      const roleLines = doc.splitTextToSize(record.developer.role || "Software Engineer", colMaxW - rolePrefixW);
-
-      const phonePrefix = "Contact Phone: ";
-      const phonePrefixW = doc.getTextWidth(phonePrefix);
+      doc.setFont("times", "bold");
+      doc.setFontSize(8.6);
+      const roleLines = doc.splitTextToSize(record.developer.role || "Software Engineer", colMaxW);
       const phoneVal = record.developer.phone || "On record";
 
       // Measure lines for right column
-      const emailPrefix = "Email Address: ";
-      const emailPrefixW = doc.getTextWidth(emailPrefix);
-      const emailLines = doc.splitTextToSize(record.developer.email, colMaxW - emailPrefixW);
+      doc.setFont("times", "normal");
+      doc.setFontSize(8.4);
+      const emailVal = record.developer.email;
+      const addrLines = doc.splitTextToSize(record.developer.address || "On record", colMaxW);
 
-      const addrPrefix = "Address: ";
-      const addrPrefixW = doc.getTextWidth(addrPrefix);
-      const addrLines = doc.splitTextToSize(record.developer.address || "On record", colMaxW - addrPrefixW);
+      const leftColH = 5 + roleLines.length * 4.3 + 6 + 4.5;
+      const rightColH = 5 + 4.3 + 6 + addrLines.length * 4.3;
+      const contentH = Math.max(leftColH, rightColH);
 
-      const maxColLines = Math.max(
-        roleLines.length + 1, // role rows + phone row
-        emailLines.length + addrLines.length
-      );
-
-      const devCardH = Math.max(30, 16 + maxColLines * 5.2 + 4);
+      const devCardH = Math.max(34, 15 + contentH + 4);
       ensureSpace(devCardH + 4);
 
       doc.setFillColor(240, 249, 255); // sky-50 tint
@@ -537,59 +528,56 @@ export async function generateAgreementPdf(
       }
 
       // Render Left Column
-      let leftY = currentY + 17;
+      let leftY = currentY + 16.5;
       doc.setFont("times", "bold");
-      doc.setFontSize(8.4);
-      doc.setTextColor(15, 23, 42);
-      doc.text(rolePrefix, colLeftX, leftY);
-      doc.setFont("times", "normal");
-      doc.setTextColor(51, 65, 85);
-      for (let rIdx = 0; rIdx < roleLines.length; rIdx++) {
-        if (rIdx === 0) {
-          doc.text(roleLines[rIdx], colLeftX + rolePrefixW, leftY);
-        } else {
-          leftY += 4.5;
-          doc.text(roleLines[rIdx], colLeftX + rolePrefixW, leftY);
-        }
-      }
-      leftY += 5.2;
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("DESIGNATED ROLE:", colLeftX, leftY);
+      leftY += 4.5;
 
       doc.setFont("times", "bold");
+      doc.setFontSize(8.6);
       doc.setTextColor(15, 23, 42);
-      doc.text(phonePrefix, colLeftX, leftY);
+      for (const rLine of roleLines) {
+        doc.text(rLine, colLeftX, leftY);
+        leftY += 4.3;
+      }
+      leftY += 2;
+
+      doc.setFont("times", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("CONTACT PHONE:", colLeftX, leftY);
+      leftY += 4.2;
       doc.setFont("times", "normal");
-      doc.setTextColor(51, 65, 85);
-      doc.text(phoneVal, colLeftX + phonePrefixW, leftY);
+      doc.setFontSize(8.4);
+      doc.setTextColor(30, 41, 59);
+      doc.text(phoneVal, colLeftX, leftY);
 
       // Render Right Column
-      let rightY = currentY + 17;
+      let rightY = currentY + 16.5;
       doc.setFont("times", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text(emailPrefix, colRightX, rightY);
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("EMAIL ADDRESS:", colRightX, rightY);
+      rightY += 4.5;
       doc.setFont("times", "normal");
-      doc.setTextColor(51, 65, 85);
-      for (let eIdx = 0; eIdx < emailLines.length; eIdx++) {
-        if (eIdx === 0) {
-          doc.text(emailLines[eIdx], colRightX + emailPrefixW, rightY);
-        } else {
-          rightY += 4.5;
-          doc.text(emailLines[eIdx], colRightX + emailPrefixW, rightY);
-        }
-      }
-      rightY += 5.2;
+      doc.setFontSize(8.4);
+      doc.setTextColor(30, 41, 59);
+      doc.text(emailVal, colRightX, rightY);
+      rightY += 6.2;
 
       doc.setFont("times", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text(addrPrefix, colRightX, rightY);
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text("PHYSICAL ADDRESS:", colRightX, rightY);
+      rightY += 4.2;
       doc.setFont("times", "normal");
-      doc.setTextColor(51, 65, 85);
-      for (let aIdx = 0; aIdx < addrLines.length; aIdx++) {
-        if (aIdx === 0) {
-          doc.text(addrLines[aIdx], colRightX + addrPrefixW, rightY);
-        } else {
-          rightY += 4.5;
-          doc.text(addrLines[aIdx], colRightX + addrPrefixW, rightY);
-        }
+      doc.setFontSize(8.4);
+      doc.setTextColor(30, 41, 59);
+      for (const aLine of addrLines) {
+        doc.text(aLine, colRightX, rightY);
+        rightY += 4.3;
       }
 
       currentY += devCardH + 5;

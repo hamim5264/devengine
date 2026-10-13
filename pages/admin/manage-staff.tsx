@@ -437,6 +437,8 @@ export default function ManageStaffPage() {
     description: string;
     priority: TaskPriority;
     category: string;
+    startDate: string;
+    startTime: string;
     dueDate: string;
     dueTime: string;
     estimatedHours: number;
@@ -445,6 +447,8 @@ export default function ManageStaffPage() {
     description: "",
     priority: "normal",
     category: "General",
+    startDate: new Date().toISOString().split("T")[0],
+    startTime: "09:00",
     dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
     dueTime: "18:00",
     estimatedHours: 8,
@@ -695,6 +699,8 @@ export default function ManageStaffPage() {
       description: "",
       priority: "normal",
       category: "General",
+      startDate: new Date().toISOString().split("T")[0],
+      startTime: "09:00",
       dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
       dueTime: "18:00",
       estimatedHours: 8,
@@ -716,6 +722,8 @@ export default function ManageStaffPage() {
         assignedToEmail: taskAssigneeStaff.email,
         priority: taskForm.priority,
         category: taskForm.category,
+        startDate: taskForm.startDate,
+        startTime: taskForm.startTime,
         dueDate: taskForm.dueDate,
         dueTime: taskForm.dueTime,
         estimatedHours: taskForm.estimatedHours,
@@ -1178,195 +1186,185 @@ export default function ManageStaffPage() {
               )}
             </div>
           ) : (
-            <div className="rounded-2xl bg-[#0b0c16] border border-white/10 overflow-hidden shadow-xl">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
-                  <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.02] text-[11px] font-mono uppercase tracking-wider text-gray-400">
-                      <th className="py-3.5 px-5 w-[30%]">Employee & Contact</th>
-                      <th className="py-3.5 px-4 w-[18%]">Role & Shift</th>
-                      <th className="py-3.5 px-4 w-[18%]">Permissions</th>
-                      <th className="py-3.5 px-4 w-[14%]">Status</th>
-                      <th className="py-3.5 px-5 w-[20%] text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.05] text-xs">
-                    {filteredStaff.map((member) => {
-                      const typeColor = getRoleBadgeColor(member.staffType, roles);
-                      const roleLabel = getRoleLabel(member.staffType, roles);
-                      const initial = member.name.charAt(0).toUpperCase();
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5 sm:gap-5">
+              {filteredStaff.map((member) => {
+                const typeColor = getRoleBadgeColor(member.staffType, roles);
+                const roleLabel = getRoleLabel(member.staffType, roles);
+                const initial = member.name.charAt(0).toUpperCase();
 
-                      return (
-                        <tr
-                          key={member.id}
-                          className="hover:bg-white/[0.02] transition-colors"
-                        >
-                          {/* 1. Employee & Contact */}
-                          <td className="py-4 px-5 align-middle">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                                {member.avatarUrl ? (
-                                  <img
-                                    src={member.avatarUrl}
-                                    alt={member.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <span className="text-sm font-bold text-white">{initial}</span>
-                                )}
-                              </div>
+                return (
+                  <div
+                    key={member.id}
+                    className="relative rounded-2xl bg-[#0c0d18]/90 backdrop-blur-md border border-white/[0.08] hover:border-cyan-500/35 p-3.5 sm:p-4 flex flex-col justify-between gap-3 transition-all duration-300 shadow-lg hover:shadow-cyan-950/25 group overflow-hidden"
+                  >
+                    {/* Ambient Glow */}
+                    <div className="absolute -top-16 -right-16 w-32 h-32 rounded-full bg-cyan-500/[0.04] blur-2xl pointer-events-none group-hover:bg-cyan-500/[0.09] transition-all duration-500" />
 
-                              <div className="min-w-0">
-                                <span className="text-white font-semibold text-sm block truncate">
-                                  {member.name}
-                                </span>
-                                <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 font-mono">
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(member.email, `email-${member.id}`)}
-                                    className="inline-flex items-center gap-1 text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer"
-                                    title="Click to copy email"
-                                  >
-                                    <span className="material-symbols-outlined text-[13px] text-cyan-400">
-                                      {copiedId === `email-${member.id}` ? "check" : "mail"}
-                                    </span>
-                                    <span className="truncate max-w-[150px]">{member.email}</span>
-                                  </button>
-                                  <span className="text-gray-600">•</span>
-                                  <span className="text-[11px] text-gray-500">
-                                    Joined {new Date(member.createdAt).toLocaleDateString()}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* 2. Role & Shift */}
-                          <td className="py-4 px-4 align-middle">
-                            <div className="space-y-1">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border text-xs font-mono font-medium ${typeColor.bg} ${typeColor.text} ${typeColor.border}`}
-                              >
-                                <span className="material-symbols-outlined text-xs">badge</span>
-                                <span>{roleLabel}</span>
-                              </span>
-                              <div className="flex items-center gap-1.5 text-xs text-gray-400 font-mono">
-                                <span className="material-symbols-outlined text-[13px] text-cyan-400">schedule</span>
-                                <span>{member.shiftHours ? `${member.shiftHours.start} - ${member.shiftHours.end}` : "09:00 - 18:00"}</span>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* 3. Permissions */}
-                          <td className="py-4 px-4 align-middle">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-gray-300 text-xs font-mono">
-                                  <span className="text-cyan-400 font-semibold">{member.allowedModules.length}</span>
-                                  <span>Modules</span>
-                                </span>
-                                {member.agreementId && (
-                                  <span
-                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono"
-                                    title="Employment Agreement Linked"
-                                  >
-                                    <span className="material-symbols-outlined text-[11px]">verified</span>
-                                    <span>Agreement</span>
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-400 font-mono truncate max-w-[170px]">
-                                Off: {(member.assignedOffDays || ["Friday", "Saturday"]).join(", ")}
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* 4. Status */}
-                          <td className="py-4 px-4 align-middle">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium uppercase tracking-wider border whitespace-nowrap ${
-                                member.status === "active"
-                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                  : "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                  member.status === "active" ? "bg-emerald-400" : "bg-rose-400"
-                                }`}
-                              />
-                              <span>{member.status === "active" ? "Active" : "Suspended"}</span>
+                    {/* Card Top: Avatar, Name & Status */}
+                    <div className="flex items-center justify-between gap-3 relative z-10">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {/* Compact Rounded Square Avatar with strict sizing */}
+                        <div className="w-11 h-11 min-w-[44px] max-w-[44px] h-[44px] max-h-[44px] rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-white/10 flex items-center justify-center flex-shrink-0 shadow-inner group-hover:border-cyan-500/40 transition-colors">
+                          {member.avatarUrl ? (
+                            <img
+                              src={member.avatarUrl}
+                              alt={member.name}
+                              className="w-11 h-11 object-cover rounded-xl"
+                            />
+                          ) : (
+                            <span className="text-base font-bold bg-gradient-to-br from-cyan-300 to-blue-400 bg-clip-text text-transparent">
+                              {initial}
                             </span>
-                          </td>
+                          )}
+                        </div>
 
-                          {/* 5. Actions */}
-                          <td className="py-4 px-5 text-right align-middle">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* View Details */}
-                              <button
-                                type="button"
-                                onClick={() => openEmployeeDetailsModal(member)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition cursor-pointer active:scale-95"
-                              >
-                                <span className="material-symbols-outlined text-[15px]">visibility</span>
-                                <span>View Details</span>
-                              </button>
+                        {/* Employee Name & Contact */}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-white font-bold text-sm leading-tight truncate group-hover:text-cyan-300 transition-colors">
+                            {member.name}
+                          </h3>
 
-                              {/* Assign Task */}
-                              <button
-                                type="button"
-                                onClick={() => openAssignTaskModal(member)}
-                                title="Assign Task"
-                                className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-purple-500/10 text-gray-400 hover:text-purple-300 border border-white/10 hover:border-purple-500/30 flex items-center justify-center transition cursor-pointer active:scale-95"
-                              >
-                                <span className="material-symbols-outlined text-base">assignment_add</span>
-                              </button>
+                          {/* Email */}
+                          <div className="mt-0.5">
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(member.email, `email-${member.id}`)}
+                              className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-cyan-300 transition-colors cursor-pointer font-mono truncate max-w-full"
+                              title="Click to copy email"
+                            >
+                              <span className="material-symbols-outlined text-[13px] text-cyan-400 shrink-0">
+                                {copiedId === `email-${member.id}` ? "check" : "mail"}
+                              </span>
+                              <span className="truncate">{member.email}</span>
+                            </button>
+                          </div>
 
-                              {/* Edit */}
-                              <button
-                                type="button"
-                                onClick={() => openEditModal(member)}
-                                title="Edit Employee"
-                                className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-400 hover:text-white border border-white/10 hover:border-white/20 flex items-center justify-center transition cursor-pointer active:scale-95"
-                              >
-                                <span className="material-symbols-outlined text-base">edit</span>
-                              </button>
+                          {/* Joined date */}
+                          <div className="flex items-center gap-1 text-[10px] text-gray-500 font-mono">
+                            <span>Joined {new Date(member.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
 
-                              {/* Suspend / Reactivate */}
-                              <button
-                                type="button"
-                                onClick={() => handleToggleSuspend(member)}
-                                disabled={actionInProgress === member.id}
-                                title={member.status === "active" ? "Suspend Employee" : "Reactivate Employee"}
-                                className={`w-8 h-8 rounded-lg border flex items-center justify-center transition cursor-pointer disabled:opacity-50 active:scale-95 ${
-                                  member.status === "active"
-                                    ? "bg-white/[0.04] hover:bg-amber-500/10 text-gray-400 hover:text-amber-300 border-white/10 hover:border-amber-500/30"
-                                    : "bg-white/[0.04] hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-300 border-white/10 hover:border-emerald-500/30"
-                                }`}
-                              >
-                                <span className="material-symbols-outlined text-base">
-                                  {member.status === "active" ? "block" : "check_circle"}
-                                </span>
-                              </button>
+                      {/* Status Badge */}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider border font-medium shrink-0 ${
+                          member.status === "active"
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-sm shadow-emerald-500/10"
+                            : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            member.status === "active" ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                          }`}
+                        />
+                        <span>{member.status === "active" ? "Active" : "Suspended"}</span>
+                      </span>
+                    </div>
 
-                              {/* Delete */}
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(member)}
-                                disabled={actionInProgress === member.id}
-                                title="Remove Employee"
-                                className="w-8 h-8 rounded-lg bg-white/[0.04] hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 flex items-center justify-center transition cursor-pointer disabled:opacity-50 active:scale-95"
-                              >
-                                <span className="material-symbols-outlined text-base">delete</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                    {/* Card Middle: Role, Shift & Permissions Strip */}
+                    <div className="grid grid-cols-2 gap-2 relative z-10">
+                      {/* Role & Shift Box */}
+                      <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-1.5">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-mono font-medium ${typeColor.bg} ${typeColor.text} ${typeColor.border}`}
+                        >
+                          <span className="material-symbols-outlined text-[12px]">badge</span>
+                          <span className="truncate max-w-[80px]">{roleLabel}</span>
+                        </span>
+                        <div className="flex items-center gap-1 text-[11px] text-gray-400 font-mono shrink-0">
+                          <span className="material-symbols-outlined text-[13px] text-cyan-400">schedule</span>
+                          <span>{member.shiftHours ? `${member.shiftHours.start} - ${member.shiftHours.end}` : "09:00 - 18:00"}</span>
+                        </div>
+                      </div>
+
+                      {/* Modules & Off-Days Box */}
+                      <div className="p-2 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-gray-300 text-[10px] font-mono">
+                            <span className="material-symbols-outlined text-[11px] text-cyan-400">vpn_key</span>
+                            <span className="text-cyan-400 font-bold">{member.allowedModules.length}</span>
+                            <span>Mods</span>
+                          </span>
+                          {member.agreementId && (
+                            <span
+                              className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-mono"
+                              title="Employment Agreement Linked"
+                            >
+                              <span className="material-symbols-outlined text-[10px]">verified</span>
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-mono truncate max-w-[110px]" title={(member.assignedOffDays || ["Friday", "Saturday"]).join(", ")}>
+                          Off: {(member.assignedOffDays || ["Fri, Sat"]).join(", ")}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Bottom: Action Toolbar */}
+                    <div className="flex items-center justify-between gap-1.5 pt-2.5 border-t border-white/[0.06] relative z-10">
+                      {/* View Details */}
+                      <button
+                        type="button"
+                        onClick={() => openEmployeeDetailsModal(member)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold font-mono transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">visibility</span>
+                        <span>View Details</span>
+                      </button>
+
+                      {/* Assign Task */}
+                      <button
+                        type="button"
+                        onClick={() => openAssignTaskModal(member)}
+                        title="Assign Sprint Task"
+                        className="h-8 w-8 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">assignment_add</span>
+                      </button>
+
+                      {/* Edit */}
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(member)}
+                        title="Edit Employee Profile"
+                        className="h-8 w-8 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white border border-white/10 hover:border-white/20 flex items-center justify-center transition-all cursor-pointer active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                      </button>
+
+                      {/* Suspend / Reactivate */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSuspend(member)}
+                        disabled={actionInProgress === member.id}
+                        title={member.status === "active" ? "Suspend Employee" : "Reactivate Employee"}
+                        className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 active:scale-95 ${
+                          member.status === "active"
+                            ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30"
+                            : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">
+                          {member.status === "active" ? "block" : "check_circle"}
+                        </span>
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(member)}
+                        disabled={actionInProgress === member.id}
+                        title="Remove Employee"
+                        className="h-8 w-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 active:scale-95"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </main>
@@ -2024,42 +2022,86 @@ export default function ManageStaffPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2.5">
-                <div>
-                  <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
-                    Due Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={taskForm.dueDate}
-                    onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  />
+              {/* Start & End Schedule Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5">
+                {/* Starting Schedule */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-cyan-400 text-xs font-semibold">
+                    <span className="material-symbols-outlined text-[15px]">schedule</span>
+                    <span>Starting Schedule (Unlocked At)</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        Start Date *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={taskForm.startDate}
+                        onChange={(e) => setTaskForm({ ...taskForm, startDate: e.target.value })}
+                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={taskForm.startTime}
+                        onChange={(e) => setTaskForm({ ...taskForm, startTime: e.target.value })}
+                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500 font-mono">
+                    Employee will see a countdown timer until this moment.
+                  </p>
                 </div>
-                <div>
-                  <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
-                    Due Time
-                  </label>
-                  <input
-                    type="time"
-                    value={taskForm.dueTime}
-                    onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
-                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
-                    Est. Hours
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="1"
-                    value={taskForm.estimatedHours}
-                    onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
-                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  />
+
+                {/* Deadline Schedule */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-pink-400 text-xs font-semibold">
+                    <span className="material-symbols-outlined text-[15px]">event_busy</span>
+                    <span>Deadline & End Target</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        End Date *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={taskForm.dueDate}
+                        onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={taskForm.dueTime}
+                        onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
+                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-0.5">
+                    <span className="text-[10px] text-gray-400 font-mono">Est. Hours:</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="1"
+                      value={taskForm.estimatedHours}
+                      onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
+                      className="w-20 h-7 bg-black/60 border border-white/[0.1] rounded-lg px-2 text-xs text-cyan-300 text-right focus:outline-none focus:border-cyan-400 font-mono font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 

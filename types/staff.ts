@@ -194,10 +194,12 @@ export function getRoleBadgeColor(
 export const MODULE_KEYS = {
   overview: "overview",
   commerce: "commerce",
+  contract_center: "contract_center",
   projects: "projects",
   content_cms: "content_cms",
   social_network: "social_network",
   legal: "legal",
+  staff_operations: "staff_operations",
   system: "system",
 } as const;
 
@@ -216,6 +218,12 @@ export const MODULE_CONFIG: Record<string, { label: string; icon: string; color:
     icon: "shopping_bag",
     color: "#34d399",
     description: "Orders, payments & currencies",
+  },
+  contract_center: {
+    label: "Contract Center",
+    icon: "description",
+    color: "#f472b6",
+    description: "Quotations, NDAs, agreements & contracts",
   },
   projects: {
     label: "Projects",

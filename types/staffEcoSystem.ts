@@ -146,8 +146,10 @@ export interface EmployeeTask {
   priority: TaskPriority;
   category?: string; // "Frontend", "Backend", "UI Design", "QA", "General", etc.
   assignedDate: string; // "YYYY-MM-DD"
-  dueDate: string; // "YYYY-MM-DD"
-  dueTime?: string; // "18:00"
+  startDate?: string; // "YYYY-MM-DD" Starting Date
+  startTime?: string; // "09:00" Starting Time
+  dueDate: string; // "YYYY-MM-DD" Deadline / End Date
+  dueTime?: string; // "18:00" Deadline / End Time
   status: TaskStatus;
   progressPercent: number; // 0 - 100
   employeeNotes?: string;
@@ -155,6 +157,7 @@ export interface EmployeeTask {
   adminFeedback?: string;
   estimatedHours?: number;
   actualHours?: number;
+  startedAt?: string; // ISO timestamp when employee started the task
   completedAt?: string;
   createdAt: string;
   updatedAt: string;

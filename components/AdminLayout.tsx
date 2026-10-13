@@ -80,6 +80,15 @@ function IconUserCheck({ size = 16 }: { size?: number }) {
     </svg>
   );
 }
+function IconContract({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <path d="M9 15l2 2 4-4"/>
+    </svg>
+  );
+}
 
 const NAV_GROUPS: NavGroup[] = [
   {
@@ -97,6 +106,28 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Orders & Payments", href: "/admin/manage-orders", badge: "live" },
       { label: "Currencies", href: "/admin/manage-currencies" },
+    ],
+  },
+  {
+    label: "Contract Center",
+    moduleKey: "contract_center",
+    color: "#f472b6",
+    icon: <IconContract />,
+    items: [
+      { label: "Overview", href: "/admin/contract-center", badge: "new" },
+      { label: "Clients", href: "/admin/contract-center/clients" },
+      { label: "Projects", href: "/admin/contract-center/projects" },
+      { label: "Quotations", href: "/admin/contract-center/quotations" },
+      { label: "NDAs", href: "/admin/contract-center/ndas" },
+      { label: "Agreements", href: "/admin/contract-center/agreements" },
+      { label: "Statements of Work", href: "/admin/contract-center/sow" },
+      { label: "Change Orders", href: "/admin/contract-center/change-orders" },
+      { label: "Signatures", href: "/admin/contract-center/signatures" },
+      { label: "Milestones", href: "/admin/contract-center/milestones" },
+      { label: "Templates", href: "/admin/contract-center/templates" },
+      { label: "Payments", href: "/admin/contract-center/payments" },
+      { label: "Audit Trail", href: "/admin/contract-center/audit" },
+      { label: "Settings", href: "/admin/contract-center/settings" },
     ],
   },
   {

@@ -359,6 +359,10 @@ export interface AgreementRecord {
   createdAt: string;
   updatedBy: string;
   updatedAt: string;
+  isArchived?: boolean;
+  archivedAt?: string;
+  isDeleted?: boolean;
+  deletedAt?: string;
   auditTrail?: AgreementAuditRecord[];
 }
 

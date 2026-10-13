@@ -81,6 +81,8 @@ export default function ManageWorkUpdatesPage() {
     description: string;
     category: string;
     priority: TaskPriority;
+    startDate: string;
+    startTime: string;
     dueDate: string;
     dueTime: string;
     estimatedHours: number;
@@ -93,6 +95,8 @@ export default function ManageWorkUpdatesPage() {
     description: "",
     category: "Frontend",
     priority: "normal",
+    startDate: new Date().toISOString().split("T")[0],
+    startTime: "09:00",
     dueDate: "",
     dueTime: "18:00",
     estimatedHours: 4,
@@ -140,6 +144,7 @@ export default function ManageWorkUpdatesPage() {
   // ── Task Actions ──
   const handleOpenCreateTask = (preselectedStaffId?: string) => {
     const today = new Date();
+    const startDateStr = today.toISOString().split("T")[0];
     const nextWeek = new Date(today);
     nextWeek.setDate(today.getDate() + 3);
     const dueDateStr = nextWeek.toISOString().split("T")[0];
@@ -152,6 +157,8 @@ export default function ManageWorkUpdatesPage() {
       description: "",
       category: "Frontend",
       priority: "normal",
+      startDate: startDateStr,
+      startTime: "09:00",
       dueDate: dueDateStr,
       dueTime: "18:00",
       estimatedHours: 6,
@@ -163,6 +170,7 @@ export default function ManageWorkUpdatesPage() {
   };
 
   const handleOpenEditTask = (task: EmployeeTask) => {
+    const todayStr = new Date().toISOString().split("T")[0];
     setEditingTask(task);
     setTaskForm({
       assignedToStaffId: task.assignedToStaffId,
@@ -170,6 +178,8 @@ export default function ManageWorkUpdatesPage() {
       description: task.description || "",
       category: task.category || "General",
       priority: task.priority || "normal",
+      startDate: task.startDate || task.assignedDate || todayStr,
+      startTime: task.startTime || "09:00",
       dueDate: task.dueDate || "",
       dueTime: task.dueTime || "18:00",
       estimatedHours: task.estimatedHours || 0,
@@ -200,6 +210,8 @@ export default function ManageWorkUpdatesPage() {
           assignedToEmail: assignedStaff.email,
           category: taskForm.category,
           priority: taskForm.priority,
+          startDate: taskForm.startDate,
+          startTime: taskForm.startTime,
           dueDate: taskForm.dueDate,
           dueTime: taskForm.dueTime,
           estimatedHours: Number(taskForm.estimatedHours) || 0,
@@ -218,6 +230,8 @@ export default function ManageWorkUpdatesPage() {
           assignedToEmail: assignedStaff.email,
           priority: taskForm.priority,
           category: taskForm.category,
+          startDate: taskForm.startDate,
+          startTime: taskForm.startTime,
           dueDate: taskForm.dueDate,
           dueTime: taskForm.dueTime,
           estimatedHours: Number(taskForm.estimatedHours) || 0,
@@ -991,45 +1005,86 @@ export default function ManageWorkUpdatesPage() {
                 </div>
               </div>
 
-              {/* 4. Due Date, Due Time & Estimated Hours */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-1.5">
-                    Deadline Date *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={taskForm.dueDate}
-                    onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                    className="w-full h-11 bg-black/50 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  />
+              {/* 4. Starting Date & Time and Deadline (End Date & Time) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-cyan-500/[0.03] border border-cyan-500/15">
+                {/* Starting Schedule */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-cyan-400 text-xs font-semibold">
+                    <span className="material-symbols-outlined text-[15px]">play_circle</span>
+                    <span>Starting Schedule (Unlocked At)</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        Start Date *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={taskForm.startDate}
+                        onChange={(e) => setTaskForm({ ...taskForm, startDate: e.target.value })}
+                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        value={taskForm.startTime}
+                        onChange={(e) => setTaskForm({ ...taskForm, startTime: e.target.value })}
+                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-500">
+                    Employee will see a countdown timer until this moment.
+                  </p>
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-1.5">
-                    Deadline Time
-                  </label>
-                  <input
-                    type="time"
-                    value={taskForm.dueTime}
-                    onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
-                    className="w-full h-11 bg-black/50 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-1.5">
-                    Est. Hours
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={taskForm.estimatedHours}
-                    onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
-                    className="w-full h-11 bg-black/50 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  />
+                {/* Deadline Schedule */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-pink-400 text-xs font-semibold">
+                    <span className="material-symbols-outlined text-[15px]">event_busy</span>
+                    <span>Deadline & End Target</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        End Date *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={taskForm.dueDate}
+                        onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
+                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        value={taskForm.dueTime}
+                        onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
+                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-0.5">
+                    <span className="text-[10px] text-gray-400 font-mono">Est. Sprints Hours:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="120"
+                      value={taskForm.estimatedHours}
+                      onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
+                      className="w-20 h-7 bg-black/60 border border-white/[0.1] rounded-lg px-2 text-xs text-cyan-300 text-right focus:outline-none focus:border-cyan-400 font-mono font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 

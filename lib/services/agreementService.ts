@@ -397,14 +397,105 @@ export async function finalizeAgreement(
 }
 
 /**
- * Delete agreement document
+ * Move agreement to Recycle Bin (Soft Delete)
+ */
+export async function softDeleteAgreement(id: string, performedBy: string = "Admin"): Promise<void> {
+  try {
+    const docRef = doc(db, AGREEMENTS_COLLECTION, id);
+    const snap = await getDoc(docRef);
+    const currentTrail = snap.exists() ? snap.data().auditTrail || [] : [];
+    await updateDoc(docRef, {
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+      updatedBy: performedBy,
+      updatedAt: new Date().toISOString(),
+      auditTrail: [
+        ...currentTrail,
+        {
+          action: "moved_to_recycle_bin",
+          performedBy,
+          timestamp: new Date().toISOString(),
+          details: "Agreement moved to Recycle Bin",
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(`Error soft-deleting agreement ${id}:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Restore agreement from Recycle Bin
+ */
+export async function restoreAgreement(id: string, performedBy: string = "Admin"): Promise<void> {
+  try {
+    const docRef = doc(db, AGREEMENTS_COLLECTION, id);
+    const snap = await getDoc(docRef);
+    const currentTrail = snap.exists() ? snap.data().auditTrail || [] : [];
+    await updateDoc(docRef, {
+      isDeleted: false,
+      deletedAt: null,
+      updatedBy: performedBy,
+      updatedAt: new Date().toISOString(),
+      auditTrail: [
+        ...currentTrail,
+        {
+          action: "restored_from_recycle_bin",
+          performedBy,
+          timestamp: new Date().toISOString(),
+          details: "Agreement restored from Recycle Bin to active",
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(`Error restoring agreement ${id}:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Archive / Unarchive agreement
+ */
+export async function archiveAgreement(
+  id: string,
+  isArchived: boolean,
+  performedBy: string = "Admin"
+): Promise<void> {
+  try {
+    const docRef = doc(db, AGREEMENTS_COLLECTION, id);
+    const snap = await getDoc(docRef);
+    const currentTrail = snap.exists() ? snap.data().auditTrail || [] : [];
+    await updateDoc(docRef, {
+      isArchived,
+      archivedAt: isArchived ? new Date().toISOString() : null,
+      updatedBy: performedBy,
+      updatedAt: new Date().toISOString(),
+      auditTrail: [
+        ...currentTrail,
+        {
+          action: isArchived ? "archived" : "unarchived",
+          performedBy,
+          timestamp: new Date().toISOString(),
+          details: isArchived ? "Agreement archived" : "Agreement unarchived",
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(`Error setting archive state for agreement ${id}:`, err);
+    throw err;
+  }
+}
+
+/**
+ * Permanent Delete agreement document from Firestore
  */
 export async function deleteAgreement(id: string): Promise<void> {
   try {
     const docRef = doc(db, AGREEMENTS_COLLECTION, id);
     await deleteDoc(docRef);
   } catch (err) {
-    console.error(`Error deleting agreement ${id}:`, err);
+    console.error(`Error permanently deleting agreement ${id}:`, err);
     throw err;
   }
 }

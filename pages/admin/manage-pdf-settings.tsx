@@ -59,7 +59,11 @@ export default function ManagePdfSettingsPage() {
   const hasChanges =
     settings.companyWebsiteUrl !== originalSettings.companyWebsiteUrl ||
     settings.companyEmail !== originalSettings.companyEmail ||
-    settings.developerPortfolioUrl !== originalSettings.developerPortfolioUrl;
+    settings.founderEmail !== originalSettings.founderEmail ||
+    settings.developerPortfolioUrl !== originalSettings.developerPortfolioUrl ||
+    settings.clientPortalBaseUrl !== originalSettings.clientPortalBaseUrl ||
+    settings.signatoryName !== originalSettings.signatoryName ||
+    settings.signatoryTitle !== originalSettings.signatoryTitle;
 
   const handleSave = async () => {
     if (!settings.companyWebsiteUrl.trim()) {
@@ -77,7 +81,11 @@ export default function ManagePdfSettingsPage() {
         {
           companyWebsiteUrl: settings.companyWebsiteUrl,
           companyEmail: settings.companyEmail,
+          founderEmail: settings.founderEmail,
           developerPortfolioUrl: settings.developerPortfolioUrl,
+          clientPortalBaseUrl: settings.clientPortalBaseUrl,
+          signatoryName: settings.signatoryName,
+          signatoryTitle: settings.signatoryTitle,
         },
         ADMIN_EMAIL
       );
@@ -243,6 +251,44 @@ export default function ManagePdfSettingsPage() {
                 )}
               </div>
 
+              {/* Founder Direct Email */}
+              <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-indigo-400 text-lg">badge</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-[15px]">Founder Direct Email</h3>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      Direct executive founder contact shown alongside CEO signature &amp; footers
+                    </p>
+                  </div>
+                </div>
+
+                <input
+                  type="email"
+                  value={settings.founderEmail || "hamim.leon@gmail.com"}
+                  onChange={(e) =>
+                    setSettings((prev) => ({ ...prev, founderEmail: e.target.value }))
+                  }
+                  placeholder="hamim.leon@gmail.com"
+                  className="w-full px-4 py-3 rounded-lg bg-slate-900/70 border border-slate-600/50 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-colors"
+                />
+
+                {settings.founderEmail !== originalSettings.founderEmail && (
+                  <div className="mt-3 flex items-center gap-2 text-xs">
+                    <span className="text-slate-500">Previously:</span>
+                    <code className="text-slate-400 bg-slate-900/50 px-2 py-0.5 rounded">
+                      {originalSettings.founderEmail || "hamim.leon@gmail.com"}
+                    </code>
+                    <span className="material-symbols-outlined text-amber-400 text-sm">arrow_forward</span>
+                    <code className="text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded">
+                      {settings.founderEmail}
+                    </code>
+                  </div>
+                )}
+              </div>
+
               {/* Developer Portfolio URL */}
               <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700/50">
                 <div className="flex items-center gap-3 mb-4">
@@ -279,6 +325,62 @@ export default function ManagePdfSettingsPage() {
                     </code>
                   </div>
                 )}
+              </div>
+
+              {/* Client Portal & QR Code Base URL */}
+              <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700/50">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-pink-400 text-lg">qr_code_2</span>
+                    </div>
+                    <div>
+                      <h3 className="text-white font-semibold text-[15px]">Contract Center Client Portal Domain</h3>
+                      <p className="text-slate-400 text-xs mt-0.5">
+                        Embedded into all PDF verification QR codes & client review/signing portal links
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          clientPortalBaseUrl: "https://devenginehq.com",
+                          companyWebsiteUrl: "https://devenginehq.com",
+                        }))
+                      }
+                      className="px-2.5 py-1 text-xs rounded bg-pink-500/20 border border-pink-500/40 text-pink-300 hover:bg-pink-500/30 font-medium"
+                    >
+                      devenginehq.com
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          clientPortalBaseUrl: "https://thedevengine.vercel.app",
+                          companyWebsiteUrl: "https://thedevengine.vercel.app",
+                        }))
+                      }
+                      className="px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 font-medium"
+                    >
+                      vercel.app
+                    </button>
+                  </div>
+                </div>
+
+                <input
+                  type="url"
+                  value={settings.clientPortalBaseUrl || "https://devenginehq.com"}
+                  onChange={(e) =>
+                    setSettings((prev) => ({ ...prev, clientPortalBaseUrl: e.target.value }))
+                  }
+                  placeholder="https://devenginehq.com"
+                  className="w-full px-4 py-3 rounded-lg bg-slate-900/70 border border-slate-600/50 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20 transition-colors font-mono"
+                />
               </div>
             </div>
 

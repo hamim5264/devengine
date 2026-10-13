@@ -5,8 +5,11 @@ const nextConfig = {
     unoptimized: true,
   },
   devIndicators: {
-    buildActivity: false,
-    buildActivityPosition: "bottom-right",
+    position: "bottom-right",
+  },
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
   },
 };
 

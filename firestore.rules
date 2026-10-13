@@ -482,5 +482,76 @@ service cloud.firestore {
       // Only admin can write settings
       allow write: if isAdmin();
     }
+
+    /* =========================
+       DEVENGINE CONTRACT CENTER (cc_*)
+    ========================== */
+    match /cc_clients/{id} {
+      allow read, write: if isAdminOrStaff();
+    }
+
+    match /cc_projects/{id} {
+      allow read, write: if isAdminOrStaff();
+    }
+
+    match /cc_quotations/{id} {
+      allow read, write: if isAdminOrStaff();
+      // Public/client can view quotation via direct link/token
+      allow read: if true;
+    }
+
+    match /cc_ndas/{id} {
+      allow read, write: if isAdminOrStaff();
+      allow read: if true;
+    }
+
+    match /cc_service_agreements/{id} {
+      allow read, write: if isAdminOrStaff();
+      allow read: if true;
+    }
+
+    match /cc_sow/{id} {
+      allow read, write: if isAdminOrStaff();
+      allow read: if true;
+    }
+
+    match /cc_change_orders/{id} {
+      allow read, write: if isAdminOrStaff();
+      allow read: if true;
+    }
+
+    match /cc_signatures/{id} {
+      allow read, write: if isAdminOrStaff();
+      // Counterparty can view signature request and submit signed signature
+      allow read: if true;
+      allow update: if true;
+    }
+
+    match /cc_milestones/{id} {
+      allow read, write: if isAdminOrStaff();
+    }
+
+    match /cc_templates/{id} {
+      allow read, write: if isAdminOrStaff();
+    }
+
+    match /cc_clauses/{id} {
+      allow read, write: if isAdminOrStaff();
+    }
+
+    match /cc_settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /cc_number_sequences/{id} {
+      allow read, write: if isAdminOrStaff();
+    }
+
+    match /cc_audit_trail/{id} {
+      // Append-only audit log, immutable
+      allow read, create: if isAdminOrStaff();
+      allow update, delete: if false;
+    }
   }
 }

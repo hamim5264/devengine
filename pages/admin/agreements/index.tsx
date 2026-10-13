@@ -18,9 +18,13 @@ import {
   duplicateAgreement,
   updateAgreementStatus,
   deleteAgreement,
+  softDeleteAgreement,
+  restoreAgreement,
+  archiveAgreement,
 } from "@/lib/services/agreementService";
 import { generateAgreementPdf } from "@/lib/utils/generateAgreementPdf";
 import AgreementPreviewModal from "@/components/agreements/AgreementPreviewModal";
+import DeleteConfirmModal from "@/components/contract-center/DeleteConfirmModal";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
@@ -181,25 +185,100 @@ export default function AgreementsIndexPage() {
     }
   };
 
-  // Handle Delete Draft
-  const handleDelete = async (record: AgreementRecord) => {
-    if (record.status === "finalized") {
-      alert("Finalized corporate agreements cannot be deleted directly. Mark as Terminated or Cancelled instead.");
-      return;
-    }
-    if (!confirm(`Permanently remove draft agreement ${record.agreementNumber}?`)) return;
+  // View Tab: active | archived | trash
+  const [viewTab, setViewTab] = useState<"active" | "archived" | "trash">("active");
 
+  // Delete / Recycle Bin Modal
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    record: AgreementRecord | null;
+    isPermanent: boolean;
+  }>({
+    isOpen: false,
+    record: null,
+    isPermanent: false,
+  });
+
+  // Handle Archive / Unarchive
+  const handleArchive = async (record: AgreementRecord, shouldArchive: boolean) => {
     try {
       setActionInProgress(record.id);
-      await deleteAgreement(record.id);
-      setAgreements((prev) => prev.filter((a) => a.id !== record.id));
-      setNotice({ text: `Agreement ${record.agreementNumber} deleted.`, type: "info" });
-      setTimeout(() => setNotice(null), 4000);
+      await archiveAgreement(record.id, shouldArchive, ADMIN_EMAIL);
+      setAgreements((prev) =>
+        prev.map((a) => (a.id === record.id ? { ...a, isArchived: shouldArchive } : a))
+      );
+      setNotice({
+        text: shouldArchive
+          ? `Agreement ${record.agreementNumber} moved to Archived.`
+          : `Agreement ${record.agreementNumber} restored to Active.`,
+        type: "success",
+      });
+      setTimeout(() => setNotice(null), 3500);
+    } catch (err) {
+      console.error("Archive toggle failed:", err);
+      setNotice({ text: "Failed to update archive status.", type: "error" });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  // Handle Restore from Recycle Bin
+  const handleRestore = async (record: AgreementRecord) => {
+    try {
+      setActionInProgress(record.id);
+      await restoreAgreement(record.id, ADMIN_EMAIL);
+      setAgreements((prev) =>
+        prev.map((a) => (a.id === record.id ? { ...a, isDeleted: false, deletedAt: undefined } : a))
+      );
+      setNotice({ text: `Agreement ${record.agreementNumber} restored to Active!`, type: "success" });
+      setTimeout(() => setNotice(null), 3500);
+    } catch (err) {
+      console.error("Restore failed:", err);
+      setNotice({ text: "Failed to restore agreement.", type: "error" });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  // Open Delete Confirmation Modal
+  const handleOpenDeleteModal = (record: AgreementRecord, isPermanent: boolean) => {
+    setDeleteModalState({
+      isOpen: true,
+      record,
+      isPermanent,
+    });
+  };
+
+  // Confirm Delete from Modal
+  const handleConfirmDelete = async () => {
+    if (!deleteModalState.record) return;
+    const { record, isPermanent } = deleteModalState;
+    try {
+      setActionInProgress(record.id);
+      if (isPermanent) {
+        await deleteAgreement(record.id);
+        setAgreements((prev) => prev.filter((a) => a.id !== record.id));
+        setNotice({
+          text: `Agreement ${record.agreementNumber} permanently deleted from Firestore.`,
+          type: "info",
+        });
+      } else {
+        await softDeleteAgreement(record.id, ADMIN_EMAIL);
+        setAgreements((prev) =>
+          prev.map((a) => (a.id === record.id ? { ...a, isDeleted: true } : a))
+        );
+        setNotice({
+          text: `Agreement ${record.agreementNumber} moved to Recycle Bin.`,
+          type: "info",
+        });
+      }
+      setTimeout(() => setNotice(null), 3500);
     } catch (err) {
       console.error("Delete failed:", err);
       setNotice({ text: "Failed to delete agreement.", type: "error" });
     } finally {
       setActionInProgress(null);
+      setDeleteModalState({ isOpen: false, record: null, isPermanent: false });
     }
   };
 
@@ -207,6 +286,11 @@ export default function AgreementsIndexPage() {
   const filteredAgreements = useMemo(() => {
     return agreements
       .filter((a) => {
+        // Tab filtering
+        if (viewTab === "active" && (a.isDeleted || a.isArchived)) return false;
+        if (viewTab === "archived" && (a.isDeleted || !a.isArchived)) return false;
+        if (viewTab === "trash" && !a.isDeleted) return false;
+
         // Search query
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
@@ -231,14 +315,22 @@ export default function AgreementsIndexPage() {
         }
         return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
       });
-  }, [agreements, searchQuery, filterType, filterStatus, sortBy]);
+  }, [agreements, viewTab, searchQuery, filterType, filterStatus, sortBy]);
+
+  // Tab Counts & Metrics
+  const tabCounts = useMemo(() => {
+    const active = agreements.filter((a) => !a.isDeleted && !a.isArchived).length;
+    const archived = agreements.filter((a) => !a.isDeleted && a.isArchived).length;
+    const trash = agreements.filter((a) => a.isDeleted).length;
+    return { active, archived, trash };
+  }, [agreements]);
 
   // 4 Metrics
   const metrics = useMemo(() => {
-    const total = agreements.length;
-    const drafts = agreements.filter((a) => a.status === "draft" || (a.status as any) === "preview").length;
-    const finalized = agreements.filter((a) => a.status === "finalized" || a.status === "executed" || a.status === "signed" || a.status === "active").length;
-    const profitSharingCount = agreements.filter((a) => a.agreementType === "profit_participation" || a.agreementType === "revenue_sharing" || a.agreementType === "hybrid").length;
+    const total = agreements.filter((a) => !a.isDeleted).length;
+    const drafts = agreements.filter((a) => !a.isDeleted && (a.status === "draft" || (a.status as any) === "preview")).length;
+    const finalized = agreements.filter((a) => !a.isDeleted && (a.status === "finalized" || a.status === "executed" || a.status === "signed" || a.status === "active")).length;
+    const profitSharingCount = agreements.filter((a) => !a.isDeleted && (a.agreementType === "profit_participation" || a.agreementType === "revenue_sharing" || a.agreementType === "hybrid")).length;
 
     return { total, drafts, finalized, profitSharingCount };
   }, [agreements]);
@@ -361,6 +453,57 @@ export default function AgreementsIndexPage() {
               <p className="text-2xl font-bold font-mono text-cyan-300 mt-1">{metrics.profitSharingCount}</p>
               <p className="text-[11px] text-gray-500 font-mono mt-1">Revenue-share models</p>
             </div>
+          </div>
+
+          {/* View Tabs: Active Contracts | Archived | Recycle Bin */}
+          <div className="flex items-center gap-2 border-b border-white/[0.08] pb-3">
+            <button
+              type="button"
+              onClick={() => setViewTab("active")}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                viewTab === "active"
+                  ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 shadow-sm shadow-cyan-500/20"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">description</span>
+              Active Contracts
+              <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono">
+                {tabCounts.active}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewTab("archived")}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                viewTab === "archived"
+                  ? "bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-sm shadow-amber-500/20"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">archive</span>
+              Archived
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono">
+                {tabCounts.archived}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setViewTab("trash")}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                viewTab === "trash"
+                  ? "bg-rose-500/15 border border-rose-500/30 text-rose-300 shadow-sm shadow-rose-500/20"
+                  : "text-gray-400 hover:text-rose-300 hover:bg-white/[0.04]"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+              Recycle Bin
+              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-mono">
+                {tabCounts.trash}
+              </span>
+            </button>
           </div>
 
           {/* Search, Filter & Sort Bar */}
@@ -613,59 +756,110 @@ export default function AgreementsIndexPage() {
                                 <span className="material-symbols-outlined text-base">visibility</span>
                               </button>
 
-                              {/* Download PDF */}
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadPdf(item)}
-                                disabled={downloadingId === item.id}
-                                title="Download PDF"
-                                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 hover:text-cyan-300 text-gray-400 transition-all border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90"
-                              >
-                                <span className="material-symbols-outlined text-base">
-                                  {downloadingId === item.id ? "hourglass_top" : "download"}
-                                </span>
-                              </button>
+                              {viewTab === "trash" ? (
+                                <>
+                                  {/* Restore */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRestore(item)}
+                                    disabled={actionInProgress === item.id}
+                                    title="Restore Agreement to Active"
+                                    className="px-2.5 py-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-[11px] font-semibold flex items-center gap-1 active:scale-90 transition-all"
+                                  >
+                                    <span className="material-symbols-outlined text-sm">restore_from_trash</span>
+                                    Restore
+                                  </button>
 
-                              {/* Edit */}
-                              <Link
-                                href={`/admin/agreements/${item.id}/edit`}
-                                title="Edit Agreement"
-                                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-300 hover:text-white transition-all border border-white/[0.08] flex items-center justify-center active:scale-90"
-                              >
-                                <span className="material-symbols-outlined text-base">edit</span>
-                              </Link>
+                                  {/* Permanent Delete */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDeleteModal(item, true)}
+                                    disabled={actionInProgress === item.id}
+                                    title="Permanently Delete from Database"
+                                    className="px-2.5 py-1 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-[11px] font-semibold flex items-center gap-1 active:scale-90 transition-all"
+                                  >
+                                    <span className="material-symbols-outlined text-sm">delete_forever</span>
+                                    Delete
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Download PDF */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDownloadPdf(item)}
+                                    disabled={downloadingId === item.id}
+                                    title="Download PDF"
+                                    className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 hover:text-cyan-300 text-gray-400 transition-all border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90"
+                                  >
+                                    <span className="material-symbols-outlined text-base">
+                                      {downloadingId === item.id ? "hourglass_top" : "download"}
+                                    </span>
+                                  </button>
 
-                              {/* Addendum / Amendments */}
-                              <Link
-                                href={`/admin/agreements/${item.id}/addendum`}
-                                title="Create / View Addendum"
-                                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-amber-500/15 hover:text-amber-300 text-gray-400 transition-all border border-white/[0.08] hover:border-amber-500/30 flex items-center justify-center active:scale-90"
-                              >
-                                <span className="material-symbols-outlined text-base">history_edu</span>
-                              </Link>
+                                  {/* Edit */}
+                                  <Link
+                                    href={`/admin/agreements/${item.id}/edit`}
+                                    title="Edit Agreement"
+                                    className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-300 hover:text-white transition-all border border-white/[0.08] flex items-center justify-center active:scale-90"
+                                  >
+                                    <span className="material-symbols-outlined text-base">edit</span>
+                                  </Link>
 
-                              {/* Duplicate */}
-                              <button
-                                type="button"
-                                onClick={() => handleDuplicate(item)}
-                                disabled={actionInProgress === item.id}
-                                title="Duplicate Agreement"
-                                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-300 hover:text-white transition-all border border-white/[0.08] flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90"
-                              >
-                                <span className="material-symbols-outlined text-base">content_copy</span>
-                              </button>
+                                  {/* Addendum / Amendments */}
+                                  <Link
+                                    href={`/admin/agreements/${item.id}/addendum`}
+                                    title="Create / View Addendum"
+                                    className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-amber-500/15 hover:text-amber-300 text-gray-400 transition-all border border-white/[0.08] hover:border-amber-500/30 flex items-center justify-center active:scale-90"
+                                  >
+                                    <span className="material-symbols-outlined text-base">history_edu</span>
+                                  </Link>
 
-                              {/* Delete (Drafts only) */}
-                              {item.status !== "finalized" && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(item)}
-                                  disabled={actionInProgress === item.id}
-                                  title="Delete Draft"
-                                  className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-rose-500/15 hover:text-rose-400 text-gray-500 transition-all border border-white/[0.08] hover:border-rose-500/30 flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90"
-                                >
-                                  <span className="material-symbols-outlined text-base">delete</span>
-                                </button>
+                                  {/* Duplicate */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDuplicate(item)}
+                                    disabled={actionInProgress === item.id}
+                                    title="Duplicate Agreement"
+                                    className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-300 hover:text-white transition-all border border-white/[0.08] flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90"
+                                  >
+                                    <span className="material-symbols-outlined text-base">content_copy</span>
+                                  </button>
+
+                                  {/* Archive / Unarchive */}
+                                  {viewTab === "archived" ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleArchive(item, false)}
+                                      disabled={actionInProgress === item.id}
+                                      title="Unarchive (Restore to Active)"
+                                      className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 hover:text-cyan-300 text-gray-400 transition-all border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center cursor-pointer active:scale-90"
+                                    >
+                                      <span className="material-symbols-outlined text-base">unarchive</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleArchive(item, true)}
+                                      disabled={actionInProgress === item.id}
+                                      title="Archive Agreement"
+                                      className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-amber-500/15 hover:text-amber-300 text-gray-400 transition-all border border-white/[0.08] hover:border-amber-500/30 flex items-center justify-center cursor-pointer active:scale-90"
+                                    >
+                                      <span className="material-symbols-outlined text-base">archive</span>
+                                    </button>
+                                  )}
+
+                                  {/* Move to Recycle Bin */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDeleteModal(item, false)}
+                                    disabled={actionInProgress === item.id}
+                                    title="Move to Recycle Bin"
+                                    className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-rose-500/15 hover:text-rose-400 text-gray-500 transition-all border border-white/[0.08] hover:border-rose-500/30 flex items-center justify-center cursor-pointer disabled:opacity-50 active:scale-90"
+                                  >
+                                    <span className="material-symbols-outlined text-base">delete</span>
+                                  </button>
+                                </>
                               )}
                             </div>
                           </td>
@@ -687,6 +881,18 @@ export default function AgreementsIndexPage() {
             onClose={() => setPreviewRecord(null)}
           />
         )}
+
+        {/* Delete / Recycle Bin Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModalState.isOpen}
+          onClose={() => setDeleteModalState({ isOpen: false, record: null, isPermanent: false })}
+          onConfirm={handleConfirmDelete}
+          itemRef={deleteModalState.record?.agreementNumber}
+          itemTitle={deleteModalState.record?.project?.projectName}
+          itemSubtitle={`Contributor: ${deleteModalState.record?.developer?.fullName}`}
+          isPermanent={deleteModalState.isPermanent}
+          loading={actionInProgress === deleteModalState.record?.id}
+        />
       </div>
     </AdminLayout>
   );

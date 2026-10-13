@@ -35,6 +35,8 @@ export async function createEmployeeTask(params: {
   priority?: TaskPriority;
   category?: string;
   assignedDate?: string;
+  startDate?: string;
+  startTime?: string;
   dueDate: string;
   dueTime?: string;
   estimatedHours?: number;
@@ -55,6 +57,8 @@ export async function createEmployeeTask(params: {
     priority: params.priority || "normal",
     category: params.category || "General",
     assignedDate: params.assignedDate || today,
+    startDate: params.startDate || today,
+    startTime: params.startTime || "09:00",
     dueDate: params.dueDate,
     dueTime: params.dueTime || "18:00",
     status: "todo",

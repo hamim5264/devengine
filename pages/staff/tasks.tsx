@@ -28,6 +28,13 @@ export default function StaffTasksPage() {
   const [tasks, setTasks] = useState<EmployeeTask[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Live timer tick
+  const [now, setNow] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -35,6 +42,9 @@ export default function StaffTasksPage() {
 
   // Update Task Modal
   const [selectedTask, setSelectedTask] = useState<EmployeeTask | null>(null);
+  const [viewingTask, setViewingTask] = useState<EmployeeTask | null>(null);
+  const [startingTaskId, setStartingTaskId] = useState<string | null>(null);
+
   const [editStatus, setEditStatus] = useState<TaskStatus>("todo");
   const [editProgress, setEditProgress] = useState<number>(0);
   const [editNotes, setEditNotes] = useState("");
@@ -42,6 +52,41 @@ export default function StaffTasksPage() {
   const [editActualHours, setEditActualHours] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+
+  // Time & Status Calculation Helper
+  const parseTaskDateTime = (dateStr?: string, timeStr?: string, defaultTime: string = "00:00") => {
+    if (!dateStr) return null;
+    const time = timeStr && timeStr.trim() ? timeStr : defaultTime;
+    const d = new Date(`${dateStr}T${time}:00`);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const formatCountdown = (targetDate: Date, fromDate: Date) => {
+    const diff = targetDate.getTime() - fromDate.getTime();
+    if (diff <= 0) return "00:00:00";
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (days > 0) {
+      return `${days}d ${hours.toString().padStart(2, "0")}h ${minutes.toString().padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`;
+    }
+    return `${hours.toString().padStart(2, "0")}h ${minutes.toString().padStart(2, "0")}m ${seconds.toString().padStart(2, "0")}s`;
+  };
+
+  const formatOverdue = (targetDate: Date, fromDate: Date) => {
+    const diff = fromDate.getTime() - targetDate.getTime();
+    if (diff <= 0) return "Just now";
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    if (days > 0) {
+      return `${days}d ${hours}h ${minutes}m`;
+    }
+    return `${hours}h ${minutes}m`;
+  };
 
   const fetchTasks = async (staffId: string) => {
     try {
@@ -72,6 +117,25 @@ export default function StaffTasksPage() {
     });
     return () => unsub();
   }, [router]);
+
+  // Handle Start Task Now
+  const handleStartTask = async (task: EmployeeTask) => {
+    try {
+      setStartingTaskId(task.id);
+      await updateEmployeeTask(task.id, {
+        status: "in_progress",
+        startedAt: new Date().toISOString(),
+      });
+      if (staffData) {
+        await fetchTasks(staffData.id);
+      }
+    } catch (err) {
+      console.error("Failed to start task:", err);
+      alert("Failed to start task.");
+    } finally {
+      setStartingTaskId(null);
+    }
+  };
 
   // Open modal
   const handleOpenEdit = (task: EmployeeTask) => {
@@ -329,14 +393,23 @@ export default function StaffTasksPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTasks.map((task) => {
-              const todayStr = new Date().toISOString().split("T")[0];
-              const isOverdue =
-                task.status !== "completed" && task.dueDate && task.dueDate < todayStr;
+              const startDt = parseTaskDateTime(task.startDate || task.assignedDate, task.startTime, "09:00");
+              const dueDt = parseTaskDateTime(task.dueDate, task.dueTime, "18:00");
+
+              const isBeforeStart = Boolean(startDt && now < startDt && task.status !== "in_progress" && task.status !== "completed");
+              const isReadyToStart = Boolean(startDt && now >= startDt && task.status === "todo");
+              const isOverdue = Boolean(dueDt && now > dueDt && task.status !== "completed");
 
               return (
                 <div
                   key={task.id}
-                  className="rounded-2xl border border-white/10 bg-neutral-900/60 p-5 backdrop-blur-sm flex flex-col justify-between hover:border-white/20 transition-all duration-200"
+                  className={`rounded-2xl border p-5 backdrop-blur-sm flex flex-col justify-between transition-all duration-200 ${
+                    isOverdue
+                      ? "border-rose-500/40 bg-rose-950/20 shadow-lg shadow-rose-950/20"
+                      : isBeforeStart
+                      ? "border-amber-500/20 bg-neutral-900/60"
+                      : "border-white/10 bg-neutral-900/60 hover:border-white/20"
+                  }`}
                 >
                   <div>
                     {/* Top Badges */}
@@ -377,27 +450,87 @@ export default function StaffTasksPage() {
                       )}
                     </div>
 
-                    {/* Due Date & Assignment info */}
+                    {/* Schedule Timer Strips */}
+                    {isBeforeStart && startDt && (
+                      <div className="mt-3.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="flex items-center gap-1.5 text-amber-400 font-semibold">
+                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                            <span>Starts in:</span>
+                          </span>
+                          <span className="font-bold text-amber-200 font-mono tracking-wider">
+                            {formatCountdown(startDt, now)}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-amber-400/80 mt-1 flex items-center justify-between">
+                          <span>Scheduled Start:</span>
+                          <span className="font-medium text-amber-100">
+                            {task.startDate || task.assignedDate} {task.startTime ? `@ ${task.startTime}` : ""}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {isReadyToStart && (
+                      <div className="mt-3.5 p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 flex items-center justify-between text-[11px]">
+                        <span className="flex items-center gap-1.5 font-semibold text-cyan-300">
+                          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                          <span>Ready to Begin</span>
+                        </span>
+                        <span className="text-[10px] text-cyan-400/80 font-mono">Work Unlocked</span>
+                      </div>
+                    )}
+
+                    {isOverdue && dueDt && (
+                      <div className="mt-3.5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300">
+                        <div className="flex items-center justify-between text-[11px] font-mono">
+                          <span className="flex items-center gap-1.5 text-rose-400 font-bold">
+                            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                            <span>OVERDUE BY:</span>
+                          </span>
+                          <span className="font-bold text-rose-100 font-mono tracking-wider">
+                            {formatOverdue(dueDt, now)}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-rose-300/80 mt-1 flex items-center justify-between">
+                          <span>Deadline Was:</span>
+                          <span className="font-semibold text-rose-200">
+                            {task.dueDate} {task.dueTime ? `@ ${task.dueTime}` : ""}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Timeline Info */}
                     <div className="mt-4 space-y-1.5 text-xs text-neutral-400">
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1 text-[11px]">
-                          <span className="material-symbols-outlined text-[14px]">event</span>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="flex items-center gap-1 text-gray-400">
+                          <span className="material-symbols-outlined text-[13px]">play_circle</span>
+                          <span>Start:</span>
+                        </span>
+                        <span className="font-medium text-neutral-300">
+                          {task.startDate || task.assignedDate} {task.startTime ? `@ ${task.startTime}` : ""}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="flex items-center gap-1 text-gray-400">
+                          <span className="material-symbols-outlined text-[13px]">event_busy</span>
                           <span>Deadline:</span>
                         </span>
                         <span
                           className={`font-medium ${
-                            isOverdue ? "text-rose-400 font-bold" : "text-neutral-200"
+                            isOverdue ? "text-rose-400 font-bold" : "text-neutral-300"
                           }`}
                         >
                           {task.dueDate} {task.dueTime ? `@ ${task.dueTime}` : ""}
-                          {isOverdue && " (Overdue)"}
                         </span>
                       </div>
 
                       {task.estimatedHours ? (
                         <div className="flex items-center justify-between text-[11px]">
                           <span>Est. / Logged Hours:</span>
-                          <span className="text-neutral-300">
+                          <span className="text-neutral-300 font-mono">
                             {task.actualHours || 0}h / {task.estimatedHours}h
                           </span>
                         </div>
@@ -446,15 +579,72 @@ export default function StaffTasksPage() {
                     )}
                   </div>
 
-                  {/* Action Button */}
+                  {/* Action Buttons depending on timing state */}
                   <div className="mt-5 pt-3 border-t border-white/5">
-                    <button
-                      onClick={() => handleOpenEdit(task)}
-                      className="w-full py-2 px-3 rounded-xl bg-purple-600/20 border border-purple-500/30 hover:bg-purple-600/30 text-purple-300 font-medium text-xs transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                      <span>Update Status & Progress</span>
-                    </button>
+                    {isBeforeStart ? (
+                      <div className="space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setViewingTask(task)}
+                          className="w-full py-2.5 px-3 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-neutral-200 font-medium text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px] text-cyan-400">visibility</span>
+                          <span>View Task Details</span>
+                        </button>
+                        <div className="text-center text-[10px] text-amber-400/90 font-mono flex items-center justify-center gap-1">
+                          <span className="material-symbols-outlined text-[12px]">lock</span>
+                          <span>Execution locked until start time</span>
+                        </div>
+                      </div>
+                    ) : isReadyToStart ? (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleStartTask(task)}
+                          disabled={startingTaskId === task.id}
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+                          <span>{startingTaskId === task.id ? "Starting..." : "Start Now"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewingTask(task)}
+                          title="View Details"
+                          className="px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-neutral-300 text-xs transition cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">visibility</span>
+                        </button>
+                      </div>
+                    ) : task.status === "completed" ? (
+                      <button
+                        type="button"
+                        onClick={() => setViewingTask(task)}
+                        className="w-full py-2 px-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-medium text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">task_alt</span>
+                        <span>Completed • View Details</span>
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(task)}
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-purple-600/25 border border-purple-500/30 hover:bg-purple-600/35 text-purple-200 font-medium text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">edit_note</span>
+                          <span>Update Progress</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setViewingTask(task)}
+                          title="View Details"
+                          className="px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] text-neutral-300 text-xs transition cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">visibility</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -606,6 +796,200 @@ export default function StaffTasksPage() {
             </div>
           </div>
         )}
+
+        {/* View Task Details Modal (Available before task unlocks and anytime) */}
+        {viewingTask && (() => {
+          const vStartDt = parseTaskDateTime(viewingTask.startDate || viewingTask.assignedDate, viewingTask.startTime, "09:00");
+          const vDueDt = parseTaskDateTime(viewingTask.dueDate, viewingTask.dueTime, "18:00");
+          const vIsBeforeStart = Boolean(vStartDt && now < vStartDt && viewingTask.status !== "in_progress" && viewingTask.status !== "completed");
+          const vIsReadyToStart = Boolean(vStartDt && now >= vStartDt && viewingTask.status === "todo");
+          const vIsOverdue = Boolean(vDueDt && now > vDueDt && viewingTask.status !== "completed");
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/10 shadow-2xl p-6 sm:p-7 relative space-y-5 themed-scroll">
+                <button
+                  type="button"
+                  onClick={() => setViewingTask(null)}
+                  className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white flex items-center justify-center transition"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+
+                {/* Header */}
+                <div className="flex items-start gap-3 pr-8">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+                    <span className="material-symbols-outlined text-xl">description</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${getPriorityBadge(viewingTask.priority)}`}>
+                        {TASK_PRIORITY_LABELS[viewingTask.priority]}
+                      </span>
+                      {viewingTask.category && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] bg-white/5 border border-white/10 text-neutral-300">
+                          {viewingTask.category}
+                        </span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${getStatusBadge(viewingTask.status)}`}>
+                        {TASK_STATUS_LABELS[viewingTask.status]}
+                      </span>
+                    </div>
+                    <h2 className="text-base sm:text-lg font-bold text-white mt-1.5 leading-snug">
+                      {viewingTask.title}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Timing Status Banner */}
+                {vIsBeforeStart && vStartDt && (
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="flex items-center gap-1.5 font-bold text-amber-400">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                        <span>Execution Locked • Starts in:</span>
+                      </span>
+                      <span className="font-bold text-amber-100 font-mono tracking-wider text-sm">
+                        {formatCountdown(vStartDt, now)}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-400/80">
+                      You can read all work details and prepare. The &quot;Start Now&quot; button unlocks on {viewingTask.startDate || viewingTask.assignedDate} @ {viewingTask.startTime || "09:00"}.
+                    </p>
+                  </div>
+                )}
+
+                {vIsReadyToStart && (
+                  <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                        <span>Work is Unlocked & Ready!</span>
+                      </span>
+                      <p className="text-[10px] text-cyan-400/80 mt-0.5">
+                        You can begin working right now. Click Start Now below.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleStartTask(viewingTask);
+                        setViewingTask(null);
+                      }}
+                      disabled={startingTaskId === viewingTask.id}
+                      className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs shadow-lg shadow-cyan-500/25 transition cursor-pointer"
+                    >
+                      {startingTaskId === viewingTask.id ? "Starting..." : "Start Now"}
+                    </button>
+                  </div>
+                )}
+
+                {vIsOverdue && vDueDt && (
+                  <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/40 text-rose-300 space-y-1">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="flex items-center gap-1.5 font-bold text-rose-400">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                        <span>TASK OVERDUE BY:</span>
+                      </span>
+                      <span className="font-bold text-rose-100 font-mono tracking-wider text-sm">
+                        {formatOverdue(vDueDt, now)}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-rose-300/80">
+                      The official deadline has passed ({viewingTask.dueDate} @ {viewingTask.dueTime || "18:00"}). Please update and complete deliverables as soon as possible.
+                    </p>
+                  </div>
+                )}
+
+                {/* Schedules & Metrics Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5">
+                    <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block">
+                      Start Schedule
+                    </span>
+                    <span className="text-xs font-bold text-white mt-1 block">
+                      {viewingTask.startDate || viewingTask.assignedDate}
+                    </span>
+                    <span className="text-[10px] text-cyan-400 font-mono">
+                      @ {viewingTask.startTime || "09:00"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5">
+                    <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block">
+                      Target Deadline
+                    </span>
+                    <span className={`text-xs font-bold mt-1 block ${vIsOverdue ? "text-rose-400" : "text-white"}`}>
+                      {viewingTask.dueDate}
+                    </span>
+                    <span className="text-[10px] text-pink-400 font-mono">
+                      @ {viewingTask.dueTime || "18:00"}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/5 col-span-2 sm:col-span-1">
+                    <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block">
+                      Estimated Hours
+                    </span>
+                    <span className="text-xs font-bold text-cyan-300 mt-1 block">
+                      {viewingTask.estimatedHours || 0} Hours
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono">
+                      Logged: {viewingTask.actualHours || 0}h
+                    </span>
+                  </div>
+                </div>
+
+                {/* Detailed Scope */}
+                <div>
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-gray-400 mb-2">
+                    Scope of Work & Deliverables
+                  </h4>
+                  <div className="p-4 rounded-2xl bg-black/40 border border-white/5 text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto font-sans">
+                    {viewingTask.description || "No specific scope details provided. Please consult with your engineering lead."}
+                  </div>
+                </div>
+
+                {/* Admin Feedback */}
+                {viewingTask.adminFeedback && (
+                  <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300">
+                    <span className="font-semibold block text-[10px] uppercase tracking-wider text-purple-400">
+                      Administrator Guidance:
+                    </span>
+                    <p className="mt-1 text-xs leading-relaxed">
+                      {viewingTask.adminFeedback}
+                    </p>
+                  </div>
+                )}
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => setViewingTask(null)}
+                    className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-300 text-xs font-medium transition cursor-pointer"
+                  >
+                    Close
+                  </button>
+
+                  {!vIsBeforeStart && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const t = viewingTask;
+                        setViewingTask(null);
+                        handleOpenEdit(t);
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition cursor-pointer"
+                    >
+                      Update Progress
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </StaffLayout>
   );

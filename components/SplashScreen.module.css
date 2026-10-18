@@ -213,6 +213,21 @@
   .brand { width: min(55vw, 80vh, 540px); margin-bottom: 3rem; }
 }
 
+@media (min-width: 769px) and (max-height: 900px) {
+  .nav {
+    padding: 0.65rem clamp(1.25rem, 3vw, 3rem);
+    gap: 1rem;
+  }
+  .navItem {
+    padding: 0.6rem 0.9rem;
+    min-height: 38px;
+    font-size: 0.9rem;
+  }
+  .navBrand {
+    width: clamp(140px, 12vw, 180px);
+  }
+}
+
 @media (max-width: 1000px) {
   .ready .footer { padding-bottom: 9rem; }
   .nav { gap: 0.8rem; }

@@ -14,6 +14,8 @@ export interface ReviewRecord {
   updatedAt?: string | any;
   userId?: string;
   verifiedPurchase?: boolean;
+  orderId?: string;
+  serviceName?: string;
 }
 
 export interface CreateReviewInput {

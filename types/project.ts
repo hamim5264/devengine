@@ -68,6 +68,7 @@ export interface ProjectItem {
   image?: string;
   images?: string[];
   details?: string;
+  description?: string;
   installation?: string;
 
   // Cinematic Detail Fields

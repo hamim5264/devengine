@@ -506,20 +506,25 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
       const centerY = heroH / 2;
 
       const isNarrow = heroW < 768;
-      const cardHalf = isNarrow ? 24 : 44;
+      const isShort = heroH < 780;
+      const cardHalf = isNarrow ? 24 : isShort ? 32 : 44;
 
-      // Adaptive full-screen orbit radii for desktop and mobile portrait
+      // Adaptive full-screen orbit radii for desktop, laptop and mobile portrait
       const rx1 = isNarrow
         ? Math.min(heroW * 0.42, 160)
         : Math.min(heroW * 0.34, Math.max(280, heroW * 0.3));
       const ry1 = isNarrow
         ? Math.min(heroH * 0.33, 220)
+        : isShort
+        ? Math.min(heroH * 0.22, 140)
         : Math.min(heroH * 0.28, Math.max(160, heroH * 0.24));
       const rx2 = isNarrow
         ? Math.min(heroW * 0.48, 185)
         : Math.min(heroW * 0.47, Math.max(440, heroW * 0.43));
       const ry2 = isNarrow
         ? Math.min(heroH * 0.43, 290)
+        : isShort
+        ? Math.min(heroH * 0.32, 210)
         : Math.min(heroH * 0.4, Math.max(250, heroH * 0.35));
 
       const tilt1 = isNarrow ? -0.1 : -0.18;

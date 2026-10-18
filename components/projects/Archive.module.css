@@ -1182,6 +1182,19 @@
   color: var(--devengine-muted);
 }
 
+/* ───────── Laptop Sizing: Safe clearance under floating navbar ───────── */
+@media (min-width: 769px) and (max-height: 980px) {
+  .heroSection {
+    padding-top: clamp(7.5rem, 12vh, 9.5rem);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1536px) {
+  .heroSection {
+    padding-top: clamp(7.5rem, 12vh, 9.5rem);
+  }
+}
+
 /* ───────── Responsive Adjustments ───────── */
 @media (max-width: 768px) {
   .heroSection {

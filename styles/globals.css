@@ -618,7 +618,7 @@ html.light .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
 }
 
 /* 9. Form inputs, textareas & dropdown selects */
-html.light input:not([type="checkbox"]):not([type="radio"]),
+html.light input:not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]):not([class*="staff-login-input"]):not([class*="transparent-input"]),
 html.light select,
 html.light textarea {
   background-color: #ffffff !important;
@@ -631,10 +631,20 @@ html.light select option {
 }
 
 /* 10. Headers & Sidebars in AdminLayout & StaffLayout */
-html.light header:not([class*="navbar"]) {
+html.light header:not([class*="navbar"]):not([class*="staff"]):not([class*="pointer-events-none"]) {
   background-color: rgba(255, 255, 255, 0.96) !important;
   border-bottom: 1px solid #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
+}
+
+html.light header.staff-navbar,
+header.staff-navbar,
+header.staff-navbar-header {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 html.light aside {
@@ -731,6 +741,84 @@ html.light ::-webkit-scrollbar-thumb {
 }
 html.light ::-webkit-scrollbar-thumb:hover {
   background: #0d9488 !important;
+}
+
+/* 14. Futuristic Cyber Animations (Atom / SupaHero Inspired) */
+@keyframes pulseCyanGlow {
+  0%, 100% {
+    box-shadow: 0 20px 60px -15px rgba(44, 236, 247, 0.3), 0 0 30px -5px rgba(44, 236, 247, 0.2);
+  }
+  50% {
+    box-shadow: 0 28px 80px -15px rgba(44, 236, 247, 0.45), 0 0 45px 0px rgba(44, 236, 247, 0.35);
+  }
+}
+
+@keyframes radarPing {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+@keyframes shimmerBar {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes floatOrb {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(25px, -20px) scale(1.08);
+  }
+}
+
+.anim-cyan-glow {
+  animation: pulseCyanGlow 3.5s ease-in-out infinite;
+}
+
+.anim-radar {
+  animation: radarPing 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.anim-shimmer {
+  background-size: 200% 100%;
+  animation: shimmerBar 3s linear infinite;
+}
+
+.anim-float-orb {
+  animation: floatOrb 8s ease-in-out infinite;
+}
+
+/* Intense Multi-Layer Cyan Drop Shadows */
+.cyber-shadow-intense {
+  box-shadow: 0 28px 75px -15px rgba(44, 236, 247, 0.38), 0 16px 36px -8px rgba(15, 23, 42, 0.12), 0 0 50px rgba(44, 236, 247, 0.25) !important;
+}
+
+html.dark .cyber-shadow-intense {
+  box-shadow: 0 32px 90px -10px rgba(0, 0, 0, 0.95), 0 0 65px rgba(44, 236, 247, 0.35), inset 0 1px 1px rgba(44, 236, 247, 0.3) !important;
+}
+
+@keyframes sweepLaser {
+  0% { transform: translateX(-100%); }
+  50%, 100% { transform: translateX(200%); }
+}
+
+.anim-sweep-laser {
+  animation: sweepLaser 3.5s ease-in-out infinite;
 }
 
 

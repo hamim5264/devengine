@@ -101,10 +101,9 @@ export default function StaffLoginPage() {
       </Head>
 
       <div
-        className="min-h-screen flex items-center justify-center p-4"
+        className="min-h-screen flex items-center justify-center p-4 font-sans"
         style={{
           background: "radial-gradient(ellipse at 50% 0%, #0c1a2e 0%, #07070f 60%)",
-          fontFamily: "'Poppins', sans-serif",
         }}
       >
         {/* Ambient glow */}

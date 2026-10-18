@@ -8,7 +8,7 @@ import { getStaffByUid } from "@/lib/services/staffService";
 import type { StaffMember } from "@/types/staff";
 import { STAFF_TYPE_LABELS, MODULE_CONFIG } from "@/types/staff";
 import HelixLoader from "@/components/HelixLoader";
-import ThemeToggle from "@/components/ThemeToggle";
+import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
 
 // ── Nav structure matching AdminLayout, keyed by module ──
@@ -368,11 +368,11 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         <title>{title}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
-      <div style={{ fontFamily: "'Poppins', sans-serif" }} className={`min-h-screen flex flex-col ${isLight ? "bg-[#f8fafc] text-slate-900" : "bg-[#07070f] text-white"}`}>
+      <div className={`min-h-screen flex flex-col font-sans ${isLight ? "bg-[#f8fafc] text-slate-900" : "bg-[#07070f] text-white"}`}>
 
         {/* ── TOP HEADER ── */}
         <header
-          className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 gap-3"
+          className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-2 sm:px-4 gap-1.5 sm:gap-3"
           style={{
             background: isLight ? "rgba(255,255,255,0.96)" : "rgba(7,7,15,0.96)",
             borderBottom: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.06)",
@@ -396,7 +396,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
               DevEngine
             </span>
             <span
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
+              className="hidden min-[400px]:inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
               style={{
                 background: isLight ? "#f3e8ff" : "rgba(168,85,247,0.12)",
                 color: isLight ? "#7e22ce" : "#a855f7",
@@ -409,7 +409,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
 
           <div className="flex-1" />
 
-          <ThemeToggle showLabel={false} />
+          <HeaderControls />
 
           <a
             href="/"
@@ -426,6 +426,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
           </a>
 
           <button
+            aria-label="Sign out"
             onClick={handleSignOut}
             className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
             style={isLight ? { background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" } : { background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)", color: "#f87171" }}

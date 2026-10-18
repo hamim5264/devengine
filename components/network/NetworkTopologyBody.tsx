@@ -1,508 +1,173 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { NetworkHub, NetworkMetrics } from "@/types/network";
-import {
-  getNetworkHubs,
-  DEFAULT_NETWORK_METRICS,
-} from "@/lib/services/networkService";
+import { useEffect, useMemo, useState } from "react";
+import type { HubStatusType, NetworkHub } from "@/types/network";
+import { getNetworkHubs, DEFAULT_NETWORK_METRICS } from "@/lib/services/networkService";
+import styles from "@/components/system/SystemPanels.module.css";
 
 interface NetworkTopologyBodyProps {
   initialHubs?: NetworkHub[];
+  embedded?: boolean;
 }
 
-export default function NetworkTopologyBody({
-  initialHubs,
-}: NetworkTopologyBodyProps) {
-  const [hubs, setHubs] = useState<NetworkHub[]>(initialHubs || []);
-  const [metrics, setMetrics] = useState<NetworkMetrics>(DEFAULT_NETWORK_METRICS);
-  const [loading, setLoading] = useState<boolean>(!initialHubs);
-  const [hoveredHub, setHoveredHub] = useState<NetworkHub | null>(null);
+const REGION_POSITIONS = [
+  { prefix: "AP-NORTHEAST", x: 85, y: 38 },
+  { prefix: "AP-SOUTHEAST", x: 87, y: 78 },
+  { prefix: "AP-SOUTH", x: 69, y: 49 },
+  { prefix: "US-WEST", x: 19, y: 38 },
+  { prefix: "US-EAST", x: 28, y: 39 },
+  { prefix: "EU", x: 51, y: 32 },
+  { prefix: "SA", x: 37, y: 76 },
+];
+const STATUS_LABELS: Record<HubStatusType, string> = {
+  ONLINE: "Online", SYNCING: "Syncing", MAINTENANCE: "Maintenance", DEGRADED: "Degraded",
+};
 
-  // Load hubs on mount
-  useEffect(() => {
-    let isMounted = true;
-    async function load() {
-      try {
-        const data = await getNetworkHubs();
-        if (isMounted) {
-          setHubs(data);
-          // Calculate dynamic metrics based on loaded hubs
-          const activeCount = data.filter((h) => h.isOnline && h.status === "ONLINE").length;
-          setMetrics((prev) => ({
-            ...prev,
-            activeNodes: activeCount,
-            totalNodes: data.length,
-          }));
-          setLoading(false);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch network hubs:", err);
-        if (isMounted) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Subtle real-time telemetry tick (simulating live routing throughput & latency jitter)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics((prev) => {
-        const jitter = Math.floor(Math.random() * 5) - 2; // -2ms to +2ms
-        const newLat = Math.max(18, Math.min(32, prev.avgLatencyMs + jitter));
-        const tbJitter = (Math.random() * 0.2 - 0.1).toFixed(1);
-        const baseTB = 4.2 + parseFloat(tbJitter);
-        return {
-          ...prev,
-          avgLatencyMs: newLat,
-          throughput: `${baseTB.toFixed(1)} TB/s`,
-        };
-      });
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const getStatusBadge = (hub: NetworkHub) => {
-    switch (hub.status) {
-      case "ONLINE":
-        return {
-          badgeStyle:
-            "bg-[#38f2ff]/10 text-[#38f2ff] border border-[#38f2ff]/30 shadow-[0_0_10px_rgba(56,242,255,0.15)]",
-          dotColor: "bg-[#38f2ff] shadow-[0_0_10px_#38f2ff]",
-          label: "ONLINE",
-          textColor: "text-[#38f2ff]",
-        };
-      case "SYNCING":
-        return {
-          badgeStyle:
-            "bg-[#dcd8ff]/10 text-[#c4c0ff] border border-[#c4c0ff]/30 shadow-[0_0_10px_rgba(196,192,255,0.15)]",
-          dotColor: "bg-[#fbf7ff] shadow-[0_0_10px_#fbf7ff] animate-pulse",
-          label: "SYNCING",
-          textColor: "text-[#c4c0ff]",
-        };
-      case "MAINTENANCE":
-      case "DEGRADED":
-      default:
-        return {
-          badgeStyle:
-            "bg-[#ffb4ab]/10 text-[#ffb4ab] border border-[#ffb4ab]/30 shadow-[0_0_10px_rgba(255,180,171,0.15)]",
-          dotColor: "bg-[#ffb4ab] shadow-[0_0_10px_#ffb4ab]",
-          label: "MAINTENANCE",
-          textColor: "text-[#ffb4ab]",
-        };
-    }
+function mapPosition(hub: NetworkHub, index: number) {
+  const fallback = REGION_POSITIONS.find((region) => hub.regionCode.toUpperCase().startsWith(region.prefix)) || {
+    x: 20 + (index % 5) * 15, y: 35 + (index % 3) * 16,
   };
+  // Missing coordinates are normalized to the map center by the existing service.
+  const custom = hub.coordinates && !(hub.coordinates.x === 50 && hub.coordinates.y === 50);
+  const x = custom ? hub.coordinates!.x : fallback.x;
+  const y = custom ? hub.coordinates!.y : fallback.y;
+  return {
+    ...hub,
+    x: Math.max(6, Math.min(94, Number.isFinite(x) ? x : fallback.x)) * 10,
+    y: Math.max(8, Math.min(92, Number.isFinite(y) ? y : fallback.y)) * 5,
+  };
+}
 
-  // Pre-calculated node coordinates on the SVG map (viewBox 0 0 1000 500)
-  const mapNodes = useMemo(() => [
-    { id: "us-west", name: "US West (Silicon Valley)", x: 190, y: 190, status: "ONLINE", ping: "14ms" },
-    { id: "us-east", name: "US East (Virginia)", x: 280, y: 195, status: "ONLINE", ping: "18ms" },
-    { id: "sa-east", name: "South America (São Paulo)", x: 370, y: 380, status: "MAINTENANCE", ping: "68ms" },
-    { id: "eu-west", name: "Europe (Frankfurt/London)", x: 515, y: 160, status: "ONLINE", ping: "24ms" },
-    { id: "ap-south", name: "Asia South (Mumbai)", x: 690, y: 245, status: "SYNCING", ping: "42ms" },
-    { id: "ap-east", name: "East Asia (Tokyo)", x: 845, y: 195, status: "ONLINE", ping: "31ms" },
-    { id: "ap-se", name: "SE Asia (Singapore)", x: 760, y: 300, status: "ONLINE", ping: "36ms" },
-    { id: "ap-oceania", name: "Oceania (Sydney)", x: 870, y: 400, status: "ONLINE", ping: "58ms" },
-  ], []);
+export default function NetworkTopologyBody({ initialHubs, embedded = false }: NetworkTopologyBodyProps) {
+  const [hubs, setHubs] = useState<NetworkHub[]>(initialHubs || []);
+  const [loading, setLoading] = useState(!initialHubs);
+  const [selectedHubId, setSelectedHubId] = useState<string | null>(null);
+  const [hoveredHubId, setHoveredHubId] = useState<string | null>(null);
 
-  // Curved mesh connections
-  const mapArcs = useMemo(() => [
-    { from: [190, 190], to: [280, 195] },
-    { from: [280, 195], to: [370, 380] },
-    { from: [280, 195], to: [515, 160] },
-    { from: [515, 160], to: [690, 245] },
-    { from: [690, 245], to: [760, 300] },
-    { from: [760, 300], to: [845, 195] },
-    { from: [760, 300], to: [870, 400] },
-    { from: [845, 195], to: [190, 190] }, // Trans-Pacific link
-  ], []);
+  useEffect(() => {
+    let active = true;
+    getNetworkHubs().then((data) => { if (active) setHubs(data); })
+      .catch((error) => console.warn("Failed to load network hubs:", error))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
-  const activeNodePercent = Math.round(
-    (metrics.activeNodes / Math.max(1, metrics.totalNodes)) * 100
-  );
+  const nodes = useMemo(() => hubs.map(mapPosition), [hubs]);
+  const arcs = useMemo(() => nodes.slice(1).map((node, index) => {
+    const origin = nodes[index % 2 === 0 ? 0 : index];
+    return `M ${origin.x} ${origin.y} Q ${(origin.x + node.x) / 2} ${Math.min(origin.y, node.y) - 55} ${node.x} ${node.y}`;
+  }), [nodes]);
+  const selectedHub = hubs.find((hub) => hub.id === (hoveredHubId || selectedHubId));
+  const onlineCount = hubs.filter((hub) => hub.isOnline && hub.status === "ONLINE").length;
+  const onlinePercent = hubs.length ? Math.round(onlineCount / hubs.length * 100) : 0;
+  const avgLatency = hubs.length ? Math.round(hubs.reduce((sum, hub) => sum + hub.latencyMs, 0) / hubs.length) : 0;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-20 text-[#dde2f3] select-none">
-      {/* Top Header */}
-      <div className="mb-10 sm:mb-12">
-        <h1 className="font-space-grotesk text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#38f2ff] drop-shadow-[0_0_20px_rgba(56,242,255,0.4)] mb-2">
-          GLOBAL_NETWORK_TOPOLOGY
-        </h1>
-        <p className="font-jetbrains text-xs sm:text-sm text-[#849495] tracking-wider uppercase font-medium">
-          Real-time status of routing nodes and data throughput.
-        </p>
+    <section className={styles.page} data-embedded={embedded} aria-labelledby="network-heading">
+      <div className={styles.header}>
+        <p className={styles.eyebrow}>Connected across the world</p>
+        <h1 id="network-heading" className={styles.title}>Global Network</h1>
+        <p className={styles.subtitle}>Explore regional hubs, connectivity, and routing activity. Select a region to see its details.</p>
       </div>
 
-      {/* Bento Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* ============================================================ */}
-        {/* LEFT: Live Connectivity World Map (Spans 8 cols) */}
-        {/* ============================================================ */}
-        <div className="lg:col-span-8 rounded-2xl bg-[#08111f]/80 border border-[#38f2ff]/20 backdrop-blur-xl p-5 sm:p-6 flex flex-col justify-between shadow-[0_0_35px_rgba(56,242,255,0.06)] relative overflow-hidden group">
-          {/* Card Header */}
-          <div className="flex justify-between items-center mb-4 z-10">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#38f2ff] animate-ping" />
-              <h2 className="font-jetbrains text-xs sm:text-sm tracking-widest text-[#849495] uppercase font-semibold">
-                LIVE_CONNECTIVITY_MAP
-              </h2>
-            </div>
-            <span className="font-jetbrains text-xs tracking-wider text-[#38f2ff] border border-[#38f2ff]/30 px-2.5 py-1 bg-[#38f2ff]/10 rounded shadow-[0_0_10px_rgba(56,242,255,0.2)]">
-              LAT: {metrics.avgLatencyMs}ms AVG
-            </span>
+      <div className={styles.networkGrid}>
+        <div className={`${styles.surface} ${styles.mapPanel}`}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Global connectivity</h2>
+            <span className={styles.badge}>{loading ? "Connecting…" : `${avgLatency}ms average latency`}</span>
           </div>
 
-          {/* Interactive Futuristic Holographic Map */}
-          <div className="relative w-full h-[340px] sm:h-[400px] md:h-[440px] rounded-xl bg-black/80 border border-white/5 overflow-hidden flex items-center justify-center">
-            {/* Ambient Radial Mesh Glow */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(56,242,255,0.08)_0%,transparent_70%)] pointer-events-none" />
-
-            {/* SVG Interactive World Topology */}
-            <svg
-              viewBox="0 0 1000 500"
-              className="w-full h-full object-contain filter drop-shadow-[0_0_12px_rgba(56,242,255,0.2)]"
-            >
-              <defs>
-                {/* Linear gradient for arcs */}
-                <linearGradient id="arcGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#38f2ff" stopOpacity="0.8" />
-                  <stop offset="50%" stopColor="#9ecaff" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#38f2ff" stopOpacity="0.8" />
-                </linearGradient>
-
-                {/* Packet Glow Filter */}
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              {/* Stylized Minimal Continental Shapes */}
-              <g fill="#0c1628" stroke="#1d2e47" strokeWidth="1" opacity="0.85">
-                {/* North America */}
+          <div className={styles.mapFrame}>
+            <svg className={styles.worldMap} viewBox="0 0 1000 500" aria-label="Interactive regional network map">
+              <g className={styles.continents} aria-hidden="true">
                 <path d="M 120 90 Q 210 60 300 80 Q 320 140 270 230 Q 210 240 180 180 Q 120 130 120 90 Z" />
-                {/* South America */}
                 <path d="M 280 270 Q 370 280 390 340 Q 360 450 310 470 Q 270 380 280 270 Z" />
-                {/* Europe */}
                 <path d="M 460 90 Q 560 80 580 140 Q 540 200 480 190 Q 450 140 460 90 Z" />
-                {/* Africa */}
                 <path d="M 470 210 Q 580 210 590 300 Q 550 420 480 390 Q 440 280 470 210 Z" />
-                {/* Asia */}
                 <path d="M 600 70 Q 820 60 880 160 Q 840 280 720 280 Q 640 200 600 70 Z" />
-                {/* Australia */}
                 <path d="M 790 340 Q 900 330 910 410 Q 840 450 780 410 Q 770 360 790 340 Z" />
               </g>
-
-              {/* Connecting Mesh Arcs */}
-              {mapArcs.map((arc, i) => {
-                const [x1, y1] = arc.from;
-                const [x2, y2] = arc.to;
-                // Compute bezier control point
-                const cx = (x1 + x2) / 2;
-                const cy = (y1 + y2) / 2 - 35;
-                const pathData = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
-
-                return (
-                  <g key={i}>
-                    {/* Base Arc Line */}
-                    <path
-                      d={pathData}
-                      fill="none"
-                      stroke="rgba(56, 242, 255, 0.25)"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 4"
-                    />
-                    {/* Pulsing Animated Overlay Arc */}
-                    <path
-                      d={pathData}
-                      fill="none"
-                      stroke="url(#arcGlow)"
-                      strokeWidth="2"
-                      className="opacity-75"
-                    />
-                    {/* Traveling Data Packet Node */}
-                    <circle r="3.5" fill="#e6fdff" filter="url(#glow)">
-                      <animateMotion
-                        path={pathData}
-                        dur={`${2.8 + (i % 3) * 0.7}s`}
-                        repeatCount="indefinite"
-                        keyPoints="0;1"
-                        keyTimes="0;1"
-                      />
-                    </circle>
-                  </g>
-                );
-              })}
-
-              {/* Interactive Global Nodes */}
-              {mapNodes.map((node) => {
-                const isHovered = hoveredHub?.name === node.name;
-                const isOnline = node.status === "ONLINE";
-                const isSync = node.status === "SYNCING";
-
-                return (
-                  <g
-                    key={node.id}
-                    className="cursor-pointer transition-transform duration-200"
-                    onMouseEnter={() =>
-                      setHoveredHub({
-                        id: node.id,
-                        name: node.name,
-                        regionCode: node.id.toUpperCase(),
-                        uptimeText: isOnline ? "99.99% UPTIME" : "DATA REPLICATION",
-                        status: node.status as any,
-                        latencyMs: parseInt(node.ping, 10) || 24,
-                        loadPercent: 65,
-                        order: 0,
-                        isOnline,
-                      })
-                    }
-                    onMouseLeave={() => setHoveredHub(null)}
-                  >
-                    {/* Halo Pulse */}
-                    <circle
-                      cx={node.x}
-                      cy={node.y}
-                      r={isHovered ? 14 : 9}
-                      fill="none"
-                      stroke={
-                        isOnline
-                          ? "rgba(56, 242, 255, 0.4)"
-                          : isSync
-                          ? "rgba(196, 192, 255, 0.4)"
-                          : "rgba(255, 180, 171, 0.4)"
-                      }
-                      strokeWidth="1.5"
-                      className="animate-ping"
-                      style={{ animationDuration: "3s" }}
-                    />
-
-                    {/* Outer Ring */}
-                    <circle
-                      cx={node.x}
-                      cy={node.y}
-                      r={isHovered ? 8 : 5.5}
-                      fill={
-                        isOnline
-                          ? "rgba(56, 242, 255, 0.2)"
-                          : isSync
-                          ? "rgba(196, 192, 255, 0.2)"
-                          : "rgba(255, 180, 171, 0.2)"
-                      }
-                      stroke={
-                        isOnline
-                          ? "#38f2ff"
-                          : isSync
-                          ? "#c4c0ff"
-                          : "#ffb4ab"
-                      }
-                      strokeWidth="1.5"
-                    />
-
-                    {/* Center Dot */}
-                    <circle
-                      cx={node.x}
-                      cy={node.y}
-                      r={isHovered ? 4 : 2.5}
-                      fill="#ffffff"
-                    />
-
-                    {/* Node Text Label */}
-                    <text
-                      x={node.x}
-                      y={node.y - 12}
-                      textAnchor="middle"
-                      fill={isHovered ? "#38f2ff" : "#849495"}
-                      fontSize="9"
-                      fontFamily="JetBrains Mono, monospace"
-                      fontWeight="bold"
-                      className="transition-colors pointer-events-none"
-                    >
-                      {node.ping}
-                    </text>
-                  </g>
-                );
-              })}
+              {arcs.map((arc, index) => <g key={index} aria-hidden="true">
+                <path d={arc} className={styles.arc} strokeDasharray="5 5" />
+                <circle r="4" className={styles.packet}>
+                  <animateMotion path={arc} dur={`${3 + index % 3}s`} repeatCount="indefinite" />
+                </circle>
+              </g>)}
+              {nodes.map((node) => <g
+                key={node.id}
+                className={styles.node}
+                data-status={node.status}
+                data-active={selectedHub?.id === node.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`${node.name}, ${STATUS_LABELS[node.status] || node.status}, ${node.latencyMs} milliseconds latency`}
+                aria-pressed={selectedHubId === node.id}
+                onClick={() => setSelectedHubId(node.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedHubId(node.id); }
+                }}
+                onMouseEnter={() => setHoveredHubId(node.id)}
+                onMouseLeave={() => setHoveredHubId(null)}
+              >
+                <circle cx={node.x} cy={node.y} r="28" fill="transparent" />
+                <circle cx={node.x} cy={node.y} r="18" className={styles.nodeHalo} />
+                <circle cx={node.x} cy={node.y} r="9" className={styles.nodeRing} />
+                <circle cx={node.x} cy={node.y} r="4" fill="currentColor" />
+                <text x={node.x} y={node.y - 28} textAnchor="middle" className={styles.mapLabel}>{node.latencyMs}ms</text>
+              </g>)}
             </svg>
+            <div className={styles.mapCaption}><span>Regional routing overview</span><span>{hubs.length} configured hubs</span></div>
+          </div>
 
-            {/* Hover Tooltip Overlay */}
-            {hoveredHub && (
-              <div className="absolute top-4 left-4 pointer-events-none bg-[#0a1220]/90 border border-[#38f2ff]/40 backdrop-blur-md rounded-lg p-3 shadow-[0_0_20px_rgba(56,242,255,0.25)] anim-fade">
-                <div className="font-jetbrains text-[10px] text-[#38f2ff] uppercase tracking-wider font-bold">
-                  {hoveredHub.regionCode} // ROUTING HUB
-                </div>
-                <div className="font-space-grotesk text-sm font-semibold text-white mt-0.5">
-                  {hoveredHub.name}
-                </div>
-                <div className="flex items-center gap-3 mt-2 font-jetbrains text-xs">
-                  <span className="text-[#849495]">PING: {hoveredHub.latencyMs}ms</span>
-                  <span
-                    className={
-                      hoveredHub.status === "ONLINE"
-                        ? "text-[#38f2ff]"
-                        : hoveredHub.status === "SYNCING"
-                        ? "text-[#c4c0ff]"
-                        : "text-[#ffb4ab]"
-                    }
-                  >
-                    ● {hoveredHub.status}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Bottom Cyber Telemetry Ribbon */}
-            <div className="absolute bottom-3 left-4 right-4 flex justify-between items-center text-[10px] font-jetbrains text-[#849495]/80 pointer-events-none">
-              <span className="hidden sm:inline">MESH PROTOCOL: ACTIVE</span>
-              <span>CIPHER: AES-GCM-256</span>
-              <span>PACKETS: 14.8M / SEC</span>
-            </div>
+          <div className={styles.hubDetail}>
+            {selectedHub ? <>
+              <div><strong>{selectedHub.name}</strong><p>{selectedHub.regionCode} · {selectedHub.latencyMs}ms latency · {selectedHub.loadPercent}% load</p></div>
+              <span className={styles.status} data-status={selectedHub.status}><span className={styles.statusDot} />{STATUS_LABELS[selectedHub.status] || selectedHub.status}</span>
+            </> : <p>Select a point on the map or a region below to explore its connection.</p>}
           </div>
         </div>
 
-        {/* ============================================================ */}
-        {/* RIGHT: Key Metrics (Spans 4 cols) */}
-        {/* ============================================================ */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Metric 1: Active Nodes */}
-          <div className="flex-1 rounded-2xl bg-[#08111f]/80 border border-[#38f2ff]/20 backdrop-blur-xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_0_35px_rgba(56,242,255,0.06)] hover:border-[#38f2ff]/40 transition-all duration-300">
-            <div>
-              <span className="font-jetbrains text-xs tracking-widest text-[#849495] uppercase font-semibold">
-                ACTIVE NODES
-              </span>
-              <div className="font-space-grotesk text-4xl sm:text-5xl font-bold text-[#38f2ff] drop-shadow-[0_0_14px_rgba(56,242,255,0.6)] mt-2">
-                {metrics.activeNodes}/{metrics.totalNodes}
-              </div>
-            </div>
-
-            {/* Cyber Progress Line */}
-            <div className="w-full mt-6">
-              <div className="w-full h-1.5 bg-[#1a2333] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#38f2ff] rounded-full shadow-[0_0_12px_#38f2ff] transition-all duration-500"
-                  style={{ width: `${activeNodePercent}%` }}
-                />
-              </div>
-            </div>
+        <div className={styles.metrics}>
+          <div className={`${styles.surface} ${styles.metric}`}>
+            <h2 className={styles.metricLabel}>Active nodes</h2>
+            <p className={styles.metricValue} data-accent="true">{loading ? "—" : `${onlineCount}/${hubs.length}`}</p>
+            <p className={styles.metricNote}>Regions currently online</p>
+            <div className={styles.metricTrack}><span style={{ width: `${onlinePercent}%` }} /></div>
           </div>
-
-          {/* Metric 2: Throughput */}
-          <div className="flex-1 rounded-2xl bg-[#08111f]/80 border border-[#38f2ff]/20 backdrop-blur-xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_0_35px_rgba(56,242,255,0.06)] hover:border-[#38f2ff]/40 transition-all duration-300">
-            <div>
-              <span className="font-jetbrains text-xs tracking-widest text-[#849495] uppercase font-semibold">
-                THROUGHPUT
-              </span>
-              <div className="font-space-grotesk text-4xl sm:text-5xl font-bold text-[#fbf7ff] mt-2">
-                {metrics.throughput}
-              </div>
-            </div>
-            <div className="font-jetbrains text-xs text-[#849495] mt-4 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-base text-[#38f2ff]">
-                trending_up
-              </span>
-              <span className="text-[#38f2ff] font-semibold">
-                {metrics.throughputChange}
-              </span>
-            </div>
+          <div className={`${styles.surface} ${styles.metric}`}>
+            <h2 className={styles.metricLabel}>Throughput</h2>
+            <p className={styles.metricValue}>{DEFAULT_NETWORK_METRICS.throughput}</p>
+            <p className={styles.metricNote}>{DEFAULT_NETWORK_METRICS.throughputChange}</p>
           </div>
-
-          {/* Metric 3: Packet Loss */}
-          <div className="flex-1 rounded-2xl bg-[#08111f]/80 border border-[#38f2ff]/20 backdrop-blur-xl p-6 sm:p-7 flex flex-col justify-between shadow-[0_0_35px_rgba(56,242,255,0.06)] hover:border-[#38f2ff]/40 transition-all duration-300">
-            <div>
-              <span className="font-jetbrains text-xs tracking-widest text-[#849495] uppercase font-semibold">
-                PACKET LOSS
-              </span>
-              <div className="font-space-grotesk text-4xl sm:text-5xl font-bold text-[#38f2ff] drop-shadow-[0_0_14px_rgba(56,242,255,0.5)] mt-2">
-                {metrics.packetLoss}
-              </div>
-            </div>
-            <div className="font-jetbrains text-xs tracking-widest text-[#849495] uppercase font-semibold mt-4">
-              {metrics.packetLossState}
-            </div>
+          <div className={`${styles.surface} ${styles.metric}`}>
+            <h2 className={styles.metricLabel}>Packet loss</h2>
+            <p className={styles.metricValue} data-accent="true">{DEFAULT_NETWORK_METRICS.packetLoss}</p>
+            <p className={styles.metricNote}>{DEFAULT_NETWORK_METRICS.packetLossState.replaceAll("_", " ").toLowerCase()}</p>
           </div>
-        </div>
-
-        {/* ============================================================ */}
-        {/* BOTTOM: Regional Hubs Status (Spans 12 cols) */}
-        {/* ============================================================ */}
-        <div className="lg:col-span-12 rounded-2xl bg-[#08111f]/80 border border-[#38f2ff]/20 backdrop-blur-xl p-6 sm:p-8 mt-4 shadow-[0_0_35px_rgba(56,242,255,0.06)]">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="font-jetbrains text-xs sm:text-sm tracking-widest text-[#849495] uppercase font-semibold">
-              REGIONAL_HUB_STATUS
-            </h2>
-            <span className="font-jetbrains text-[11px] text-[#38f2ff]/80">
-              {hubs.length} NODES CONFIGURED
-            </span>
-          </div>
-
-          {/* Loading Skeleton */}
-          {loading && (
-            <div className="space-y-4 animate-pulse">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="h-16 rounded-xl bg-[#0e1626]/60 border border-white/5"
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Hubs Table List */}
-          {!loading && (
-            <div className="flex flex-col divide-y divide-white/5">
-              {hubs.map((hub) => {
-                const { badgeStyle, dotColor, label, textColor } = getStatusBadge(hub);
-
-                return (
-                  <div
-                    key={hub.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between py-4 sm:py-5 px-3 -mx-3 rounded-xl hover:bg-white/[0.03] hover:border hover:border-[#38f2ff]/20 transition-all duration-200 group gap-3 sm:gap-4"
-                  >
-                    {/* Col 1: Server Icon & Region Name */}
-                    <div className="flex items-center gap-3.5 sm:w-1/4">
-                      <span className="material-symbols-outlined text-xl text-[#849495] group-hover:text-[#38f2ff] transition-colors flex-shrink-0">
-                        dns
-                      </span>
-                      <span className="font-space-grotesk text-base sm:text-lg font-medium text-[#dde2f3] group-hover:text-white transition-colors">
-                        {hub.name}
-                      </span>
-                    </div>
-
-                    {/* Col 2: Region Code */}
-                    <div className="font-jetbrains text-xs text-[#849495] sm:w-1/4 uppercase tracking-wider">
-                      {hub.regionCode}
-                    </div>
-
-                    {/* Col 3: Uptime / Activity Badge */}
-                    <div className="sm:w-1/4">
-                      <span
-                        className={`inline-block font-jetbrains text-[10px] sm:text-xs uppercase font-bold tracking-widest px-3 py-1 rounded ${badgeStyle}`}
-                      >
-                        {hub.uptimeText}
-                      </span>
-                    </div>
-
-                    {/* Col 4: Status Indicator & Label */}
-                    <div className="flex items-center sm:justify-end gap-2.5 sm:w-1/4">
-                      <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-                      <span
-                        className={`font-jetbrains text-xs font-bold tracking-wider ${textColor}`}
-                      >
-                        {label}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       </div>
-    </div>
+
+      <section className={`${styles.surface} ${styles.hubsPanel}`} aria-labelledby="regional-hubs-heading">
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.sectionTitle} id="regional-hubs-heading">Regional hub status</h2>
+          <span className={styles.badge}>{hubs.length} regions</span>
+        </div>
+        {loading ? <div className={styles.skeletons} role="status" aria-label="Loading network regions">
+          {[1, 2, 3].map((item) => <div className={styles.skeleton} key={item} />)}
+        </div> : hubs.length === 0 ? <p className={styles.empty}>No regional hubs are configured yet.</p> : <div className={styles.hubList}>
+          {hubs.map((hub) => <button
+            key={hub.id}
+            type="button"
+            className={styles.hubRow}
+            aria-pressed={selectedHubId === hub.id}
+            onClick={() => setSelectedHubId((current) => current === hub.id ? null : hub.id)}
+          >
+            <span className={styles.hubName}><span className="material-symbols-outlined" aria-hidden="true">dns</span><span>{hub.name}</span></span>
+            <span className={styles.regionCode}>{hub.regionCode}</span>
+            <span><span className={styles.badge} data-status={hub.status}>{hub.uptimeText}</span></span>
+            <span className={`${styles.status} ${styles.hubStatus}`} data-status={hub.status}><span className={styles.statusDot} />{STATUS_LABELS[hub.status] || hub.status}</span>
+            {selectedHubId === hub.id && <span className={styles.hubInlineDetails}>{hub.latencyMs}ms latency · {hub.loadPercent}% load</span>}
+          </button>)}
+        </div>}
+      </section>
+    </section>
   );
 }

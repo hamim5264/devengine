@@ -1,3 +1,4 @@
+import HeaderControls from "@/components/HeaderControls";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import Image from "next/image";
 import * as THREE from "three";
@@ -371,7 +372,7 @@ void main() {
       </div>
 
       {/* Top Header Bar */}
-      <header className="fixed top-0 w-full z-50 bg-[#0e131f]/80 backdrop-blur-xl border-b border-[#38f2ff]/15 shadow-[0_0_25px_rgba(0,219,232,0.12)] flex justify-between items-center px-6 sm:px-12 md:px-20 py-4">
+      <header className="fixed top-0 w-full z-50 bg-[#0e131f]/80 backdrop-blur-xl border-b border-[#38f2ff]/15 shadow-[0_0_25px_rgba(0,219,232,0.12)] flex flex-wrap gap-3 justify-between items-center px-4 sm:px-12 md:px-20 py-4">
         {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-[#38f2ff] shadow-[0_0_10px_#38f2ff] animate-pulse" />
@@ -384,7 +385,7 @@ void main() {
         </div>
 
         {/* Tab Navigation: SYSTEM_STATUS, UPGRADE_LOGS, NETWORK */}
-        <nav className="flex items-center gap-4 sm:gap-8 font-mono text-xs tracking-wider">
+        <nav className="flex flex-wrap items-center gap-4 sm:gap-8 font-mono text-xs tracking-wider">
           <button
             type="button"
             onClick={() => setActiveTab("system_status")}
@@ -419,6 +420,8 @@ void main() {
             NETWORK
           </button>
         </nav>
+
+        <HeaderControls />
 
         {/* Force Sync Action Button */}
         <button

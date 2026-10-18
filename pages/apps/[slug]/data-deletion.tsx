@@ -1,3 +1,4 @@
+import HeaderControls from "@/components/HeaderControls";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
@@ -123,7 +124,7 @@ export default function AppDataDeletionPage() {
       <div className="min-h-screen bg-[#06080F] text-white flex flex-col selection:bg-rose-500/30 selection:text-rose-300">
         {/* Top Navbar */}
         <header className="sticky top-0 z-40 bg-[#06080F]/90 backdrop-blur-xl border-b border-white/5 print:hidden">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 min-h-16 py-3 flex flex-wrap gap-3 items-center justify-between">
             <Link
               href={`/apps/${app.slug}`}
               className="flex items-center gap-2 text-xs font-mono text-gray-400 hover:text-white transition-colors"
@@ -132,7 +133,8 @@ export default function AppDataDeletionPage() {
               <span>Back to {app.appName} Showcase</span>
             </Link>
 
-            <div className="flex items-center gap-2 text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+              <HeaderControls />
               <Link
                 href={`/apps/${app.slug}/privacy-policy`}
                 className="text-gray-400 hover:text-white transition-colors hidden sm:inline"

@@ -2,6 +2,9 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
+  query,
+  limit,
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -61,15 +64,16 @@ export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
 
 export async function getSecurityConfig(): Promise<SecurityConfig> {
   try {
-    const colRef = collection(db, COLLECTION_NAME);
-    const snap = await getDocs(colRef);
-
-    if (snap.empty) {
-      return DEFAULT_SECURITY_CONFIG;
+    const docSnap = await getDoc(doc(db, COLLECTION_NAME, MAIN_DOC_ID));
+    let data: Partial<SecurityConfig>;
+    if (docSnap.exists()) {
+      data = docSnap.data() as Partial<SecurityConfig>;
+    } else {
+      // Preserve older installations that stored configuration under another ID.
+      const legacy = await getDocs(query(collection(db, COLLECTION_NAME), limit(1)));
+      if (legacy.empty) return DEFAULT_SECURITY_CONFIG;
+      data = legacy.docs[0].data() as Partial<SecurityConfig>;
     }
-
-    const docSnap = snap.docs.find((d) => d.id === MAIN_DOC_ID) || snap.docs[0];
-    const data = docSnap.data() as Partial<SecurityConfig>;
 
     return {
       header: { ...DEFAULT_SECURITY_CONFIG.header, ...(data.header || {}) },

@@ -1,7 +1,6 @@
 import {
-  collection,
   doc,
-  getDocs,
+  getDoc,
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -116,23 +115,9 @@ export const DEFAULT_LICENSE_CONFIG: LicenseConfig = {
 
 export async function getLicenseConfig(): Promise<LicenseConfig> {
   try {
-    const colRef = collection(db, COLLECTION_NAME);
-    const snapshot = await getDocs(colRef);
-
-    if (snapshot.empty) {
-      return DEFAULT_LICENSE_CONFIG;
-    }
-
-    let foundData: any = null;
-    snapshot.forEach((docSnap) => {
-      if (docSnap.id === MAIN_DOC_ID) {
-        foundData = docSnap.data();
-      }
-    });
-
-    if (!foundData) {
-      return DEFAULT_LICENSE_CONFIG;
-    }
+    const snapshot = await getDoc(doc(db, COLLECTION_NAME, MAIN_DOC_ID));
+    if (!snapshot.exists()) return DEFAULT_LICENSE_CONFIG;
+    const foundData = snapshot.data();
 
     return {
       header: { ...DEFAULT_LICENSE_CONFIG.header, ...(foundData.header || {}) },

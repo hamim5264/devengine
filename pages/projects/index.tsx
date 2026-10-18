@@ -18,6 +18,7 @@ import {
 import PriceDisplay from "@/components/projects/PriceDisplay";
 import { getProjectPrices } from "@/lib/services/currencyService";
 import { CurrencyPricing } from "@/types/currency";
+import styles from "@/components/projects/Archive.module.css";
 
 interface ProjectItem {
   id: string;
@@ -53,6 +54,14 @@ export default function ArchivePage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showAllCatalog, setShowAllCatalog] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const categoryScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollCategories = (direction: "left" | "right") => {
+    if (categoryScrollRef.current) {
+      const offset = direction === "left" ? -240 : 240;
+      categoryScrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
+    }
+  };
 
   // Live offers carousel state
   const [activeOfferIndex, setActiveOfferIndex] = useState(0);
@@ -134,6 +143,27 @@ export default function ArchivePage() {
       isMounted = false;
     };
   }, []);
+
+  // Smooth scroll reveal observer across all sections
+  useEffect(() => {
+    if (loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.sectionActive);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    const sections = document.querySelectorAll(`.${styles.scrollSection}`);
+    sections.forEach((sec) => observer.observe(sec));
+
+    return () => observer.disconnect();
+  }, [loading, projects.length]);
 
   // 2. Compute dynamic categories combining admin-defined categories + database project categories
   const availableCategories = useMemo(() => {
@@ -299,7 +329,7 @@ export default function ArchivePage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#030712] z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-[var(--devengine-page)] z-50 flex items-center justify-center">
         <HelixLoader size={80} text="LOADING ARCHIVE..." />
       </div>
     );
@@ -316,93 +346,79 @@ export default function ArchivePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      {/* Global Dark Shader Canvas & Grid */}
-      <div className="fixed inset-0 bg-[#030712] z-[-10]" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(14,19,31,0.9)_0%,rgba(3,7,18,1)_100%)] z-[-9] pointer-events-none" />
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] z-[-8] pointer-events-none opacity-60" />
-
-      {/* Shared Cinematic Landing Navbar (With ARCHIVE option active) */}
+      {/* Shared Cinematic Landing Navbar */}
       <LandingNavbar />
 
-      <main className="w-full relative text-[#dde2f3] font-sans selection:bg-[#38f2ff] selection:text-[#030712] overflow-x-hidden">
+      <main className={styles.archiveRoot}>
+        {/* Ambient Subtle Cyber Blueprint & Atmospheric Lighting */}
+        <div className={styles.ambientCanvas} aria-hidden="true">
+          <span className={styles.ambientBlobA} />
+          <span className={styles.ambientBlobB} />
+          <span className={styles.ambientGrid} />
+        </div>
+
         {/* =========================================================================
             SECTION 1: MASSIVE HERO
         ========================================================================= */}
-        <section className="min-h-screen flex items-center justify-center relative pt-36 pb-20 px-6 sm:px-12 md:px-20 overflow-hidden">
-          <div className="text-center z-10 max-w-5xl mx-auto w-full">
+        <section className={`${styles.heroSection} ${styles.scrollSection} ${styles.sectionActive}`}>
+          <div className={styles.heroContent}>
             {/* Pinnacle Badge */}
-            <div className="inline-flex items-center gap-2 bg-[#0e131f]/60 backdrop-blur-xl px-4 py-2 rounded-full mb-8 border border-[#38f2ff]/30 shadow-[0_0_20px_rgba(56,242,255,0.1)]">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#38f2ff] opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#38f2ff]" />
-              </span>
-              <p className="font-jetbrains text-[10px] sm:text-xs text-[#38f2ff] tracking-widest uppercase m-0 font-semibold">
+            <div className={styles.pinnacleBadge}>
+              <span className={styles.liveDot} aria-hidden="true" />
+              <p className={styles.pinnacleText}>
                 {config.hero.badgeText}
               </p>
             </div>
 
-            {/* Massive Hero Headline */}
-            <h1 className="font-space font-bold text-4xl sm:text-6xl md:text-7xl lg:text-8xl mb-8 text-white leading-tight tracking-tight shadow-sm">
+            {/* Massive Hero Headline with Dual-Mode Highlight */}
+            <h1 className={styles.heroHeading}>
               {config.hero.title}
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38f2ff] via-[#78f5ff] to-[#3495ea]">
+              <span className={styles.heroHighlight}>
                 {config.hero.titleHighlight}
               </span>
             </h1>
 
-            <p className="font-sans text-base sm:text-lg md:text-xl text-[#849495] max-w-3xl mx-auto mb-12 leading-relaxed">
+            <p className={styles.heroSubtitle}>
               {config.hero.subtitle}
             </p>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row justify-center gap-5 items-center">
+            <div className={styles.heroActions}>
               <a
                 href="#archive-feed"
-                className="bg-[#38f2ff] text-[#030712] font-jetbrains text-xs uppercase tracking-wider font-bold px-10 py-5 rounded-full shadow-[0_0_30px_rgba(56,242,255,0.4)] hover:shadow-[0_0_50px_rgba(56,242,255,0.7)] transition-all transform hover:-translate-y-0.5 active:scale-95 w-full sm:w-auto"
+                className={styles.primaryCta}
               >
                 {config.hero.ctaPrimaryText}
               </a>
               <a
                 href="#lab-section"
-                className="bg-[#0e131f]/60 backdrop-blur-xl text-white font-jetbrains text-xs uppercase tracking-wider px-10 py-5 rounded-full hover:bg-white/5 transition-all border border-white/10 flex items-center justify-center gap-2 w-full sm:w-auto"
+                className={styles.secondaryCta}
               >
-                {config.hero.ctaSecondaryText} <span className="text-sm">→</span>
+                {config.hero.ctaSecondaryText} <span aria-hidden="true">→</span>
               </a>
             </div>
-          </div>
-
-          {/* Abstract 3D Revolving Orbital Ecosystem Rings */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full z-0 pointer-events-none opacity-25 mix-blend-screen">
-            <div
-              className="absolute top-[40%] left-[20%] w-64 h-64 border border-[#38f2ff]/20 rounded-full animate-[spin_20s_linear_infinite]"
-              style={{ transform: "rotateX(70deg) rotateZ(0deg)" }}
-            />
-            <div
-              className="absolute top-[40%] left-[20%] w-96 h-96 border border-[#3495ea]/20 rounded-full animate-[spin_30s_linear_infinite_reverse]"
-              style={{ transform: "rotateX(70deg) rotateZ(45deg)" }}
-            />
-            <div
-              className="absolute top-[30%] right-[15%] w-80 h-80 border border-[#78f5ff]/20 rounded-full animate-[spin_25s_linear_infinite]"
-              style={{ transform: "rotateX(60deg) rotateY(20deg)" }}
-            />
           </div>
         </section>
 
         {/* =========================================================================
-            SECTION 2: FILTER COMMAND CENTER
+            SECTION 2: FILTER COMMAND CENTER (Sticky with safe navbar clearance)
         ========================================================================= */}
         <section
           id="filter-center"
-          className="py-6 px-6 sm:px-12 md:px-20 sticky top-20 z-30"
+          className={styles.filterSection}
         >
-          <div className="max-w-5xl mx-auto bg-[#080e1a]/85 backdrop-blur-2xl p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center justify-between border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+          <div className={styles.filterCard}>
             {/* Search Input with Keyboard Shortcut & Clear Button */}
-            <div className="relative w-full md:w-80">
+            <div className={styles.searchWrap}>
               <svg
-                className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className={styles.searchIcon}
+                width="18"
+                height="18"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <circle cx="11" cy="11" r="8" strokeWidth="2" />
                 <path d="M21 21l-4.35-4.35" strokeWidth="2" strokeLinecap="round" />
@@ -413,54 +429,89 @@ export default function ArchivePage() {
                 placeholder="Search archive..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#161c28] border border-white/10 rounded-xl py-2.5 pl-11 pr-14 text-sm text-white placeholder-gray-500 focus:border-[#38f2ff] focus:outline-none transition font-sans"
+                className={styles.searchInput}
+                aria-label="Search archive projects"
               />
               {searchQuery ? (
                 <button
+                  type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 rounded-full text-xs font-bold transition"
+                  className={styles.clearSearchBtn}
                   title="Clear search"
+                  aria-label="Clear search query"
                 >
                   ✕
                 </button>
               ) : (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1 pointer-events-none">
-                  <kbd className="font-jetbrains text-[9px] bg-white/5 px-1.5 py-0.5 rounded border border-white/10 text-gray-400">
-                    ⌘
-                  </kbd>
-                  <kbd className="font-jetbrains text-[9px] bg-white/5 px-1.5 py-0.5 rounded border border-white/10 text-gray-400">
-                    K
-                  </kbd>
+                <div className={styles.kbdBadge} aria-hidden="true">
+                  <kbd className={styles.kbdKey}>⌘</kbd>
+                  <kbd className={styles.kbdKey}>K</kbd>
                 </div>
               )}
             </div>
 
-            {/* Dynamic Category Pills (Populated from admin categories + database) */}
-            <div className="flex gap-2 overflow-x-auto w-full md:w-auto py-1 scrollbar-none">
+            {/* Dynamic Category Pills with Side Scroll Controls */}
+            <div className={styles.categoryPillsWrapper}>
               <button
-                onClick={() => setSelectedCategory("all")}
-                className={`whitespace-nowrap px-5 py-2 rounded-full font-jetbrains text-xs tracking-wider transition-all ${
-                  selectedCategory === "all"
-                    ? "bg-[#38f2ff] text-[#030712] font-bold shadow-[0_0_15px_rgba(56,242,255,0.4)]"
-                    : "bg-[#0e131f] text-gray-400 hover:text-white border border-white/5 hover:border-white/20"
-                }`}
+                type="button"
+                onClick={() => scrollCategories("left")}
+                className={styles.scrollNavBtn}
+                title="Scroll categories left"
+                aria-label="Scroll categories left"
               >
-                ALL
+                ‹
               </button>
 
-              {availableCategories.map((cat) => (
+              <div
+                ref={categoryScrollRef}
+                className={styles.categoryPills}
+                role="tablist"
+                aria-label="Project categories"
+                onWheel={(e) => {
+                  if (e.deltaY !== 0 && categoryScrollRef.current) {
+                    categoryScrollRef.current.scrollLeft += e.deltaY;
+                  }
+                }}
+              >
                 <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`whitespace-nowrap px-5 py-2 rounded-full font-jetbrains text-xs tracking-wider uppercase transition-all ${
-                    selectedCategory.toLowerCase() === cat.toLowerCase()
-                      ? "bg-[#38f2ff] text-[#030712] font-bold shadow-[0_0_15px_rgba(56,242,255,0.4)]"
-                      : "bg-[#0e131f] text-gray-400 hover:text-white border border-white/5 hover:border-white/20"
+                  type="button"
+                  onClick={() => setSelectedCategory("all")}
+                  className={`${styles.catBtn} ${
+                    selectedCategory === "all" ? styles.catBtnActive : ""
                   }`}
+                  role="tab"
+                  aria-selected={selectedCategory === "all"}
                 >
-                  {cat}
+                  ALL
                 </button>
-              ))}
+
+                {availableCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`${styles.catBtn} ${
+                      selectedCategory.toLowerCase() === cat.toLowerCase()
+                        ? styles.catBtnActive
+                        : ""
+                    }`}
+                    role="tab"
+                    aria-selected={selectedCategory.toLowerCase() === cat.toLowerCase()}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => scrollCategories("right")}
+                className={styles.scrollNavBtn}
+                title="Scroll categories right"
+                aria-label="Scroll categories right"
+              >
+                ›
+              </button>
             </div>
           </div>
         </section>
@@ -468,126 +519,94 @@ export default function ArchivePage() {
         {/* =========================================================================
             SECTION 3: FEATURED CASE STUDY (3D Mobile Frame Mockup)
         ========================================================================= */}
-        <section className="py-20 w-full px-6 sm:px-12 md:px-20 overflow-hidden">
-          <div className="max-w-6xl mx-auto bg-[#080e1a]/80 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 md:p-16 border border-[#38f2ff]/20 relative overflow-hidden shadow-2xl group hover:border-[#38f2ff]/40 transition-colors">
-            {/* Ambient Cyan Backdrop Glow */}
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#38f2ff]/10 to-transparent pointer-events-none rounded-r-3xl" />
+        <section className={`${styles.sectionBlock} ${styles.scrollSection}`}>
+          <div className={styles.caseStudyCard}>
+            {/* Left Column: Case Study Specs */}
+            <div>
+              <span className={styles.caseStudyBadge}>
+                {config.featuredCaseStudy.badgeText}
+              </span>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-10">
-              {/* Left Column: Case Study Specs */}
-              <div>
-                <div className="inline-block bg-[#38f2ff]/10 text-[#38f2ff] font-jetbrains text-xs px-3 py-1 rounded tracking-widest uppercase mb-6 border border-[#38f2ff]/30 font-semibold">
-                  {config.featuredCaseStudy.badgeText}
+              <h2 className={styles.caseStudyTitle}>
+                {caseStudyTitle}
+                <span className={styles.caseStudySubtitle}>
+                  {caseStudySubtitle}
+                </span>
+              </h2>
+
+              <p className={styles.caseStudyDesc}>
+                {caseStudyDescription}
+              </p>
+
+              <div className={styles.caseStudyMetaGrid}>
+                <div>
+                  <p className={styles.metaLabel}>Tech Stack</p>
+                  <p className={styles.metaVal}>{caseStudyTechStack}</p>
                 </div>
-
-                <h2 className="font-space text-3xl sm:text-5xl font-bold text-white mb-4 leading-tight">
-                  {caseStudyTitle}
-                  <br />
-                  <span className="text-gray-400 text-2xl sm:text-3xl font-medium">
-                    {caseStudySubtitle}
-                  </span>
-                </h2>
-
-                <p className="font-sans text-base text-[#849495] mb-8 max-w-xl leading-relaxed">
-                  {caseStudyDescription}
-                </p>
-
-                <div className="grid grid-cols-2 gap-6 mb-10 border-t border-white/10 pt-6 max-w-md">
-                  <div>
-                    <p className="font-jetbrains text-[10px] text-gray-500 mb-1 tracking-widest uppercase">
-                      Tech Stack
-                    </p>
-                    <p className="font-sans text-sm text-white font-medium">
-                      {caseStudyTechStack}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-jetbrains text-[10px] text-gray-500 mb-1 tracking-widest uppercase">
-                      License
-                    </p>
-                    <p className="font-sans text-sm text-white font-medium">
-                      {config.featuredCaseStudy.license}
-                    </p>
-                  </div>
+                <div>
+                  <p className={styles.metaLabel}>License</p>
+                  <p className={styles.metaVal}>{config.featuredCaseStudy.license}</p>
                 </div>
-
-                {caseStudyUrl.startsWith("http") ? (
-                  <a
-                    href={caseStudyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-3 bg-[#38f2ff] hover:bg-[#78f5ff] text-[#030712] font-jetbrains text-xs tracking-wider uppercase px-8 py-4 rounded-full transition-all shadow-lg font-bold cursor-pointer"
-                  >
-                    {config.featuredCaseStudy.buttonText} <span>↗</span>
-                  </a>
-                ) : (
-                  <Link
-                    href={caseStudyUrl}
-                    className="inline-flex items-center gap-3 bg-[#38f2ff] hover:bg-[#78f5ff] text-[#030712] font-jetbrains text-xs tracking-wider uppercase px-8 py-4 rounded-full transition-all shadow-lg font-bold cursor-pointer"
-                  >
-                    {config.featuredCaseStudy.buttonText} <span>↗</span>
-                  </Link>
-                )}
               </div>
 
-              {/* Right Column: Simulated 3D Mobile Phone Frame */}
-              <div className="relative h-[560px] flex justify-center items-center group">
-                {caseStudyUrl.startsWith("http") ? (
-                  <a
-                    href={caseStudyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative block cursor-pointer group/phone"
-                    aria-label="View Featured Case Study Details"
-                  >
-                    <div className="relative w-[280px] h-[550px] rounded-[44px] bg-[#0e131f] border-[6px] border-[#242a36] shadow-[0_0_60px_rgba(56,242,255,0.25)] overflow-hidden transition-transform duration-700 transform lg:rotate-y-[-12deg] lg:rotate-x-[4deg] group-hover/phone:rotate-0 group-hover/phone:border-[#38f2ff]/60">
-                      {/* Dynamic Island Notch */}
-                      <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-full z-30 flex items-center justify-end px-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#161c28] border border-white/20" />
-                      </div>
+              {caseStudyUrl.startsWith("http") ? (
+                <a
+                  href={caseStudyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.caseStudyBtn}
+                >
+                  {config.featuredCaseStudy.buttonText} <span aria-hidden="true">↗</span>
+                </a>
+              ) : (
+                <Link
+                  href={caseStudyUrl}
+                  className={styles.caseStudyBtn}
+                >
+                  {config.featuredCaseStudy.buttonText} <span aria-hidden="true">↗</span>
+                </Link>
+              )}
+            </div>
 
-                      {/* Phone Screen Mockup Content */}
-                      <div className="w-full h-full relative">
-                        <Image
-                          src={caseStudyImage}
-                          alt={caseStudyTitle}
-                          fill
-                          className="object-cover group-hover/phone:scale-105 transition-transform duration-500"
-                          unoptimized
-                        />
-                      </div>
-                    </div>
-                  </a>
-                ) : (
-                  <Link
-                    href={caseStudyUrl}
-                    className="relative block cursor-pointer group/phone"
-                    aria-label="View Featured Case Study Details"
-                  >
-                    <div className="relative w-[280px] h-[550px] rounded-[44px] bg-[#0e131f] border-[6px] border-[#242a36] shadow-[0_0_60px_rgba(56,242,255,0.25)] overflow-hidden transition-transform duration-700 transform lg:rotate-y-[-12deg] lg:rotate-x-[4deg] group-hover/phone:rotate-0 group-hover/phone:border-[#38f2ff]/60">
-                      {/* Dynamic Island Notch */}
-                      <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-full z-30 flex items-center justify-end px-3">
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#161c28] border border-white/20" />
-                      </div>
-
-                      {/* Phone Screen Mockup Content */}
-                      <div className="w-full h-full relative">
-                        <Image
-                          src={caseStudyImage}
-                          alt={caseStudyTitle}
-                          fill
-                          className="object-cover group-hover/phone:scale-105 transition-transform duration-500"
-                          unoptimized
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                )}
-
-                {/* Floating Ambient Glow Orbs */}
-                <div className="absolute top-1/4 -right-8 w-24 h-24 bg-[#38f2ff]/20 rounded-full blur-2xl pointer-events-none" />
-                <div className="absolute bottom-1/4 -left-8 w-28 h-28 bg-[#3495ea]/20 rounded-full blur-2xl pointer-events-none" />
-              </div>
+            {/* Right Column: Simulated 3D Mobile Phone Frame */}
+            <div className={styles.phoneMockupWrap}>
+              {caseStudyUrl.startsWith("http") ? (
+                <a
+                  href={caseStudyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.phoneFrame}
+                  aria-label="View Featured Case Study Details"
+                >
+                  <div className={styles.dynamicIsland} aria-hidden="true" />
+                  <div className="w-full h-full relative">
+                    <Image
+                      src={caseStudyImage}
+                      alt={caseStudyTitle}
+                      fill
+                      className="object-cover object-top"
+                      unoptimized
+                    />
+                  </div>
+                </a>
+              ) : (
+                <Link
+                  href={caseStudyUrl}
+                  className={styles.phoneFrame}
+                  aria-label="View Featured Case Study Details"
+                >
+                  <div className={styles.dynamicIsland} aria-hidden="true" />
+                  <div className="w-full h-full relative">
+                    <Image
+                      src={caseStudyImage}
+                      alt={caseStudyTitle}
+                      fill
+                      className="object-cover object-top"
+                      unoptimized
+                    />
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
         </section>
@@ -596,8 +615,8 @@ export default function ArchivePage() {
             SECTION 4: LIVE OFFERS (Banner Carousel with Auto-Swipe)
         ========================================================================= */}
         {visibleOfferSlides && visibleOfferSlides.length > 0 && (
-          <section className="py-10 px-6 sm:px-12 md:px-20">
-            <div className="max-w-6xl mx-auto relative group">
+          <section className={`${styles.sectionBlock} ${styles.scrollSection}`}>
+            <div className="relative group">
               {/* Header Bar: LIVE OFFERS badge & Slide Progress indicators */}
               <div className="flex items-center justify-between mb-6">
                 <div className="inline-flex items-center gap-2">
@@ -605,10 +624,10 @@ export default function ArchivePage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
                   </span>
-                  <span className="font-jetbrains text-xs text-red-400 tracking-widest uppercase font-bold">
+                  <span className="font-jetbrains text-xs text-red-500 dark:text-red-400 tracking-widest uppercase font-bold">
                     {config.liveOffers.badgeText}
                   </span>
-                  <span className="text-[11px] font-mono text-gray-500 ml-2">
+                  <span className="text-[11px] font-mono opacity-70 ml-2">
                     ({visibleOfferSlides.length} Featured Deals)
                   </span>
                 </div>
@@ -618,11 +637,12 @@ export default function ArchivePage() {
                   {visibleOfferSlides.map((_, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => setActiveOfferIndex(idx)}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
                         idx === activeOfferIndex
-                          ? "w-8 bg-[#38f2ff] shadow-[0_0_8px_#38f2ff]"
-                          : "w-3 bg-white/20 hover:bg-white/40"
+                          ? "w-8 bg-[var(--devengine-accent)] shadow-[0_0_8px_var(--devengine-accent)]"
+                          : "w-3 bg-[var(--devengine-border)] hover:opacity-80"
                       }`}
                       aria-label={`Go to offer slide ${idx + 1}`}
                     />
@@ -635,7 +655,6 @@ export default function ArchivePage() {
                 const slide =
                   visibleOfferSlides[activeOfferIndex] || visibleOfferSlides[0];
 
-                // Intelligently resolve project by projectId, slug, title match, or first available project
                 const targetProject =
                   projects.find(
                     (p) =>
@@ -660,41 +679,35 @@ export default function ArchivePage() {
                   (projects[0] ? (projects[0].slug || projects[0].id) : "snapcaption-ai");
 
                 return (
-                  <div className="bg-[#080e1a]/80 backdrop-blur-2xl rounded-3xl overflow-hidden relative min-h-[420px] border border-[#38f2ff]/30 shadow-2xl">
-                    {/* Abstract Backdrop Glow */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[450px] h-[450px] border border-[#38f2ff]/10 rounded-full mix-blend-screen opacity-50" />
-                      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-[#38f2ff]/5 to-transparent" />
-                    </div>
-
-                    <div className="relative z-10 p-8 sm:p-12 md:p-16 h-full flex flex-col md:flex-row justify-between items-center gap-8">
+                  <div className={styles.liveOfferCard}>
+                    <div className={styles.offerFlex}>
                       {/* Left: Offer Details */}
                       <div className="flex-1 space-y-4">
-                        <span className="bg-[#38f2ff]/10 text-[#38f2ff] px-3 py-1 rounded font-jetbrains text-xs border border-[#38f2ff]/30 font-semibold inline-block">
+                        <span className={styles.offerTag}>
                           {slide.tag}
                         </span>
 
                         <Link
                           href={`/projects/${targetSlug}`}
-                          className="block group/title cursor-pointer"
+                          className="block cursor-pointer"
                         >
-                          <h3 className="font-space font-bold text-3xl sm:text-5xl text-white leading-tight group-hover/title:text-[#38f2ff] transition-colors">
-                            {slide.title} <br />
-                            <span className="text-red-400 font-space text-2xl sm:text-4xl">
+                          <h3 className={styles.offerTitle}>
+                            {slide.title}
+                            <span className={styles.offerDiscount}>
                               {slide.discountBadge}
                             </span>
                           </h3>
                         </Link>
 
-                        <p className="font-sans text-sm sm:text-base text-[#849495] max-w-md">
+                        <p className="text-sm sm:text-base opacity-80 max-w-md">
                           {slide.description}
                         </p>
 
-                        <div className="flex items-baseline gap-4 pt-2">
-                          <span className="font-jetbrains text-xl text-[#849495] line-through opacity-60">
+                        <div className={styles.offerPriceRow}>
+                          <span className={styles.offerOldPrice}>
                             {slide.originalPrice}
                           </span>
-                          <span className="font-space text-3xl sm:text-4xl text-[#38f2ff] font-bold">
+                          <span className={styles.offerNewPrice}>
                             {slide.offerPrice}
                           </span>
                         </div>
@@ -703,17 +716,17 @@ export default function ArchivePage() {
                           <Link
                             href={`/projects/${targetSlug}`}
                             id="claim-offer-btn"
-                            className="inline-flex items-center gap-2.5 bg-[#38f2ff] hover:bg-[#00e1f0] text-[#030712] font-sans text-sm uppercase tracking-wider font-bold px-8 py-4 rounded-full shadow-[0_0_25px_rgba(56,242,255,0.4)] hover:shadow-[0_0_35px_rgba(56,242,255,0.6)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                            className={styles.primaryCta}
                           >
                             <span>{slide.claimButtonText || "CLAIM OFFER"}</span>
-                            <span className="text-base font-bold">→</span>
+                            <span aria-hidden="true">→</span>
                           </Link>
                           <Link
                             href={`/projects/${targetSlug}`}
-                            className="font-jetbrains text-xs text-gray-400 hover:text-[#38f2ff] transition-colors uppercase tracking-wider flex items-center gap-1.5 cursor-pointer py-2"
+                            className="font-jetbrains text-xs opacity-75 hover:opacity-100 hover:text-[var(--devengine-accent-text)] transition-colors uppercase tracking-wider flex items-center gap-1.5 cursor-pointer py-2"
                           >
                             <span>Inspect Specs</span>
-                            <span className="text-sm">↗</span>
+                            <span aria-hidden="true">↗</span>
                           </Link>
                         </div>
                       </div>
@@ -722,7 +735,7 @@ export default function ArchivePage() {
                       <div className="flex-1 w-full flex justify-center md:justify-end">
                         <Link
                           href={`/projects/${targetSlug}`}
-                          className="relative w-full max-w-sm h-64 border border-white/10 rounded-2xl overflow-hidden shadow-2xl group hover:border-[#38f2ff]/60 transition-all block cursor-pointer"
+                          className={styles.offerBannerImgWrap}
                         >
                           <Image
                             src={
@@ -731,10 +744,9 @@ export default function ArchivePage() {
                             }
                             alt={slide.title}
                             fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            className="object-cover"
                             unoptimized
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/80 via-transparent to-transparent pointer-events-none" />
                         </Link>
                       </div>
                     </div>
@@ -746,63 +758,65 @@ export default function ArchivePage() {
         )}
 
         {/* =========================================================================
-            SECTION 5: THE ARCHIVE (Recent 4 Projects Bento Grid + View All)
+            SECTION 5: THE ARCHIVE (Recent 5 Projects Bento Grid + View All)
         ========================================================================= */}
-        <section id="archive-feed" className="py-20 px-6 sm:px-12 md:px-20 max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 mb-12">
+        <section id="archive-feed" className={`${styles.sectionBlock} ${styles.scrollSection}`}>
+          <div className={styles.sectionHeader}>
             <div>
-              <h2 className="font-space font-bold text-3xl sm:text-5xl text-white mb-2 tracking-tight">
+              <h2 className={styles.sectionTitle}>
                 The Archive
               </h2>
-              <p className="font-sans text-base text-[#849495] max-w-xl">
+              <p className={styles.sectionSubtitle}>
                 A meticulously categorized collection of production-ready systems.
               </p>
               {searchQuery && (
-                <p className="text-xs text-[#38f2ff] font-mono mt-2">
+                <p className="text-xs text-[var(--devengine-accent-text)] font-mono mt-2">
                   Showing {filteredProjects.length} results matching &ldquo;{searchQuery}&rdquo;
                 </p>
               )}
             </div>
 
-            <div className="flex items-center gap-3 self-start sm:self-auto">
+            <div className="flex items-center gap-3 self-start sm:self-auto font-jetbrains text-xs">
               <button
+                type="button"
                 onClick={() => setShowAllCatalog(!showAllCatalog)}
-                className="font-jetbrains text-xs uppercase tracking-wider text-gray-400 hover:text-white transition flex items-center gap-1.5"
+                className="opacity-75 hover:opacity-100 uppercase tracking-wider transition-opacity cursor-pointer"
               >
                 {showAllCatalog ? "COLLAPSE VIEW" : "QUICK VIEW"}
               </button>
-              <span className="text-gray-600">|</span>
+              <span className="opacity-40">|</span>
               <Link
                 href="/projects/all"
-                className="font-jetbrains text-xs uppercase tracking-wider text-[#38f2ff] hover:underline flex items-center gap-1.5 font-bold"
+                className="text-[var(--devengine-accent-text)] hover:underline uppercase tracking-wider font-bold flex items-center gap-1.5"
               >
-                VIEW ALL PROJECTS <span>→</span>
+                VIEW ALL PROJECTS <span aria-hidden="true">→</span>
               </Link>
             </div>
           </div>
 
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center">
-              <HelixLoader size={48} color="#38f2ff" />
-              <p className="mt-4 font-jetbrains text-xs text-gray-400">
+              <HelixLoader size={48} color="#2cecf7" />
+              <p className="mt-4 font-jetbrains text-xs opacity-70">
                 Synchronizing project repository…
               </p>
             </div>
           ) : filteredProjects.length === 0 ? (
-            <div className="p-12 text-center bg-[#080e1a] rounded-2xl border border-white/5">
-              <p className="font-space text-lg text-white mb-2">
+            <div className="p-12 text-center bg-[var(--devengine-surface)] rounded-2xl border border-[var(--devengine-border)] shadow-sm">
+              <p className="text-lg font-bold mb-2">
                 No matching projects found
               </p>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm opacity-70 mb-4">
                 Try adjusting your search query or selecting a different category.
               </p>
               {(searchQuery || selectedCategory !== "all") && (
                 <button
+                  type="button"
                   onClick={() => {
                     setSearchQuery("");
                     setSelectedCategory("all");
                   }}
-                  className="px-4 py-2 bg-[#161c28] border border-white/10 hover:border-[#38f2ff] rounded-lg text-xs font-mono text-[#38f2ff]"
+                  className="px-5 py-2.5 bg-[var(--devengine-soft)] border border-[var(--devengine-border)] rounded-full text-xs font-mono text-[var(--devengine-accent-text)] font-bold cursor-pointer"
                 >
                   Reset Filters
                 </button>
@@ -810,36 +824,46 @@ export default function ArchivePage() {
             </div>
           ) : (
             <>
-              {/* Editorial Bento Grid: Up to 5 Recent Projects (Row 1: 2-col + 1-col, Row 2: 3 x 1-col) */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Card 1: Large Feature (spans 2 cols) */}
+              {/* Unique Multi-Archetype Editorial Bento Grid */}
+              <div className={styles.archiveBentoGrid}>
+                {/* ARCHETYPE 1: Flagship 2-Column Showcase (Row 1, Left) */}
                 {recent5Projects[0] && (
                   <Link
                     href={`/projects/${recent5Projects[0].slug || recent5Projects[0].id}`}
-                    className="md:col-span-2 bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_30px_rgba(56,242,255,0.15)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    className={`${styles.bentoCard} ${styles.bentoFlagshipCol}`}
                   >
                     <div>
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="max-w-xl">
-                          <h3 className="font-space text-2xl sm:text-3xl font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-2">
-                            {recent5Projects[0].title}
-                          </h3>
-                          <p className="font-sans text-sm text-[#849495] line-clamp-2">
-                            {recent5Projects[0].subtitle || recent5Projects[0].details}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
-                            {recent5Projects[0].category}
-                          </span>
-                          <span className="text-gray-500 group-hover:text-[#38f2ff] font-jetbrains text-sm transition-colors">
-                            ↗
-                          </span>
-                        </div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={styles.cardCatPill}>
+                          {recent5Projects[0].category}
+                        </span>
+                        <span className="opacity-60 text-sm font-jetbrains" aria-hidden="true">
+                          ↗
+                        </span>
                       </div>
 
-                      {/* Prominent High-Resolution Project Showcase */}
-                      <div className="w-full h-52 sm:h-64 rounded-xl overflow-hidden border border-white/10 relative shadow-2xl group-hover:border-[#38f2ff]/40 transition-all bg-black/40 my-3">
+                      <h3 className={styles.cardTitle}>
+                        {recent5Projects[0].title}
+                      </h3>
+                      <p className={styles.cardDesc}>
+                        {recent5Projects[0].subtitle || recent5Projects[0].details}
+                      </p>
+
+                      <div className={styles.cardThumbFrame}>
+                        <Image
+                          src={
+                            (recent5Projects[0] as any).images?.[0] ||
+                            recent5Projects[0].imageUrl ||
+                            (recent5Projects[0] as any).image ||
+                            config.defaultProjectImages?.[0] ||
+                            "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt=""
+                          fill
+                          className="object-cover blur-2xl opacity-20 scale-110 pointer-events-none"
+                          aria-hidden="true"
+                          unoptimized
+                        />
                         <Image
                           src={
                             (recent5Projects[0] as any).images?.[0] ||
@@ -850,238 +874,318 @@ export default function ArchivePage() {
                           }
                           alt={recent5Projects[0].title}
                           fill
-                          className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                          className={styles.cardThumbImg}
                           unoptimized
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/80 via-transparent to-transparent pointer-events-none" />
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end w-full pt-4 border-t border-white/5 gap-3">
+                    <div className={styles.cardFooter}>
                       <div>
-                        <span className="font-jetbrains text-[10px] text-gray-400 uppercase tracking-widest block mb-1">
+                        <span className="font-jetbrains text-[11px] font-bold text-[var(--devengine-muted)] uppercase tracking-wider block mb-1.5">
                           Licensing Rates
                         </span>
                         <PriceDisplay
                           prices={getProjectPrices(recent5Projects[0])}
-                          size="md"
+                          size="lg"
                         />
                       </div>
-                      <span className="font-jetbrains text-xs text-[#38f2ff] group-hover:underline flex items-center gap-1 font-semibold">
-                        View System Architecture →
+                      <span className="font-jetbrains text-xs sm:text-sm text-[var(--devengine-accent-text)] font-bold hover:underline flex items-center gap-1">
+                        View Architecture →
                       </span>
                     </div>
                   </Link>
                 )}
 
-                {/* Card 2: Standard Bento Card (Row 1 Col 3) */}
+                {/* ARCHETYPE 2: Sleek Vertical Telemetry Card (Row 1, Right) */}
                 {recent5Projects[1] && (
                   <Link
                     href={`/projects/${recent5Projects[1].slug || recent5Projects[1].id}`}
-                    className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    className={`${styles.bentoCard} ${styles.bentoVerticalCol}`}
                   >
                     <div>
                       <div className="flex justify-between items-start mb-2">
-                        <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
+                        <span className={styles.cardCatPill}>
                           {recent5Projects[1].category}
                         </span>
-                        <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
+                        <span className="opacity-60 text-sm font-jetbrains" aria-hidden="true">
                           ↗
                         </span>
                       </div>
-                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
+                      <h3 className={styles.cardTitle}>
                         {recent5Projects[1].title}
                       </h3>
-                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
+                      <p className={styles.cardDesc}>
                         {recent5Projects[1].subtitle || recent5Projects[1].details}
                       </p>
+
+                      <div className={styles.cardThumbFrame}>
+                        <Image
+                          src={
+                            (recent5Projects[1] as any).images?.[0] ||
+                            recent5Projects[1].imageUrl ||
+                            (recent5Projects[1] as any).image ||
+                            config.defaultProjectImages?.[1] ||
+                            "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt=""
+                          fill
+                          className="object-cover blur-2xl opacity-20 scale-110 pointer-events-none"
+                          aria-hidden="true"
+                          unoptimized
+                        />
+                        <Image
+                          src={
+                            (recent5Projects[1] as any).images?.[0] ||
+                            recent5Projects[1].imageUrl ||
+                            (recent5Projects[1] as any).image ||
+                            config.defaultProjectImages?.[1] ||
+                            "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt={recent5Projects[1].title}
+                          fill
+                          className={styles.cardThumbImg}
+                          unoptimized
+                        />
+                      </div>
                     </div>
 
-                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
-                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
-                      <Image
-                        src={
-                          (recent5Projects[1] as any).images?.[0] ||
-                          recent5Projects[1].imageUrl ||
-                          (recent5Projects[1] as any).image ||
-                          config.defaultProjectImages?.[1] ||
-                          "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000&auto=format&fit=crop"
-                        }
-                        alt={recent5Projects[1].title}
-                        fill
-                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
-                    </div>
-
-                    <div className="pt-2.5 border-t border-white/5 flex flex-wrap justify-between items-center gap-2">
-                      <span className="font-jetbrains text-[9px] text-gray-500 uppercase tracking-wider">
-                        Price
+                    <div className={styles.cardFooter}>
+                      <div>
+                        <span className="font-jetbrains text-[11px] font-bold text-[var(--devengine-muted)] uppercase tracking-wider block mb-1.5">
+                          Price
+                        </span>
+                        <PriceDisplay
+                          prices={getProjectPrices(recent5Projects[1])}
+                          size="md"
+                        />
+                      </div>
+                      <span className="font-jetbrains text-xs text-[var(--devengine-accent-text)] font-bold hover:underline flex items-center gap-1">
+                        Explore →
                       </span>
-                      <PriceDisplay
-                        prices={getProjectPrices(recent5Projects[1])}
-                        size="sm"
-                      />
                     </div>
                   </Link>
                 )}
 
-                {/* Card 3: Standard Bento Card (Row 2 Col 1) */}
+                {/* ARCHETYPE 3: Horizontal Split Panorama (Row 2, Left 2-Cols) */}
                 {recent5Projects[2] && (
                   <Link
                     href={`/projects/${recent5Projects[2].slug || recent5Projects[2].id}`}
-                    className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    className={`${styles.bentoCard} ${styles.bentoHorizontalCard}`}
                   >
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
-                          {recent5Projects[2].category}
-                        </span>
-                        <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
-                          ↗
+                    <div className="flex flex-col justify-between h-full">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={styles.cardCatPill}>
+                            {recent5Projects[2].category}
+                          </span>
+                          <span className="opacity-60 text-sm font-jetbrains" aria-hidden="true">
+                            ↗
+                          </span>
+                        </div>
+                        <h3 className={styles.cardTitle}>
+                          {recent5Projects[2].title}
+                        </h3>
+                        <p className={styles.cardDesc}>
+                          {recent5Projects[2].subtitle || recent5Projects[2].details}
+                        </p>
+                      </div>
+
+                      <div className={styles.cardFooter}>
+                        <div>
+                          <span className="font-jetbrains text-[11px] font-bold text-[var(--devengine-muted)] uppercase tracking-wider block mb-1.5">
+                            Licensing Price
+                          </span>
+                          <PriceDisplay
+                            prices={getProjectPrices(recent5Projects[2])}
+                            size="md"
+                          />
+                        </div>
+                        <span className="font-jetbrains text-xs text-[var(--devengine-accent-text)] font-bold hover:underline flex items-center gap-1">
+                          Explore System →
                         </span>
                       </div>
-                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
-                        {recent5Projects[2].title}
-                      </h3>
-                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
-                        {recent5Projects[2].subtitle || recent5Projects[2].details}
-                      </p>
                     </div>
 
-                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
-                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
-                      <Image
-                        src={
-                          (recent5Projects[2] as any).images?.[0] ||
-                          recent5Projects[2].imageUrl ||
-                          (recent5Projects[2] as any).image ||
-                          config.defaultProjectImages?.[2] ||
-                          "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
-                        }
-                        alt={recent5Projects[2].title}
-                        fill
-                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
-                    </div>
-
-                    <div className="pt-2.5 border-t border-white/5 flex flex-wrap justify-between items-center gap-2">
-                      <span className="font-jetbrains text-[9px] text-gray-500 uppercase tracking-wider">
-                        Price
-                      </span>
-                      <PriceDisplay
-                        prices={getProjectPrices(recent5Projects[2])}
-                        size="sm"
-                      />
+                    <div>
+                      <div className={styles.cardThumbFrame}>
+                        <Image
+                          src={
+                            (recent5Projects[2] as any).images?.[0] ||
+                            recent5Projects[2].imageUrl ||
+                            (recent5Projects[2] as any).image ||
+                            config.defaultProjectImages?.[2] ||
+                            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt=""
+                          fill
+                          className="object-cover blur-2xl opacity-20 scale-110 pointer-events-none"
+                          aria-hidden="true"
+                          unoptimized
+                        />
+                        <Image
+                          src={
+                            (recent5Projects[2] as any).images?.[0] ||
+                            recent5Projects[2].imageUrl ||
+                            (recent5Projects[2] as any).image ||
+                            config.defaultProjectImages?.[2] ||
+                            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt={recent5Projects[2].title}
+                          fill
+                          className={styles.cardThumbImg}
+                          unoptimized
+                        />
+                      </div>
                     </div>
                   </Link>
                 )}
 
-                {/* Card 4: Standard Bento Card (Row 2 Col 2) */}
+                {/* ARCHETYPE 4: Blueprint Cyber Telemetry Card (Row 2, Right 1-Col) */}
                 {recent5Projects[3] && (
                   <Link
                     href={`/projects/${recent5Projects[3].slug || recent5Projects[3].id}`}
-                    className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    className={`${styles.bentoCard} ${styles.bentoTelemetryCol}`}
                   >
                     <div>
                       <div className="flex justify-between items-start mb-2">
-                        <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
+                        <span className={styles.cardCatPill}>
                           {recent5Projects[3].category}
                         </span>
-                        <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
+                        <span className="opacity-60 text-sm font-jetbrains" aria-hidden="true">
                           ↗
                         </span>
                       </div>
-                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
+                      <h3 className={styles.cardTitle}>
                         {recent5Projects[3].title}
                       </h3>
-                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
+                      <p className={styles.cardDesc}>
                         {recent5Projects[3].subtitle || recent5Projects[3].details}
                       </p>
+
+                      <div className={styles.cardThumbFrame}>
+                        <Image
+                          src={
+                            (recent5Projects[3] as any).images?.[0] ||
+                            recent5Projects[3].imageUrl ||
+                            (recent5Projects[3] as any).image ||
+                            config.defaultProjectImages?.[3] ||
+                            "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt=""
+                          fill
+                          className="object-cover blur-2xl opacity-20 scale-110 pointer-events-none"
+                          aria-hidden="true"
+                          unoptimized
+                        />
+                        <Image
+                          src={
+                            (recent5Projects[3] as any).images?.[0] ||
+                            recent5Projects[3].imageUrl ||
+                            (recent5Projects[3] as any).image ||
+                            config.defaultProjectImages?.[3] ||
+                            "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt={recent5Projects[3].title}
+                          fill
+                          className={styles.cardThumbImg}
+                          unoptimized
+                        />
+                      </div>
                     </div>
 
-                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
-                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
-                      <Image
-                        src={
-                          (recent5Projects[3] as any).images?.[0] ||
-                          recent5Projects[3].imageUrl ||
-                          (recent5Projects[3] as any).image ||
-                          config.defaultProjectImages?.[3] ||
-                          "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1000&auto=format&fit=crop"
-                        }
-                        alt={recent5Projects[3].title}
-                        fill
-                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
-                    </div>
-
-                    <div className="pt-2.5 border-t border-white/5 flex flex-wrap justify-between items-center gap-2">
-                      <span className="font-jetbrains text-[9px] text-gray-500 uppercase tracking-wider">
-                        Price
+                    <div className={styles.cardFooter}>
+                      <div>
+                        <span className="font-jetbrains text-[11px] font-bold text-[var(--devengine-muted)] uppercase tracking-wider block mb-1.5">
+                          Price
+                        </span>
+                        <PriceDisplay
+                          prices={getProjectPrices(recent5Projects[3])}
+                          size="md"
+                        />
+                      </div>
+                      <span className="font-jetbrains text-xs text-[var(--devengine-accent-text)] font-bold hover:underline flex items-center gap-1">
+                        Inspect →
                       </span>
-                      <PriceDisplay
-                        prices={getProjectPrices(recent5Projects[3])}
-                        size="sm"
-                      />
                     </div>
                   </Link>
                 )}
 
-                {/* Card 5: Standard Bento Card (Row 2 Col 3 - Completes the 3x2 Bento Grid!) */}
+                {/* ARCHETYPE 5: Panoramic Full 3-Column AI Banner Showcase (Row 3, Full Width) */}
                 {recent5Projects[4] && (
                   <Link
                     href={`/projects/${recent5Projects[4].slug || recent5Projects[4].id}`}
-                    className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group border border-white/5 hover:border-[#38f2ff]/40 hover:shadow-[0_0_25px_rgba(56,242,255,0.12)] transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                    className={`${styles.bentoCard} ${styles.bentoPanoramicCard}`}
                   >
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="bg-[#161c28] px-3 py-1 rounded-full font-jetbrains text-[10px] text-gray-300 uppercase border border-white/10">
-                          {recent5Projects[4].category}
-                        </span>
-                        <span className="text-gray-500 group-hover:text-[#38f2ff] transition-colors">
-                          ↗
+                    <div className="flex flex-col justify-between h-full">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={styles.cardCatPill}>
+                              {recent5Projects[4].category}
+                            </span>
+                            <span className="font-jetbrains text-[10px] uppercase font-bold tracking-wider text-[var(--devengine-accent-text)] bg-[var(--devengine-soft)] px-2.5 py-0.5 rounded-full border border-[var(--devengine-border)]">
+                              FLAGSHIP ARCHITECTURE
+                            </span>
+                          </div>
+                          <span className="opacity-60 text-sm font-jetbrains" aria-hidden="true">
+                            ↗
+                          </span>
+                        </div>
+                        <h3 className={`${styles.cardTitle} text-2xl lg:text-3xl`}>
+                          {recent5Projects[4].title}
+                        </h3>
+                        <p className={`${styles.cardDesc} text-base max-w-xl`}>
+                          {recent5Projects[4].subtitle || recent5Projects[4].details}
+                        </p>
+                      </div>
+
+                      <div className={styles.cardFooter}>
+                        <div>
+                          <span className="font-jetbrains text-[11px] font-bold text-[var(--devengine-muted)] uppercase tracking-wider block mb-1.5">
+                            Licensing Price
+                          </span>
+                          <PriceDisplay
+                            prices={getProjectPrices(recent5Projects[4])}
+                            size="lg"
+                          />
+                        </div>
+                        <span className="font-jetbrains text-xs sm:text-sm text-[var(--devengine-accent-text)] font-bold hover:underline flex items-center gap-1.5">
+                          Inspect Architecture & Docs →
                         </span>
                       </div>
-                      <h3 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1 line-clamp-1">
-                        {recent5Projects[4].title}
-                      </h3>
-                      <p className="font-sans text-xs text-[#849495] line-clamp-2 mb-3">
-                        {recent5Projects[4].subtitle || recent5Projects[4].details}
-                      </p>
                     </div>
 
-                    {/* Project Image Frame (Upgraded from flat h-28 to h-48 sm:h-52) */}
-                    <div className="w-full h-48 sm:h-52 rounded-xl overflow-hidden border border-white/10 relative my-2 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
-                      <Image
-                        src={
-                          (recent5Projects[4] as any).images?.[0] ||
-                          recent5Projects[4].imageUrl ||
-                          (recent5Projects[4] as any).image ||
-                          config.defaultProjectImages?.[4 % (config.defaultProjectImages?.length || 1)] ||
-                          "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
-                        }
-                        alt={recent5Projects[4].title}
-                        fill
-                        className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
-                    </div>
-
-                    <div className="pt-2.5 border-t border-white/5 flex flex-wrap justify-between items-center gap-2">
-                      <span className="font-jetbrains text-[9px] text-gray-500 uppercase tracking-wider">
-                        Price
-                      </span>
-                      <PriceDisplay
-                        prices={getProjectPrices(recent5Projects[4])}
-                        size="sm"
-                      />
+                    <div>
+                      <div className={styles.cardThumbFrame}>
+                        <Image
+                          src={
+                            (recent5Projects[4] as any).images?.[0] ||
+                            recent5Projects[4].imageUrl ||
+                            (recent5Projects[4] as any).image ||
+                            config.defaultProjectImages?.[4 % (config.defaultProjectImages?.length || 1)] ||
+                            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt=""
+                          fill
+                          className="object-cover blur-2xl opacity-20 scale-110 pointer-events-none"
+                          aria-hidden="true"
+                          unoptimized
+                        />
+                        <Image
+                          src={
+                            (recent5Projects[4] as any).images?.[0] ||
+                            recent5Projects[4].imageUrl ||
+                            (recent5Projects[4] as any).image ||
+                            config.defaultProjectImages?.[4 % (config.defaultProjectImages?.length || 1)] ||
+                            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
+                          }
+                          alt={recent5Projects[4].title}
+                          fill
+                          className={styles.cardThumbImg}
+                          unoptimized
+                        />
+                      </div>
                     </div>
                   </Link>
                 )}
@@ -1089,10 +1193,10 @@ export default function ArchivePage() {
 
               {/* View All Catalog Grid (When expanded) */}
               {showAllCatalog && filteredProjects.length > 5 && (
-                <div className="mt-12 pt-12 border-t border-white/10 space-y-6">
-                  <h3 className="font-space text-xl font-bold text-white flex items-center justify-between">
+                <div className="mt-12 pt-12 border-t border-[var(--devengine-border)] space-y-6">
+                  <h3 className="text-xl font-bold flex items-center justify-between">
                     <span>Full Catalog ({filteredProjects.length} Projects)</span>
-                    <span className="text-xs font-mono text-gray-400">
+                    <span className="text-xs font-mono opacity-70">
                       Filtered by: {selectedCategory.toUpperCase()}
                     </span>
                   </h3>
@@ -1101,26 +1205,41 @@ export default function ArchivePage() {
                       <Link
                         key={project.id}
                         href={`/projects/${project.slug || project.id}`}
-                        className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 border border-white/5 hover:border-[#38f2ff]/30 hover:shadow-[0_0_25px_rgba(56,242,255,0.1)] transition-all group flex flex-col justify-between cursor-pointer"
+                        className={styles.bentoCard}
                       >
                         <div>
-                          <div className="flex justify-between items-center mb-3">
-                            <span className="bg-[#161c28] px-2.5 py-1 rounded font-jetbrains text-[10px] text-gray-300 uppercase">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className={styles.cardCatPill}>
                               {project.category}
                             </span>
-                            <span className="text-gray-600 group-hover:text-[#38f2ff] transition-colors">
+                            <span className="opacity-60 text-sm font-jetbrains" aria-hidden="true">
                               ↗
                             </span>
                           </div>
-                          <h4 className="font-space text-lg font-bold text-white group-hover:text-[#38f2ff] transition-colors mb-1.5">
+                          <h4 className={styles.cardTitle}>
                             {project.title}
                           </h4>
-                          <p className="text-xs text-gray-400 line-clamp-2 mb-3">
+                          <p className={styles.cardDesc}>
                             {project.subtitle}
                           </p>
 
-                          {/* Image Frame for catalog items */}
-                          <div className="w-full h-44 sm:h-48 rounded-xl overflow-hidden border border-white/10 relative my-3 group-hover:border-[#38f2ff]/40 transition-all bg-black/40">
+                          <div className={styles.cardThumbFrame}>
+                            <Image
+                              src={
+                                (project as any).images?.[0] ||
+                                project.imageUrl ||
+                                (project as any).image ||
+                                config.defaultProjectImages?.[
+                                  (idx + 5) % (config.defaultProjectImages?.length || 6)
+                                ] ||
+                                "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"
+                              }
+                              alt=""
+                              fill
+                              className="object-cover blur-2xl opacity-20 scale-110 pointer-events-none"
+                              aria-hidden="true"
+                              unoptimized
+                            />
                             <Image
                               src={
                                 (project as any).images?.[0] ||
@@ -1133,20 +1252,21 @@ export default function ArchivePage() {
                               }
                               alt={project.title}
                               fill
-                              className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                              className={styles.cardThumbImg}
                               unoptimized
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 via-transparent to-transparent pointer-events-none" />
                           </div>
                         </div>
-                        <div className="pt-3 border-t border-white/5 flex flex-wrap justify-between items-center gap-2 font-jetbrains text-xs">
-                          <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
-                            Price
-                          </span>
-                          <PriceDisplay
-                            prices={getProjectPrices(project)}
-                            size="sm"
-                          />
+                        <div className={styles.cardFooter}>
+                          <div>
+                            <span className="font-jetbrains text-[11px] font-bold text-[var(--devengine-muted)] uppercase tracking-wider block mb-1.5">
+                              Price
+                            </span>
+                            <PriceDisplay
+                              prices={getProjectPrices(project)}
+                              size="md"
+                            />
+                          </div>
                         </div>
                       </Link>
                     ))}
@@ -1158,132 +1278,137 @@ export default function ArchivePage() {
         </section>
 
         {/* =========================================================================
-            SECTION 6: IN THE LAB (Classified Development & Live Countdown)
+            SECTION 6: IN THE LAB (Classified Development & Live Countdown - Enlarged)
         ========================================================================= */}
         <section
           id="lab-section"
-          className="py-20 px-6 sm:px-12 md:px-20 relative overflow-hidden"
+          className={`${styles.sectionBlock} ${styles.scrollSection}`}
         >
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="inline-block bg-[#161c28] px-3.5 py-1 rounded border border-white/10 font-jetbrains text-[10px] text-gray-400 tracking-widest uppercase mb-4">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-10">
+              <div className="inline-block bg-[var(--devengine-soft)] px-4 py-1.5 rounded-full border border-[var(--devengine-border)] font-jetbrains text-[11px] text-[var(--devengine-accent-text)] tracking-widest uppercase mb-3 font-semibold shadow-xs">
                 {config.lab.badgeText}
               </div>
-              <h2 className="font-space font-bold text-3xl sm:text-5xl text-white">
+              <h2 className={styles.sectionTitle}>
                 {config.lab.title}
               </h2>
             </div>
 
-            <div className="bg-[#080e1a]/80 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 md:p-16 border border-white/10 relative overflow-hidden shadow-2xl">
-              {/* Spinning Centerpiece Core */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] opacity-15 pointer-events-none flex items-center justify-center">
-                <div className="absolute w-full h-full border border-[#38f2ff]/30 rounded-full animate-[spin_40s_linear_infinite]" />
-                <div className="absolute w-3/4 h-3/4 border-t border-b border-[#3495ea]/40 rounded-full animate-[spin_20s_linear_infinite_reverse]" />
-                <div className="absolute w-1/2 h-1/2 border border-[#78f5ff]/20 rounded-full" />
-              </div>
-
-              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+            <div className={styles.labCard}>
+              {/* Top Row: Project Progress (Left) + Countdown Clock (Right) */}
+              <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
                 {/* Left: Project Progress */}
-                <div className="flex-1 text-center md:text-left space-y-6">
+                <div className="flex-1 text-center lg:text-left space-y-7 w-full">
                   <div>
-                    <h3 className="font-space font-bold text-3xl sm:text-5xl text-white mb-2">
+                    <h3 className={styles.labProjectName}>
                       {config.lab.projectName}
                     </h3>
-                    <p className="font-jetbrains text-xs text-[#38f2ff] tracking-widest uppercase font-semibold">
+                    <p className="font-jetbrains text-sm sm:text-base text-[var(--devengine-accent-text)] tracking-widest uppercase font-semibold flex items-center justify-center lg:justify-start gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--devengine-accent)] animate-pulse inline-block" />
                       {config.lab.techDomain}
                     </p>
                   </div>
 
-                  {/* 5-Stage Stepper */}
-                  <div className="max-w-md mx-auto md:mx-0">
-                    <div className="flex justify-between font-jetbrains text-[10px] text-gray-400 mb-2">
-                      <span className="text-[#38f2ff] font-bold">IDEA</span>
-                      <span className="text-[#38f2ff] font-bold">DESIGN</span>
-                      <span className="text-[#38f2ff] font-bold">DEV</span>
-                      <span>TEST</span>
-                      <span>LAUNCH</span>
+                  {/* 5-Stage Stepper - Matched to Theme */}
+                  <div className="max-w-xl mx-auto lg:mx-0">
+                    <div className="flex justify-between font-jetbrains text-xs mb-2.5 font-bold tracking-wider">
+                      <span className={styles.labStepActive}>IDEA</span>
+                      <span className={styles.labStepActive}>DESIGN</span>
+                      <span className={styles.labStepActive}>DEV</span>
+                      <span className={styles.labStepInactive}>TEST</span>
+                      <span className={styles.labStepInactive}>LAUNCH</span>
                     </div>
 
-                    <div className="h-2.5 bg-[#161c28] rounded-full overflow-hidden flex">
+                    <div className={styles.labProgressTrack}>
                       <div
-                        className="h-full bg-gradient-to-r from-[#38f2ff] to-[#78f5ff] rounded-full relative transition-all duration-1000"
+                        className={styles.labProgressBar}
                         style={{ width: `${config.lab.progressPercentage}%` }}
                       >
-                        <div className="absolute top-0 right-0 h-full w-3 bg-white/60 blur-xs" />
+                        <div className={styles.labProgressBarGlow} />
                       </div>
                     </div>
 
-                    <div className="text-right mt-1.5 font-jetbrains text-xs text-[#38f2ff] font-bold">
-                      {config.lab.progressPercentage}% COMPLETE
-                    </div>
-                  </div>
-
-                  {/* Metadata Chips */}
-                  <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto md:mx-0 font-jetbrains text-xs">
-                    <div className="bg-[#161c28] p-3.5 rounded-xl border border-white/5">
-                      <div className="text-[10px] text-gray-500 mb-1">
-                        EXPECTED DEPLOY
-                      </div>
-                      <div className="text-white font-bold">
-                        {config.lab.expectedDeploy}
-                      </div>
-                    </div>
-                    <div className="bg-[#161c28] p-3.5 rounded-xl border border-white/5">
-                      <div className="text-[10px] text-gray-500 mb-1">
-                        TECH DOMAIN
-                      </div>
-                      <div className="text-white font-bold">
-                        {config.lab.techDomain}
-                      </div>
+                    <div className="text-right mt-2 font-jetbrains">
+                      <span className={styles.labPercentText}>
+                        {config.lab.progressPercentage}% COMPLETE
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Right: Massive Real-Time Countdown Clock with SECONDS */}
-                <div className="flex-1 flex justify-center">
-                  <div className="bg-[#0e131f]/90 p-6 sm:p-8 rounded-2xl border border-[#38f2ff]/20 flex gap-3 sm:gap-5 text-center shadow-2xl">
-                    <div>
-                      <div className="font-space font-bold text-3xl sm:text-5xl text-white">
+                <div className="flex-1 flex justify-center w-full">
+                  <div className={styles.clockBox}>
+                    <div className={styles.clockUnit}>
+                      <div className={styles.clockDigit}>
                         {String(timeLeft.days).padStart(2, "0")}
                       </div>
-                      <div className="font-jetbrains text-[9px] sm:text-[10px] text-[#38f2ff] tracking-widest font-semibold mt-1">
+                      <div className={styles.clockLabel}>
                         DAYS
                       </div>
                     </div>
-                    <div className="font-space text-2xl sm:text-4xl text-gray-600 font-bold self-center">
-                      :
-                    </div>
-                    <div>
-                      <div className="font-space font-bold text-3xl sm:text-5xl text-white">
+                    <div className={styles.clockDivider} aria-hidden="true">:</div>
+                    <div className={styles.clockUnit}>
+                      <div className={styles.clockDigit}>
                         {String(timeLeft.hours).padStart(2, "0")}
                       </div>
-                      <div className="font-jetbrains text-[9px] sm:text-[10px] text-[#38f2ff] tracking-widest font-semibold mt-1">
+                      <div className={styles.clockLabel}>
                         HOURS
                       </div>
                     </div>
-                    <div className="font-space text-2xl sm:text-4xl text-gray-600 font-bold self-center">
-                      :
-                    </div>
-                    <div>
-                      <div className="font-space font-bold text-3xl sm:text-5xl text-white">
+                    <div className={styles.clockDivider} aria-hidden="true">:</div>
+                    <div className={styles.clockUnit}>
+                      <div className={styles.clockDigit}>
                         {String(timeLeft.minutes).padStart(2, "0")}
                       </div>
-                      <div className="font-jetbrains text-[9px] sm:text-[10px] text-[#38f2ff] tracking-widest font-semibold mt-1">
+                      <div className={styles.clockLabel}>
                         MINS
                       </div>
                     </div>
-                    <div className="font-space text-2xl sm:text-4xl text-gray-600 font-bold self-center">
-                      :
-                    </div>
-                    <div>
-                      <div className="font-space font-bold text-3xl sm:text-5xl text-[#38f2ff] animate-pulse">
+                    <div className={styles.clockDivider} aria-hidden="true">:</div>
+                    <div className={styles.clockUnit}>
+                      <div className={`${styles.clockDigit} ${styles.clockSecs}`}>
                         {String(timeLeft.seconds).padStart(2, "0")}
                       </div>
-                      <div className="font-jetbrains text-[9px] sm:text-[10px] text-[#38f2ff] tracking-widest font-semibold mt-1">
+                      <div className={styles.clockLabel}>
                         SECS
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Bottom Row: EXPECTED DEPLOY, TECH DOMAIN, LAB STATUS (All in ONE LINE with Title and Description) */}
+              <div className={styles.labMetaRow}>
+                {/* Card 1: Expected Deploy */}
+                <div className={styles.labMetaCard}>
+                  <span className={styles.labMetaLabel}>
+                    EXPECTED DEPLOY
+                  </span>
+                  <span className={styles.labMetaValue}>
+                    {config.lab.expectedDeploy}
+                  </span>
+                </div>
+
+                {/* Card 2: Tech Domain */}
+                <div className={styles.labMetaCard}>
+                  <span className={styles.labMetaLabel}>
+                    TECH DOMAIN
+                  </span>
+                  <span className={styles.labMetaValue} title={config.lab.techDomain}>
+                    {config.lab.techDomain}
+                  </span>
+                </div>
+
+                {/* Card 3: Lab Status */}
+                <div className={styles.labMetaCard}>
+                  <span className={styles.labMetaLabel}>
+                    LAB STATUS
+                  </span>
+                  <span className={`${styles.labMetaValue} text-emerald-500 dark:text-emerald-400 flex items-center gap-2`}>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                    ACTIVE SPRINT
+                  </span>
                 </div>
               </div>
             </div>
@@ -1293,36 +1418,37 @@ export default function ArchivePage() {
         {/* =========================================================================
             SECTION 7: TECHNOLOGY WALL
         ========================================================================= */}
-        <section className="py-20 px-6 sm:px-12 md:px-20 border-y border-white/5 bg-[#080e1a]/40">
-          <div className="max-w-4xl mx-auto text-center mb-12">
-            <h2 className="font-space font-bold text-3xl sm:text-4xl text-white mb-3">
+        <section className={`${styles.sectionBlock} ${styles.scrollSection}`}>
+          <div className="max-w-4xl mx-auto text-center mb-10">
+            <h2 className={styles.sectionTitle}>
               {config.techWall.title}
             </h2>
-            <p className="font-sans text-sm sm:text-base text-[#849495] max-w-xl mx-auto">
+            <p className={styles.sectionSubtitle}>
               {config.techWall.subtitle}
             </p>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-3.5 max-w-4xl mx-auto font-jetbrains text-xs">
+          <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto font-jetbrains text-xs">
             {[
-              { name: "Flutter", color: "#38f2ff" },
+              { name: "Flutter", color: "#2cecf7" },
               { name: "React / Next.js", color: "#61DAFB" },
               { name: "PostgreSQL", color: "#336791" },
               { name: "Firebase", color: "#FFCA28" },
-              { name: "Tailwind CSS", color: "#38f2ff" },
-              { name: "Gemini API", color: "#ffffff" },
+              { name: "Tailwind CSS", color: "#2cecf7" },
+              { name: "Gemini API", color: "#9333ea" },
               { name: "Node.js", color: "#68A063" },
               { name: "TypeScript", color: "#3178C6" },
             ].map((tech) => (
               <div
                 key={tech.name}
-                className="bg-[#0e131f] px-5 py-2.5 rounded-full border border-white/10 hover:border-[#38f2ff]/50 hover:bg-white/[0.02] transition-all cursor-default flex items-center gap-2"
+                className={styles.techChip}
               >
                 <span
-                  className="w-2 h-2 rounded-full"
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: tech.color }}
+                  aria-hidden="true"
                 />
-                <span className="text-gray-300 font-medium">{tech.name}</span>
+                <span>{tech.name}</span>
               </div>
             ))}
           </div>
@@ -1331,40 +1457,40 @@ export default function ArchivePage() {
         {/* =========================================================================
             SECTION 8: METRICS & STATISTICS
         ========================================================================= */}
-        <section className="py-24 px-6 sm:px-12 md:px-20">
-          <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 divide-y md:divide-y-0 md:divide-x divide-white/5 text-center">
-            <div className="pt-4 md:pt-0 px-4">
-              <div className="font-space font-bold text-4xl sm:text-6xl text-[#38f2ff] mb-2">
+        <section className={`${styles.sectionBlock} ${styles.scrollSection}`}>
+          <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center border-t border-[var(--devengine-border)] pt-12">
+            <div className={styles.metricCard}>
+              <div className={styles.metricValue}>
                 {config.stats.stat1Value}
               </div>
-              <div className="font-jetbrains text-[10px] text-gray-400 tracking-widest uppercase">
+              <div className={styles.metricLabel}>
                 {config.stats.stat1Label}
               </div>
             </div>
 
-            <div className="pt-4 md:pt-0 px-4">
-              <div className="font-space font-bold text-4xl sm:text-6xl text-white mb-2">
+            <div className={styles.metricCard}>
+              <div className={styles.metricValue}>
                 {config.stats.stat2Value}
               </div>
-              <div className="font-jetbrains text-[10px] text-gray-400 tracking-widest uppercase">
+              <div className={styles.metricLabel}>
                 {config.stats.stat2Label}
               </div>
             </div>
 
-            <div className="pt-4 md:pt-0 px-4">
-              <div className="font-space font-bold text-4xl sm:text-6xl text-white mb-2">
+            <div className={styles.metricCard}>
+              <div className={styles.metricValue}>
                 {config.stats.stat3Value}
               </div>
-              <div className="font-jetbrains text-[10px] text-gray-400 tracking-widest uppercase">
+              <div className={styles.metricLabel}>
                 {config.stats.stat3Label}
               </div>
             </div>
 
-            <div className="pt-4 md:pt-0 px-4">
-              <div className="font-space font-bold text-4xl sm:text-6xl text-white mb-2">
+            <div className={styles.metricCard}>
+              <div className={styles.metricValue}>
                 {config.stats.stat4Value}
               </div>
-              <div className="font-jetbrains text-[10px] text-gray-400 tracking-widest uppercase">
+              <div className={styles.metricLabel}>
                 {config.stats.stat4Label}
               </div>
             </div>
@@ -1372,7 +1498,7 @@ export default function ArchivePage() {
         </section>
       </main>
 
-      {/* Shared Dashboard Footer as requested by USER */}
+      {/* Shared Dashboard Footer */}
       <LandingFooter />
     </>
   );

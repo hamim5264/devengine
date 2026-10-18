@@ -1,24 +1,29 @@
-import React from "react";
-import { IntroConfig } from "@/types/landing";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
+import type { IntroConfig } from "@/types/landing";
+import styles from "./Landing.module.css";
+import motionStyles from "./LandingMotion.module.css";
 
-interface ImmersiveIntroProps {
-  config: IntroConfig;
+const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
+const word: Variants = {
+  hidden: { opacity: 0, y: "0.55em", filter: "blur(10px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } },
+};
+
+function Words({ text, className }: { text: string; className?: string }) {
+  const parts = text.split(/\s+/).filter(Boolean);
+  return <>{parts.map((part, index) => <span key={`${part}-${index}`}><motion.span variants={word} className={`${motionStyles.introWord} ${className || ""}`}>{part}</motion.span>{index < parts.length - 1 ? " " : ""}</span>)}</>;
 }
 
-export default function ImmersiveIntro({ config }: ImmersiveIntroProps) {
-  return (
-    <section className="min-h-[60vh] flex items-center justify-center py-28 px-6 sm:px-12 md:px-20 bg-[#02040A] relative z-10 overflow-hidden">
-      {/* Center Subtle Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[40vh] bg-[radial-gradient(circle_at_50%_50%,rgba(62,243,255,0.05),transparent_60%)] pointer-events-none blur-3xl" />
-
-      <div className="text-center max-w-5xl mx-auto relative z-10">
-        <h2 className="font-space-grotesk text-4xl sm:text-6xl md:text-8xl font-bold text-white leading-[1.1] tracking-tighter">
-          {config.headingPrefix} <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3EF3FF] via-[#9ecaff] to-white drop-shadow-[0_0_35px_rgba(62,243,255,0.4)]">
-            {config.headingHighlight}
-          </span>
-        </h2>
-      </div>
-    </section>
-  );
+export default function ImmersiveIntro({ config }: { config: IntroConfig }) {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) {
+    return <section className={styles.section}><div className={styles.intro}>
+      <h2 className={styles.heading}>{config.headingPrefix}<br /><span className={styles.highlight}>{config.headingHighlight}</span></h2>
+    </div></section>;
+  }
+  return <section className={styles.section}><div className={styles.intro}>
+    <motion.h2 className={styles.heading} variants={container} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }}>
+      <Words text={config.headingPrefix} /><br /><Words text={config.headingHighlight} className={motionStyles.glowText} />
+    </motion.h2>
+  </div></section>;
 }

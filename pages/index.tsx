@@ -24,7 +24,7 @@ export default function IndexPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      <main className="w-screen h-screen overflow-hidden bg-black">
+      <main className="w-full h-[100svh] overflow-hidden">
         <SplashScreen onEnterConsole={handleEnterConsole} />
       </main>
     </>

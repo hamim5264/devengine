@@ -428,7 +428,8 @@ service cloud.firestore {
     ========================== */
     match /system_settings/{settingId} {
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      // Global theme and font policy is controlled exclusively by the admin.
+      allow write: if isAdmin() || (settingId != "theme_modes" && isStaff());
     }
 
     /* =========================
@@ -474,13 +475,13 @@ service cloud.firestore {
     }
 
     /* =========================
-       APP SETTINGS (PDF Branding & System Config)
+       APP SETTINGS (PDF Branding, Invoice Settings & System Config)
     ========================== */
     match /app_settings/{settingId} {
       // Public can read branding settings (needed for dynamic PDF invoices & agreements)
       allow read: if true;
-      // Only admin can write settings
-      allow write: if isAdmin();
+      // Admin and authorized staff can write settings
+      allow write: if isAdmin() || isAdminOrStaff();
     }
 
     /* =========================

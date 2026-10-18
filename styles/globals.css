@@ -4,8 +4,85 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Shared system palette: bright cyan, near-black text, and a soft cyan glow. */
+:root {
+  --devengine-page: #02040a;
+  --devengine-surface: #0a0f1d;
+  --devengine-raised: #111827;
+  --devengine-text: #dde2f3;
+  --devengine-muted: #a7b6ce;
+  --devengine-accent: #2cecf7;
+  --devengine-accent-text: #2cecf7;
+  --devengine-heading: #2cecf7;
+  --devengine-blue: #2cecf7;
+  --devengine-soft: rgba(44, 236, 247, 0.08);
+  --devengine-blue-soft: rgba(44, 236, 247, 0.1);
+  --devengine-border: rgba(44, 236, 247, 0.18);
+  --devengine-track: #1a2333;
+  --devengine-map: #080e1a;
+  --devengine-land: #0c1628;
+  --devengine-land-border: #1d2e47;
+  --devengine-nav: rgba(2, 4, 10, 0.94);
+  --devengine-button: #2cecf7;
+  --devengine-button-text: #02040a;
+  --devengine-button-hover: #53f2fb;
+  --devengine-heading-shadow: 0 0 24px rgba(44, 236, 247, 0.22);
+  --devengine-button-shadow: 0 0 30px rgba(44, 236, 247, 0.35);
+  --devengine-surface-shadow: 0 14px 48px -30px rgba(0, 0, 0, 0.6);
+}
+
+html.light {
+  --devengine-page: #f5fbff;
+  --devengine-surface: #fff;
+  --devengine-raised: #eef8fc;
+  --devengine-text: #14213d;
+  --devengine-muted: #51627d;
+  --devengine-accent: #2cecf7;
+  --devengine-accent-text: #14213d;
+  --devengine-heading: #2cecf7;
+  --devengine-blue: #2cecf7;
+  --devengine-soft: #e5f8fc;
+  --devengine-blue-soft: #e5f8fc;
+  --devengine-border: #cee8f0;
+  --devengine-track: #d5edf5;
+  --devengine-map: #eff9fd;
+  --devengine-land: #d3eaf4;
+  --devengine-land-border: #a5ccdd;
+  --devengine-nav: rgba(255, 255, 255, 0.95);
+  --devengine-button: #2cecf7;
+  --devengine-button-text: #02040a;
+  --devengine-button-hover: #53f2fb;
+  --devengine-heading-shadow: none;
+  --devengine-button-shadow: 0 6px 24px rgba(44, 236, 247, 0.3);
+  --devengine-surface-shadow: 0 14px 48px -30px rgba(44, 236, 247, 0.25);
+}
+
 body {
   @apply font-sans;
+}
+
+/* A short palette transition applies to every header control and open dialog. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme-transitioning="true"],
+  html[data-theme-transitioning="true"] body,
+  html[data-theme-transitioning="true"] body *,
+  html[data-theme-transitioning="true"] body *::before,
+  html[data-theme-transitioning="true"] body *::after {
+    transition-property: background-color, color, border-color, fill, stroke, box-shadow;
+    transition-duration: 380ms;
+    transition-timing-function: ease;
+  }
+}
+
+/* Legacy heading utilities must follow the admin's global font choice too. */
+[class~="font-['Space_Grotesk']"] {
+  font-family: var(--font-site, "Space Grotesk"), sans-serif;
+}
+
+/* Keep source code readable when interface labels use the selected site font. */
+pre, code, kbd, samp {
+  --font-site: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: var(--font-site);
 }
 
 /* Hide Next.js dev mode build indicator floating in bottom-left */
@@ -554,7 +631,7 @@ html.light select option {
 }
 
 /* 10. Headers & Sidebars in AdminLayout & StaffLayout */
-html.light header {
+html.light header:not([class*="navbar"]) {
   background-color: rgba(255, 255, 255, 0.96) !important;
   border-bottom: 1px solid #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);

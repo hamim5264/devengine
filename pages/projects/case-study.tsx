@@ -22,6 +22,7 @@ import {
   DEFAULT_ARCHIVE_CONFIG,
   DEFAULT_CASE_STUDY_CONTENT,
 } from "@/lib/services/archiveService";
+import styles from "@/components/projects/CaseStudy.module.css";
 
 // ─── Sub-Navigation Sections ────────────────────────────────────────────────
 const SECTIONS = [
@@ -136,13 +137,13 @@ export default function CaseStudyPage() {
   // ─── Scroll Spy & Sticky Nav ────────────────────────────────────────────
   useEffect(() => {
     const handleScroll = () => {
-      setShowStickyNav(window.scrollY > 600);
+      setShowStickyNav(window.scrollY > 400);
 
       for (let i = SECTIONS.length - 1; i >= 0; i--) {
         const el = document.getElementById(SECTIONS[i].id);
         if (el) {
           const rect = el.getBoundingClientRect();
-          if (rect.top <= 180) {
+          if (rect.top <= 200) {
             setActiveSection(SECTIONS[i].id);
             break;
           }
@@ -152,6 +153,27 @@ export default function CaseStudyPage() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // ─── Smooth Scroll Reveal Observer across all sections ───────────────────
+  useEffect(() => {
+    if (loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.sectionActive);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    const sections = document.querySelectorAll(`.${styles.scrollSection}`);
+    sections.forEach((sec) => observer.observe(sec));
+
+    return () => observer.disconnect();
+  }, [loading]);
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -166,121 +188,139 @@ export default function CaseStudyPage() {
 
   const projectTitle =
     project?.title || config.featuredCaseStudy.title || "Featured Project";
+  const projectSubtitle =
+    project?.subtitle || config.featuredCaseStudy.titleHighlight || "High-Fidelity Engineering System";
   const projectCategory =
     project?.category || "Engineering";
+  const heroImageSrc =
+    cs.heroImage ||
+    project?.imageUrl ||
+    config.defaultProjectImages?.[0] ||
+    "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1920&auto=format&fit=crop";
 
   if (loading) {
     return (
-      <>
-        <LandingNavbar />
-        <div className="min-h-screen bg-[#030712] flex flex-col items-center justify-center">
-          <HelixLoader size={56} color="#38f2ff" />
-          <p className="mt-6 font-jetbrains text-xs text-gray-400 tracking-widest uppercase">
-            Loading Case Study…
-          </p>
-        </div>
-      </>
+      <div className="fixed inset-0 bg-[var(--devengine-page)] z-50 flex items-center justify-center">
+        <HelixLoader size={80} text="LOADING CASE STUDY..." />
+      </div>
     );
   }
 
   return (
-    <>
+    <div className={styles.caseStudyRoot}>
       <Head>
         <title>
-          {projectTitle} — Case Study | DevEngine
+          {projectTitle} — Engineering Case Study | DevEngine
         </title>
         <meta
           name="description"
-          content={cs.challenge || "An in-depth engineering case study."}
+          content={cs.challenge || projectSubtitle}
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      {/* Global Dark Canvas */}
-      <div className="fixed inset-0 bg-[#030712] z-[-10]" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(14,19,31,0.9)_0%,rgba(3,7,18,1)_100%)] z-[-9] pointer-events-none" />
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] z-[-8] pointer-events-none opacity-60" />
+      {/* Atmospheric Subtle Cyber Blueprint & Ambient Lighting */}
+      <div className={styles.ambientCanvas} aria-hidden="true">
+        <span className={styles.ambientBlobA} />
+        <span className={styles.ambientBlobB} />
+        <span className={styles.ambientGrid} />
+      </div>
 
       <LandingNavbar />
 
       {/* ═══════════════════════════════════════════════════════════════════
-          HERO: Full-Width Banner
+          HERO: Full-Width Clear Resolution Banner
       ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative w-full h-[70vh] min-h-[520px] max-h-[800px] overflow-hidden">
-        <Image
-          src={cs.heroImage || "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1920&auto=format&fit=crop"}
-          alt="Case Study Hero"
-          fill
-          className="object-cover"
-          unoptimized
-          priority
-        />
-        {/* Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#030712] via-[#030712]/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#030712]/80 to-transparent" />
-
-        {/* Hero Content */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12 md:p-20 max-w-6xl mx-auto">
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <span className="bg-[#38f2ff]/15 text-[#38f2ff] px-3 py-1 rounded font-jetbrains text-[10px] uppercase tracking-widest border border-[#38f2ff]/30 font-bold">
-              Case Study
-            </span>
-            <span className="bg-white/5 text-gray-300 px-3 py-1 rounded font-jetbrains text-[10px] uppercase tracking-widest border border-white/10">
-              {projectCategory}
-            </span>
-            {(project?.tags || []).slice(0, 3).map((t) => (
-              <span
-                key={t}
-                className="bg-white/5 text-gray-400 px-2.5 py-1 rounded font-mono text-[10px] border border-white/5"
-              >
-                #{t}
-              </span>
-            ))}
+      <section className={`${styles.heroSection} ${styles.scrollSection} ${styles.sectionActive}`}>
+        {/* Background Image Container with Progressive Blur */}
+        <div className={styles.heroImageWrap}>
+          {/* Base sharp clear image */}
+          <Image
+            src={heroImageSrc}
+            alt={projectTitle}
+            fill
+            className={styles.heroImg}
+            unoptimized
+            priority
+          />
+          {/* Progressive blur overlay: softens towards the bottom, decreases towards top */}
+          <div className={styles.progressiveBlurWrap} aria-hidden="true">
+            <Image
+              src={heroImageSrc}
+              alt=""
+              fill
+              className={styles.heroImgBlur}
+              unoptimized
+              priority
+            />
           </div>
+          <div className={styles.heroOverlay} />
+        </div>
 
-          <h1 className="font-space font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white tracking-tight leading-tight mb-4">
-            {projectTitle}
-          </h1>
-          <p className="font-sans text-base sm:text-lg text-[#849495] max-w-3xl leading-relaxed mb-6">
-            {project?.subtitle || config.featuredCaseStudy.titleHighlight}
-          </p>
+        {/* Hero Content with Frosted Glass Card */}
+        <div className={styles.heroContent}>
+          <div className={styles.heroContentCard}>
+            <div className={styles.heroBadgeRow}>
+              <span className={styles.badgePrimary}>
+                Case Study
+              </span>
+              <span className={styles.badgeSecondary}>
+                {projectCategory}
+              </span>
+              {(project?.tags || []).slice(0, 4).map((t) => (
+                <span key={t} className={styles.badgeTag}>
+                  #{t}
+                </span>
+              ))}
+            </div>
 
-          <div className="flex flex-wrap gap-4 items-center">
-            <button
-              onClick={() => scrollToSection("challenge")}
-              className="bg-[#38f2ff] text-[#030712] font-sans text-sm font-bold uppercase tracking-wider px-8 py-4 rounded-full shadow-[0_0_30px_rgba(56,242,255,0.3)] hover:shadow-[0_0_50px_rgba(56,242,255,0.5)] hover:scale-105 active:scale-95 transition-all"
-            >
-              Read Case Study
-            </button>
-            <Link
-              href={`/projects/${project?.slug || config.featuredCaseStudy.projectId}`}
-              className="bg-white/5 backdrop-blur-xl text-white font-sans text-sm font-bold uppercase tracking-wider px-8 py-4 rounded-full border border-white/10 hover:border-[#38f2ff]/40 hover:bg-white/10 transition-all flex items-center gap-2"
-            >
-              View Specifications <span className="text-base">↗</span>
-            </Link>
+            <h1 className={styles.heroTitle}>
+              {projectTitle}
+            </h1>
+
+            {/* Subtitle - Increased size, clear typography, and brand accent */}
+            <p className={styles.heroSubtitle}>
+              {projectSubtitle}
+            </p>
+
+            <div className={styles.heroActions}>
+              <button
+                type="button"
+                onClick={() => scrollToSection("challenge")}
+                className={styles.ctaPrimary}
+              >
+                Read Case Study ↓
+              </button>
+              <Link
+                href={`/projects/${project?.slug || config.featuredCaseStudy.projectId || "craftybay"}`}
+                className={styles.ctaSecondary}
+              >
+                View Specifications <span aria-hidden="true">↗</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
-          STICKY SUB-NAVIGATION
+          STICKY SUB-NAVIGATION (Safe clearance & theme-matched)
       ═══════════════════════════════════════════════════════════════════ */}
       <nav
-        className={`sticky top-[72px] z-40 transition-all duration-300 ${
-          showStickyNav
-            ? "bg-[#080e1a]/95 backdrop-blur-2xl border-b border-white/10 shadow-xl"
-            : "bg-[#080e1a]/60 backdrop-blur-md border-b border-white/5"
+        className={`${styles.subNavBar} ${
+          showStickyNav ? "shadow-md" : ""
         }`}
+        aria-label="Case Study Section Navigation"
       >
-        <div className="max-w-6xl mx-auto px-6 sm:px-12 md:px-20 flex items-center gap-1 overflow-x-auto scrollbar-hide py-3">
+        <div className={styles.subNavContainer}>
           {SECTIONS.map((sec) => (
             <button
               key={sec.id}
+              type="button"
               onClick={() => scrollToSection(sec.id)}
-              className={`whitespace-nowrap px-4 py-2 rounded-lg font-mono text-xs uppercase tracking-wide transition-all ${
-                activeSection === sec.id
-                  ? "text-[#38f2ff] bg-[#38f2ff]/10 font-bold border-b-2 border-[#38f2ff]"
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
+              className={`${styles.subNavItem} ${
+                activeSection === sec.id ? styles.subNavItemActive : ""
               }`}
+              aria-current={activeSection === sec.id ? "true" : undefined}
             >
               {sec.label}
             </button>
@@ -288,27 +328,33 @@ export default function CaseStudyPage() {
         </div>
       </nav>
 
-      <main className="w-full relative text-[#dde2f3] font-sans selection:bg-[#38f2ff] selection:text-[#030712]">
+      <main className="w-full relative z-10 selection:bg-[var(--devengine-accent)] selection:text-[var(--devengine-button-text)]">
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: The Challenge
+            SECTION 1: The Challenge
         ═════════════════════════════════════════════════════════════════ */}
         <section
           id="challenge"
-          className="py-20 px-6 sm:px-12 md:px-20 scroll-mt-36"
+          className={`${styles.sectionBlock} ${styles.scrollSection}`}
         >
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="w-8 h-[2px] bg-[#38f2ff]" />
-              <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTagRow}>
+              <span className={styles.sectionTagLine} aria-hidden="true" />
+              <span className={styles.sectionTagText}>
                 01 — The Challenge
               </span>
             </div>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-8 leading-tight tracking-tight">
+            <h2 className={styles.sectionHeading}>
               What Problem Were We Solving?
             </h2>
-            <div className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-8 sm:p-12 border border-white/10 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#38f2ff] via-[#3495ea] to-transparent rounded-full" />
-              <p className="font-sans text-base sm:text-lg text-[#c0c8d8] leading-relaxed pl-6">
+          </div>
+
+          <div className={styles.cardSurface}>
+            <div className="flex gap-4 sm:gap-6 items-start">
+              <span
+                className="w-1.5 self-stretch rounded-full bg-[var(--devengine-accent)] flex-shrink-0"
+                aria-hidden="true"
+              />
+              <p className={styles.cardText}>
                 {cs.challenge}
               </p>
             </div>
@@ -316,325 +362,329 @@ export default function CaseStudyPage() {
         </section>
 
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: The Approach
+            SECTION 2: The Approach
         ═════════════════════════════════════════════════════════════════ */}
         <section
           id="approach"
-          className="py-20 px-6 sm:px-12 md:px-20 scroll-mt-36"
+          className={`${styles.sectionBlock} ${styles.scrollSection}`}
         >
-          <div className="max-w-5xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="w-8 h-[2px] bg-[#38f2ff]" />
-              <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTagRow}>
+              <span className={styles.sectionTagLine} aria-hidden="true" />
+              <span className={styles.sectionTagText}>
                 02 — The Approach
               </span>
             </div>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-8 leading-tight tracking-tight">
+            <h2 className={styles.sectionHeading}>
               Architecture & Design Philosophy
             </h2>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-              <div className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-8 border border-white/10">
-                <p className="font-sans text-base text-[#c0c8d8] leading-relaxed">
-                  {cs.approach}
-                </p>
-              </div>
-
-              {cs.architectureDiagram && (
-                <div className="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl h-[320px] group">
-                  <Image
-                    src={cs.architectureDiagram}
-                    alt="System Architecture Diagram"
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/80 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-4 left-4 font-jetbrains text-[10px] text-gray-400 uppercase tracking-widest bg-black/60 px-3 py-1 rounded backdrop-blur-md">
-                    System Architecture
-                  </div>
-                </div>
-              )}
+          <div className={styles.architectureGrid}>
+            <div className={styles.cardSurface}>
+              <p className={styles.cardText}>
+                {cs.approach}
+              </p>
             </div>
+
+            {cs.architectureDiagram && (
+              <div className={styles.diagramFrame}>
+                {/* Background blurred ambient underlay */}
+                <Image
+                  src={cs.architectureDiagram}
+                  alt=""
+                  fill
+                  className="object-cover blur-2xl opacity-25 scale-110 pointer-events-none"
+                  aria-hidden="true"
+                  unoptimized
+                />
+                {/* Crisp diagram image - adaptive contain */}
+                <Image
+                  src={cs.architectureDiagram}
+                  alt="System Architecture Diagram"
+                  fill
+                  className={styles.diagramImg}
+                  unoptimized
+                />
+                <div className="absolute bottom-4 left-4 font-jetbrains text-[10px] text-[var(--devengine-muted)] uppercase tracking-widest bg-[var(--devengine-surface)]/95 px-3 py-1 rounded-full border border-[var(--devengine-border)] backdrop-blur-md z-10 font-bold">
+                  System Architecture
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: Key Features Showcase
+            SECTION 3: Key Features Showcase (Engineering Highlights)
         ═════════════════════════════════════════════════════════════════ */}
         <section
           id="features"
-          className="py-20 px-6 sm:px-12 md:px-20 scroll-mt-36"
+          className={`${styles.sectionBlock} ${styles.scrollSection}`}
         >
-          <div className="max-w-6xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="w-8 h-[2px] bg-[#38f2ff]" />
-              <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTagRow}>
+              <span className={styles.sectionTagLine} aria-hidden="true" />
+              <span className={styles.sectionTagText}>
                 03 — Key Features
               </span>
             </div>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-12 leading-tight tracking-tight">
+            <h2 className={styles.sectionHeading}>
               Engineering Highlights
             </h2>
+          </div>
 
-            <div className="space-y-12">
-              {cs.keyFeatures.map((feature, idx) => (
-                <div
-                  key={idx}
-                  className={`flex flex-col ${
-                    idx % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
-                  } gap-8 items-center`}
-                >
-                  {/* Feature Image */}
-                  {feature.image && (
-                    <div className="flex-1 w-full relative h-[280px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl group">
-                      <Image
-                        src={feature.image}
-                        alt={feature.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/70 to-transparent pointer-events-none" />
-                    </div>
-                  )}
+          <div className="space-y-12">
+            {cs.keyFeatures.map((feature, idx) => (
+              <div
+                key={idx}
+                className={`${styles.featureRow} ${
+                  idx % 2 === 1 ? styles.featureRowReverse : ""
+                }`}
+              >
+                {/* Feature Media Mockup - Polished Adaptive Frame */}
+                {feature.image && (
+                  <div className={styles.featureMedia}>
+                    <Image
+                      src={feature.image}
+                      alt={feature.title}
+                      fill
+                      className={styles.featureImg}
+                      unoptimized
+                    />
+                  </div>
+                )}
 
-                  {/* Feature Text */}
-                  <div className="flex-1 w-full">
-                    <div className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-8 border border-white/10 hover:border-[#38f2ff]/30 transition-all h-full">
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="w-10 h-10 rounded-xl bg-[#38f2ff]/10 border border-[#38f2ff]/30 flex items-center justify-center font-space text-[#38f2ff] text-sm font-bold">
-                          {String(idx + 1).padStart(2, "0")}
-                        </span>
-                        <h3 className="font-space text-xl sm:text-2xl font-bold text-white">
-                          {feature.title}
-                        </h3>
-                      </div>
-                      <p className="font-sans text-sm sm:text-base text-[#849495] leading-relaxed">
-                        {feature.description}
-                      </p>
+                {/* Feature Description Card */}
+                <div className={styles.featureContent}>
+                  <div className={styles.cardSurface}>
+                    <div className="flex items-center gap-3.5 mb-4">
+                      <span className={styles.featureIndexPill}>
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <h3 className={styles.featureTitle}>
+                        {feature.title}
+                      </h3>
                     </div>
+                    <p className={styles.cardText}>
+                      {feature.description}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: Development Timeline
+            SECTION 4: Development Timeline
         ═════════════════════════════════════════════════════════════════ */}
         <section
           id="timeline"
-          className="py-20 px-6 sm:px-12 md:px-20 scroll-mt-36"
+          className={`${styles.sectionBlock} ${styles.scrollSection}`}
         >
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="w-8 h-[2px] bg-[#38f2ff]" />
-              <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTagRow}>
+              <span className={styles.sectionTagLine} aria-hidden="true" />
+              <span className={styles.sectionTagText}>
                 04 — Development Timeline
               </span>
             </div>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-12 leading-tight tracking-tight">
+            <h2 className={styles.sectionHeading}>
               From Concept to Production
             </h2>
+          </div>
 
-            {/* Vertical Timeline */}
-            <div className="relative pl-8 border-l-2 border-[#38f2ff]/20 space-y-10">
-              {cs.timeline.map((phase, idx) => (
-                <div key={idx} className="relative group">
-                  {/* Timeline Dot */}
-                  <div className="absolute -left-[2.6rem] top-1 w-5 h-5 rounded-full bg-[#080e1a] border-2 border-[#38f2ff]/60 group-hover:border-[#38f2ff] group-hover:shadow-[0_0_12px_rgba(56,242,255,0.4)] transition-all flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-[#38f2ff]" />
+          {/* Vertical Stepper Timeline with Precision Center Alignment */}
+          <div className={styles.timelineTrack}>
+            {cs.timeline.map((phase, idx) => (
+              <div key={idx} className={styles.timelineItem}>
+                {/* Dedicated Stepper Indicator Column */}
+                <div className={styles.stepperCol}>
+                  <div className={styles.timelineNode} aria-hidden="true">
+                    <span className={styles.nodeCore} />
+                    <span className={styles.nodePulse} />
                   </div>
+                  {idx < cs.timeline.length - 1 && (
+                    <div className={styles.stepperLine} aria-hidden="true" />
+                  )}
+                </div>
 
-                  <div className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-white/10 hover:border-[#38f2ff]/30 transition-all">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="bg-[#38f2ff]/10 text-[#38f2ff] px-2.5 py-0.5 rounded font-jetbrains text-[10px] uppercase tracking-widest font-bold border border-[#38f2ff]/30">
+                {/* Timeline Content Card */}
+                <div className={styles.timelineCard}>
+                  <div className={styles.cardSurface}>
+                    <div className="flex items-center gap-3 mb-2.5">
+                      <span className={styles.phaseBadge}>
                         {phase.phase}
                       </span>
                     </div>
-                    <h3 className="font-space text-lg sm:text-xl font-bold text-white mb-2">
+                    <h3 className={styles.timelineTitle}>
                       {phase.title}
                     </h3>
-                    <p className="font-sans text-sm text-[#849495] leading-relaxed">
+                    <p className={styles.timelineDesc}>
                       {phase.description}
                     </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: Results & Impact
+            SECTION 5: Results & Impact (Measurable Outcomes)
         ═════════════════════════════════════════════════════════════════ */}
         <section
           id="results"
-          className="py-20 px-6 sm:px-12 md:px-20 scroll-mt-36"
+          className={`${styles.sectionBlock} ${styles.scrollSection}`}
         >
-          <div className="max-w-5xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="w-8 h-[2px] bg-[#38f2ff]" />
-              <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTagRow}>
+              <span className={styles.sectionTagLine} aria-hidden="true" />
+              <span className={styles.sectionTagText}>
                 05 — Results & Impact
               </span>
             </div>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-12 leading-tight tracking-tight">
+            <h2 className={styles.sectionHeading}>
               Measurable Outcomes
             </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {cs.results.map((result, idx) => (
-                <div
-                  key={idx}
-                  className="bg-[#080e1a]/85 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-[#38f2ff]/30 hover:shadow-[0_0_25px_rgba(56,242,255,0.1)] transition-all text-center group"
-                >
-                  <div className="font-space text-3xl sm:text-4xl font-bold text-[#38f2ff] mb-3 group-hover:drop-shadow-[0_0_12px_rgba(56,242,255,0.4)] transition-all">
-                    {result.value}
-                  </div>
-                  <div className="font-jetbrains text-xs text-white uppercase tracking-widest font-bold mb-2">
-                    {result.metric}
-                  </div>
-                  <p className="font-sans text-xs text-[#849495] leading-relaxed">
-                    {result.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Testimonial */}
-            {cs.testimonial && cs.testimonial.quote && (
-              <div className="mt-16 bg-[#080e1a]/80 backdrop-blur-xl rounded-3xl p-8 sm:p-12 border border-[#38f2ff]/20 relative overflow-hidden">
-                <div className="absolute top-6 left-8 font-space text-6xl text-[#38f2ff]/10 leading-none select-none">
-                  &ldquo;
-                </div>
-                <blockquote className="relative z-10 pl-4">
-                  <p className="font-sans text-base sm:text-lg text-[#c0c8d8] leading-relaxed italic mb-6">
-                    &ldquo;{cs.testimonial.quote}&rdquo;
-                  </p>
-                  <footer className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#38f2ff]/10 border border-[#38f2ff]/30 flex items-center justify-center font-space text-[#38f2ff] text-sm font-bold">
-                      {cs.testimonial.author.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="font-space text-sm font-bold text-white">
-                        {cs.testimonial.author}
-                      </div>
-                      <div className="font-mono text-[11px] text-gray-400">
-                        {cs.testimonial.role}
-                      </div>
-                    </div>
-                  </footer>
-                </blockquote>
-              </div>
-            )}
           </div>
+
+          <div className={styles.resultsGrid}>
+            {cs.results.map((result, idx) => (
+              <div key={idx} className={styles.metricCard}>
+                <div className={styles.metricVal}>
+                  {result.value}
+                </div>
+                <div className={styles.metricLabel}>
+                  {result.metric}
+                </div>
+                <p className={styles.metricDesc}>
+                  {result.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Client Testimonial / Quote Card */}
+          {cs.testimonial && cs.testimonial.quote && (
+            <div className={`mt-14 ${styles.quoteCard}`}>
+              <div className={styles.quoteMark} aria-hidden="true">&ldquo;</div>
+              <blockquote className="relative z-10">
+                <p className={styles.quoteText}>
+                  &ldquo;{cs.testimonial.quote}&rdquo;
+                </p>
+                <footer className="flex items-center gap-4">
+                  <div className={styles.quoteAvatar}>
+                    {cs.testimonial.author.charAt(0)}
+                  </div>
+                  <div>
+                    <div className={styles.quoteAuthor}>
+                      {cs.testimonial.author}
+                    </div>
+                    <div className={styles.quoteRole}>
+                      {cs.testimonial.role}
+                    </div>
+                  </div>
+                </footer>
+              </blockquote>
+            </div>
+          )}
         </section>
 
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: Technical Deep-Dive
+            SECTION 6: Technical Deep-Dive
         ═════════════════════════════════════════════════════════════════ */}
         <section
           id="deep-dive"
-          className="py-20 px-6 sm:px-12 md:px-20 scroll-mt-36"
+          className={`${styles.sectionBlock} ${styles.scrollSection}`}
         >
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-8">
-              <span className="w-8 h-[2px] bg-[#38f2ff]" />
-              <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTagRow}>
+              <span className={styles.sectionTagLine} aria-hidden="true" />
+              <span className={styles.sectionTagText}>
                 06 — Technical Deep-Dive
               </span>
             </div>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-8 leading-tight tracking-tight">
+            <h2 className={styles.sectionHeading}>
               Under the Hood
             </h2>
-
-            <div className="bg-[#080e1a]/80 backdrop-blur-xl rounded-2xl p-8 sm:p-12 border border-white/10">
-              <p className="font-sans text-base text-[#c0c8d8] leading-relaxed whitespace-pre-line">
-                {cs.technicalDeepDive}
-              </p>
-            </div>
-
-            {/* Tech Tags from Project */}
-            {project && project.tags.length > 0 && (
-              <div className="mt-8 flex flex-wrap gap-2">
-                {project.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-[#161c28] text-gray-300 px-3 py-1.5 rounded-lg font-jetbrains text-[10px] uppercase tracking-wider border border-white/10"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
+
+          <div className={styles.cardSurface}>
+            <p className={`${styles.cardText} whitespace-pre-line`}>
+              {cs.technicalDeepDive}
+            </p>
+          </div>
+
+          {/* Tech Tags */}
+          {project && project.tags.length > 0 && (
+            <div className="mt-8 flex flex-wrap gap-2.5">
+              {project.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="bg-[var(--devengine-surface)] text-[var(--devengine-text)] px-3.5 py-1.5 rounded-full font-jetbrains text-xs uppercase tracking-wider border border-[var(--devengine-border)] shadow-xs"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: Gallery
+            SECTION 7: Gallery (Visual Showcase - Asymmetric Bento Grid)
         ═════════════════════════════════════════════════════════════════ */}
         {cs.gallery && cs.gallery.length > 0 && (
           <section
             id="gallery"
-            className="py-20 px-6 sm:px-12 md:px-20 scroll-mt-36"
+            className={`${styles.sectionBlock} ${styles.scrollSection}`}
           >
-            <div className="max-w-6xl mx-auto">
-              <div className="inline-flex items-center gap-2 mb-8">
-                <span className="w-8 h-[2px] bg-[#38f2ff]" />
-                <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
+            <div className={styles.sectionHeader}>
+              <div className={styles.sectionTagRow}>
+                <span className={styles.sectionTagLine} aria-hidden="true" />
+                <span className={styles.sectionTagText}>
                   07 — Gallery
                 </span>
               </div>
-              <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-12 leading-tight tracking-tight">
+              <h2 className={styles.sectionHeading}>
                 Visual Showcase
               </h2>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {cs.gallery.map((img, idx) => (
-                  <div
-                    key={idx}
-                    className={`relative rounded-2xl overflow-hidden border border-white/10 shadow-xl group hover:border-[#38f2ff]/40 transition-all ${
-                      idx === 0 ? "sm:col-span-2 sm:row-span-2 h-[400px]" : "h-[200px]"
-                    }`}
-                  >
-                    <Image
-                      src={img}
-                      alt={`Gallery image ${idx + 1}`}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-700"
-                      unoptimized
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#080e1a]/50 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                ))}
-              </div>
+            <div className={styles.galleryGrid}>
+              {cs.gallery.map((img, idx) => (
+                <div key={idx} className={styles.galleryItem}>
+                  <Image
+                    src={img}
+                    alt={`Showcase visual ${idx + 1}`}
+                    fill
+                    className={styles.galleryImg}
+                    unoptimized
+                  />
+                  <div className={styles.galleryFrameGlass} aria-hidden="true" />
+                </div>
+              ))}
             </div>
           </section>
         )}
 
         {/* ═════════════════════════════════════════════════════════════════
-            SECTION: Call to Action
+            SECTION 8: Call to Action
         ═════════════════════════════════════════════════════════════════ */}
-        <section className="py-20 px-6 sm:px-12 md:px-20">
-          <div className="max-w-4xl mx-auto bg-[#080e1a]/80 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 md:p-16 border border-[#38f2ff]/20 text-center relative overflow-hidden">
-            {/* Background glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#38f2ff]/5 rounded-full blur-3xl pointer-events-none" />
-
-            <div className="relative z-10">
-              <h2 className="font-space font-bold text-3xl sm:text-4xl md:text-5xl text-white mb-6 tracking-tight">
+        <section className={`${styles.sectionBlock} ${styles.scrollSection}`}>
+          <div className={styles.ctaBanner}>
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <h2 className={styles.ctaHeading}>
                 {cs.ctaTitle}
               </h2>
-              <p className="font-sans text-base sm:text-lg text-[#849495] max-w-2xl mx-auto mb-10 leading-relaxed">
+              <p className={styles.ctaSubtitle}>
                 {cs.ctaDescription}
               </p>
 
               {/* Pricing Preview */}
               {project && (
-                <div className="mb-8 inline-flex items-center gap-4 bg-[#161c28] px-6 py-3 rounded-xl border border-white/10">
-                  <span className="font-jetbrains text-[10px] text-gray-400 uppercase tracking-widest">
+                <div className="mb-8 inline-flex items-center gap-4 bg-[var(--devengine-raised)] px-6 py-3 rounded-2xl border border-[var(--devengine-border)] shadow-xs">
+                  <span className="font-jetbrains text-xs text-[var(--devengine-muted)] uppercase tracking-wider font-bold">
                     Starting From
                   </span>
                   <PriceDisplay
@@ -644,16 +694,16 @@ export default function CaseStudyPage() {
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
                 <Link
-                  href={`/projects/${project?.slug || config.featuredCaseStudy.projectId}`}
-                  className="bg-[#38f2ff] text-[#030712] font-sans text-sm font-bold uppercase tracking-wider px-10 py-5 rounded-full shadow-[0_0_30px_rgba(56,242,255,0.4)] hover:shadow-[0_0_50px_rgba(56,242,255,0.6)] hover:scale-105 active:scale-95 transition-all"
+                  href={`/projects/${project?.slug || config.featuredCaseStudy.projectId || "craftybay"}`}
+                  className={styles.ctaPrimary}
                 >
-                  View Full Specifications
+                  View Full Specifications →
                 </Link>
                 <Link
                   href="/projects/all"
-                  className="bg-white/5 backdrop-blur-xl text-white font-sans text-sm font-bold uppercase tracking-wider px-10 py-5 rounded-full border border-white/10 hover:border-[#38f2ff]/40 hover:bg-white/10 transition-all"
+                  className={styles.ctaSecondary}
                 >
                   Explore All Projects
                 </Link>
@@ -664,6 +714,6 @@ export default function CaseStudyPage() {
       </main>
 
       <LandingFooter />
-    </>
+    </div>
   );
 }

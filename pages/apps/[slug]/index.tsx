@@ -1,3 +1,4 @@
+import HeaderControls from "@/components/HeaderControls";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
@@ -88,7 +89,7 @@ export default function AppShowcasePage() {
       <div className="min-h-screen bg-[#06080F] text-white flex flex-col selection:bg-emerald-500/30 selection:text-emerald-300">
         {/* Top Navbar */}
         <header className="sticky top-0 z-40 bg-[#06080F]/90 backdrop-blur-xl border-b border-white/5">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 min-h-16 py-3 flex flex-wrap gap-3 items-center justify-between">
             <Link href="/" className="flex items-center gap-3 group">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-black font-extrabold text-sm shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
                 DE
@@ -101,7 +102,8 @@ export default function AppShowcasePage() {
               </div>
             </Link>
 
-            <div className="flex items-center gap-4 text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+              <HeaderControls />
               <Link
                 href={`/apps/${app.slug}/privacy-policy`}
                 className="text-gray-400 hover:text-white transition-colors hidden sm:inline"

@@ -7,7 +7,8 @@ import {
 } from "@/lib/services/landingService";
 
 import LandingNavbar from "@/components/landing/LandingNavbar";
-import HeroSection from "@/components/landing/HeroSection";
+import HeroSection, { buildHeroShowcase } from "@/components/landing/HeroSection";
+import ScrollProgress from "@/components/landing/ScrollProgress";
 import ImmersiveIntro from "@/components/landing/ImmersiveIntro";
 import TechStackSection from "@/components/landing/TechStackSection";
 import MobileSection from "@/components/landing/MobileSection";
@@ -22,17 +23,16 @@ import ContactSection from "@/components/landing/ContactSection";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
 import { getCachedData, setCachedData } from "@/lib/utils/cacheService";
+import styles from "@/components/landing/Landing.module.css";
 
 export default function HomePage() {
-  const [config, setConfig] = useState<LandingConfig>(() => {
-    return getCachedData<LandingConfig>("landing_config") || DEFAULT_LANDING_CONFIG;
-  });
-  const [loading, setLoading] = useState<boolean>(() => {
-    return !getCachedData<LandingConfig>("landing_config");
-  });
+  const [config, setConfig] = useState<LandingConfig>(DEFAULT_LANDING_CONFIG);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
+    const cached = getCachedData<LandingConfig>("landing_config");
+    if (cached) { setConfig(cached); setLoading(false); }
     async function load() {
       try {
         const data = await getLandingConfig();
@@ -48,25 +48,29 @@ export default function HomePage() {
     }
     load();
 
-    if (typeof window !== "undefined" && window.location.hash === "#contact") {
-      setTimeout(() => {
-        const el = document.getElementById("contact");
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth" });
-        }
-      }, 400);
-    }
-
     return () => {
       isMounted = false;
     };
   }, []);
 
+  useEffect(() => {
+    if (loading) return;
+    const scrollToSection = () => {
+      const target = window.location.hash.slice(1);
+      if (target === "contact" || target === "services" || target === "lab") {
+        document.getElementById(target)?.scrollIntoView({ behavior: "auto" });
+      }
+    };
+    const timer = setTimeout(scrollToSection, 100);
+    window.addEventListener("hashchange", scrollToSection);
+    return () => { clearTimeout(timer); window.removeEventListener("hashchange", scrollToSection); };
+  }, [loading]);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#02040A] flex flex-col items-center justify-center text-[#dde2f3]">
-        <HelixLoader size={54} color="#3EF3FF" />
-        <p className="mt-5 text-xs font-mono tracking-widest text-[#3EF3FF] uppercase animate-pulse">
+      <div className={styles.loading}>
+        <HelixLoader size={54} color="#2cecf7" />
+        <p>
           Loading Cinematic Ecosystem...
         </p>
       </div>
@@ -84,13 +88,14 @@ export default function HomePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      <div className="min-h-screen bg-[#02040A] text-[#dde2f3] selection:bg-[#3EF3FF] selection:text-[#02040A] font-sans">
+      <div className={styles.page}>
         {/* Navigation Bar (No login/signup buttons, Build Together CTA) */}
+        <ScrollProgress />
         <LandingNavbar />
 
         <main>
           {/* 1. Hero with 3D perspective device frames */}
-          <HeroSection config={config.hero} />
+          <HeroSection config={config.hero} showcase={buildHeroShowcase(config)} />
 
           {/* 2. Immersive Intro */}
           <ImmersiveIntro config={config.intro} />

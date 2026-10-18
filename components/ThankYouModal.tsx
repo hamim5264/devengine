@@ -1,97 +1,49 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import styles from "@/components/landing/Landing.module.css";
 
 interface ThankYouModalProps {
   isOpen: boolean;
   onClose: () => void;
   senderName?: string;
-  durationMs?: number; // defaults to 5000ms (5 seconds)
+  durationMs?: number;
 }
 
-export default function ThankYouModal({
-  isOpen,
-  onClose,
-  senderName,
-  durationMs = 5000,
-}: ThankYouModalProps) {
+export default function ThankYouModal({ isOpen, onClose, senderName, durationMs = 5000 }: ThankYouModalProps) {
   const [progress, setProgress] = useState(100);
-
+  const closeCallback = useRef(onClose);
+  const dismissRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  useEffect(() => { closeCallback.current = onClose; }, [onClose]);
   useEffect(() => {
-    if (!isOpen) {
-      setProgress(100);
-      return;
-    }
-
-    const startTime = Date.now();
-    const intervalTime = 50;
-
+    if (!isOpen) { setProgress(100); return; }
+    const startedAt = Date.now();
+    const duration = Math.max(1, durationMs);
     const timer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const remainingPercent = Math.max(0, 100 - (elapsed / durationMs) * 100);
-      setProgress(remainingPercent);
-
-      if (elapsed >= durationMs) {
-        clearInterval(timer);
-        onClose();
-      }
-    }, intervalTime);
-
-    return () => clearInterval(timer);
-  }, [isOpen, durationMs, onClose]);
+      const elapsed = Date.now() - startedAt;
+      setProgress(Math.max(0, 100 - elapsed / duration * 100));
+      if (elapsed >= duration) { clearInterval(timer); closeCallback.current(); }
+    }, 50);
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dismissRef.current?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeCallback.current();
+      if (event.key === "Tab") { event.preventDefault(); dismissRef.current?.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { clearInterval(timer); document.body.style.overflow = previousOverflow; document.removeEventListener("keydown", onKey); previousFocus?.focus({ preventScroll: true }); };
+  }, [isOpen, durationMs]);
 
   if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg bg-[#080E1A]/95 border border-[#3EF3FF]/30 rounded-3xl p-8 sm:p-10 shadow-[0_0_50px_rgba(62,243,255,0.2)] text-center relative overflow-hidden my-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Glowing corner glow */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#3EF3FF]/15 blur-3xl rounded-full pointer-events-none" />
-
-        {/* Animated Checkmark Badge */}
-        <div className="w-16 h-16 rounded-2xl bg-[#3EF3FF]/10 border border-[#3EF3FF]/40 text-[#3EF3FF] flex items-center justify-center mx-auto mb-6 shadow-[0_0_25px_rgba(62,243,255,0.3)]">
-          <span className="material-symbols-outlined text-[36px] animate-bounce">
-            check_circle
-          </span>
-        </div>
-
-        {/* Header */}
-        <div className="font-jetbrains text-xs text-[#3EF3FF] tracking-[0.25em] uppercase font-bold mb-2">
-          TRANSMISSION CONFIRMED
-        </div>
-
-        <h3 className="font-space-grotesk text-2xl sm:text-3xl font-extrabold text-white mb-3 tracking-tight">
-          Thank You{senderName ? `, ${senderName}` : ""}!
-        </h3>
-
-        <p className="font-sans text-sm sm:text-base text-[#BAC9CB] leading-relaxed mb-6 font-normal">
-          Your message has been delivered to Hamim and the DevEngine engineering team.
-          We will review your parameters and respond to your email shortly.
-        </p>
-
-        {/* 5-Second Countdown Indicator Bar */}
-        <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mb-6 relative">
-          <div
-            className="h-full bg-gradient-to-r from-[#00DBE8] via-[#3EF3FF] to-[#78F5FF] transition-all ease-linear shadow-[0_0_10px_#3EF3FF]"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        <div className="flex items-center justify-between text-[11px] font-jetbrains text-[#849495] mb-2">
-          <span>AUTO-CLOSING IN 5 SECONDS</span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[#3EF3FF] hover:underline font-bold uppercase tracking-wider cursor-pointer"
-          >
-            DISMISS NOW [✕]
-          </button>
-        </div>
-      </div>
+  return <div className={styles.modalBackdrop} onClick={onClose}>
+    <div role="dialog" aria-modal="true" aria-labelledby={titleId} className={styles.thankYou} onClick={(event) => event.stopPropagation()}>
+      <div className={styles.iconTile} aria-hidden="true"><span className="material-symbols-outlined">check_circle</span></div>
+      <p className={styles.stageNumber}>Transmission confirmed</p>
+      <h2 id={titleId} className={styles.heading}>Thank You{senderName ? `, ${senderName}` : ""}!</h2>
+      <p className={styles.body}>Your message has been delivered to Hamim and the DevEngine engineering team. We will review your parameters and respond to your email shortly.</p>
+      <div className={styles.countdown} aria-hidden="true"><span style={{ width: `${progress}%` }} /></div>
+      <div className={styles.modalActions}><span>Auto-closing in {Math.ceil(Math.max(1, durationMs) / 1000)} seconds</span><button ref={dismissRef} type="button" onClick={onClose} className={styles.dismiss}>Dismiss now ×</button></div>
     </div>
-  );
+  </div>;
 }

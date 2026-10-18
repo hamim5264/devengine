@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
@@ -20,7 +21,6 @@ const CATEGORIES = [
   { name: "Cloud & DevOps", icon: "cloud" },
   { name: "Enterprise Systems", icon: "dns" },
 ];
-
 
 const ENGINEERING_STEPS = [
   {
@@ -138,8 +138,8 @@ export default function ServicesPage() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#030712] z-50 flex items-center justify-center">
-        <HelixLoader size={80} text="LOADING SERVICES..." />
+      <div className="fixed inset-0 bg-[var(--devengine-page)] z-50 flex items-center justify-center">
+        <HelixLoader size={80} color="#2cecf7" text="LOADING SERVICES..." />
       </div>
     );
   }
@@ -155,536 +155,614 @@ export default function ServicesPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      {/* Global Cyber Background Canvas */}
-      <div className="fixed inset-0 bg-[#060a12] z-[-10]" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_50%_15%,rgba(14,24,42,0.95)_0%,rgba(3,7,18,1)_100%)] z-[-9] pointer-events-none" />
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] z-[-8] pointer-events-none opacity-60" />
+      <div className="min-h-screen bg-[var(--devengine-page)] text-[var(--devengine-text)] relative overflow-x-hidden transition-colors duration-300">
+        {/* Ambient Cyber Light Canvas (Light & Dark Compatible) */}
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute -top-[15%] -left-[10%] w-[min(60vw,750px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(44,236,247,0.18),transparent_70%)] blur-[90px] opacity-30 dark:opacity-45" />
+          <div className="absolute top-[35%] -right-[10%] w-[min(55vw,680px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(44,236,247,0.14),transparent_70%)] blur-[90px] opacity-25 dark:opacity-35" />
+          <div className="absolute bottom-[5%] left-[20%] w-[min(50vw,600px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(44,236,247,0.12),transparent_70%)] blur-[90px] opacity-20 dark:opacity-30" />
+          <div className="absolute inset-0 bg-[linear-gradient(var(--devengine-border)_1px,transparent_1px),linear-gradient(90deg,var(--devengine-border)_1px,transparent_1px)] bg-[size:50px_50px] opacity-15 dark:opacity-25 [mask-image:radial-gradient(ellipse_90%_80%_at_50%_50%,#000_30%,transparent_85%)]" />
+        </div>
 
-      {/* Ambient Lighting Orbs */}
-      <div className="fixed top-20 left-1/4 w-[650px] h-[650px] bg-[#38f2ff]/6 rounded-full blur-[140px] pointer-events-none z-[-7]" />
-      <div className="fixed top-1/2 right-1/4 w-[550px] h-[550px] bg-[#3495ea]/6 rounded-full blur-[130px] pointer-events-none z-[-7]" />
+        <LandingNavbar />
 
-      <LandingNavbar />
-
-      <main className="relative z-10 w-full text-[#dde2f3] font-sans selection:bg-[#38f2ff] selection:text-[#030712] pt-32 sm:pt-40 pb-24">
-        {/* ═════════════════════════════════════════════════════════════════
-            HERO SECTION
-        ═════════════════════════════════════════════════════════════════ */}
-        <section className="px-6 sm:px-12 md:px-20 max-w-7xl mx-auto text-center mb-20">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#38f2ff]/10 border border-[#38f2ff]/30 mb-8 shadow-[0_0_20px_rgba(56,242,255,0.15)]">
-            <span className="w-2 h-2 rounded-full bg-[#38f2ff] animate-pulse" />
-            <span className="font-jetbrains text-[11px] text-[#38f2ff] uppercase tracking-widest font-bold">
-              Engineering Capabilities & Enterprise Solutions
-            </span>
-          </div>
-
-          <h1 className="font-space font-bold text-4xl sm:text-6xl md:text-7xl text-white mb-6 leading-tight tracking-tight max-w-5xl mx-auto">
-            Architecting Scalable Software &{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38f2ff] via-[#00dbe8] to-[#3495ea] drop-shadow-[0_0_35px_rgba(56,242,255,0.35)]">
-              Next-Gen Platforms
-            </span>
-          </h1>
-
-          <p className="font-sans text-base sm:text-lg text-[#849495] max-w-3xl mx-auto mb-10 leading-relaxed">
-            From high-throughput Next.js microservices and silky 120 FPS mobile apps to bespoke AI orchestration and cloud automation. We engineer turnkey digital systems with zero compromises.
-          </p>
-
-          {/* Quick Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
-            {/* Primary Hero Button: Link to Contact Section */}
-            <a
-              href="/home#contact"
-              className="relative group overflow-hidden w-full sm:w-auto px-8 sm:px-9 py-4 rounded-xl bg-gradient-to-r from-[#38f2ff] via-[#22d3ee] to-[#00dbe8] text-[#030712] font-space font-bold text-xs sm:text-sm uppercase tracking-wider shadow-[0_0_30px_rgba(56,242,255,0.4)] hover:shadow-[0_0_50px_rgba(56,242,255,0.7)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer whitespace-nowrap border-t border-white/40"
+        <main className="relative z-10 w-full pt-28 sm:pt-36 pb-24 selection:bg-[#2cecf7] selection:text-[#02040a]">
+          {/* ═════════════════════════════════════════════════════════════════
+              HERO SECTION
+          ═════════════════════════════════════════════════════════════════ */}
+          <section className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 text-center mb-16 sm:mb-20">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             >
-              {/* Light Sweep Highlight */}
-              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
-              <span className="w-6 h-6 rounded-lg bg-black/15 flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-base text-[#030712] font-bold group-hover:rotate-12 transition-transform">
-                  terminal
+              {/* Pill Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-50 dark:bg-[#2cecf7]/10 border border-cyan-200 dark:border-[#2cecf7]/30 text-[#0284c7] dark:text-[#2cecf7] mb-6 sm:mb-7 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-[#0284c7] dark:bg-[#2cecf7] animate-pulse" />
+                <span className="font-jetbrains text-[11px] uppercase tracking-widest font-bold">
+                  Engineering Capabilities &amp; Enterprise Solutions
                 </span>
-              </span>
-              <span>Request Project Consultation</span>
-            </a>
+              </div>
 
-            {/* Secondary Hero Button */}
-            <a
-              href="#catalog"
-              className="relative group overflow-hidden w-full sm:w-auto px-8 sm:px-9 py-4 rounded-xl bg-[#0e131f]/90 hover:bg-[#162032] text-white font-space font-semibold text-xs sm:text-sm uppercase tracking-wider border border-white/15 hover:border-[#38f2ff]/60 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(56,242,255,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 cursor-pointer whitespace-nowrap"
-            >
-              <span>Explore Capabilities</span>
-              <span className="w-6 h-6 rounded-lg bg-white/5 border border-white/10 group-hover:border-[#38f2ff]/40 flex items-center justify-center shrink-0 transition-colors">
-                <span className="material-symbols-outlined text-base text-[#38f2ff] group-hover:translate-y-0.5 transition-transform">
-                  arrow_downward
+              {/* Solid, Crisp High-Contrast Headline */}
+              <h1 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-extrabold text-3xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight mb-5 sm:mb-6 leading-[1.14] max-w-5xl mx-auto">
+                <span className="text-slate-950 dark:text-slate-50">
+                  Architecting Scalable Software &amp;
+                </span>{" "}
+                <br className="hidden sm:inline" />
+                <span className="text-[#0284c7] dark:text-[#2cecf7]">
+                  Next-Gen Platforms
                 </span>
-              </span>
-            </a>
-          </div>
+              </h1>
 
-          {/* Key Metrics Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto mt-16 pt-10 border-t border-white/10">
-            <div>
-              <div className="font-space font-bold text-2xl sm:text-3xl text-white">
-                99.99%
-              </div>
-              <div className="font-jetbrains text-xs text-[#849495] uppercase tracking-wider mt-1">
-                Uptime Architecture
-              </div>
-            </div>
-            <div>
-              <div className="font-space font-bold text-2xl sm:text-3xl text-[#38f2ff]">
-                100%
-              </div>
-              <div className="font-jetbrains text-xs text-[#849495] uppercase tracking-wider mt-1">
-                Type-Safe Code
-              </div>
-            </div>
-            <div>
-              <div className="font-space font-bold text-2xl sm:text-3xl text-white">
-                &lt; 30 Days
-              </div>
-              <div className="font-jetbrains text-xs text-[#849495] uppercase tracking-wider mt-1">
-                Avg. MVP Delivery
-              </div>
-            </div>
-            <div>
-              <div className="font-space font-bold text-2xl sm:text-3xl text-[#38f2ff]">
-                24/7
-              </div>
-              <div className="font-jetbrains text-xs text-[#849495] uppercase tracking-wider mt-1">
-                Active Monitoring
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ═════════════════════════════════════════════════════════════════
-            SERVICES CATALOG & BENTO GRID
-        ═════════════════════════════════════════════════════════════════ */}
-        <section id="catalog" className="px-6 sm:px-12 md:px-20 max-w-7xl mx-auto mb-28 scroll-mt-28">
-          {/* Header & Category Filter Bar */}
-          <div className="mb-12 border-b border-white/10 pb-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-              <div>
-                <div className="inline-flex items-center gap-2 mb-2">
-                  <span className="w-4 h-[2px] bg-[#38f2ff]" />
-                  <span className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold">
-                    Service Portfolio
-                  </span>
-                </div>
-                <h2 className="font-space font-bold text-3xl sm:text-4xl text-white tracking-tight">
-                  Engineering Capabilities
-                </h2>
-                <p className="font-sans text-sm text-[#849495] mt-1.5">
-                  Select a domain to inspect our specialized architectures, deliverables, and tech stacks.
-                </p>
-              </div>
-
-              {/* Service Count Badge */}
-              <div className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-jetbrains text-gray-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Showing {filteredServices.length} Specialized Offerings</span>
-              </div>
-            </div>
-
-            {/* Category Filter Pills - Clean Wrapped Grid with Zero Native Scrollbars */}
-            <div className="flex flex-wrap items-center gap-2.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.name}
-                  onClick={() => setSelectedCategory(cat.name)}
-                  className={`inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-space text-xs uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                    selectedCategory === cat.name
-                      ? "bg-[#38f2ff] text-[#030712] font-bold shadow-[0_0_20px_rgba(56,242,255,0.35)] scale-[1.02]"
-                      : "bg-[#0e131f]/90 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10 hover:border-[#38f2ff]/30 font-jetbrains"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-base">
-                    {cat.icon}
-                  </span>
-                  <span>{cat.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Services Cards Grid */}
-          {loading ? (
-            <div className="py-20 flex flex-col items-center justify-center">
-              <HelixLoader size={48} color="#38f2ff" />
-              <p className="mt-4 font-jetbrains text-xs text-gray-400 uppercase tracking-widest">
-                Loading Engineering Catalog…
+              <p className="font-sans text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-3xl mx-auto mb-9 sm:mb-10 leading-relaxed font-normal">
+                From high-throughput Next.js microservices and silky 120 FPS mobile apps to bespoke AI orchestration and cloud automation. We engineer turnkey digital systems with zero compromises.
               </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-              {filteredServices.map((service) => (
-                <div
-                  key={service.id}
-                  className="relative rounded-3xl bg-gradient-to-b from-[#0e1526]/90 via-[#0a0f1d]/85 to-[#060a14]/95 border border-white/[0.08] hover:border-[#38f2ff]/40 shadow-[0_8px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_40px_rgba(56,242,255,0.12)] transition-all duration-300 group flex flex-col justify-between p-6 sm:p-7 overflow-hidden"
-                >
-                  {/* Glowing Top Accent Line */}
-                  <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#38f2ff]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {/* Subtle Corner Glow Aura */}
-                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#38f2ff]/5 rounded-full blur-2xl pointer-events-none group-hover:bg-[#38f2ff]/10 transition-colors" />
 
-                  <div>
-                    {/* Top Row: Icon & Status Badge */}
-                    <div className="flex items-center justify-between gap-3 mb-5">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#38f2ff]/20 to-[#38f2ff]/5 border border-[#38f2ff]/30 text-[#38f2ff] flex items-center justify-center shadow-[0_0_15px_rgba(56,242,255,0.12)] group-hover:scale-105 transition-transform">
-                        <span className="material-symbols-outlined text-2xl">
-                          {service.icon || "layers"}
-                        </span>
-                      </div>
-
-                      {service.badge && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[#38f2ff] font-jetbrains text-[10px] uppercase tracking-wider font-semibold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#38f2ff] animate-pulse" />
-                          {service.badge}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Title & Tagline */}
-                    <h3 className="font-space font-bold text-xl sm:text-2xl text-white mb-2 group-hover:text-[#38f2ff] transition-colors leading-snug">
-                      {service.title}
-                    </h3>
-                    <p className="font-sans text-xs sm:text-sm text-[#38f2ff]/80 font-medium mb-3 leading-snug line-clamp-2">
-                      {service.tagline}
-                    </p>
-
-                    {/* Clean Description */}
-                    <p className="font-sans text-xs sm:text-sm text-[#849495] leading-relaxed line-clamp-3 mb-5">
-                      {service.description}
-                    </p>
-
-                    {/* Key Deliverables - Clean, Concise 3 Items */}
-                    {service.deliverables && service.deliverables.length > 0 && (
-                      <div className="mb-5 py-3 border-y border-white/[0.06]">
-                        <div className="font-jetbrains text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-2.5 flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-[#38f2ff]" />
-                          <span>Key Deliverables</span>
-                        </div>
-                        <div className="space-y-1.5">
-                          {service.deliverables.slice(0, 3).map((d, i) => (
-                            <div key={i} className="flex items-center gap-2 text-xs text-gray-300">
-                              <span className="text-[#38f2ff] text-xs font-bold shrink-0">✓</span>
-                              <span className="truncate">{d}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tech Stack Chips - Minimal & Elegant */}
-                    {service.techStack && service.techStack.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-1.5 mb-6">
-                        {service.techStack.slice(0, 4).map((tech, i) => (
-                          <span
-                            key={i}
-                            className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] font-jetbrains text-[10px] text-gray-300 group-hover:border-[#38f2ff]/20 transition-colors"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                        {service.techStack.length > 4 && (
-                          <span className="px-2 py-1 rounded-lg bg-white/[0.02] border border-white/5 font-jetbrains text-[10px] text-gray-400">
-                            +{service.techStack.length - 4}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom Footer: Timeline & Action Button */}
-                  <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-1.5 font-jetbrains text-xs text-gray-400">
-                      <span className="material-symbols-outlined text-sm text-[#38f2ff]/80">schedule</span>
-                      <span>{service.timeline || "2-4 Weeks Sprint"}</span>
-                    </div>
-
-                    <button
-                      onClick={() => handleOpenInquiry(service)}
-                      className="bg-white/[0.06] hover:bg-[#38f2ff] text-white hover:text-[#030712] font-space font-semibold text-xs uppercase tracking-wider px-4 py-2 rounded-xl border border-white/10 hover:border-[#38f2ff] transition-all cursor-pointer flex items-center gap-1.5 group/btn shadow-sm"
-                    >
-                      <span>Inquire</span>
-                      <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-0.5 transition-transform">
-                        arrow_forward
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* ═════════════════════════════════════════════════════════════════
-            THE DEVENGINE METHOD (ENGINEERING LIFECYCLE)
-        ═════════════════════════════════════════════════════════════════ */}
-        <section className="py-20 px-6 sm:px-12 md:px-20 max-w-7xl mx-auto mb-28 border-y border-white/10 relative">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="font-jetbrains text-xs text-[#38f2ff] uppercase tracking-widest font-bold mb-3">
-              The DevEngine Standard
-            </div>
-            <h2 className="font-space font-bold text-3xl sm:text-5xl text-white tracking-tight mb-4">
-              How We Execute
-            </h2>
-            <p className="font-sans text-sm sm:text-base text-[#849495] leading-relaxed">
-              Every system we deliver follows an exhaustive four-phase engineering lifecycle designed for speed, transparency, and zero technical debt.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {ENGINEERING_STEPS.map((s, idx) => (
-              <div
-                key={idx}
-                className="bg-[#0e131f]/70 border border-white/10 rounded-2xl p-6 relative overflow-hidden group hover:border-[#38f2ff]/40 transition-all duration-300"
-              >
-                <div className="font-space font-bold text-4xl text-[#38f2ff]/25 mb-4 group-hover:text-[#38f2ff] transition-colors">
-                  {s.step}
-                </div>
-                <h4 className="font-space font-bold text-lg text-white mb-2">
-                  {s.title}
-                </h4>
-                <p className="font-sans text-xs sm:text-sm text-[#849495] leading-relaxed">
-                  {s.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ═════════════════════════════════════════════════════════════════
-            BOTTOM CTA BANNER
-        ═════════════════════════════════════════════════════════════════ */}
-        <section className="px-6 sm:px-12 md:px-20 max-w-7xl mx-auto">
-          <div className="bg-gradient-to-br from-[#0e131f] via-[#161c28] to-[#080e1a] rounded-3xl p-8 sm:p-14 border border-[#38f2ff]/25 shadow-2xl relative overflow-hidden">
-            <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
-              <div className="max-w-xl">
-                <span className="px-3 py-1 rounded-full bg-[#38f2ff]/10 border border-[#38f2ff]/30 text-[#38f2ff] font-jetbrains text-[10px] uppercase tracking-widest font-bold inline-block mb-3">
-                  Ready to Deploy?
-                </span>
-                <h3 className="font-space font-bold text-3xl sm:text-4xl text-white mb-3 tracking-tight">
-                  Have a Unique Product Vision? Let&apos;s Build It.
-                </h3>
-                <p className="font-sans text-sm text-[#849495] leading-relaxed">
-                  Partner with DevEngine for high-velocity engineering, direct architectural consultation, and production-grade delivery.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3.5 shrink-0">
+              {/* Quick Action CTAs */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4">
                 <a
                   href="/home#contact"
-                  className="relative group overflow-hidden bg-gradient-to-r from-[#38f2ff] via-[#22d3ee] to-[#00dbe8] text-[#030712] font-space font-bold text-xs sm:text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-[0_0_25px_rgba(56,242,255,0.35)] hover:shadow-[0_0_45px_rgba(56,242,255,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 cursor-pointer whitespace-nowrap border-t border-white/40 flex items-center justify-center gap-2.5"
+                  className="w-full sm:w-auto px-8 sm:px-9 py-3.5 sm:py-4 rounded-xl bg-[#2cecf7] text-[#02040a] font-mono font-bold text-xs sm:text-sm uppercase tracking-wider shadow-md shadow-[#2cecf7]/25 hover:bg-[#53f2fb] hover:shadow-lg hover:shadow-[#2cecf7]/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap"
                 >
                   <span className="material-symbols-outlined text-base font-bold">terminal</span>
-                  <span>Start Project Inquiry</span>
+                  <span>Request Project Consultation</span>
                 </a>
 
                 <a
-                  href="https://wa.me/8801724879284?text=Hello%20DevEngine,%20I%20would%20like%20to%20inquire%20about%20your%20services."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative group overflow-hidden bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400 font-space font-semibold text-xs sm:text-sm uppercase tracking-wider px-7 py-4 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-2.5 whitespace-nowrap shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
+                  href="#catalog"
+                  className="w-full sm:w-auto px-8 sm:px-9 py-3.5 sm:py-4 rounded-xl bg-white dark:bg-[#0a0f1d] hover:bg-slate-50 dark:hover:bg-[#111827] text-slate-900 dark:text-white font-mono font-semibold text-xs sm:text-sm uppercase tracking-wider border border-slate-200 dark:border-cyan-500/30 hover:border-[#2cecf7] shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2.5 cursor-pointer whitespace-nowrap"
                 >
-                  <span className="material-symbols-outlined text-lg text-emerald-400">chat</span>
-                  <span>Chat on WhatsApp</span>
+                  <span>Explore Capabilities</span>
+                  <span className="material-symbols-outlined text-base text-[#0284c7] dark:text-[#2cecf7]">
+                    arrow_downward
+                  </span>
                 </a>
               </div>
-            </div>
-          </div>
-        </section>
-      </main>
+            </motion.div>
 
-      {/* ═════════════════════════════════════════════════════════════════
-          INTERACTIVE PROJECT INQUIRY MODAL
-      ═════════════════════════════════════════════════════════════════ */}
-      {inquiryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#0e131f] border border-[#38f2ff]/30 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-[0_0_60px_rgba(56,242,255,0.25)] relative max-h-[90vh] overflow-y-auto">
-            {/* Close Button */}
-            <button
-              onClick={() => setInquiryModalOpen(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+            {/* Key Metrics Strip */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+              className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5 max-w-5xl mx-auto mt-14 pt-8 border-t border-slate-200/80 dark:border-white/10"
             >
-              ✕
-            </button>
-
-            {inquirySubmitted ? (
-              <div className="text-center py-8 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center mx-auto text-3xl">
-                  ✓
+              <div className="bg-white dark:bg-[#0a0f1d] p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-cyan-500/20 shadow-xs hover:border-[#2cecf7] transition-all">
+                <div className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white">
+                  99.99%
                 </div>
-                <h3 className="font-space font-bold text-2xl text-white">
-                  Inquiry Received!
-                </h3>
-                <p className="font-sans text-sm text-[#849495] max-w-md mx-auto leading-relaxed">
-                  Thank you, <span className="text-white font-bold">{form.clientName}</span>. A DevEngine lead architect will review your project requirements and respond within 24 hours.
-                </p>
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <a
-                    href="https://wa.me/8801724879284?text=Hello%20DevEngine,%20I%20just%20submitted%20a%20consultation%20inquiry."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-space font-bold uppercase tracking-wider transition"
-                  >
-                    <span className="material-symbols-outlined text-base">chat</span>
-                    <span>Chat on WhatsApp</span>
-                  </a>
-                  <button
-                    onClick={() => setInquiryModalOpen(false)}
-                    className="bg-[#38f2ff] hover:bg-[#00dbe8] text-[#030712] font-space font-bold text-xs uppercase tracking-wider px-8 py-3 rounded-xl transition cursor-pointer"
-                  >
-                    Close Window
-                  </button>
+                <div className="font-mono text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 font-semibold">
+                  Uptime Architecture
                 </div>
               </div>
-            ) : (
-              <form onSubmit={handleInquirySubmit} className="space-y-4">
+
+              <div className="bg-white dark:bg-[#0a0f1d] p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-cyan-500/20 shadow-xs hover:border-[#2cecf7] transition-all">
+                <div className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-extrabold text-2xl sm:text-3xl text-[#0284c7] dark:text-[#2cecf7]">
+                  100%
+                </div>
+                <div className="font-mono text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 font-semibold">
+                  Type-Safe Code
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-[#0a0f1d] p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-cyan-500/20 shadow-xs hover:border-[#2cecf7] transition-all">
+                <div className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white">
+                  &lt; 30 Days
+                </div>
+                <div className="font-mono text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 font-semibold">
+                  Avg. MVP Delivery
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-[#0a0f1d] p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-cyan-500/20 shadow-xs hover:border-[#2cecf7] transition-all">
+                <div className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-extrabold text-2xl sm:text-3xl text-emerald-600 dark:text-emerald-400">
+                  24/7
+                </div>
+                <div className="font-mono text-[11px] text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-1 font-semibold">
+                  Active Monitoring
+                </div>
+              </div>
+            </motion.div>
+          </section>
+
+          {/* ═════════════════════════════════════════════════════════════════
+              SERVICES CATALOG & BENTO GRID
+          ═════════════════════════════════════════════════════════════════ */}
+          <section id="catalog" className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 mb-24 scroll-mt-28">
+            {/* Command Header & Filter Bar */}
+            <div className="bg-white/95 dark:bg-[#0a0f1d]/95 backdrop-blur-2xl p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-lg shadow-slate-200/40 dark:shadow-black/60 mb-8 sm:mb-10 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                  <span className="px-2.5 py-0.5 rounded bg-[#38f2ff]/10 border border-[#38f2ff]/30 text-[#38f2ff] font-jetbrains text-[10px] uppercase font-bold tracking-wider inline-block mb-1">
-                    Direct Consultation
-                  </span>
-                  <h3 className="font-space font-bold text-2xl text-white">
-                    {selectedServiceForInquiry
-                      ? `Inquire: ${selectedServiceForInquiry.title}`
-                      : "Start a Project Consultation"}
-                  </h3>
-                  <p className="font-sans text-xs text-[#849495] mt-1">
-                    Tell us about your system goals, architecture requirements, and timeline.
+                  <div className="inline-flex items-center gap-2 bg-cyan-50 dark:bg-[#2cecf7]/10 text-[#0284c7] dark:text-[#2cecf7] px-3 py-1 rounded-full font-jetbrains text-xs uppercase tracking-widest font-bold mb-2 border border-cyan-200 dark:border-[#2cecf7]/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] dark:bg-[#2cecf7]" />
+                    SERVICE PORTFOLIO
+                  </div>
+                  <h2 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-bold text-2xl sm:text-3xl lg:text-4xl text-slate-900 dark:text-white tracking-tight">
+                    Engineering Capabilities
+                  </h2>
+                  <p className="font-sans text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">
+                    Select a domain to inspect our specialized architectures, deliverables, and tech stacks.
                   </p>
                 </div>
 
-                {/* Instant WhatsApp Quick Connect */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
-                  <div className="flex items-center gap-2 text-xs text-emerald-300 font-sans">
-                    <span className="material-symbols-outlined text-base text-emerald-400 shrink-0">chat</span>
-                    <span>Prefer instant chat? Connect directly:</span>
-                  </div>
+                {/* Service Count Telemetry */}
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/20 text-xs font-mono text-emerald-700 dark:text-emerald-400 font-semibold shrink-0 self-start md:self-auto">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Showing {filteredServices.length} Specialized Offerings</span>
+                </div>
+              </div>
+
+              {/* Category Filter Pills (Scrollbar-Free, Responsive, and Light/Dark Adaptable) */}
+              <div className="flex items-center gap-2 overflow-x-auto py-1 scroll-smooth border-t border-slate-100 dark:border-slate-800/80 pt-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {CATEGORIES.map((cat) => {
+                  const count =
+                    cat.name === "All"
+                      ? services.length
+                      : services.filter((s) => s.category === cat.name).length;
+                  const isSelected = selectedCategory === cat.name;
+
+                  return (
+                    <button
+                      key={cat.name}
+                      onClick={() => setSelectedCategory(cat.name)}
+                      className={`whitespace-nowrap px-4 py-2 rounded-full font-mono text-xs tracking-wide transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                        isSelected
+                          ? "bg-[#2cecf7] text-[#02040a] font-bold shadow-md shadow-[#2cecf7]/20 border border-[#2cecf7]"
+                          : "bg-slate-50 dark:bg-[#111827] text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-200/80 dark:border-slate-700/80 hover:border-[#2cecf7] shadow-2xs"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-base">
+                        {cat.icon}
+                      </span>
+                      <span>{cat.name}</span>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.2 rounded-full ${
+                          isSelected
+                            ? "bg-[#02040a]/15 text-[#02040a] font-bold"
+                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Services Cards Grid with Smooth Animated Layout */}
+            {loading ? (
+              <div className="py-24 flex flex-col items-center justify-center">
+                <HelixLoader size={48} color="#2cecf7" />
+                <p className="mt-4 font-mono text-xs text-slate-500 uppercase tracking-widest">
+                  Compiling Engineering Catalog…
+                </p>
+              </div>
+            ) : filteredServices.length === 0 ? (
+              <div className="p-12 text-center bg-white dark:bg-[#0a0f1d] rounded-3xl border border-slate-200 dark:border-cyan-500/20 max-w-md mx-auto my-12 shadow-sm">
+                <span className="material-symbols-outlined text-3xl text-slate-400 mb-2">
+                  search_off
+                </span>
+                <h3 className="font-bold text-slate-900 dark:text-white mb-1">
+                  No offerings found
+                </h3>
+                <p className="text-xs text-slate-500 mb-4">
+                  No services matching the selected category.
+                </p>
+                <button
+                  onClick={() => setSelectedCategory("All")}
+                  className="px-4 py-2 bg-[#2cecf7] text-[#02040a] rounded-full text-xs font-mono font-bold hover:bg-[#53f2fb] transition cursor-pointer"
+                >
+                  Show All Services
+                </button>
+              </div>
+            ) : (
+              <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+                <AnimatePresence mode="popLayout">
+                  {filteredServices.map((service) => (
+                    <motion.div
+                      layout
+                      key={service.id}
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.28, ease: "easeOut" }}
+                      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                      className="bg-white dark:bg-[#0a0f1d] rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-md shadow-slate-200/40 dark:shadow-black/60 hover:border-[#2cecf7] hover:shadow-xl hover:shadow-[#2cecf7]/10 transition-all duration-300 group flex flex-col justify-between p-6 sm:p-7 relative overflow-hidden"
+                    >
+                      {/* Top Cyber Accent Strip */}
+                      <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#2cecf7] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                      <div>
+                        {/* Top Row: Icon & Status Badge */}
+                        <div className="flex items-center justify-between gap-3 mb-5">
+                          <div className="w-12 h-12 rounded-2xl bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-200/70 dark:border-cyan-500/25 text-[#0284c7] dark:text-[#2cecf7] flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                            <span className="material-symbols-outlined text-2xl">
+                              {service.icon || "layers"}
+                            </span>
+                          </div>
+
+                          {service.badge && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-[#0284c7] dark:text-[#2cecf7] font-mono text-[10px] uppercase tracking-wider font-bold">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] dark:bg-[#2cecf7] animate-pulse" />
+                              {service.badge}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Title & Tagline */}
+                        <h3 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-bold text-xl sm:text-2xl text-slate-900 dark:text-white mb-1.5 group-hover:text-[#0284c7] dark:group-hover:text-[#2cecf7] transition-colors leading-snug">
+                          {service.title}
+                        </h3>
+                        <p className="font-sans text-xs sm:text-sm text-[#0284c7] dark:text-[#2cecf7] font-semibold mb-3 leading-snug line-clamp-2">
+                          {service.tagline}
+                        </p>
+
+                        {/* Clean Description */}
+                        <p className="font-sans text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3 mb-5">
+                          {service.description}
+                        </p>
+
+                        {/* Key Deliverables - High Contrast 3 Items */}
+                        {service.deliverables && service.deliverables.length > 0 && (
+                          <div className="mb-5 py-3 border-y border-slate-100 dark:border-slate-800/80">
+                            <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold mb-2.5 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#0284c7] dark:bg-[#2cecf7]" />
+                              <span>Key Deliverables</span>
+                            </div>
+                            <div className="space-y-1.5">
+                              {service.deliverables.slice(0, 3).map((d, i) => (
+                                <div key={i} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                  <span className="text-emerald-600 dark:text-[#2cecf7] text-xs font-bold shrink-0">✓</span>
+                                  <span className="truncate">{d}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tech Stack Chips */}
+                        {service.techStack && service.techStack.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mb-6">
+                            {service.techStack.slice(0, 4).map((tech, i) => (
+                              <span
+                                key={i}
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 font-mono text-[10px] text-slate-700 dark:text-slate-300 group-hover:border-[#2cecf7]/40 transition-colors"
+                              >
+                                {tech}
+                              </span>
+                            ))}
+                            {service.techStack.length > 4 && (
+                              <span className="px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                                +{service.techStack.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom Footer: Timeline & Action Button */}
+                      <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5 font-mono text-xs text-slate-500 dark:text-slate-400">
+                          <span className="material-symbols-outlined text-sm text-[#0284c7] dark:text-[#2cecf7]">schedule</span>
+                          <span>{service.timeline || "2-4 Weeks Sprint"}</span>
+                        </div>
+
+                        <button
+                          onClick={() => handleOpenInquiry(service)}
+                          className="bg-[#2cecf7] hover:bg-[#53f2fb] text-[#02040a] font-mono font-bold text-xs uppercase tracking-wider px-4 py-2 rounded-xl border border-[#2cecf7] transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        >
+                          <span>Inquire</span>
+                          <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">
+                            arrow_forward
+                          </span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </section>
+
+          {/* ═════════════════════════════════════════════════════════════════
+              THE DEVENGINE METHOD (ENGINEERING LIFECYCLE)
+          ═════════════════════════════════════════════════════════════════ */}
+          <section className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 mb-24">
+            <div className="bg-white/95 dark:bg-[#0a0f1d]/95 backdrop-blur-2xl p-6 sm:p-10 lg:p-12 rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-lg shadow-slate-200/40 dark:shadow-black/60">
+              <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-14">
+                <div className="inline-flex items-center gap-2 bg-cyan-50 dark:bg-[#2cecf7]/10 text-[#0284c7] dark:text-[#2cecf7] px-3 py-1 rounded-full font-jetbrains text-xs uppercase tracking-widest font-bold mb-3 border border-cyan-200 dark:border-[#2cecf7]/20">
+                  THE DEVENGINE STANDARD
+                </div>
+                <h2 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-bold text-3xl sm:text-4xl lg:text-5xl text-slate-900 dark:text-white tracking-tight mb-4">
+                  How We Execute
+                </h2>
+                <p className="font-sans text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Every system we deliver follows an exhaustive four-phase engineering lifecycle designed for speed, transparency, and zero technical debt.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+                {ENGINEERING_STEPS.map((s, idx) => (
+                  <motion.div
+                    key={idx}
+                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                    className="bg-slate-50 dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-[#2cecf7] hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-extrabold text-3xl sm:text-4xl text-[#0284c7] dark:text-[#2cecf7] font-mono">
+                          {s.step}
+                        </span>
+                        <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0a0f1d] border border-slate-200 dark:border-slate-700/80 text-[#0284c7] dark:text-[#2cecf7] flex items-center justify-center">
+                          <span className="material-symbols-outlined text-lg">
+                            {s.icon}
+                          </span>
+                        </div>
+                      </div>
+
+                      <h4 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-bold text-base sm:text-lg text-slate-900 dark:text-white mb-2 leading-snug">
+                        {s.title}
+                      </h4>
+                      <p className="font-sans text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {s.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold">
+                      <span>Phase {s.step}</span>
+                      <span>● Verified</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ═════════════════════════════════════════════════════════════════
+              BOTTOM CTA BANNER
+          ═════════════════════════════════════════════════════════════════ */}
+          <section className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 mb-20">
+            <div className="bg-gradient-to-br from-cyan-50/90 via-sky-50/70 to-white dark:from-[#0a0f1d] dark:via-[#111827] dark:to-[#060a14] rounded-3xl p-8 sm:p-12 lg:p-14 border border-cyan-200/90 dark:border-cyan-500/30 shadow-xl shadow-cyan-500/5 relative overflow-hidden">
+              <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
+                <div className="max-w-xl">
+                  <span className="px-3 py-1 rounded-full bg-cyan-100 dark:bg-[#2cecf7]/10 border border-cyan-300 dark:border-[#2cecf7]/30 text-[#0284c7] dark:text-[#2cecf7] font-mono text-[10px] uppercase tracking-widest font-bold inline-block mb-3">
+                    Ready to Deploy?
+                  </span>
+                  <h3 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-bold text-2xl sm:text-3xl lg:text-4xl text-slate-900 dark:text-white mb-3 tracking-tight">
+                    Have a Unique Product Vision? Let&apos;s Build It.
+                  </h3>
+                  <p className="font-sans text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                    Partner with DevEngine for high-velocity engineering, direct architectural consultation, and production-grade delivery.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3.5 shrink-0 w-full sm:w-auto">
                   <a
-                    href="https://wa.me/8801724879284?text=Hello%20DevEngine,%20I%20would%20like%20to%20consult%20about%20a%20project."
+                    href="/home#contact"
+                    className="w-full sm:w-auto bg-[#2cecf7] text-[#02040a] font-mono font-bold text-xs sm:text-sm uppercase tracking-wider px-7 py-3.5 sm:py-4 rounded-xl shadow-md shadow-[#2cecf7]/25 hover:bg-[#53f2fb] hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer whitespace-nowrap border border-[#2cecf7] flex items-center justify-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-base font-bold">terminal</span>
+                    <span>Start Project Inquiry</span>
+                  </a>
+
+                  <a
+                    href="https://wa.me/8801724879284?text=Hello%20DevEngine,%20I%20would%20like%20to%20inquire%20about%20your%20services."
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-space font-bold text-xs uppercase tracking-wider transition shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    className="w-full sm:w-auto bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30 font-mono font-semibold text-xs sm:text-sm uppercase tracking-wider px-7 py-3.5 sm:py-4 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap shadow-xs"
                   >
+                    <span className="material-symbols-outlined text-lg text-emerald-600 dark:text-emerald-400">chat</span>
                     <span>Chat on WhatsApp</span>
-                    <span className="material-symbols-outlined text-sm">open_in_new</span>
                   </a>
                 </div>
+              </div>
+            </div>
+          </section>
+        </main>
 
+        {/* ═════════════════════════════════════════════════════════════════
+            INTERACTIVE PROJECT INQUIRY MODAL (LIGHT/DARK ADAPTABLE)
+        ═════════════════════════════════════════════════════════════════ */}
+        <AnimatePresence>
+          {inquiryModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/85 backdrop-blur-md"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 16 }}
+                transition={{ duration: 0.25 }}
+                className="bg-white dark:bg-[#0a0f1d] text-slate-900 dark:text-white border border-slate-200 dark:border-cyan-500/30 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => setInquiryModalOpen(false)}
+                  className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
+                >
+                  ✕
+                </button>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div>
-                    <label className="block text-xs font-mono text-gray-300 mb-1">
-                      Your Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Alex Morgan"
-                      value={form.clientName}
-                      onChange={(e) =>
-                        setForm({ ...form, clientName: e.target.value })
-                      }
-                      className="w-full bg-[#161c28] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#38f2ff]"
-                    />
+                {inquirySubmitted ? (
+                  <div className="text-center py-8 space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center mx-auto text-3xl font-bold">
+                      ✓
+                    </div>
+                    <h3 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-bold text-2xl text-slate-900 dark:text-white">
+                      Inquiry Received!
+                    </h3>
+                    <p className="font-sans text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
+                      Thank you, <span className="text-[#0284c7] dark:text-[#2cecf7] font-bold">{form.clientName}</span>. A DevEngine lead architect will review your project requirements and respond within 24 hours.
+                    </p>
+                    <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                      <a
+                        href="https://wa.me/8801724879284?text=Hello%20DevEngine,%20I%20just%20submitted%20a%20consultation%20inquiry."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/30 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 text-xs font-mono font-bold uppercase tracking-wider transition"
+                      >
+                        <span className="material-symbols-outlined text-base">chat</span>
+                        <span>Chat on WhatsApp</span>
+                      </a>
+                      <button
+                        onClick={() => setInquiryModalOpen(false)}
+                        className="bg-[#2cecf7] hover:bg-[#53f2fb] text-[#02040a] font-mono font-bold text-xs uppercase tracking-wider px-8 py-3 rounded-xl transition cursor-pointer"
+                      >
+                        Close Window
+                      </button>
+                    </div>
                   </div>
+                ) : (
+                  <form onSubmit={handleInquirySubmit} className="space-y-4">
+                    <div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-[#2cecf7]/10 border border-cyan-200 dark:border-[#2cecf7]/30 text-[#0284c7] dark:text-[#2cecf7] font-mono text-[10px] uppercase font-bold tracking-wider inline-block mb-1.5">
+                        Direct Consultation
+                      </span>
+                      <h3 className="font-[family-name:var(--font-site,'Poppins',sans-serif)] font-bold text-2xl text-slate-900 dark:text-white">
+                        {selectedServiceForInquiry
+                          ? `Inquire: ${selectedServiceForInquiry.title}`
+                          : "Start a Project Consultation"}
+                      </h3>
+                      <p className="font-sans text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Tell us about your system goals, architecture requirements, and timeline.
+                      </p>
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-mono text-gray-300 mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="alex@company.com"
-                      value={form.clientEmail}
-                      onChange={(e) =>
-                        setForm({ ...form, clientEmail: e.target.value })
-                      }
-                      className="w-full bg-[#161c28] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#38f2ff]"
-                    />
-                  </div>
-                </div>
+                    {/* Instant WhatsApp Quick Connect */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/25">
+                      <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 font-sans">
+                        <span className="material-symbols-outlined text-base text-emerald-600 dark:text-emerald-400 shrink-0">chat</span>
+                        <span>Prefer instant chat? Connect directly:</span>
+                      </div>
+                      <a
+                        href="https://wa.me/8801724879284?text=Hello%20DevEngine,%20I%20would%20like%20to%20consult%20about%20a%20project."
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs uppercase tracking-wider transition shrink-0 self-start sm:self-auto shadow-xs"
+                      >
+                        <span>WhatsApp</span>
+                        <span className="material-symbols-outlined text-sm">open_in_new</span>
+                      </a>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-mono text-gray-300 mb-1">
-                      Phone / WhatsApp (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="+1 (555) 000-0000"
-                      value={form.clientPhone}
-                      onChange={(e) =>
-                        setForm({ ...form, clientPhone: e.target.value })
-                      }
-                      className="w-full bg-[#161c28] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#38f2ff]"
-                    />
-                  </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-xs font-mono text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                          Your Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Alex Morgan"
+                          value={form.clientName}
+                          onChange={(e) =>
+                            setForm({ ...form, clientName: e.target.value })
+                          }
+                          className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#2cecf7] focus:ring-2 focus:ring-[#2cecf7]/20 transition"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-xs font-mono text-gray-300 mb-1">
-                      Estimated Budget
-                    </label>
-                    <select
-                      value={form.budgetRange}
-                      onChange={(e) =>
-                        setForm({ ...form, budgetRange: e.target.value })
-                      }
-                      className="w-full bg-[#161c28] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#38f2ff]"
-                    >
-                      <option value="Under $1,000">Under $1,000</option>
-                      <option value="$1,000 - $3,000">$1,000 - $3,000</option>
-                      <option value="$3,000 - $8,000">$3,000 - $8,000</option>
-                      <option value="$8,000+">$8,000+ (Enterprise)</option>
-                    </select>
-                  </div>
-                </div>
+                      <div>
+                        <label className="block text-xs font-mono text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="alex@company.com"
+                          value={form.clientEmail}
+                          onChange={(e) =>
+                            setForm({ ...form, clientEmail: e.target.value })
+                          }
+                          className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#2cecf7] focus:ring-2 focus:ring-[#2cecf7]/20 transition"
+                        />
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-mono text-gray-300 mb-1">
-                    Project Overview & Requirements *
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="Briefly describe what you want to engineer, key features, platform targets, and any deadlines..."
-                    value={form.projectDetails}
-                    onChange={(e) =>
-                      setForm({ ...form, projectDetails: e.target.value })
-                    }
-                    className="w-full bg-[#161c28] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#38f2ff] resize-none"
-                  />
-                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-mono text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                          Phone / WhatsApp (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="+1 (555) 000-0000"
+                          value={form.clientPhone}
+                          onChange={(e) =>
+                            setForm({ ...form, clientPhone: e.target.value })
+                          }
+                          className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#2cecf7] focus:ring-2 focus:ring-[#2cecf7]/20 transition"
+                        />
+                      </div>
 
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={submittingInquiry}
-                    className="w-full bg-[#38f2ff] hover:bg-[#00dbe8] text-[#030712] font-sans font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-[0_0_20px_rgba(56,242,255,0.3)] transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {submittingInquiry ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                        <span>Submitting Consultation...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Submit Project Inquiry</span>
-                        <span className="material-symbols-outlined text-sm">send</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+                      <div>
+                        <label className="block text-xs font-mono text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                          Estimated Budget
+                        </label>
+                        <select
+                          value={form.budgetRange}
+                          onChange={(e) =>
+                            setForm({ ...form, budgetRange: e.target.value })
+                          }
+                          className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#2cecf7] focus:ring-2 focus:ring-[#2cecf7]/20 transition cursor-pointer"
+                        >
+                          <option value="Under $1,000">Under $1,000</option>
+                          <option value="$1,000 - $3,000">$1,000 - $3,000</option>
+                          <option value="$3,000 - $8,000">$3,000 - $8,000</option>
+                          <option value="$8,000+">$8,000+ (Enterprise)</option>
+                        </select>
+                      </div>
+                    </div>
 
-      <LandingFooter />
+                    <div>
+                      <label className="block text-xs font-mono text-slate-600 dark:text-slate-300 mb-1 font-semibold">
+                        Project Overview &amp; Requirements *
+                      </label>
+                      <textarea
+                        rows={4}
+                        required
+                        placeholder="Briefly describe what you want to engineer, key features, platform targets, and any deadlines..."
+                        value={form.projectDetails}
+                        onChange={(e) =>
+                          setForm({ ...form, projectDetails: e.target.value })
+                        }
+                        className="w-full bg-slate-50 dark:bg-[#111827] border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#2cecf7] focus:ring-2 focus:ring-[#2cecf7]/20 transition resize-none"
+                      />
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={submittingInquiry}
+                        className="w-full bg-[#2cecf7] hover:bg-[#53f2fb] text-[#02040a] font-mono font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md shadow-[#2cecf7]/25 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {submittingInquiry ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            <span>Submitting Consultation...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Submit Project Inquiry</span>
+                            <span className="material-symbols-outlined text-sm font-bold">send</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <LandingFooter />
+      </div>
     </>
   );
 }

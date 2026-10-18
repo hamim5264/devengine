@@ -6,7 +6,7 @@ import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getCachedStaffByUid } from "@/lib/services/staffAuth";
 import type { StaffMember } from "@/types/staff";
-import ThemeToggle from "@/components/ThemeToggle";
+import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
 
 interface NavItem { label: string; href: string; badge?: string; }
@@ -105,6 +105,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <IconBag />,
     items: [
       { label: "Orders & Payments", href: "/admin/manage-orders", badge: "live" },
+      { label: "Invoice PDF Settings", href: "/admin/manage-pdf-settings", badge: "pdf" },
       { label: "Currencies", href: "/admin/manage-currencies" },
     ],
   },
@@ -206,8 +207,8 @@ const NAV_GROUPS: NavGroup[] = [
     color: "#f59e0b",
     icon: <IconSettings />,
     items: [
-      { label: "Active Theme Modes", href: "/admin/manage-theme-settings", badge: "new" },
-      { label: "PDF Branding", href: "/admin/manage-pdf-settings" },
+      { label: "Theme & Fonts", href: "/admin/manage-theme-settings", badge: "new" },
+      { label: "Invoice & PDF Settings", href: "/admin/manage-pdf-settings" },
       { label: "Maintenance Mode", href: "/admin/manage-maintenance" },
       { label: "Recycle Bin", href: "/admin/manage-bin" },
     ],
@@ -374,10 +375,10 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
   return (
     <>
       <Head><title>{title}</title><meta name="robots" content="noindex, nofollow" /></Head>
-      <div style={{ fontFamily: "'Poppins', sans-serif" }} className={`min-h-screen flex flex-col ${isLight ? "bg-[#f8fafc] text-slate-900" : "bg-[#07070f] text-white"}`}>
+      <div className={`min-h-screen flex flex-col font-sans ${isLight ? "bg-[#f8fafc] text-slate-900" : "bg-[#07070f] text-white"}`}>
 
         {/* ── TOP HEADER ── */}
-        <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-4 gap-3"
+        <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-2 sm:px-4 gap-1.5 sm:gap-3"
           style={{
             background: isLight ? "rgba(255,255,255,0.96)" : "rgba(7,7,15,0.96)",
             borderBottom: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.06)",
@@ -398,12 +399,12 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
               DevEngine
             </span>
             {isStaffUser ? (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
+              <span className="hidden min-[400px]:inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
                 style={{ background: isLight ? "#f3e8ff" : "rgba(168,85,247,0.15)", color: isLight ? "#7e22ce" : "#c084fc", border: isLight ? "1px solid #d8b4fe" : "1px solid rgba(168,85,247,0.3)" }}>
                 Staff
               </span>
             ) : (
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
+              <span className="hidden min-[400px]:inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-widest uppercase"
                 style={{ background: isLight ? "#ccfbf1" : "rgba(56,242,255,0.12)", color: isLight ? "#0f766e" : "#38f2ff", border: isLight ? "1px solid #99f6e4" : "1px solid rgba(56,242,255,0.25)" }}>
                 Admin
               </span>
@@ -426,7 +427,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
 
           {isStaffUser && (
             <Link href="/staff/dashboard"
-              className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+              className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
               style={isLight ? { background: "#f3e8ff", border: "1px solid #d8b4fe", color: "#7e22ce" } : { background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", color: "#c084fc" }}>
               <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -436,7 +437,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
             </Link>
           )}
 
-          <ThemeToggle showLabel={false} />
+          <HeaderControls />
 
           <a href="/" target="_blank" rel="noopener noreferrer"
             className="hidden sm:flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
@@ -448,7 +449,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
             Global View
           </a>
 
-          <button onClick={handleSignOut}
+          <button aria-label="Sign out" onClick={handleSignOut}
             className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
             style={isLight ? { background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626" } : { background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)", color: "#f87171" }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">

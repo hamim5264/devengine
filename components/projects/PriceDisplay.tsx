@@ -41,18 +41,18 @@ export default function PriceDisplay({
         const isBdt = p.currency === "BDT";
         const isUsd = p.currency === "USD";
 
-        // Curated, elegant cyber badge themes per currency
+        // Curated, theme-adaptive cyber badge themes per currency
         const badgeTheme = isBdt
-          ? "bg-[#08182b] border-[#38f2ff]/30 text-[#38f2ff]"
+          ? "bg-[var(--devengine-soft)] border-[var(--devengine-border)] text-[var(--devengine-accent-text)]"
           : isUsd
-          ? "bg-[#061d1e] border-emerald-400/30 text-emerald-400"
-          : "bg-[#18112e] border-purple-400/30 text-purple-300";
+          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+          : "bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300";
 
         const textTheme = isBdt
-          ? "text-[#38f2ff]"
+          ? "text-[var(--devengine-accent-text)]"
           : isUsd
-          ? "text-emerald-400"
-          : "text-purple-300";
+          ? "text-emerald-700 dark:text-emerald-300"
+          : "text-purple-700 dark:text-purple-300";
 
         const regularClean = cleanCurrencyValue(p.regularPrice);
         const discountClean = cleanCurrencyValue(p.discountPrice);
@@ -60,24 +60,25 @@ export default function PriceDisplay({
         return (
           <div
             key={p.currency}
-            className={`inline-flex items-baseline gap-2 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border shadow-md ${badgeTheme}`}
+            className={`inline-flex items-baseline gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl border shadow-sm transition-transform duration-200 hover:scale-[1.03] ${badgeTheme}`}
           >
-            <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider text-gray-400">
+            <span className="text-[11px] sm:text-xs font-mono font-extrabold uppercase tracking-wider opacity-85">
               {p.currency}
             </span>
             <span
-              className={`font-space font-bold ${
+              className={`font-space font-black tracking-tight ${
                 size === "lg"
-                  ? "text-xl sm:text-2xl"
+                  ? "text-2xl sm:text-3xl"
                   : size === "sm"
-                  ? "text-sm sm:text-base"
-                  : "text-base sm:text-lg"
+                  ? "text-base sm:text-lg"
+                  : "text-lg sm:text-xl"
               } ${textTheme}`}
+              style={{ fontFamily: 'var(--font-site, "Poppins"), sans-serif' }}
             >
               {discountClean || regularClean}
             </span>
             {discountClean && regularClean && (
-              <span className="text-[11px] sm:text-xs font-mono line-through text-gray-400/80">
+              <span className="text-xs sm:text-[13px] font-mono line-through opacity-60">
                 {regularClean}
               </span>
             )}

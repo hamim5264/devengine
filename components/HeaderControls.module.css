@@ -1,0 +1,9 @@
+.controls { display:flex; align-items:center; justify-content:center; gap:8px; flex:none; min-width:0; }
+.controls:empty { display:none; }
+@media (max-width:380px) { .controls { gap:4px; } }
+.fallbackHeader { position:sticky; top:0; z-index:1200; background:var(--devengine-nav); border-bottom:1px solid var(--devengine-border); }
+.fallbackHeader > div { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:.7rem clamp(1rem,4vw,3rem); min-height:68px; max-width:1360px; margin:auto; }
+.fallbackLogo { display:block; width:145px; max-width:40vw; }
+.fallbackLogo img { display:block; width:100%; height:auto; }
+:global(html.light) .fallbackHeader { background:var(--devengine-nav)!important; border-bottom:1px solid var(--devengine-border)!important; box-shadow:none; }
+@media print { .controls, .fallbackHeader { display:none!important; } }

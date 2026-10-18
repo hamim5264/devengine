@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import styles from "@/components/landing/Landing.module.css";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { OrderRecord } from "@/types/order";
@@ -21,6 +22,28 @@ export default function PaymentVerificationModal({
   const [errorMessage, setErrorMessage] = useState("");
   const [pdfLoading, setPdfLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const targets = Array.from(panelRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled])'));
+      const first = targets[0];
+      const last = targets[targets.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => { document.removeEventListener("keydown", onKeyDown); document.body.style.overflow = previousOverflow; previousFocus?.focus({ preventScroll: true }); };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -136,28 +159,29 @@ export default function PaymentVerificationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-6 animate-fade-in select-none">
-      <div className="relative w-full max-w-xl bg-[#08111f] border border-[#38f2ff]/30 rounded-3xl p-6 sm:p-8 shadow-[0_0_80px_rgba(56,242,255,0.25)] text-white font-sans max-h-[92vh] overflow-y-auto">
+    <div className={styles.modalBackdrop}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Payment Verification" className={`${styles.paymentPanel} relative w-full max-w-xl bg-[color:var(--devengine-surface)] border border-[color:var(--devengine-accent)] rounded-3xl p-6 sm:p-8 shadow-[0_0_80px_rgba(44,236,247,0.25)] text-[color:var(--devengine-text)] font-sans max-h-[calc(100svh-2rem)] overflow-y-auto`}>
         {/* Close Button */}
         <button
           type="button"
+          ref={closeRef}
           onClick={onClose}
-          className="absolute top-6 right-6 w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+          className="absolute top-6 right-6 w-9 h-9 rounded-full bg-[color:var(--devengine-raised)] hover:bg-[color:var(--devengine-raised)] border border-[color:var(--devengine-border)] text-[color:var(--devengine-muted)] hover:text-[color:var(--devengine-text)] flex items-center justify-center transition cursor-pointer"
           aria-label="Close"
         >
           <span className="material-symbols-outlined text-lg">close</span>
         </button>
 
         {/* Modal Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-11 h-11 rounded-2xl bg-[#38f2ff]/10 border border-[#38f2ff]/30 flex items-center justify-center text-[#38f2ff]">
+        <div className={`${styles.paymentHeading} flex items-center gap-3 mb-6`}>
+          <div className="w-11 h-11 rounded-2xl bg-[color:var(--devengine-soft)] border border-[color:var(--devengine-accent)] flex items-center justify-center text-[color:var(--devengine-accent-text)]">
             <span className="material-symbols-outlined text-2xl">verified_user</span>
           </div>
           <div>
-            <h2 className="font-space font-bold text-xl sm:text-2xl text-white">
+            <h2 className="font-space-grotesk font-bold text-xl sm:text-2xl text-[color:var(--devengine-text)]">
               Payment Verification
             </h2>
-            <p className="font-mono text-xs text-gray-400">
+            <p className="font-mono text-xs text-[color:var(--devengine-muted)]">
               Audit & License Verification Protocol
             </p>
           </div>
@@ -166,26 +190,27 @@ export default function PaymentVerificationModal({
         {/* Tracking Input Form */}
         {!order && (
           <form onSubmit={handleVerify} className="space-y-4">
-            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed font-sans">
-              Enter your unique <strong className="text-white">DevEngine Tracking Code</strong>{" "}
+            <p className="text-xs sm:text-sm text-[color:var(--devengine-muted)] leading-relaxed font-sans">
+              Enter your unique <strong className="text-[color:var(--devengine-text)]">DevEngine Tracking Code</strong>{" "}
               (from your payment receipt or confirmation popup) to check audit progress and unlock your license certificate.
             </p>
 
             <div className="relative">
-              <label className="block font-mono text-xs text-gray-400 mb-1.5 uppercase tracking-wider">
+              <label htmlFor="payment-tracking-code" className="block font-mono text-xs text-[color:var(--devengine-muted)] mb-1.5 uppercase tracking-wider">
                 Order Tracking Code
               </label>
               <div className="relative">
-                <span className="material-symbols-outlined absolute left-3.5 top-3 text-gray-500 text-lg">
+                <span className="material-symbols-outlined absolute left-3.5 top-3 text-[color:var(--devengine-muted)] text-lg">
                   pin
                 </span>
                 <input
+                  id="payment-tracking-code"
                   type="text"
                   required
                   value={trackingCode}
                   onChange={(e) => setTrackingCode(e.target.value.toUpperCase())}
                   placeholder="e.g. DEV-2026-MFLZO"
-                  className="w-full bg-[#030712] border border-white/15 focus:border-[#38f2ff] rounded-xl pl-11 pr-4 py-3 text-sm font-mono text-white placeholder-gray-600 uppercase focus:outline-none transition"
+                  className="w-full bg-[color:var(--devengine-raised)] border border-[color:var(--devengine-border)] focus:border-[color:var(--devengine-accent)] rounded-xl pl-11 pr-4 py-3 text-base font-mono text-[color:var(--devengine-text)] placeholder:text-[color:var(--devengine-muted)] uppercase focus:outline-none transition"
                 />
               </div>
             </div>
@@ -193,7 +218,7 @@ export default function PaymentVerificationModal({
             <button
               type="submit"
               disabled={loading || !trackingCode.trim()}
-              className="w-full py-3.5 px-6 rounded-xl bg-[#38f2ff] hover:bg-[#00e1f0] text-[#030712] font-space font-bold text-sm sm:text-base transition shadow-[0_0_25px_rgba(56,242,255,0.35)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 px-6 rounded-xl bg-[color:var(--devengine-button)] hover:bg-[color:var(--devengine-button-hover)] text-[color:var(--devengine-button-text)] font-space-grotesk font-bold text-sm sm:text-base transition shadow-[0_0_25px_rgba(44,236,247,0.35)] hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
                 <>
@@ -222,7 +247,7 @@ export default function PaymentVerificationModal({
                     Please double-check the tracking code from your receipt (e.g. DEV-2026-XXXXX). If you recently completed payment, ensure the code matches exactly or reach out to our verification team at{" "}
                     <a
                       href="mailto:devenginesoftsolution@gmail.com"
-                      className="underline text-white font-mono"
+                      className="underline text-[color:var(--devengine-text)] font-mono"
                     >
                       devenginesoftsolution@gmail.com
                     </a>.
@@ -243,19 +268,19 @@ export default function PaymentVerificationModal({
         {order && (
           <div className="space-y-5 animate-fade-in">
             {/* Top Status & Code Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-[#030712] border border-white/10 rounded-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-[color:var(--devengine-raised)] border border-[color:var(--devengine-border)] rounded-2xl">
               <div>
-                <span className="text-[11px] font-mono text-gray-500 block uppercase">
+                <span className="text-[11px] font-mono text-[color:var(--devengine-muted)] block uppercase">
                   Tracking Code
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-[#38f2ff] text-base">
+                  <span className="font-mono font-bold text-[color:var(--devengine-accent-text)] text-base">
                     {order.id}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleCopy(order.id)}
-                    className="text-gray-400 hover:text-white transition text-xs flex items-center"
+                    className="text-[color:var(--devengine-muted)] hover:text-[color:var(--devengine-text)] transition text-xs flex items-center"
                     title="Copy Code"
                   >
                     <span className="material-symbols-outlined text-sm">content_copy</span>
@@ -288,32 +313,32 @@ export default function PaymentVerificationModal({
             </div>
 
             {/* Order Specification Grid */}
-            <div className="bg-[#030712] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-2.5 text-xs font-mono">
-              <div className="flex justify-between border-b border-white/5 pb-2">
-                <span className="text-gray-400">Target System:</span>
-                <span className="text-white font-bold">{order.projectTitle}</span>
+            <div className="bg-[color:var(--devengine-raised)] border border-[color:var(--devengine-border)] rounded-2xl p-4 sm:p-5 space-y-2.5 text-xs font-mono">
+              <div className="flex justify-between border-b border-[color:var(--devengine-border)] pb-2">
+                <span className="text-[color:var(--devengine-muted)]">Target System:</span>
+                <span className="text-[color:var(--devengine-text)] font-bold">{order.projectTitle}</span>
               </div>
-              <div className="flex justify-between border-b border-white/5 pb-2">
-                <span className="text-gray-400">License Tier:</span>
-                <span className="text-[#38f2ff]">{order.planName}</span>
+              <div className="flex justify-between border-b border-[color:var(--devengine-border)] pb-2">
+                <span className="text-[color:var(--devengine-muted)]">License Tier:</span>
+                <span className="text-[color:var(--devengine-accent-text)]">{order.planName}</span>
               </div>
-              <div className="flex justify-between border-b border-white/5 pb-2">
-                <span className="text-gray-400">Licensed Licensee:</span>
-                <span className="text-white">{order.customerName}</span>
+              <div className="flex justify-between border-b border-[color:var(--devengine-border)] pb-2">
+                <span className="text-[color:var(--devengine-muted)]">Licensed Licensee:</span>
+                <span className="text-[color:var(--devengine-text)]">{order.customerName}</span>
               </div>
-              <div className="flex justify-between border-b border-white/5 pb-2">
-                <span className="text-gray-400">Amount Paid:</span>
+              <div className="flex justify-between border-b border-[color:var(--devengine-border)] pb-2">
+                <span className="text-[color:var(--devengine-muted)]">Amount Paid:</span>
                 <span className="text-emerald-400 font-bold">
                   {order.currency === "USD" ? "USD" : "BDT"} {order.amount}
                 </span>
               </div>
-              <div className="flex justify-between border-b border-white/5 pb-2">
-                <span className="text-gray-400">Payment Gateway:</span>
-                <span className="text-gray-200">{order.paymentMethod}</span>
+              <div className="flex justify-between border-b border-[color:var(--devengine-border)] pb-2">
+                <span className="text-[color:var(--devengine-muted)]">Payment Gateway:</span>
+                <span className="text-[color:var(--devengine-text)]">{order.paymentMethod}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Transaction ID (TrxID):</span>
-                <code className="text-gray-300 font-bold">{order.transactionId}</code>
+                <span className="text-[color:var(--devengine-muted)]">Transaction ID (TrxID):</span>
+                <code className="text-[color:var(--devengine-muted)] font-bold">{order.transactionId}</code>
               </div>
             </div>
 
@@ -345,7 +370,7 @@ export default function PaymentVerificationModal({
                     This transaction ID could not be reconciled with our financial ledger. Please contact our support team at{" "}
                     <a
                       href="mailto:devenginesoftsolution@gmail.com"
-                      className="underline text-white font-mono"
+                      className="underline text-[color:var(--devengine-text)] font-mono"
                     >
                       devenginesoftsolution@gmail.com
                     </a>{" "}
@@ -377,14 +402,14 @@ export default function PaymentVerificationModal({
                   type="button"
                   onClick={handleDownload}
                   disabled={pdfLoading}
-                  className="w-full py-3.5 px-6 rounded-xl bg-[#38f2ff] hover:bg-[#00e1f0] text-[#030712] font-space font-bold text-sm sm:text-base transition shadow-[0_0_25px_rgba(56,242,255,0.4)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 px-6 rounded-xl bg-[color:var(--devengine-button)] hover:bg-[color:var(--devengine-button-hover)] text-[color:var(--devengine-button-text)] font-space-grotesk font-bold text-sm sm:text-base transition shadow-[0_0_25px_rgba(44,236,247,0.4)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-xl">download</span>
                   <span>{pdfLoading ? "Generating Invoice PDF…" : "Download Verified License PDF"}</span>
                 </button>
               ) : (
-                <div className="w-full py-3 px-4 rounded-xl bg-white/5 border border-white/10 text-gray-500 font-mono text-xs flex items-center justify-center gap-2 select-none">
-                  <span className="material-symbols-outlined text-base text-gray-500">lock</span>
+                <div className="w-full py-3 px-4 rounded-xl bg-[color:var(--devengine-raised)] border border-[color:var(--devengine-border)] text-[color:var(--devengine-muted)] font-mono text-xs flex items-center justify-center gap-2 select-none">
+                  <span className="material-symbols-outlined text-base text-[color:var(--devengine-muted)]">lock</span>
                   <span>PDF Download Unlocks Upon Verification Approval</span>
                 </div>
               )}
@@ -393,7 +418,7 @@ export default function PaymentVerificationModal({
               <button
                 type="button"
                 onClick={handleReset}
-                className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-mono text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl bg-[color:var(--devengine-raised)] hover:bg-[color:var(--devengine-raised)] text-[color:var(--devengine-muted)] hover:text-[color:var(--devengine-text)] font-mono text-xs transition flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm">search</span>
                 <span>Track Another Order</span>

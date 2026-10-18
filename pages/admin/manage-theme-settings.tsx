@@ -5,11 +5,10 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AdminLayout from "@/components/AdminLayout";
 import HelixLoader from "@/components/HelixLoader";
+import { normalizeSiteFont, SITE_FONTS, SiteFont } from "@/lib/fonts";
 import {
   getThemeModeSettings,
   updateThemeModeSettings,
-  ThemeModeSettings,
-  DEFAULT_THEME_MODES,
 } from "@/lib/services/themeSettingsService";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
@@ -25,6 +24,7 @@ export default function ManageThemeSettingsPage() {
   // Configuration state
   const [allowDark, setAllowDark] = useState(true);
   const [allowLight, setAllowLight] = useState(true);
+  const [fontFamily, setFontFamily] = useState<SiteFont>("default");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -39,6 +39,7 @@ export default function ManageThemeSettingsPage() {
         const config = await getThemeModeSettings();
         setAllowDark(config.allowDarkMode);
         setAllowLight(config.allowLightMode);
+        setFontFamily(config.fontFamily);
       } catch (err) {
         console.error("Error loading theme config:", err);
       } finally {
@@ -71,11 +72,13 @@ export default function ManageThemeSettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSavedSuccess(false);
     try {
       await updateThemeModeSettings(
         {
           allowDarkMode: allowDark,
           allowLightMode: allowLight,
+          fontFamily,
         },
         adminEmail
       );
@@ -120,7 +123,7 @@ export default function ManageThemeSettingsPage() {
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-neutral-400 mt-1">
-              Control which visual modes are enabled system-wide. Lock to a single theme or allow user switching.
+              Set the global font and theme modes for visitors, admins, and employees.
             </p>
           </div>
 
@@ -146,13 +149,51 @@ export default function ManageThemeSettingsPage() {
 
         {/* Success Alert Banner */}
         {savedSuccess && (
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in duration-200">
+          <div role="status" className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in duration-200">
             <span className="material-symbols-outlined text-[18px]">check_circle</span>
             <span className="font-medium">
               Theme settings saved! Policy is now active globally across the entire platform.
             </span>
           </div>
         )}
+
+        <section aria-labelledby="global-font-heading" className="p-5 sm:p-6 rounded-2xl bg-[#0c0c16] border border-white/10 space-y-5">
+          <div>
+            <h2 id="global-font-heading" className="text-base font-bold text-white">Global Website Font</h2>
+            <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+              Apply one font across the public website, admin panel, and employee portal. Changes reach everyone when you save.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="global-font" className="block text-sm font-medium text-neutral-200">Font family</label>
+            <select
+              id="global-font"
+              value={fontFamily}
+              disabled={saving}
+              onChange={(event) => {
+                setFontFamily(normalizeSiteFont(event.target.value));
+                setSavedSuccess(false);
+              }}
+              className="w-full rounded-xl bg-[#07070f] border border-white/15 px-3 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-400 disabled:opacity-50"
+              aria-describedby="global-font-help"
+            >
+              {Object.entries(SITE_FONTS).map(([value, font]) => (
+                <option key={value} value={value}>{font.label}</option>
+              ))}
+            </select>
+            <p id="global-font-help" className="text-xs text-neutral-400">
+              Original typography restores the current mix of Poppins and heading fonts. Icons and code samples keep their own fonts.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-3" style={{ fontFamily: SITE_FONTS[fontFamily].family }}>
+            <p className="text-xs uppercase tracking-wider text-teal-400">Font preview · {SITE_FONTS[fontFamily].label}</p>
+            <p className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Build something extraordinary.</p>
+            <p className="text-sm text-neutral-300">Your projects, your team, and your next big idea — all in one place.</p>
+            <p className="text-sm font-medium text-neutral-400">ABCDEFGHIJKLMNOPQRSTUVWXYZ · abcdefghijklmnopqrstuvwxyz · 0123456789</p>
+          </div>
+        </section>
 
         {/* Global Policy Status Capsule */}
         <div className="p-5 rounded-2xl bg-[#0c0c16] border border-white/10 space-y-2">

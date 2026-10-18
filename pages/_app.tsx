@@ -10,7 +10,7 @@ import {
 } from "@/lib/services/maintenanceService";
 import { recordPageView } from "@/lib/services/analyticsService";
 import MaintenanceScreen from "@/components/maintenance/MaintenanceScreen";
-import DevKittyFloatingButton from "@/components/DevKittyFloatingButton";
+import { HeaderControlsProvider } from "@/components/HeaderControls";
 import { ThemeProvider } from "@/context/ThemeContext";
 import "../styles/globals.css";
 
@@ -63,6 +63,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider>
+      <HeaderControlsProvider>
       {/* Discreet Admin Floating Pill (ONLY visible to admin hamim.leon@gmail.com, NEVER to end users) */}
       {maintenanceConfig?.isEnabled && isAdmin && (
         <aside
@@ -95,10 +96,9 @@ function MyApp({ Component, pageProps }: AppProps) {
       ) : (
         <>
           <Component {...pageProps} />
-          {/* DevKitty Future ChatBot Floating Button (All user screens) */}
-          <DevKittyFloatingButton />
         </>
       )}
+      </HeaderControlsProvider>
     </ThemeProvider>
   );
 }

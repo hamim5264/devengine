@@ -6,18 +6,25 @@ import { getPdfBrandingSettings, DEFAULT_PDF_BRANDING } from "@/lib/services/pdf
 /**
  * Fetch base64 data for DevEngine logo and Founder signature from API
  */
-async function getReceiptAssets(): Promise<{ logoBase64: string; signatureBase64: string }> {
+async function getReceiptAssets(): Promise<{
+  logoBase64: string;
+  logoDarkBase64?: string;
+  logoLightBase64?: string;
+  signatureBase64: string;
+}> {
   try {
     const res = await fetch("/api/receipt-assets");
     if (!res.ok) throw new Error("Assets API returned non-200");
     const data = await res.json();
     return {
       logoBase64: data.logoBase64 || "",
+      logoDarkBase64: data.logoDarkBase64 || "",
+      logoLightBase64: data.logoLightBase64 || "",
       signatureBase64: data.signatureBase64 || "",
     };
   } catch (err) {
     console.warn("Could not fetch receipt assets from API, falling back:", err);
-    return { logoBase64: "", signatureBase64: "" };
+    return { logoBase64: "", logoDarkBase64: "", logoLightBase64: "", signatureBase64: "" };
   }
 }
 
@@ -30,7 +37,7 @@ async function generateQrCode(text: string): Promise<string> {
       margin: 1,
       width: 140,
       color: {
-        dark: "#0b132b",
+        dark: "#0f172a",
         light: "#ffffff",
       },
       errorCorrectionLevel: "M",
@@ -50,530 +57,463 @@ export async function generatePdfInvoice(order: OrderRecord): Promise<void> {
 
   const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
   const pageHeight = doc.internal.pageSize.getHeight(); // 297mm
-  const margin = 12;
-  const contentWidth = pageWidth - margin * 2; // 186mm
+  const margin = 16;
+  const contentWidth = pageWidth - margin * 2; // 178mm
 
-  // Scanner message requested: "when scan show the code and just a msg your tracking code of devengine"
-  const qrMessage = `Your tracking code of DevEngine: ${order.id}`;
+  // Fetch brand assets and PDF branding settings
+  const [assets, branding] = await Promise.all([
+    getReceiptAssets(),
+    getPdfBrandingSettings().catch(() => ({ ...DEFAULT_PDF_BRANDING })),
+  ]);
 
-  // Currency: always use BDT or USD to avoid WinAnsi font symbol encoding issues
-  const currency = order.currency?.toUpperCase() === "USD" ? "USD" : "BDT";
+  const rawCompanyWebsite = (branding?.companyWebsiteUrl || DEFAULT_PDF_BRANDING.companyWebsiteUrl || "https://devenginehq.com").trim();
+  const rawDeveloperPortfolio = (branding?.developerPortfolioUrl || DEFAULT_PDF_BRANDING.developerPortfolioUrl || "https://thedevhamim.vercel.app").trim();
+  const companyEmail = (branding?.companyEmail || DEFAULT_PDF_BRANDING.companyEmail || "devenginesoftsolution@gmail.com").trim();
+  const contactPhone = (branding?.contactPhone || DEFAULT_PDF_BRANDING.contactPhone || "+880 1724 879284").trim();
+  const companyAddress = (branding?.companyAddress || DEFAULT_PDF_BRANDING.companyAddress || "Banasree, Rampura, Dhaka 1219").trim();
+  const companyLegalName = (branding?.companyLegalName || DEFAULT_PDF_BRANDING.companyLegalName || "DEVENGINE SYSTEMS INC.").trim();
+  const signatoryName = (branding?.signatoryName || DEFAULT_PDF_BRANDING.signatoryName || "MD. ABDUL HAMIM LEON").toUpperCase();
+  const signatoryTitle = (branding?.signatoryTitle || DEFAULT_PDF_BRANDING.signatoryTitle || "Managing Director & CEO").trim();
+  const clientPortalBaseUrl = (branding?.clientPortalBaseUrl || DEFAULT_PDF_BRANDING.clientPortalBaseUrl || "https://devenginehq.com").trim();
+
+  // Display URLs
+  const displayWebsite = rawCompanyWebsite.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const displayPortfolio = rawDeveloperPortfolio.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+  // Scanner message with official verification domain
+  const qrMessage = `Your tracking code of DevEngine: ${order.id}\nVerify online: ${clientPortalBaseUrl}`;
+  const qrDataUrl = await generateQrCode(qrMessage);
+
+  // Currency & Amount
+  const currency = order.currency?.toUpperCase() === "USD" ? "$" : "BDT ";
   const numAmount = Number(String(order.amount).replace(/[^0-9.]/g, ""));
   const displayAmount = !isNaN(numAmount) && numAmount > 0 ? numAmount.toLocaleString() : order.amount;
 
-  // Fetch brand assets, QR code, and PDF branding settings in parallel
-  const [assets, qrDataUrl, branding] = await Promise.all([
-    getReceiptAssets(),
-    generateQrCode(qrMessage),
-    getPdfBrandingSettings().catch(() => ({ ...DEFAULT_PDF_BRANDING })),
-  ]);
-  const portfolioUrl = branding.developerPortfolioUrl;
-
-  // ==========================================
-  // 1. TOP BRAND HEADER
-  // ==========================================
-  const topY = 11;
-
-  // DevEngine Logo Image or Fallback Typography
-  if (assets.logoBase64) {
-    try {
-      doc.addImage(assets.logoBase64, "PNG", margin, topY - 2, 52, 12.5);
-    } catch (e) {
-      drawFallbackLogo(doc, margin, topY);
-    }
-  } else {
-    drawFallbackLogo(doc, margin, topY);
-  }
-
-  // Right Header Tagline
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(30, 41, 59); // slate-800
-  doc.text("BUILD  •  SCALE  •  TOGETHER", pageWidth - margin, topY + 2, { align: "right" });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
-  doc.setTextColor(100, 116, 139); // slate-500
-  doc.text("Enterprise Software  |  Custom Solutions  |  Global Impact", pageWidth - margin, topY + 6.5, { align: "right" });
-
-  // ==========================================
-  // 2. HERO RECEIPT CARD (Dark Navy)
-  // ==========================================
-  const heroY = 25;
-  const heroHeight = 31;
-
-  // Navy Card Background
-  doc.setFillColor(11, 19, 43); // #0b132b
-  doc.roundedRect(margin, heroY, contentWidth, heroHeight, 3, 3, "F");
-
-  // Left Content
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(56, 189, 248); // sky-400
-  doc.text("OFFICIAL RECEIPT", margin + 7, heroY + 6.8);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text("Commercial Software License & Order Invoice", margin + 7, heroY + 14.5);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
-  doc.setTextColor(148, 163, 184); // slate-400
-  doc.text(
-    "This document serves as an official record of your order and payment.\nYour license will be delivered after payment verification.",
-    margin + 7,
-    heroY + 21.5
-  );
-
-  // Right Content - Sleek Fitted & Centered Status Badge Pill
-  const isVerified = order.status === "Verified";
-  const badgeLabel = isVerified ? "VERIFIED LICENSE" : "PENDING VERIFICATION";
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.2);
-  const textWidth = doc.getTextWidth(badgeLabel);
-  const dotRadius = 1.1;
-  const dotGap = 2.2;
-  const totalInnerContentW = dotRadius * 2 + dotGap + textWidth;
-  const badgeW = Math.round(totalInnerContentW + 9); // Fitted width with 4.5mm padding each side
-  const badgeH = 6.2;
-  const badgeX = pageWidth - margin - 7 - badgeW;
-  const badgeY = heroY + 5.2;
-
-  // Pill background & border
-  doc.setFillColor(18, 24, 38);
-  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 3.1, 3.1, "F");
-
-  doc.setDrawColor(isVerified ? 16 : 245, isVerified ? 185 : 158, isVerified ? 129 : 11);
-  doc.setLineWidth(0.35);
-  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 3.1, 3.1, "S");
-
-  // Center the dot and text horizontally inside the pill!
-  const contentStartX = badgeX + (badgeW - totalInnerContentW) / 2;
-  const dotCenterX = contentStartX + dotRadius;
-  const dotCenterY = badgeY + badgeH / 2;
-
-  // Glowing status dot
-  doc.setFillColor(isVerified ? 52 : 251, isVerified ? 211 : 191, isVerified ? 153 : 36);
-  doc.circle(dotCenterX, dotCenterY, dotRadius, "F");
-
-  // Centered label text
-  doc.setTextColor(isVerified ? 52 : 251, isVerified ? 211 : 191, isVerified ? 153 : 36);
-  doc.text(badgeLabel, contentStartX + dotRadius * 2 + dotGap, badgeY + 4.3);
-
-  // Right Content - Tracking ID & Date
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.5);
-  doc.setTextColor(148, 163, 184);
-  doc.text("ORDER / TRACKING ID", pageWidth - margin - 7, heroY + 17.5, { align: "right" });
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(255, 255, 255);
-  doc.text(order.id, pageWidth - margin - 7, heroY + 23.2, { align: "right" });
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(148, 163, 184);
+  // Formatted Date
   const formattedDate = new Date().toLocaleDateString("en-US", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
   });
-  doc.text(`Date: ${formattedDate}`, pageWidth - margin - 7, heroY + 28.5, { align: "right" });
 
   // ==========================================
-  // 3. TWO INFO CARDS (With Dynamic Row Height to Prevent Text Overlap)
+  // 1. TOP HEADER SECTION (TWO COLUMNS)
   // ==========================================
-  const cardsY = heroY + heroHeight + 3.5;
-  const cardGap = 4;
-  const cardWidth = (contentWidth - cardGap) / 2;
-  const cardHeight = 33; // Generous height for safe multi-line padding
+  const topY = 16;
+  const brandCardW = 98;
+  const brandCardH = 58;
 
-  // Left Card: Customer & Licensee Information
-  drawInfoCard(doc, margin, cardsY, cardWidth, cardHeight, "Customer & Licensee Information", [
-    { label: "Full Name", value: order.customerName },
-    { label: "Email", value: order.customerEmail },
-    { label: "Contact", value: order.customerPhone },
-    { label: "Address", value: order.customerAddress },
-  ]);
+  // --- LEFT CARD: BRAND THEME CARD WITH PERFECT ROUNDED OUTLINE ---
+  // Single continuous vector path for fill and stroke (100% matching rounded corners)
+  doc.setFillColor(240, 253, 255); // Pristine light brand cyan tint (#f0fdff)
+  doc.setDrawColor(44, 236, 247); // Brand cyan #2cecf7 outline
+  doc.setLineWidth(0.5);
+  doc.roundedRect(margin, topY, brandCardW, brandCardH, 6, 6, "FD");
 
-  // Right Card: Licensed System Specification (Dynamic flow prevents "Learning Tool" collision!)
-  drawInfoCard(
-    doc,
-    margin + cardWidth + cardGap,
-    cardsY,
-    cardWidth,
-    cardHeight,
-    "Licensed System Specification",
-    [
-      { label: "Project", value: order.projectTitle },
-      { label: "Selected Plan", value: order.planName },
-      { label: "Digital Rights", value: "Full Commercial & Deployment Rights" },
-      { label: "Delivery", value: "Instant Cloud Repository Access" },
-    ]
-  );
+  // Prominent Dark Logo on light gradient card (DevEngine-logo-on-light1.png)
+  const darkLogo = assets.logoLightBase64 || assets.logoBase64;
+  const logoW = 62;
+  const logoH = 15.5;
+  if (darkLogo) {
+    try {
+      doc.addImage(darkLogo, "PNG", margin + 8, topY + 7, logoW, logoH);
+    } catch (e) {
+      drawFallbackDarkLogo(doc, margin + 8, topY + 16);
+    }
+  } else {
+    drawFallbackDarkLogo(doc, margin + 8, topY + 16);
+  }
 
-  // ==========================================
-  // 4. ITEM DESCRIPTION & PRICING TABLE (Clean Column Bounds to Prevent Collision)
-  // ==========================================
-  const tableY = cardsY + cardHeight + 3.5;
-  const headerHeight = 7;
-
-  // Table Header Bar (Dark slate/navy)
-  doc.setFillColor(15, 23, 42); // slate-900
-  doc.roundedRect(margin, tableY, contentWidth, headerHeight, 1.5, 1.5, "F");
-
+  // High-contrast dark typography on light card
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.8);
-  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42); // slate-900
+  doc.text(companyLegalName, margin + 8, topY + 34);
 
-  doc.text("#", margin + 6, tableY + 4.8, { align: "center" });
-  doc.text("ITEM DESCRIPTION", margin + 16, tableY + 4.8);
-  doc.text("TIER / LICENSE", margin + 112, tableY + 4.8);
-  doc.text(`AMOUNT (${currency})`, pageWidth - margin - 7, tableY + 4.8, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(51, 65, 85); // slate-700
+  doc.text(`${displayWebsite}  /  ${contactPhone}`, margin + 8, topY + 39.5);
 
-  // Table Row 1
-  const rowY = tableY + headerHeight;
+  doc.setFontSize(7.2);
+  doc.setTextColor(100, 116, 139); // slate-500
+  doc.text(companyAddress, margin + 8, topY + 44.5);
 
-  // Calculate dynamic title lines to fit strictly within the 90mm description column
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.8);
-  const titleLines: string[] = doc.splitTextToSize(
-    `${order.projectTitle} — Production Source License`,
-    92
-  );
-  const rowHeight = titleLines.length > 1 ? 16 : 13;
+  // --- RIGHT COLUMN: FLOATING AMOUNT CARD & INVOICE TO ---
+  const rightColX = margin + brandCardW + 7;
+  const rightColW = contentWidth - brandCardW - 7; // ~73mm
+
+  // Top Floating White Card (Amount Due / Paid)
+  const floatCardY = topY;
+  const floatCardH = 26;
 
   doc.setFillColor(255, 255, 255);
-  doc.rect(margin, rowY, contentWidth, rowHeight, "F");
-  doc.setDrawColor(241, 245, 249);
-  doc.setLineWidth(0.2);
-  doc.line(margin, rowY + rowHeight, pageWidth - margin, rowY + rowHeight);
+  doc.setDrawColor(226, 232, 240); // slate-200
+  doc.setLineWidth(0.35);
+  doc.roundedRect(rightColX, floatCardY, rightColW, floatCardH, 4, 4, "FD");
 
-  // Row number (vertically centered)
+  // AMOUNT DUE label
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text("AMOUNT DUE", rightColX + 7, floatCardY + 6.5);
+
+  // Huge amount
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(22);
+  doc.setTextColor(15, 23, 42); // slate-900
+  doc.text(`${currency}${displayAmount}`, rightColX + 7, floatCardY + 16.5);
+
+  // Date
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  doc.setTextColor(148, 163, 184);
+  doc.text(formattedDate, rightColX + 7, floatCardY + 22);
+
+  // Bottom block: INVOICE TO
+  const toY = floatCardY + floatCardH + 5;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text("INVOICE TO:", rightColX, toY);
+
+  // Customer Name
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(15, 23, 42); // slate-900
+  doc.text(order.customerName || "Valued Licensee", rightColX, toY + 6);
+
+  // Phone
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139); // slate-500
+  doc.text(order.customerPhone || "—", rightColX, toY + 11);
+
+  // Address (Cleanly wrapped within rightColW)
+  const addrLines: string[] = doc.splitTextToSize(order.customerAddress || order.customerEmail || "Dhaka, Bangladesh", rightColW);
+  doc.text(addrLines.slice(0, 2), rightColX, toY + 15.5);
+
+  // ==========================================
+  // 2. INVOICE DETAILS SECTION
+  // ==========================================
+  const detailsY = 82;
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("1", margin + 6, rowY + rowHeight / 2 + 1, { align: "center" });
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text("INVOICE DETAILS", margin, detailsY);
 
-  // Item description (constrained strictly within 92mm so it NEVER collides with Tier!)
+  // Wide 3-column card
+  const detailsBoxY = detailsY + 3.5;
+  const detailsBoxH = 16;
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, detailsBoxY, contentWidth, detailsBoxH, 3.5, 3.5, "FD");
+
+  // Column 1: INVOICE NUMBER
+  const dCol1X = margin + 8;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.8);
-  doc.setTextColor(15, 23, 42);
-  doc.text(titleLines, margin + 16, rowY + 5);
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184);
+  doc.text("INVOICE NUMBER:", dCol1X, detailsBoxY + 5.5);
 
-  const subtextY = rowY + 5 + titleLines.length * 3.8;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.4);
-  doc.setTextColor(100, 116, 139);
-  doc.text(
-    "Includes full architecture code, developer documentation & cloud repository access.",
-    margin + 16,
-    subtextY,
-    { maxWidth: 92 }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Nº: ${order.id}`, dCol1X, detailsBoxY + 11.5);
+
+  // Column 2: ISSUED DATE
+  const dCol2X = margin + 70;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184);
+  doc.text("ISSUED:", dCol2X, detailsBoxY + 5.5);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(formattedDate, dCol2X, detailsBoxY + 11.5);
+
+  // Column 3: DUE DATE / STATUS
+  const dCol3X = margin + 130;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(148, 163, 184);
+  doc.text("STATUS:", dCol3X, detailsBoxY + 5.5);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  const statusStr = String(order.status || "").toLowerCase();
+  const isVerified = statusStr.includes("verifi");
+  const isRejected = statusStr.includes("reject");
+
+  let statusLabel = "Pending Verification";
+  let statusR = 217, statusG = 119, statusB = 6; // amber-600
+  if (isVerified) {
+    statusLabel = "Verified & Paid";
+    statusR = 16; statusG = 185; statusB = 129; // emerald-500
+  } else if (isRejected) {
+    statusLabel = "Verification Rejected";
+    statusR = 220; statusG = 38; statusB = 38; // red-600
+  }
+  doc.setTextColor(statusR, statusG, statusB);
+  doc.text(statusLabel, dCol3X, detailsBoxY + 11.5);
+
+  // ==========================================
+  // 3. DESCRIPTION & PRICING TABLE
+  // ==========================================
+  const tableY = detailsBoxY + detailsBoxH + 9;
+
+  // Table Column Labels
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(148, 163, 184); // slate-400
+
+  const colDescX = margin + 6;
+  const descMaxW = 86; // strictly constrained to 86mm so it NEVER touches QTY!
+  const colQtyX = margin + 116; // 132mm - completely safe gap of over 24mm!
+  const colPriceX = margin + 144;
+  const colTotalX = margin + contentWidth - 6;
+
+  doc.text("DESCRIPTION", colDescX, tableY);
+  doc.text("QTY", colQtyX, tableY, { align: "center" });
+  doc.text("PRICE", colPriceX, tableY, { align: "right" });
+  doc.text("TOTAL", colTotalX, tableY, { align: "right" });
+
+  const itemsBoxY = tableY + 3.5;
+
+  // Split description text to strictly fit within 86mm
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.2);
+  const titleLines: string[] = doc.splitTextToSize(
+    `${order.projectTitle} — Production Source License`,
+    descMaxW
   );
 
-  // Tier / License (vertically centered, starts safely at margin + 112)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.8);
-  doc.setTextColor(15, 23, 42);
-  doc.text(order.planName, margin + 112, rowY + rowHeight / 2 + 1);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  const subtextLines: string[] = doc.splitTextToSize(
+    `Selected Plan: ${order.planName || "Commercial License"}  •  Full cloud repository access`,
+    descMaxW
+  );
 
-  // Amount (vertically centered)
+  const r1TitleH = titleLines.length * 4.2;
+  const r1SubH = subtextLines.length * 3.4;
+  const r1Y = itemsBoxY + 6.5;
+  const r1CenterY = r1Y + (r1TitleH + r1SubH) / 2 - 1;
+
+  const divider1Y = r1Y + r1TitleH + r1SubH + 4;
+  const r2Y = divider1Y + 5.5;
+  const r2H = 14;
+  const itemsBoxH = r2Y + r2H - itemsBoxY + 1;
+
+  // Light grayish-blue rounded items container (#f8fafc)
+  doc.setFillColor(248, 250, 252); // slate-50
+  doc.setDrawColor(241, 245, 249); // slate-100
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, itemsBoxY, contentWidth, itemsBoxH, 4, 4, "FD");
+
+  // Row 1: Primary License Deliverable (Cleanly Wrapped)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.2);
+  doc.setTextColor(15, 23, 42); // slate-900
+  doc.text(titleLines, colDescX, r1Y);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text(subtextLines, colDescX, r1Y + r1TitleH);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text("1", colQtyX, r1CenterY, { align: "center" });
+  doc.text(`${currency}${displayAmount}`, colPriceX, r1CenterY, { align: "right" });
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`${currency}${displayAmount}`, colTotalX, r1CenterY, { align: "right" });
+
+  // Divider Line 1
+  doc.setDrawColor(241, 245, 249);
+  doc.setLineWidth(0.3);
+  doc.line(margin + 4, divider1Y, margin + contentWidth - 4, divider1Y);
+
+  // Row 2: Verification Audit & Delivery Channel
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
-  doc.text(
-    `${currency} ${displayAmount}`,
-    pageWidth - margin - 7,
-    rowY + rowHeight / 2 + 1,
-    { align: "right" }
-  );
+  doc.text(`Payment Verification (${order.paymentMethod})`, colDescX, r2Y);
 
-  // Total Row (Light Green Bar)
-  const totalY = rowY + rowHeight;
-  const totalHeight = 8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  doc.setTextColor(148, 163, 184);
+  doc.text(`TrxID: ${order.transactionId || "Pending"}  •  Encrypted Email Dispatch`, colDescX, r2Y + 4.2);
 
-  doc.setFillColor(236, 253, 245); // emerald-50
-  doc.roundedRect(margin, totalY, contentWidth, totalHeight, 1.5, 1.5, "F");
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text("1", colQtyX, r2Y + 2, { align: "center" });
+  doc.text("Included", colPriceX, r2Y + 2, { align: "right" });
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.8);
-  doc.setTextColor(4, 120, 87); // emerald-700
-  doc.text("TOTAL AMOUNT PAID / RECORDED", margin + 7, totalY + 5.2);
-
-  doc.setFontSize(10);
-  doc.text(
-    `${currency} ${displayAmount}`,
-    pageWidth - margin - 7,
-    totalY + 5.5,
-    { align: "right" }
-  );
+  doc.setFontSize(9.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`${currency}0.00`, colTotalX, r2Y + 2, { align: "right" });
 
   // ==========================================
-  // 5. MANUAL PAYMENT VERIFICATION AUDIT (Properly Aligned & No Text Overlap)
+  // 4. TOTAL AMOUNT DISPLAY & STATUS SEAL
   // ==========================================
-  const auditY = totalY + totalHeight + 3.5;
-  const auditHeight = 24.5;
+  const totalSectionY = itemsBoxY + itemsBoxH + 9;
 
-  // Box background & border
-  doc.setFillColor(248, 250, 252);
+  // Render Official Status Seal if order status is Verified or Rejected
+  if (isVerified || isRejected) {
+    try {
+      const sealType = isVerified ? "Verified" : "Rejected";
+      const sealDataUrl = generateStatusSealDataUrl(sealType, companyLegalName);
+      if (sealDataUrl) {
+        const sealSize = 31; // 31mm width & height
+        const sealX = margin + 4;
+        const sealY = totalSectionY - 6.5;
+        doc.addImage(sealDataUrl, "PNG", sealX, sealY, sealSize, sealSize);
+      }
+    } catch (err) {
+      console.warn("Could not draw status seal:", err);
+    }
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text("TOTAL AMOUNT:", colTotalX, totalSectionY, { align: "right" });
+
+  // Massive Vibrant Cyan/Sky Blue Total (28 pt!)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(28);
+  doc.setTextColor(2, 132, 199); // Cyan / Sky Blue (#0284c7)
+  doc.text(`${currency}${displayAmount}`, colTotalX, totalSectionY + 10.5, { align: "right" });
+
+  // ==========================================
+  // 5. SIGNATURE & QR VERIFICATION BAR
+  // ==========================================
+  const verifyY = totalSectionY + 25;
+  const verifyH = 32;
+
+  doc.setFillColor(255, 255, 255);
   doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.3);
-  doc.roundedRect(margin, auditY, contentWidth, auditHeight, 2, 2, "FD");
+  doc.roundedRect(margin, verifyY, contentWidth, verifyH, 3.5, 3.5, "FD");
 
-  // Header with teal circle icon
-  drawTealBadge(doc, margin + 5, auditY + 5);
+  // Column 1: Founder Signature & Name
+  const col1X = margin + 6;
+  if (assets.signatureBase64) {
+    try {
+      doc.addImage(assets.signatureBase64, "PNG", col1X, verifyY + 2, 34, 11);
+    } catch (e) {
+      drawSignatureFallback(doc, col1X, verifyY + 10);
+    }
+  } else {
+    drawSignatureFallback(doc, col1X, verifyY + 10);
+  }
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("Manual Payment Verification Audit", margin + 14, auditY + 5.8);
+  doc.text(signatoryName, col1X, verifyY + 19);
 
-  // Audit Columns: Generous widths so nothing ever wraps or collides
-  const auditCol1X = margin + 5;
-  const auditCol2X = margin + 94; // Col 2 starts at ~106mm
-  const auditRow1 = auditY + 11.5;
-  const auditRow2 = auditY + 16.5;
-  const auditRow3 = auditY + 21.5;
-
-  // Left Column (Label width: 38mm, Value max: 50mm)
-  drawFieldPair(doc, auditCol1X, auditRow1, "Payment Method", order.paymentMethod, 38, 50);
-  drawFieldPair(doc, auditCol1X, auditRow2, "Transaction ID (TrxID)", order.transactionId, 38, 50);
-  drawFieldPair(doc, auditCol1X, auditRow3, "Sender Phone / Account", order.senderNumberOrAccount, 38, 50);
-
-  // Right Column (Label width: 28mm, Value max: 62mm -> fits "DevEngine Financial Verification" on 1 line!)
-  drawFieldPair(doc, auditCol2X, auditRow1, "Audited By", "DevEngine Financial Verification", 28, 62);
-  drawFieldPair(doc, auditCol2X, auditRow2, "Verification SLA", "Within 24 Hours", 28, 62);
-  drawFieldPair(doc, auditCol2X, auditRow3, "Delivery Channel", "Encrypted Email Dispatch", 28, 62);
-
-  // ==========================================
-  // 6. HIGHLIGHTED NO RETURN POLICY & PROJECT TAKEOVER PROTOCOL
-  // ==========================================
-  const alertY = auditY + auditHeight + 3.5;
-  const alertHeight = 16.5;
-
-  // Highlighted Box (Amber tint background with clean amber border)
-  doc.setFillColor(255, 251, 235); // amber-50
-  doc.setDrawColor(245, 158, 11); // amber-500
-  doc.setLineWidth(0.4);
-  doc.roundedRect(margin, alertY, contentWidth, alertHeight, 2, 2, "FD");
-
-  // Left accent amber bar
-  doc.setFillColor(245, 158, 11);
-  doc.roundedRect(margin, alertY, 3, alertHeight, 1, 1, "F");
-
-  // Takeover Protocol Notice
-  doc.setFont("helvetica", "bold");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
-  doc.setTextColor(180, 83, 9); // amber-700
-  doc.text("PROJECT TAKEOVER PROTOCOL:", margin + 6, alertY + 5.5);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
-  doc.setTextColor(15, 23, 42); // slate-900
-  doc.text(
-    "Use this verified payment receipt and unique tracking ID to claim full ownership and take over the project repository.",
-    margin + 58,
-    alertY + 5.5
-  );
-
-  // Strict No Return Policy Notice (Highlighted)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.2);
-  doc.setTextColor(225, 29, 72); // rose-600
-  doc.text("STRICT NO RETURN POLICY:", margin + 6, alertY + 11.8);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
-  doc.setTextColor(15, 23, 42);
-  doc.text(
-    "All software licenses, source code architectures, and digital assets are strictly non-returnable and non-refundable.",
-    margin + 58,
-    alertY + 11.8
-  );
-
-  // ==========================================
-  // 7. LICENSE AGREEMENT & TERMS OF DELIVERABLE
-  // ==========================================
-  const termsY = alertY + alertHeight + 3.5;
-  const termsHeight = 27;
-
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(margin, termsY, contentWidth, termsHeight, 2, 2, "FD");
-
-  // Header
-  drawTealBadge(doc, margin + 5, termsY + 4.8);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.2);
-  doc.setTextColor(15, 23, 42);
-  doc.text("License Agreement & Terms of Deliverable", margin + 14, termsY + 5.6);
-
-  // Terms items with circular numbered badges
-  const termItems = [
-    {
-      num: "1",
-      title: "License Scope",
-      desc: "Grants licensee non-exclusive commercial rights to deploy and modify the source architecture.",
-    },
-    {
-      num: "2",
-      title: "Verification SLA",
-      desc: "Orders are verified against banking/MFS transaction ledgers within 24 hours before final repository access issues.",
-    },
-    {
-      num: "3",
-      title: "Support Channel",
-      desc: "Direct inquiries to devenginesoftsolution@gmail.com or our verified WhatsApp helpline +880 1724 879284.",
-    },
-  ];
-
-  termItems.forEach((item, idx) => {
-    const itemY = termsY + 10.5 + idx * 5.2;
-
-    // Number circle badge
-    doc.setFillColor(226, 232, 240);
-    doc.circle(margin + 8, itemY - 1, 1.9, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(5.8);
-    doc.setTextColor(30, 41, 59);
-    doc.text(item.num, margin + 8, itemY - 0.2, { align: "center" });
-
-    // Item title & description
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(6.8);
-    doc.setTextColor(15, 23, 42);
-    doc.text(`${item.title}: `, margin + 13, itemY);
-
-    const titleWidth = doc.getTextWidth(`${item.title}: `);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.6);
-    doc.setTextColor(71, 85, 105);
-    doc.text(item.desc, margin + 13 + titleWidth, itemY);
-  });
-
-  // ==========================================
-  // 8. FOUNDER SIGNATURE, COMPANY INFO & QR CODE
-  // ==========================================
-  const bottomY = termsY + termsHeight + 4;
-  const col1W = 58;
-  const col2W = 66;
-
-  // --- COLUMN 1: FOUNDER SIGNATURE & CEO ---
-  const col1X = margin + 1;
-
-  // Founder Signature Image
-  if (assets.signatureBase64) {
-    try {
-      doc.addImage(assets.signatureBase64, "PNG", col1X, bottomY - 3, 36, 13);
-    } catch (e) {
-      drawSignatureFallback(doc, col1X, bottomY + 6);
-    }
-  } else {
-    drawSignatureFallback(doc, col1X, bottomY + 6);
-  }
-
-  // Signature divider line
-  doc.setDrawColor(203, 213, 225);
-  doc.setLineWidth(0.25);
-  doc.line(col1X, bottomY + 11, col1X + 42, bottomY + 11);
-
-  // Founder details
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.8);
-  doc.setTextColor(15, 23, 42);
-  doc.text("MD. ABDUL HAMIM LEON", col1X, bottomY + 15);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
   doc.setTextColor(100, 116, 139);
-  doc.text("Founder and CEO, DevEngine", col1X, bottomY + 19);
+  doc.text(signatoryTitle, col1X, verifyY + 23.5);
 
-  doc.setFontSize(6);
+  doc.setFontSize(6.5);
   doc.setTextColor(148, 163, 184);
-  doc.text("We appreciate your trust in us.", col1X, bottomY + 23);
+  doc.text("We appreciate your trust in us.", col1X, verifyY + 27.5);
 
-  // Vertical Separator 1
+  // Divider Line inside verification card
   doc.setDrawColor(226, 232, 240);
-  doc.line(margin + col1W, bottomY, margin + col1W, bottomY + 25);
+  doc.line(margin + 55, verifyY + 3, margin + 55, verifyY + verifyH - 3);
 
-  // --- COLUMN 2: DEVENGINE SYSTEMS INC. & PORTFOLIO (devengine.com removed) ---
-  const col2X = margin + col1W + 6;
-
+  // Column 2: Official Web Portals & Support
+  const col2X = margin + 62;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("DEVENGINE ", col2X, bottomY + 4);
-  const deWidth = doc.getTextWidth("DEVENGINE ");
-  doc.setTextColor(2, 132, 199); // sky-600
-  doc.text("SYSTEMS INC.", col2X + deWidth, bottomY + 4);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.6);
-  doc.setTextColor(100, 116, 139);
-  doc.text("Banasree, Rampura, Dhaka 1219", col2X, bottomY + 8.8);
-  doc.text("Official Enterprise Software Studio", col2X, bottomY + 13);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(6.6);
-  doc.setTextColor(15, 23, 42);
-  doc.text("Visit Developer Portfolio:", col2X, bottomY + 18);
-
+  doc.text("Official Company Portal: ", col2X, verifyY + 8);
+  const w1 = doc.getTextWidth("Official Company Portal: ");
   doc.setTextColor(2, 132, 199);
+  doc.textWithLink(displayWebsite, col2X + w1, verifyY + 8, { url: rawCompanyWebsite });
+
+  doc.setTextColor(15, 23, 42);
+  doc.text("Developer Portfolio: ", col2X, verifyY + 14);
+  const w2 = doc.getTextWidth("Developer Portfolio: ");
+  doc.setTextColor(2, 132, 199);
+  doc.textWithLink(displayPortfolio, col2X + w2, verifyY + 14, { url: rawDeveloperPortfolio });
+
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.text(portfolioUrl, col2X, bottomY + 22.5);
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Support: ${companyEmail}  •  ${contactPhone}`, col2X, verifyY + 21);
+  doc.text(companyAddress, col2X, verifyY + 26);
 
-  // Vertical Separator 2
+  // Divider Line before QR
   doc.setDrawColor(226, 232, 240);
-  doc.line(margin + col1W + col2W, bottomY, margin + col1W + col2W, bottomY + 25);
+  doc.line(margin + contentWidth - 32, verifyY + 3, margin + contentWidth - 32, verifyY + verifyH - 3);
 
-  // --- COLUMN 3: QR CODE & SUPPORT ---
-  const col3X = margin + col1W + col2W + 4;
-
+  // Column 3: QR Code
+  const qrX = margin + contentWidth - 27;
   if (qrDataUrl) {
     try {
-      doc.addImage(qrDataUrl, "PNG", col3X, bottomY - 1, 22, 22);
+      doc.addImage(qrDataUrl, "PNG", qrX, verifyY + 3.5, 23, 23);
     } catch (err) {
       console.warn("Could not draw QR image:", err);
     }
   }
 
-  const qrTextX = col3X + 24;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(6);
-  doc.setTextColor(100, 116, 139);
-  doc.text("SCAN TO VERIFY", qrTextX, bottomY + 3);
+  doc.setTextColor(148, 163, 184);
+  doc.text("SCAN TO VERIFY", qrX + 11.5, verifyY + 29.5, { align: "center" });
+
+  // ==========================================
+  // 6. TERMS & CONDITIONS SECTION
+  // ==========================================
+  const termsY = verifyY + verifyH + 5;
+  const termsH = 22;
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, termsY, contentWidth, termsH, 3.5, 3.5, "FD");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("Need Help?", qrTextX, bottomY + 7.5);
+  doc.text("Terms & Conditions:", margin + 5, termsY + 6);
+
+  const termsText =
+    "All software licenses, source code architectures, and digital assets are strictly non-returnable and non-refundable once delivered. Orders are verified against banking/MFS transaction ledgers within 24 hours before final repository access issues. Direct inquiries to " +
+    companyEmail +
+    " or our verified WhatsApp helpline " +
+    contactPhone +
+    ".";
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.2);
-  doc.setTextColor(100, 116, 139);
-  doc.text("devenginesoftsolution@gmail.com", qrTextX, bottomY + 11.5);
-  doc.text("+880 1724 879284", qrTextX, bottomY + 15.5);
-
-  // ==========================================
-  // 9. FOOTER COPYRIGHT BAR
-  // ==========================================
-  const footerY = pageHeight - 9;
-  doc.setDrawColor(226, 232, 240);
-  doc.line(margin, footerY - 3, pageWidth - margin, footerY - 3);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
+  doc.setFontSize(6.8);
   doc.setTextColor(148, 163, 184);
-  doc.text("© 2026 DevEngine. All rights reserved.", margin, footerY);
-  doc.text(
-    "Extreme Software Studio // Enterprise Architecture",
-    pageWidth - margin,
-    footerY,
-    { align: "right" }
-  );
+  const termsLines = doc.splitTextToSize(termsText, contentWidth - 10);
+  doc.text(termsLines, margin + 5, termsY + 11);
+
+  // ==========================================
+  // 7. BOTTOM SOLID BRAND ACCENT BAR
+  // ==========================================
+  const bottomBarH = 5;
+  doc.setFillColor(44, 236, 247); // Brand cyan #2cecf7
+  doc.rect(0, pageHeight - bottomBarH, pageWidth, bottomBarH, "F");
 
   // Save the PDF file
   doc.save(`DevEngine-Receipt-${order.id}.pdf`);
@@ -583,99 +523,168 @@ export async function generatePdfInvoice(order: OrderRecord): Promise<void> {
 // HELPER DRAWING FUNCTIONS
 // ------------------------------------------
 
-function drawFallbackLogo(doc: jsPDF, x: number, y: number) {
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  doc.setTextColor(15, 23, 42);
-  doc.text("DEVENGINE", x, y + 2);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(2, 132, 199);
-  doc.text("EXTREME SOFTWARE STUDIO", x, y + 6);
-}
-
-function drawTealBadge(doc: jsPDF, x: number, y: number) {
-  doc.setFillColor(204, 251, 241); // teal-100
-  doc.circle(x + 2.5, y - 1, 3, "F");
-  doc.setFillColor(13, 148, 136); // teal-600
-  doc.circle(x + 2.5, y - 1, 1.2, "F");
-}
-
 /**
- * Draw Info Card with dynamic row height tracking so multi-line text NEVER collides with the next field
+ * Generate an authentic circular corporate Verified (Green) or Rejected (Red) Seal as a high-resolution PNG data URL.
  */
-function drawInfoCard(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  title: string,
-  fields: { label: string; value: string }[]
-) {
-  // Rounded Box
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(x, y, w, h, 2, 2, "FD");
+function generateStatusSealDataUrl(
+  type: "Verified" | "Rejected",
+  companyName: string = "DEVENGINE SYSTEMS INC."
+): string {
+  if (typeof document === "undefined") return "";
 
-  // Header
-  drawTealBadge(doc, x + 4.5, y + 5);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text(title, x + 13, y + 5.8);
+  const isVerified = type === "Verified";
+  const sealColor = isVerified ? "#059669" : "#dc2626"; // Emerald 600 or Red 600
+  const tintColor = isVerified ? "rgba(5, 150, 105, 0.05)" : "rgba(220, 38, 38, 0.05)";
 
-  // Dynamic Row Flow: Advances Y according to exact line count of value!
-  let currentY = y + 11.2;
-  const valueColX = x + 24;
-  const valueMaxW = w - 28; // ~63mm wide for value
+  const size = 600;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
 
-  fields.forEach((field) => {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.7);
-    doc.setTextColor(100, 116, 139);
-    doc.text(field.label, x + 5, currentY);
+  const cx = size / 2;
+  const cy = size / 2;
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7);
-    doc.setTextColor(15, 23, 42);
+  // Slight tilt for authentic ink stamp aesthetic (-9.5 degrees)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((-9.5 * Math.PI) / 180);
+  ctx.translate(-cx, -cy);
 
-    // Split text into lines to avoid overflow
-    const lines: string[] = doc.splitTextToSize(field.value, valueMaxW);
-    const displayLines = lines.slice(0, 2); // Max 2 lines per field
-    doc.text(displayLines, valueColX, currentY);
+  // Outer solid ring
+  ctx.strokeStyle = sealColor;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 270, 0, Math.PI * 2);
+  ctx.stroke();
 
-    // Advance currentY by the rendered height
-    const lineCount = displayLines.length;
-    currentY += lineCount > 1 ? 3.8 * lineCount : 4.6;
-  });
+  // Fine dashed security ring
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, 252, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]); // Reset dash
+
+  // Inner solid ring
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 185, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Subtle translucent inner watermark tint
+  ctx.fillStyle = tintColor;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 182, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Arc text helper
+  const drawArcText = (
+    text: string,
+    radius: number,
+    startAngle: number,
+    endAngle: number,
+    inward: boolean = true
+  ) => {
+    ctx.fillStyle = sealColor;
+    ctx.font = "bold 23px 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const chars = text.split("");
+    const angleRange = endAngle - startAngle;
+    const step = angleRange / Math.max(chars.length - 1, 1);
+
+    for (let i = 0; i < chars.length; i++) {
+      const angle = startAngle + i * step;
+      ctx.save();
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+      ctx.translate(x, y);
+      ctx.rotate(angle + (inward ? Math.PI / 2 : -Math.PI / 2));
+      ctx.fillText(chars[i], 0, 0);
+      ctx.restore();
+    }
+  };
+
+  // Top Arc: ★ DEVENGINE SYSTEMS INC. ★
+  const cleanCompName = companyName.length > 28 ? companyName.slice(0, 26) + "..." : companyName;
+  const topText = `★  ${cleanCompName.toUpperCase()}  ★`;
+  drawArcText(topText, 218, (-145 * Math.PI) / 180, (-35 * Math.PI) / 180, true);
+
+  // Bottom Arc
+  const bottomText = isVerified
+    ? "★  OFFICIALLY AUDITED & VERIFIED  ★"
+    : "★  PAYMENT AUDIT • REJECTED  ★";
+  drawArcText(bottomText, 218, (145 * Math.PI) / 180, (35 * Math.PI) / 180, false);
+
+  if (isVerified) {
+    // Center Checkmark Vector
+    ctx.strokeStyle = sealColor;
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - 45, cy - 35);
+    ctx.lineTo(cx - 12, cy - 2);
+    ctx.lineTo(cx + 50, cy - 65);
+    ctx.stroke();
+
+    // Center Badge: "VERIFIED"
+    ctx.fillStyle = sealColor;
+    ctx.font = "900 46px 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("VERIFIED", cx, cy + 30);
+
+    // Center Subtitle: "PAYMENT AUDITED"
+    ctx.font = "bold 17px 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    ctx.fillText("PAYMENT AUDITED", cx, cy + 62);
+  } else {
+    // Center Cross Vector (X)
+    ctx.strokeStyle = sealColor;
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(cx - 32, cy - 48);
+    ctx.lineTo(cx + 32, cy - 4);
+    ctx.moveTo(cx + 32, cy - 48);
+    ctx.lineTo(cx - 32, cy - 4);
+    ctx.stroke();
+
+    // Center Badge: "REJECTED"
+    ctx.fillStyle = sealColor;
+    ctx.font = "900 44px 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("REJECTED", cx, cy + 30);
+
+    // Center Subtitle: "PAYMENT DECLINED"
+    ctx.font = "bold 17px 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    ctx.fillText("PAYMENT DECLINED", cx, cy + 62);
+  }
+
+  // Star row under subtitle
+  ctx.font = "15px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  ctx.fillText("★  ★  ★", cx, cy + 83);
+
+  ctx.restore();
+
+  return canvas.toDataURL("image/png");
 }
 
-function drawFieldPair(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  label: string,
-  value: string,
-  labelColWidth: number,
-  valueMaxWidth: number = 55
-) {
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.8);
-  doc.setTextColor(100, 116, 139);
-  doc.text(label, x, y);
-
+function drawFallbackDarkLogo(doc: jsPDF, x: number, y: number) {
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.2);
-  doc.setTextColor(15, 23, 42);
-  doc.text(value, x + labelColWidth, y, { maxWidth: valueMaxWidth });
+  doc.setFontSize(20);
+  doc.setTextColor(15, 23, 42); // slate-900
+  doc.text("DevEngine", x, y);
 }
 
 function drawSignatureFallback(doc: jsPDF, x: number, y: number) {
   doc.setFont("times", "italic");
-  doc.setFontSize(13);
+  doc.setFontSize(14);
   doc.setTextColor(15, 23, 42);
   doc.text("Md. Abdul Hamim Leon", x, y);
 }
+

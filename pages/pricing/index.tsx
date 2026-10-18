@@ -17,6 +17,7 @@ import {
   DEFAULT_FAQS,
   formatUsdPrice,
 } from "@/types/project";
+import styles from "@/components/projects/ProjectPricing.module.css";
 
 const WHATSAPP_NUMBER = "8801724879284";
 
@@ -59,17 +60,17 @@ export default function GeneralPricingPage() {
           };
         });
         setProjects(list);
-        if (list.length > 0) {
-          setCachedData("archive_projects", list);
-        }
+        setCachedData("archive_projects", list);
 
         if (queryProject) {
-          const match = list.find(
+          const found = list.find(
             (p) =>
-              p.slug.toLowerCase() === String(queryProject).toLowerCase() ||
-              p.id.toLowerCase() === String(queryProject).toLowerCase()
+              p.slug === queryProject ||
+              p.id === queryProject ||
+              p.title.toLowerCase() === String(queryProject).toLowerCase()
           );
-          if (match) setSelectedProject(match);
+          if (found) setSelectedProject(found);
+          else if (list.length > 0) setSelectedProject(list[0]);
         } else if (list.length > 0) {
           setSelectedProject(list[0]);
         }
@@ -88,26 +89,33 @@ export default function GeneralPricingPage() {
       : DEFAULT_TECHNICAL_SPECS;
 
   const getWhatsAppUrl = (plan: ProjectPricingTier) => {
-    const projectTitle = selectedProject?.title || "DevEngine Studio License";
+    const projectTitle = selectedProject?.title || "DevEngine System";
     const bdtText = plan.currencySymbol ? `${plan.currencySymbol} ${plan.price}` : plan.price;
     const usdText = formatUsdPrice(plan.usdPrice, plan.price);
     const priceText = usdText ? `${bdtText} (approx. ${usdText})` : bdtText;
     const msg = encodeURIComponent(
-      `Hello DevEngine,\n\nI want to acquire the "${plan.name}" license for "${projectTitle}" (${priceText}).\n\nPlease guide me through licensing and immediate deployment.`
+      `Hello DevEngine,\n\nI want to acquire the "${plan.name}" license for "${projectTitle}" (${priceText}).\n\nPlease provide licensing details.`
     );
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
   };
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#030712] z-50 flex items-center justify-center">
-        <HelixLoader size={80} text="LOADING PRICING..." />
+      <div className={styles.pricingPageRoot}>
+        <LandingNavbar />
+        <main className="min-h-screen pt-44 pb-32 flex flex-col items-center justify-center text-center">
+          <HelixLoader size={54} color="#2cecf7" />
+          <p className="mt-6 font-mono text-xs uppercase tracking-widest text-[var(--devengine-muted)]">
+            Loading Pricing Experience…
+          </p>
+        </main>
+        <LandingFooter />
       </div>
     );
   }
 
   return (
-    <>
+    <div className={styles.pricingPageRoot}>
       <Head>
         <title>Pricing & Licensing Models | DevEngine</title>
         <meta
@@ -117,51 +125,49 @@ export default function GeneralPricingPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 
-      {/* Global Background Elements */}
-      <div className="fixed inset-0 bg-[#030712] z-[-10]" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(14,24,42,0.95)_0%,rgba(3,7,18,1)_100%)] z-[-9] pointer-events-none" />
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,rgba(132,148,149,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(132,148,149,0.04)_1px,transparent_1px)] bg-[size:40px_40px] z-[-8] pointer-events-none" />
-      <div className="fixed -top-40 -left-40 w-[600px] h-[600px] bg-[#38f2ff]/[0.07] rounded-full blur-[140px] pointer-events-none z-[-7]" />
-      <div className="fixed bottom-0 right-0 w-[600px] h-[600px] bg-[#5448dc]/[0.07] rounded-full blur-[160px] pointer-events-none z-[-7]" />
+      {/* Atmospheric Ambient Canvas */}
+      <div className={styles.ambientCanvas} aria-hidden="true">
+        <span className={styles.ambientBlobA} />
+        <span className={styles.ambientBlobB} />
+      </div>
 
       <LandingNavbar />
 
-      <main className="min-h-screen pt-32 pb-32 px-4 sm:px-8 md:px-12 max-w-7xl mx-auto relative z-10 text-[#dde2f3] font-sans selection:bg-[#38f2ff] selection:text-[#030712]">
+      <main className={styles.mainContainer}>
         {/* Hero Section */}
-        <section className="mb-16 md:mb-20 text-center max-w-4xl mx-auto flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#38f2ff]/10 border border-[#38f2ff]/20 mb-6 backdrop-blur-sm shadow-[0_0_20px_rgba(56,242,255,0.12)]">
-            <span className="w-2 h-2 rounded-full bg-[#38f2ff] animate-pulse" />
-            <span className="font-mono text-[11px] text-[#38f2ff] uppercase tracking-widest font-bold">
+        <section className={styles.heroSection}>
+          <div className={styles.protocolPill}>
+            <span className={styles.protocolDot} />
+            <span className={styles.protocolText}>
               Premium Pricing Experience
             </span>
           </div>
 
-          <h1 className="font-space font-bold text-4xl sm:text-5xl md:text-6xl text-white mb-6 leading-tight tracking-tight">
+          <h1 className={styles.heroHeading}>
             Fair Pricing.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#38f2ff] via-[#67e8f9] to-[#c4c0ff] drop-shadow-[0_0_35px_rgba(56,242,255,0.35)]">
+            <span className={styles.heroGradientText}>
               For Extraordinary Engineering.
             </span>
           </h1>
 
-          <p className="font-sans text-base sm:text-lg text-gray-400 max-w-2xl leading-relaxed">
+          <p className={styles.heroSubtitle}>
             Transparent, high-fidelity licensing models designed for serious software studios. No hidden fees, just pure architectural power.
           </p>
 
           {/* Project Selector (if projects exist) */}
           {projects.length > 0 && (
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 p-2 rounded-2xl bg-[#08111f]/80 border border-white/10 backdrop-blur-xl">
-              <span className="font-mono text-xs text-gray-400 px-3">Select System:</span>
+            <div className={styles.systemSelectorWrap}>
+              <span className="font-mono text-xs text-[var(--devengine-muted)] px-2">Select System:</span>
               <div className="flex flex-wrap gap-2">
-                {projects.slice(0, 5).map((p) => {
+                {projects.slice(0, 6).map((p) => {
                   const isSel = selectedProject?.id === p.id;
                   return (
                     <button
                       key={p.id}
+                      type="button"
                       onClick={() => setSelectedProject(p)}
-                      className={`px-3.5 py-1.5 rounded-xl font-mono text-xs transition cursor-pointer ${
-                        isSel
-                          ? "bg-[#38f2ff] text-[#030712] font-bold shadow-[0_0_15px_rgba(56,242,255,0.4)]"
-                          : "bg-white/5 text-gray-300 hover:text-white hover:bg-white/10"
+                      className={`${styles.systemBtn} ${
+                        isSel ? styles.systemBtnActive : ""
                       }`}
                     >
                       {p.title}
@@ -174,79 +180,74 @@ export default function GeneralPricingPage() {
         </section>
 
         {/* Pricing Bento Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-24 items-stretch">
+        <section className={styles.pricingGrid}>
           {pricingPlans.map((tier) => {
             const isStudio = tier.isPopular || tier.id === "studio";
             return (
               <div
                 key={tier.id}
-                className={`rounded-2xl p-7 lg:p-8 flex flex-col transition-all duration-300 relative ${
-                  isStudio
-                    ? "bg-[#0a1424]/90 border-2 border-[#38f2ff]/60 shadow-[0_0_40px_rgba(56,242,255,0.18)] md:-translate-y-4"
-                    : "bg-[#08111f]/70 border border-white/10 hover:border-white/20 hover:shadow-xl"
-                } backdrop-blur-xl`}
+                className={`${styles.pricingCard} ${
+                  isStudio ? styles.pricingCardPopular : ""
+                }`}
               >
                 {isStudio && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#38f2ff] text-[#030712] font-mono text-[10px] font-bold px-4 py-1 rounded-full uppercase tracking-widest shadow-[0_0_15px_rgba(56,242,255,0.6)]">
+                  <div className={styles.popularBadge}>
                     {tier.badge || "Most Popular"}
                   </div>
                 )}
 
-                <div className="mb-6 pt-1">
-                  <h3 className={`font-space font-bold text-2xl mb-1.5 ${
-                    isStudio ? "text-[#38f2ff]" : "text-white"
-                  }`}>
+                <div className={styles.planHeader}>
+                  <h3
+                    className={`${styles.planName} ${
+                      isStudio ? styles.planNamePopular : ""
+                    }`}
+                  >
                     {tier.name}
                   </h3>
-                  <p className="font-sans text-sm text-gray-400">
+                  <p className={styles.planTagline}>
                     {tier.tagline}
                   </p>
                 </div>
 
-                {/* Dual Price Display: BDT + Dollar */}
-                <div
-                  className={`mb-8 border-b pb-6 ${
-                    isStudio ? "border-[#38f2ff]/20" : "border-white/10"
-                  }`}
-                >
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
-                    <span className="font-space font-bold text-3xl sm:text-4xl lg:text-5xl text-white tracking-tight">
+                <div className={styles.priceWrap}>
+                  <div className={styles.priceRow}>
+                    <span className={styles.priceNumber}>
                       {tier.currencySymbol ? `${tier.currencySymbol} ` : ""}
                       {tier.price}
                     </span>
                     {formatUsdPrice(tier.usdPrice, tier.price) && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs sm:text-sm font-bold shadow-[0_0_12px_rgba(16,185,129,0.15)]">
-                        <span className="text-[10px] text-emerald-400/70 font-normal">USD</span>
+                      <span className={styles.usdChip}>
+                        <span className={styles.usdPrefix}>USD</span>
                         <span>{formatUsdPrice(tier.usdPrice, tier.price)}</span>
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="font-mono text-xs text-gray-400">
-                      {tier.billingPeriod}
-                    </span>
-                    <span className="text-gray-600 text-xs">•</span>
-                    <span className="font-mono text-[11px] text-gray-400">
-                      BDT & USD supported
-                    </span>
+                  <div className={styles.billingPeriodRow}>
+                    <span>{tier.billingPeriod}</span>
+                    <span>•</span>
+                    <span>BDT & USD supported</span>
                   </div>
                 </div>
 
-                <ul className="flex-grow space-y-3.5 mb-8">
+                <ul className={styles.featureList}>
                   {tier.features.map((feat, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
+                    <li key={idx} className={styles.featureItem}>
                       {feat.included ? (
-                        <span className="material-symbols-outlined text-[#38f2ff] text-[19px] mt-0.5 flex-shrink-0">
+                        <span className={`material-symbols-outlined ${styles.featureIconCheck}`}>
                           check_circle
                         </span>
                       ) : (
-                        <span className="material-symbols-outlined text-gray-600 text-[19px] mt-0.5 flex-shrink-0">
+                        <span className={`material-symbols-outlined ${styles.featureIconCross}`}>
                           remove
                         </span>
                       )}
-                      <span className={`text-sm ${
-                        feat.included ? "text-gray-200" : "text-gray-500 line-through"
-                      }`}>
+                      <span
+                        className={
+                          feat.included
+                            ? styles.featureTextIncluded
+                            : styles.featureTextExcluded
+                        }
+                      >
                         {feat.text}
                       </span>
                     </li>
@@ -254,12 +255,9 @@ export default function GeneralPricingPage() {
                 </ul>
 
                 <button
+                  type="button"
                   onClick={() => setActivePlanModal(tier)}
-                  className={`w-full py-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 ${
-                    isStudio
-                      ? "bg-[#38f2ff] hover:bg-[#00e1f0] text-[#030712] shadow-[0_0_25px_rgba(56,242,255,0.4)] hover:shadow-[0_0_35px_rgba(56,242,255,0.6)] hover:scale-[1.02]"
-                      : "bg-transparent hover:bg-white/[0.04] text-[#38f2ff] border border-[#38f2ff]/50 hover:border-[#38f2ff]"
-                  }`}
+                  className={isStudio ? styles.ctaBtnPrimary : styles.ctaBtnSecondary}
                 >
                   <span>{tier.buttonText}</span>
                   <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -271,42 +269,34 @@ export default function GeneralPricingPage() {
 
         {/* Technical Specifications Matrix */}
         <section className="mb-24">
-          <div className="text-center mb-10">
-            <span className="font-mono text-xs text-[#38f2ff] uppercase tracking-widest block mb-2 font-bold">
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTag}>
               Engineering Matrix
             </span>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl text-white">
+            <h2 className={styles.sectionTitle}>
               Technical Specifications Matrix
             </h2>
           </div>
 
-          <div className="bg-[#08111f]/80 rounded-2xl overflow-x-auto border border-white/10 backdrop-blur-xl shadow-2xl">
-            <table className="w-full text-left border-collapse min-w-[700px]">
+          <div className={styles.tableCard}>
+            <table className={styles.specTable}>
               <thead>
-                <tr className="border-b border-white/10 bg-[#0e1726]/60">
-                  <th className="py-5 px-6 font-mono text-xs text-gray-400 uppercase tracking-wider w-1/4">
-                    Specification
-                  </th>
-                  <th className="py-5 px-6 font-mono text-xs text-gray-400 uppercase tracking-wider w-1/4 text-center">
-                    Individual
-                  </th>
-                  <th className="py-5 px-6 font-mono text-xs text-[#38f2ff] uppercase tracking-wider w-1/4 text-center bg-[#38f2ff]/5 border-x border-[#38f2ff]/20 font-bold">
+                <tr>
+                  <th style={{ width: "28%" }}>Specification</th>
+                  <th style={{ width: "24%", textAlign: "center" }}>Individual</th>
+                  <th className={styles.studioTh} style={{ width: "24%", textAlign: "center" }}>
                     Studio
                   </th>
-                  <th className="py-5 px-6 font-mono text-xs text-gray-400 uppercase tracking-wider w-1/4 text-center">
-                    Enterprise
-                  </th>
+                  <th style={{ width: "24%", textAlign: "center" }}>Enterprise</th>
                 </tr>
               </thead>
-              <tbody className="text-sm font-sans text-gray-300 divide-y divide-white/[0.06]">
+              <tbody>
                 {specs.map((row, i) => (
-                  <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-4 px-6 font-medium text-white">{row.feature}</td>
-                    <td className="py-4 px-6 text-center text-gray-400">{row.individual}</td>
-                    <td className="py-4 px-6 text-center text-[#38f2ff] bg-[#38f2ff]/5 border-x border-[#38f2ff]/20 font-semibold">
-                      {row.studio}
-                    </td>
-                    <td className="py-4 px-6 text-center text-white">{row.enterprise}</td>
+                  <tr key={i} className={styles.specRow}>
+                    <td className={styles.specFeatureName}>{row.feature}</td>
+                    <td style={{ textAlign: "center" }}>{row.individual}</td>
+                    <td className={styles.studioTd}>{row.studio}</td>
+                    <td style={{ textAlign: "center" }}>{row.enterprise}</td>
                   </tr>
                 ))}
               </tbody>
@@ -314,152 +304,154 @@ export default function GeneralPricingPage() {
           </div>
         </section>
 
-        {/* Global Benefits */}
+        {/* Global Benefits ("What You Get With Every Project") */}
         <section className="mb-24">
-          <div className="text-center mb-12">
-            <span className="font-mono text-xs text-[#38f2ff] uppercase tracking-widest block mb-2 font-bold">
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTag}>
               Architectural Assurance
             </span>
-            <h2 className="font-space font-bold text-3xl sm:text-4xl text-white">
+            <h2 className={styles.sectionTitle}>
               What You Get With Every Project
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-[#08111f]/70 p-6 rounded-2xl border border-white/10 flex flex-col items-center text-center hover:border-[#38f2ff]/40 transition-colors backdrop-blur-xl">
-              <div className="w-14 h-14 rounded-2xl bg-[#38f2ff]/10 border border-[#38f2ff]/30 flex items-center justify-center mb-5 text-[#38f2ff] shadow-[0_0_20px_rgba(56,242,255,0.2)]">
-                <span className="material-symbols-outlined text-3xl">shield_locked</span>
+          <div className={styles.benefitsGrid}>
+            <div className={styles.benefitCard}>
+              <div className={styles.benefitIconWrap}>
+                <span className="material-symbols-outlined">shield_locked</span>
               </div>
-              <h4 className="font-space font-bold text-lg text-white mb-2">
-                Security Hardened
-              </h4>
-              <p className="font-sans text-xs text-gray-400 leading-relaxed">
+              <h4 className={styles.benefitHeading}>Security Hardened</h4>
+              <p className={styles.benefitDescription}>
                 Pen-tested architectures with built-in defense mechanisms against OWASP top 10 vulnerabilities.
               </p>
             </div>
 
-            <div className="bg-[#08111f]/70 p-6 rounded-2xl border border-white/10 flex flex-col items-center text-center hover:border-[#38f2ff]/40 transition-colors backdrop-blur-xl">
-              <div className="w-14 h-14 rounded-2xl bg-[#38f2ff]/10 border border-[#38f2ff]/30 flex items-center justify-center mb-5 text-[#38f2ff] shadow-[0_0_20px_rgba(56,242,255,0.2)]">
-                <span className="material-symbols-outlined text-3xl">code_blocks</span>
+            <div className={styles.benefitCard}>
+              <div className={styles.benefitIconWrap}>
+                <span className="material-symbols-outlined">code_blocks</span>
               </div>
-              <h4 className="font-space font-bold text-lg text-white mb-2">
-                Clean Architecture
-              </h4>
-              <p className="font-sans text-xs text-gray-400 leading-relaxed">
-                Strict adherence to SOLID principles, modular components, and dependency injection.
+              <h4 className={styles.benefitHeading}>Clean Architecture</h4>
+              <p className={styles.benefitDescription}>
+                Strict adherence to SOLID principles, modular components, and dependency injection for effortless extensibility.
               </p>
             </div>
 
-            <div className="bg-[#08111f]/70 p-6 rounded-2xl border border-white/10 flex flex-col items-center text-center hover:border-[#38f2ff]/40 transition-colors backdrop-blur-xl">
-              <div className="w-14 h-14 rounded-2xl bg-[#38f2ff]/10 border border-[#38f2ff]/30 flex items-center justify-center mb-5 text-[#38f2ff] shadow-[0_0_20px_rgba(56,242,255,0.2)]">
-                <span className="material-symbols-outlined text-3xl">menu_book</span>
+            <div className={styles.benefitCard}>
+              <div className={styles.benefitIconWrap}>
+                <span className="material-symbols-outlined">menu_book</span>
               </div>
-              <h4 className="font-space font-bold text-lg text-white mb-2">
-                Rich Documentation
-              </h4>
-              <p className="font-sans text-xs text-gray-400 leading-relaxed">
+              <h4 className={styles.benefitHeading}>Rich Documentation</h4>
+              <p className={styles.benefitDescription}>
                 Comprehensive developer guides, API specs, database diagrams, and step-by-step setup guides.
               </p>
             </div>
 
-            <div className="bg-[#08111f]/70 p-6 rounded-2xl border border-white/10 flex flex-col items-center text-center hover:border-[#38f2ff]/40 transition-colors backdrop-blur-xl">
-              <div className="w-14 h-14 rounded-2xl bg-[#38f2ff]/10 border border-[#38f2ff]/30 flex items-center justify-center mb-5 text-[#38f2ff] shadow-[0_0_20px_rgba(56,242,255,0.2)]">
-                <span className="material-symbols-outlined text-3xl">rocket_launch</span>
+            <div className={styles.benefitCard}>
+              <div className={styles.benefitIconWrap}>
+                <span className="material-symbols-outlined">rocket_launch</span>
               </div>
-              <h4 className="font-space font-bold text-lg text-white mb-2">
-                Fast Deployment
-              </h4>
-              <p className="font-sans text-xs text-gray-400 leading-relaxed">
+              <h4 className={styles.benefitHeading}>Fast Deployment</h4>
+              <p className={styles.benefitDescription}>
                 Pre-configured environment templates, Docker files, and automated deployment pipelines for instant staging.
               </p>
             </div>
           </div>
         </section>
 
-        {/* FAQ Section */}
+        {/* Licensing FAQ */}
         <section className="mb-16">
-          <div className="max-w-3xl mx-auto">
-            <div className="text-center mb-10">
-              <span className="font-mono text-xs text-[#38f2ff] uppercase tracking-widest block mb-1 font-bold">
-                Knowledge Base
-              </span>
-              <h2 className="font-space font-bold text-3xl text-white">
-                Licensing FAQ
-              </h2>
-            </div>
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTag}>
+              Knowledge Base
+            </span>
+            <h2 className={styles.sectionTitle}>
+              Licensing FAQ
+            </h2>
+          </div>
 
-            <div className="space-y-4">
-              {DEFAULT_FAQS.map((faq, index) => {
-                const isOpen = openFaqIndex === index;
-                return (
-                  <div
-                    key={index}
-                    className="bg-[#08111f]/70 rounded-2xl border border-white/10 overflow-hidden backdrop-blur-xl transition"
+          <div className={styles.faqStack}>
+            {DEFAULT_FAQS.map((faq, index) => {
+              const isOpen = openFaqIndex === index;
+              return (
+                <div key={index} className={styles.faqItem}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                    className={styles.faqQuestionBtn}
                   >
-                    <button
-                      onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                      className="w-full p-5 text-left flex justify-between items-center gap-4 hover:text-[#38f2ff] transition-colors cursor-pointer"
+                    <span className={styles.faqQuestion}>
+                      {faq.question}
+                    </span>
+                    <span
+                      className={`material-symbols-outlined ${styles.faqIcon} ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
                     >
-                      <span className="font-space font-semibold text-base text-white">
-                        {faq.question}
-                      </span>
-                      <span className="material-symbols-outlined text-[#38f2ff] transition-transform duration-200">
-                        {isOpen ? "expand_less" : "expand_more"}
-                      </span>
-                    </button>
-                    {isOpen && (
-                      <div className="px-5 pb-5 text-sm text-gray-300 leading-relaxed font-sans border-t border-white/5 pt-3">
-                        {faq.answer}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                      expand_more
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className={styles.faqAnswer}>
+                      {faq.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       </main>
 
-      {/* Acquisition Modal */}
+      {/* Plan Checkout / Acquisition Modal */}
       {activePlanModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6">
-          <div className="relative w-full max-w-lg bg-[#08111f] border border-[#38f2ff]/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_80px_rgba(56,242,255,0.25)]">
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setActivePlanModal(null)}
+        >
+          <div
+            className={styles.modalContent}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
+              type="button"
               onClick={() => setActivePlanModal(null)}
-              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition border border-white/10"
+              className={styles.modalCloseBtn}
+              aria-label="Close modal"
             >
               ✕
             </button>
 
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#38f2ff]/10 text-[#38f2ff] font-mono text-[10px] uppercase font-bold mb-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#38f2ff] animate-pulse" />
-                <span>Selected Plan</span>
+            <div className="mb-5">
+              <div className={styles.protocolPill} style={{ marginBottom: "0.75rem" }}>
+                <span className={styles.protocolDot} />
+                <span className={styles.protocolText}>Plan Selected</span>
               </div>
-              <h3 className="font-space font-bold text-2xl text-white mb-1">
+              <h3 className={styles.planName} style={{ marginBottom: "0.25rem" }}>
                 {activePlanModal.name}
               </h3>
-              <p className="font-mono text-xs text-gray-400">
-                Target: <span className="text-[#38f2ff] font-bold">{selectedProject?.title || "DevEngine System"}</span>
+              <p className="font-mono text-xs text-[var(--devengine-muted)]">
+                Target: <strong className="text-[#2cecf7]">{selectedProject?.title || "DevEngine System"}</strong>
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#0c182c] border border-white/10 mb-6 flex items-center justify-between">
+            <div className={styles.modalPriceCard}>
               <div>
-                <div className="font-mono text-[10px] uppercase text-gray-400">Total Investment</div>
+                <div className="font-mono text-[10px] uppercase text-[var(--devengine-muted)]">
+                  Total Investment
+                </div>
                 <div className="flex flex-wrap items-baseline gap-2 mt-0.5">
-                  <span className="font-space font-bold text-2xl sm:text-3xl text-white">
+                  <span className="font-space font-bold text-2xl sm:text-3xl text-[var(--devengine-text)]">
                     {activePlanModal.currencySymbol ? `${activePlanModal.currencySymbol} ` : ""}
                     {activePlanModal.price}
                   </span>
                   {formatUsdPrice(activePlanModal.usdPrice, activePlanModal.price) && (
-                    <span className="font-mono text-sm font-bold text-emerald-400">
+                    <span className="font-mono text-sm font-bold text-emerald-500">
                       (≈ {formatUsdPrice(activePlanModal.usdPrice, activePlanModal.price)})
                     </span>
                   )}
                 </div>
               </div>
-              <span className="font-mono text-xs text-gray-400 px-3 py-1 rounded-lg bg-white/5 border border-white/10">
+              <span className="font-mono text-xs text-[var(--devengine-muted)] px-3 py-1 rounded-lg bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
                 {activePlanModal.billingPeriod}
               </span>
             </div>
@@ -468,7 +460,7 @@ export default function GeneralPricingPage() {
               {selectedProject && (
                 <Link
                   href={`/checkout?slug=${selectedProject.slug}&plan=${activePlanModal.id}&amount=${activePlanModal.price.replace(/[^0-9]/g, "")}`}
-                  className="w-full py-3.5 px-6 rounded-xl bg-[#38f2ff] hover:bg-[#00e1f0] text-[#030712] font-sans font-bold text-sm transition shadow-[0_0_25px_rgba(56,242,255,0.4)] hover:scale-[1.02] flex items-center justify-center gap-2.5 text-center cursor-pointer"
+                  className={styles.ctaBtnPrimary}
                 >
                   <span className="material-symbols-outlined text-xl">shopping_cart_checkout</span>
                   <span>Proceed to Secure Checkout</span>
@@ -479,7 +471,7 @@ export default function GeneralPricingPage() {
                 href={getWhatsAppUrl(activePlanModal)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3 px-6 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-sans font-semibold text-xs transition flex items-center justify-center gap-2 text-center"
+                className={styles.ctaBtnSecondary}
               >
                 <span className="material-symbols-outlined text-base">chat</span>
                 <span>Inquire / Checkout via WhatsApp</span>
@@ -490,6 +482,6 @@ export default function GeneralPricingPage() {
       )}
 
       <LandingFooter />
-    </>
+    </div>
   );
 }

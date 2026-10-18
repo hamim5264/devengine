@@ -1,3 +1,4 @@
+import HeaderControls from "@/components/HeaderControls";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
@@ -125,7 +126,7 @@ export default function LoginPage() {
         <div className="fixed bottom-0 right-1/4 w-[500px] h-[400px] bg-[#5448dc]/[0.05] rounded-full blur-[150px] pointer-events-none z-0" />
 
         {/* Minimal Floating Top Bar (No Header) */}
-        <header className="relative z-20 w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <header className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between gap-3">
           <Link
             href="/home"
             className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-mono text-gray-400 hover:text-white transition-all duration-200"
@@ -134,10 +135,10 @@ export default function LoginPage() {
             <span>Return to DevEngine</span>
           </Link>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-mono text-emerald-400">
+          <div className="flex items-center gap-3"><div className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] font-mono text-emerald-400">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span>Gateway Online</span>
-          </div>
+          </div><HeaderControls /></div>
         </header>
 
         {/* Main Central Login Box */}

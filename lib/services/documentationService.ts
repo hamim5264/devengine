@@ -2,6 +2,9 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
+  query,
+  limit,
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -92,15 +95,16 @@ devengine dev --port=3000 --tunnel`,
 
 export async function getDocumentationConfig(): Promise<DocumentationConfig> {
   try {
-    const colRef = collection(db, COLLECTION_NAME);
-    const snap = await getDocs(colRef);
-
-    if (snap.empty) {
-      return DEFAULT_DOCUMENTATION_CONFIG;
+    const docSnap = await getDoc(doc(db, COLLECTION_NAME, MAIN_DOC_ID));
+    let data: Partial<DocumentationConfig>;
+    if (docSnap.exists()) {
+      data = docSnap.data() as Partial<DocumentationConfig>;
+    } else {
+      // Preserve older installations that stored configuration under another ID.
+      const legacy = await getDocs(query(collection(db, COLLECTION_NAME), limit(1)));
+      if (legacy.empty) return DEFAULT_DOCUMENTATION_CONFIG;
+      data = legacy.docs[0].data() as Partial<DocumentationConfig>;
     }
-
-    const docSnap = snap.docs.find((d) => d.id === MAIN_DOC_ID) || snap.docs[0];
-    const data = docSnap.data() as Partial<DocumentationConfig>;
 
     return {
       header: {

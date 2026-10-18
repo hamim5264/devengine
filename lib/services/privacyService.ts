@@ -2,6 +2,9 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
+  query,
+  limit,
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -108,15 +111,16 @@ export const DEFAULT_PRIVACY_CONFIG: PrivacyConfig = {
  */
 export async function getPrivacyConfig(): Promise<PrivacyConfig> {
   try {
-    const colRef = collection(db, COLLECTION_NAME);
-    const snap = await getDocs(colRef);
-
-    if (snap.empty) {
-      return DEFAULT_PRIVACY_CONFIG;
+    const docSnap = await getDoc(doc(db, COLLECTION_NAME, MAIN_DOC_ID));
+    let data: Partial<PrivacyConfig>;
+    if (docSnap.exists()) {
+      data = docSnap.data() as Partial<PrivacyConfig>;
+    } else {
+      // Preserve older installations that stored configuration under another ID.
+      const legacy = await getDocs(query(collection(db, COLLECTION_NAME), limit(1)));
+      if (legacy.empty) return DEFAULT_PRIVACY_CONFIG;
+      data = legacy.docs[0].data() as Partial<PrivacyConfig>;
     }
-
-    const docSnap = snap.docs.find((d) => d.id === MAIN_DOC_ID) || snap.docs[0];
-    const data = docSnap.data() as Partial<PrivacyConfig>;
 
     return {
       header: { ...DEFAULT_PRIVACY_CONFIG.header, ...(data.header || {}) },

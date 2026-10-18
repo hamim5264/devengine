@@ -1,0 +1,12 @@
+.button { position:relative; display:inline-flex; align-items:center; justify-content:center; flex:none; gap:.6rem; width:44px; height:44px; min-height:44px; padding:0; border:1px solid var(--devengine-border); border-radius:50%; color:var(--devengine-text); background:var(--devengine-surface); cursor:pointer; overflow:hidden; transition:background-color .35s,border-color .25s,box-shadow .25s; -webkit-tap-highlight-color:transparent; }
+.button:hover { border-color:#2cecf7; box-shadow:0 0 18px #2cecf720; }
+.button:focus-visible { outline:2px solid var(--devengine-text); outline-offset:4px; }
+.icon { display:block; position:relative; width:22px; height:22px; flex:none; color:#2cecf7; }
+.button .icon svg { position:absolute; inset:0; transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .3s; }
+.sun { opacity:1; transform:rotate(0) scale(1); }
+.moon { opacity:0; transform:rotate(-100deg) scale(.3); }
+.button[data-theme="light"] .sun { opacity:0; transform:rotate(130deg) scale(.3); }
+.button[data-theme="light"] .moon { opacity:1; transform:rotate(0) scale(1); }
+.withLabel { width:auto; border-radius:999px; padding-inline:.85rem; }
+.label { font-family:var(--font-site,"Poppins"),sans-serif; font-size:.75rem; font-weight:550; }
+@media(prefers-reduced-motion:reduce) { .button,.button .icon svg { transition:none; } }

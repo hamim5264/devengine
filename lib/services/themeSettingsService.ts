@@ -1,9 +1,11 @@
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { normalizeSiteFont, SiteFont } from "@/lib/fonts";
 
 export interface ThemeModeSettings {
   allowDarkMode: boolean;
   allowLightMode: boolean;
+  fontFamily: SiteFont;
   updatedAt?: string;
   updatedBy?: string;
 }
@@ -11,6 +13,7 @@ export interface ThemeModeSettings {
 export const DEFAULT_THEME_MODES: ThemeModeSettings = {
   allowDarkMode: true,
   allowLightMode: true,
+  fontFamily: "default",
 };
 
 const SYSTEM_COLLECTION = "system_settings";
@@ -32,6 +35,7 @@ export async function getThemeModeSettings(): Promise<ThemeModeSettings> {
     return {
       ...DEFAULT_THEME_MODES,
       ...data,
+      fontFamily: normalizeSiteFont(data.fontFamily),
     };
   } catch (err) {
     console.warn("[themeSettingsService] Failed to fetch theme modes, using defaults:", err);
@@ -55,6 +59,7 @@ export function subscribeThemeModeSettings(
           callback({
             ...DEFAULT_THEME_MODES,
             ...data,
+            fontFamily: normalizeSiteFont(data.fontFamily),
           });
         } else {
           callback(DEFAULT_THEME_MODES);
@@ -62,7 +67,7 @@ export function subscribeThemeModeSettings(
       },
       (error) => {
         console.warn("[themeSettingsService] onSnapshot error:", error);
-        callback(DEFAULT_THEME_MODES);
+        // Keep the last confirmed policy. A failed read must not unlock the theme switch.
       }
     );
     return unsubscribe;

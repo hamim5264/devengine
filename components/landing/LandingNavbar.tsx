@@ -1,192 +1,287 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
+import { useTheme } from "@/context/ThemeContext";
+import ThemeToggle from "@/components/ThemeToggle";
+import HeaderControls from "@/components/HeaderControls";
+import styles from "./Landing.module.css";
+
+const LINKS = [
+  { href: "/home", label: "Dashboard", icon: "dashboard", desc: "Studio Overview" },
+  { href: "/projects", label: "Archive", icon: "auto_awesome_motion", desc: "Selected Works" },
+  { href: "/services", label: "Services", icon: "layers", desc: "Capabilities & Stack" },
+  { href: "/launchpad", label: "Launchpad", icon: "rocket_launch", desc: "Venture Accelerator" },
+  { href: "/career", label: "Career", icon: "person_search", desc: "Join Our Team" },
+  { href: "/about", label: "About", icon: "fingerprint", desc: "Philosophy & DNA" },
+  { href: "/lab", label: "Lab", icon: "science", desc: "R&D Experiments" },
+];
 
 export default function LandingNavbar() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const handleBuildTogether = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setMobileMenuOpen(false);
-
-    if (router.pathname === "/home" || router.pathname === "/") {
-      const el = document.getElementById("contact");
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-        window.history.pushState(null, "", "#contact");
-      } else {
-        window.location.hash = "contact";
-      }
-    } else {
-      router.push("/home#contact");
-    }
-  };
+  const [open, setOpen] = useState(false);
+  const menuId = useId();
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
+    const update = () => setScrolled(window.scrollY > 24);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    const desktop = window.matchMedia("(min-width: 1200px)");
+    const onResize = () => {
+      if (desktop.matches) setOpen(false);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    desktop.addEventListener("change", onResize);
+    return () => {
+      window.removeEventListener("scroll", update);
+      desktop.removeEventListener("change", onResize);
+    };
   }, []);
 
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [router.asPath]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const handleBuildTogether = (event: MouseEvent<HTMLAnchorElement>) => {
+    setOpen(false);
+    if (router.pathname !== "/home") return;
+    const contact = document.getElementById("contact");
+    if (!contact) return;
+    event.preventDefault();
+    contact.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+    window.history.replaceState(null, "", "#contact");
+  };
+
+  const active = (href: string) =>
+    router.pathname === href ||
+    (href !== "/home" && router.pathname.startsWith(`${href}/`));
+
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-[#02040A]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_25px_rgba(62,243,255,0.05)] py-4"
-          : "bg-transparent py-6"
-      }`}
-    >
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-12 md:px-20 flex justify-between items-center">
-        {/* Brand Logo */}
-        <Link href="/home" className="flex items-center gap-3">
-          <Image
-            src="/assets/DevEngine-logo-on-dark2.png"
-            alt="DevEngine"
-            width={160}
-            height={40}
-            priority
-            className="h-8 w-auto object-contain"
-          />
-        </Link>
+    <>
+      <header
+        className={styles.navbar}
+        data-scrolled={scrolled}
+        aria-label="Main navigation"
+      >
+        <div className={styles.navInner}>
+          {/* Logo */}
+          <Link href="/home" className={styles.logo} aria-label="DevEngine home">
+            <Image
+              src={
+                theme === "light"
+                  ? "/assets/DevEngine-logo-on-light1.png"
+                  : "/assets/DevEngine-logo-on-dark2.png"
+              }
+              alt="DevEngine"
+              width={2400}
+              height={600}
+              priority
+            />
+          </Link>
 
-        {/* Desktop Navigation Links */}
-        <div className="hidden md:flex items-center gap-10">
-          <Link
-            href="/home"
-            className="font-jetbrains text-xs tracking-widest text-[#bac9cb] hover:text-[#3EF3FF] transition-colors uppercase font-medium"
-          >
-            DASHBOARD
-          </Link>
-          <Link
-            href="/projects"
-            className="font-jetbrains text-xs tracking-widest text-[#bac9cb] hover:text-[#3EF3FF] transition-colors uppercase font-medium"
-          >
-            ARCHIVE
-          </Link>
-          <Link
-            href="/services"
-            className="font-jetbrains text-xs tracking-widest text-[#bac9cb] hover:text-[#3EF3FF] transition-colors uppercase font-medium"
-          >
-            SERVICES
-          </Link>
-          <Link
-            href="/launchpad"
-            className="font-jetbrains text-xs tracking-widest text-[#bac9cb] hover:text-[#3EF3FF] transition-colors uppercase font-medium"
-          >
-            LAUNCHPAD
-          </Link>
-          <Link
-            href="/career"
-            className="font-jetbrains text-xs tracking-widest text-[#bac9cb] hover:text-[#3EF3FF] transition-colors uppercase font-medium"
-          >
-            CAREER
-          </Link>
-          <Link
-            href="/about"
-            className="font-jetbrains text-xs tracking-widest text-[#bac9cb] hover:text-[#3EF3FF] transition-colors uppercase font-medium"
-          >
-            ABOUT
-          </Link>
-          <Link
-            href="/lab"
-            className="font-jetbrains text-xs tracking-widest text-[#bac9cb] hover:text-[#3EF3FF] transition-colors uppercase font-medium"
-          >
-            LAB
-          </Link>
+          {/* Desktop Capsule Dock */}
+          <nav className={styles.desktopLinks} aria-label="Desktop menu">
+            <div className={styles.navTrack}>
+              {LINKS.map((link) => {
+                const isCurrent = active(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={styles.navLink}
+                    aria-current={isCurrent ? "page" : undefined}
+                  >
+                    {isCurrent && (
+                      <span className={styles.navActiveDot} aria-hidden="true" />
+                    )}
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+
+          {/* Right Actions */}
+          <div className={styles.navActions}>
+            <div className={styles.navCta}>
+              <a
+                href="/home#contact"
+                onClick={handleBuildTogether}
+                className={styles.navCtaButton}
+              >
+                <span>Build Together</span>
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  arrow_outward
+                </span>
+              </a>
+            </div>
+
+            <HeaderControls />
+
+            <button
+              ref={toggleRef}
+              type="button"
+              className={styles.menuToggle}
+              onClick={() => setOpen((value) => !value)}
+              aria-label={open ? "Close navigation" : "Open navigation"}
+              aria-controls={open ? menuId : undefined}
+              aria-expanded={open}
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">
+                {open ? "close" : "menu"}
+              </span>
+            </button>
+          </div>
         </div>
+      </header>
 
-        {/* Action Button: Build Together (No Login / Sign Up buttons) */}
-        <div className="hidden md:flex items-center">
-          <a
-            href="/home#contact"
-            onClick={handleBuildTogether}
-            className="font-jetbrains text-xs font-bold uppercase tracking-wider px-8 py-3.5 rounded-full bg-[#3EF3FF] text-[#02040A] shadow-[0_0_24px_rgba(62,243,255,0.4)] hover:shadow-[0_0_40px_rgba(62,243,255,0.8)] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer"
+      {/* Modern Glassmorphic Mobile Drawer & Backdrop */}
+      {open && (
+        <div className={styles.mobileBackdrop} onClick={() => setOpen(false)}>
+          <div
+            id={menuId}
+            className={styles.mobileModal}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile Navigation"
           >
-            Build Together
-          </a>
-        </div>
+            {/* Modal Header */}
+            <div className={styles.mobileModalHeader}>
+              <Link
+                href="/home"
+                className={styles.mobileModalLogo}
+                onClick={() => setOpen(false)}
+                aria-label="DevEngine home"
+              >
+                <Image
+                  src={
+                    theme === "light"
+                      ? "/assets/DevEngine-logo-on-light1.png"
+                      : "/assets/DevEngine-logo-on-dark2.png"
+                  }
+                  alt="DevEngine"
+                  width={2400}
+                  height={600}
+                />
+              </Link>
+              <div className={styles.mobileModalHeaderRight}>
+                <div className={styles.mobileLiveStatus} aria-hidden="true">
+                  <span className={styles.livePulseDot} />
+                  <span>ONLINE</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.mobileCloseBtn}
+                  onClick={() => setOpen(false)}
+                  aria-label="Close navigation"
+                >
+                  <span className="material-symbols-outlined" aria-hidden="true">
+                    close
+                  </span>
+                </button>
+              </div>
+            </div>
 
-        {/* Mobile Menu Toggle */}
-        <div className="md:hidden flex items-center">
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="text-white p-2"
-            aria-label="Toggle menu"
-          >
-            <span className="material-symbols-outlined text-2xl">
-              {mobileMenuOpen ? "close" : "menu"}
-            </span>
-          </button>
-        </div>
-      </div>
+            {/* Mobile Navigation Card Grid */}
+            <nav className={styles.mobileNavBody} aria-label="Mobile links">
+              <div className={styles.mobileCardGrid}>
+                {LINKS.map((link) => {
+                  const isCurrent = active(link.href);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`${styles.mobileNavCard} ${
+                        isCurrent ? styles.mobileNavCardActive : ""
+                      }`}
+                      onClick={() => setOpen(false)}
+                      aria-current={isCurrent ? "page" : undefined}
+                    >
+                      <div className={styles.mobileCardIcon}>
+                        <span
+                          className="material-symbols-outlined"
+                          aria-hidden="true"
+                        >
+                          {link.icon}
+                        </span>
+                      </div>
+                      <div className={styles.mobileCardContent}>
+                        <div className={styles.mobileCardTitleRow}>
+                          <span className={styles.mobileCardTitle}>
+                            {link.label}
+                          </span>
+                          {isCurrent && (
+                            <span
+                              className={styles.mobileActiveDot}
+                              aria-hidden="true"
+                            />
+                          )}
+                        </div>
+                        <span className={styles.mobileCardDesc}>
+                          {link.desc}
+                        </span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
 
-      {/* Mobile Nav Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-[#02040A]/95 border-b border-white/10 px-6 py-6 space-y-4 backdrop-blur-2xl">
-          <Link
-            href="/home"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block font-jetbrains text-sm text-[#bac9cb] hover:text-[#3EF3FF] uppercase"
-          >
-            DASHBOARD
-          </Link>
-          <Link
-            href="/projects"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block font-jetbrains text-sm text-[#bac9cb] hover:text-[#3EF3FF] uppercase"
-          >
-            ARCHIVE
-          </Link>
-          <Link
-            href="/services"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block font-jetbrains text-sm text-[#bac9cb] hover:text-[#3EF3FF] uppercase"
-          >
-            SERVICES
-          </Link>
-          <Link
-            href="/launchpad"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block font-jetbrains text-sm text-[#bac9cb] hover:text-[#3EF3FF] uppercase"
-          >
-            LAUNCHPAD
-          </Link>
-          <Link
-            href="/career"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block font-jetbrains text-sm text-[#bac9cb] hover:text-[#3EF3FF] uppercase"
-          >
-            CAREER
-          </Link>
-          <Link
-            href="/about"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block font-jetbrains text-sm text-[#bac9cb] hover:text-[#3EF3FF] uppercase"
-          >
-            ABOUT
-          </Link>
-          <Link
-            href="/lab"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block font-jetbrains text-sm text-[#bac9cb] hover:text-[#3EF3FF] uppercase"
-          >
-            LAB
-          </Link>
-          <a
-            href="/home#contact"
-            onClick={handleBuildTogether}
-            className="inline-block font-jetbrains text-xs font-bold uppercase tracking-wider px-6 py-3 rounded-full bg-[#3EF3FF] text-[#02040A] mt-2 shadow-[0_0_20px_rgba(62,243,255,0.4)] cursor-pointer"
-          >
-            Build Together
-          </a>
+            {/* Modal Footer with Call to Action & Controls */}
+            <div className={styles.mobileModalFooter}>
+              <a
+                href="/home#contact"
+                onClick={handleBuildTogether}
+                className={styles.mobileModalCta}
+              >
+                <span>Build Together</span>
+                <span className="material-symbols-outlined" aria-hidden="true">
+                  arrow_outward
+                </span>
+              </a>
+
+              <div className={styles.mobileFooterInfo}>
+                <span className={styles.mobileFooterText}>
+                  DevEngine Studio // 2026
+                </span>
+                <div className={styles.mobileThemeWrapper}>
+                  <ThemeToggle />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-    </nav>
+    </>
   );
 }

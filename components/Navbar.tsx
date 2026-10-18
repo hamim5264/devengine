@@ -1,4 +1,5 @@
 import { useState } from "react";
+import HeaderControls from "@/components/HeaderControls";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { signOut } from "firebase/auth";
@@ -97,14 +98,14 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop center nav */}
-        <div className="hidden md:flex flex-1 justify-center">
-          <div className="flex gap-6 text-lg">
+        <div className="hidden xl:flex flex-1 justify-center">
+          <div className="flex gap-4 text-sm">
             <BaseLinks />
           </div>
         </div>
 
         {/* Desktop right */}
-        <div className="hidden md:flex items-center gap-4 text-lg">
+        <div className="hidden xl:flex items-center gap-3 text-sm">
           {user ? (
             <>
               <Link
@@ -207,15 +208,17 @@ export default function Navbar() {
           )}
         </div>
 
+        <HeaderControls />
+
         {/* Mobile toggle */}
-        <button className="md:hidden" onClick={() => setIsOpen((v) => !v)}>
+        <button className="xl:hidden" onClick={() => setIsOpen((v) => !v)}>
           {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
         </button>
       </div>
 
       {/* Mobile menu */}
       {isOpen && (
-        <div className="md:hidden bg-black px-4 pb-4 border-t border-gray-800">
+        <div className="xl:hidden bg-black px-4 pb-4 border-t border-gray-800">
           <ul className="flex flex-col gap-2 py-2 text-center text-lg">
             <BaseLinks onClick={() => setIsOpen(false)} />
 

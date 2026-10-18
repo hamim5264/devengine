@@ -12,7 +12,7 @@ const PDF_SETTINGS_DOC = "app_settings/pdf_branding";
 export interface PdfBrandingSettings {
   /** Primary company website URL shown on PDFs (agreement + invoice) */
   companyWebsiteUrl: string;
-  /** Company official contact email shown on PDFs */
+  /** Company official contact email / gmail shown on PDFs */
   companyEmail: string;
   /** Founder direct contact email shown on PDFs */
   founderEmail?: string;
@@ -24,21 +24,33 @@ export interface PdfBrandingSettings {
   signatoryName?: string;
   /** Primary signatory title on documents */
   signatoryTitle?: string;
+  /** Official company phone / WhatsApp helpline (e.g. +880 1724 879284) */
+  contactPhone?: string;
+  /** Physical / Operational Headquarters Address */
+  companyAddress?: string;
+  /** Company legal/studio name displayed in invoice Column 2 (e.g. DEVENGINE SYSTEMS INC.) */
+  companyLegalName?: string;
+  /** Company subtitle/studio descriptor (e.g. Official Enterprise Software Studio) */
+  companyStudioDescriptor?: string;
   /** Last updated timestamp */
   updatedAt?: string;
   /** Who last updated */
   updatedBy?: string;
 }
 
-/** Default fallback values (using official custom domain devenginehq.com & two emails) */
+/** Default fallback values (official domain devenginehq.com & portfolio thedevhamim.vercel.app) */
 export const DEFAULT_PDF_BRANDING: PdfBrandingSettings = {
   companyWebsiteUrl: "https://devenginehq.com",
   companyEmail: "devenginesoftsolution@gmail.com",
   founderEmail: "hamim.leon@gmail.com",
-  developerPortfolioUrl: "https://devenginehq.com",
+  developerPortfolioUrl: "https://thedevhamim.vercel.app",
   clientPortalBaseUrl: "https://devenginehq.com",
   signatoryName: "MD. Abdul Hamim Leon",
-  signatoryTitle: "Managing Director & CEO",
+  signatoryTitle: "Founder and CEO, DevEngine",
+  contactPhone: "+880 1724 879284",
+  companyAddress: "Banasree, Rampura, Dhaka 1219",
+  companyLegalName: "DEVENGINE SYSTEMS INC.",
+  companyStudioDescriptor: "Official Enterprise Software Studio",
 };
 
 /**
@@ -58,6 +70,10 @@ export async function getPdfBrandingSettings(): Promise<PdfBrandingSettings> {
         clientPortalBaseUrl: data.clientPortalBaseUrl || DEFAULT_PDF_BRANDING.clientPortalBaseUrl,
         signatoryName: data.signatoryName || DEFAULT_PDF_BRANDING.signatoryName,
         signatoryTitle: data.signatoryTitle || DEFAULT_PDF_BRANDING.signatoryTitle,
+        contactPhone: data.contactPhone || DEFAULT_PDF_BRANDING.contactPhone,
+        companyAddress: data.companyAddress || DEFAULT_PDF_BRANDING.companyAddress,
+        companyLegalName: data.companyLegalName || DEFAULT_PDF_BRANDING.companyLegalName,
+        companyStudioDescriptor: data.companyStudioDescriptor || DEFAULT_PDF_BRANDING.companyStudioDescriptor,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() || data.updatedAt || "",
         updatedBy: data.updatedBy || "",
       };
@@ -86,9 +102,20 @@ export async function savePdfBrandingSettings(
       clientPortalBaseUrl: (settings.clientPortalBaseUrl || DEFAULT_PDF_BRANDING.clientPortalBaseUrl!).trim(),
       signatoryName: (settings.signatoryName || DEFAULT_PDF_BRANDING.signatoryName!).trim(),
       signatoryTitle: (settings.signatoryTitle || DEFAULT_PDF_BRANDING.signatoryTitle!).trim(),
+      contactPhone: (settings.contactPhone || DEFAULT_PDF_BRANDING.contactPhone!).trim(),
+      companyAddress: (settings.companyAddress || DEFAULT_PDF_BRANDING.companyAddress!).trim(),
+      companyLegalName: (settings.companyLegalName || DEFAULT_PDF_BRANDING.companyLegalName!).trim(),
+      companyStudioDescriptor: (settings.companyStudioDescriptor || DEFAULT_PDF_BRANDING.companyStudioDescriptor!).trim(),
       updatedBy,
       updatedAt: serverTimestamp(),
     },
     { merge: true }
   );
+}
+
+/**
+ * Reset PDF branding settings to official factory defaults.
+ */
+export async function resetPdfBrandingSettings(updatedBy: string): Promise<void> {
+  await savePdfBrandingSettings(DEFAULT_PDF_BRANDING, updatedBy);
 }

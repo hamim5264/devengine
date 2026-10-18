@@ -39,8 +39,8 @@ export default function handler(
       signatureBase64 = `data:image/png;base64,${signBuffer.toString("base64")}`;
     }
 
-    // Default logoBase64 falls back to dark logo or light logo
-    const logoBase64 = logoDarkBase64 || logoLightBase64;
+    // For white PDF invoice, default to logo with dark text (DevEngine-logo-on-light1.png)
+    const logoBase64 = logoLightBase64 || logoDarkBase64;
 
     // Cache header for fast client repeat downloads
     res.setHeader("Cache-Control", "public, max-age=86400, immutable");

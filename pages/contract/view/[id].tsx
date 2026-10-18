@@ -1,3 +1,4 @@
+import HeaderControls from "@/components/HeaderControls";
 // pages/contract/view/[id].tsx
 // ─────────────────────────────────────────────────────────────
 // DevEngine Contract Center — Client Document Review & E-Signing Portal
@@ -269,7 +270,7 @@ export default function ClientDocumentReviewPage() {
 
       {/* Top Banner */}
       <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-pink-500 to-rose-600 flex items-center justify-center font-bold text-white text-xs shadow-md shadow-pink-500/20">
               DE
@@ -282,7 +283,8 @@ export default function ClientDocumentReviewPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <HeaderControls />
             <button
               onClick={handleDownloadPdf}
               disabled={downloading}

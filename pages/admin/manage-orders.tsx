@@ -1,3 +1,4 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
@@ -14,7 +15,6 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import HelixLoader from "@/components/HelixLoader";
 import { OrderRecord, OrderStatus } from "@/types/order";
 import { generatePdfInvoice } from "@/lib/utils/generatePdfInvoice";
@@ -39,13 +39,12 @@ export default function ManageOrdersPage() {
 
   // Auth check
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAdminPageAccess(router, async (user) => {
+      setIsAdmin(true);
       setAuthReady(true);
-      if (user?.email === ADMIN_EMAIL) {
-        setIsAdmin(true);
-      } else {
-        router.push("/login");
-      }
+    }, () => {
+      setIsAdmin(false);
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

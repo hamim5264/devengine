@@ -1,3 +1,4 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/templates.tsx
 // ─────────────────────────────────────────────────────────────
 // DevEngine Contract Center — Document Templates & Clause Library
@@ -6,7 +7,6 @@
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AdminLayout from "@/components/AdminLayout";
 import HelixLoader from "@/components/HelixLoader";
@@ -55,9 +55,10 @@ export default function TemplatesAndClausesPage() {
   });
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAdminPageAccess(router, async (user) => {
       setAuthReady(true);
-      if (!user) router.replace("/login?redirect=/admin/contract-center/templates");
+    }, () => {
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

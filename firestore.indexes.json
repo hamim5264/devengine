@@ -1,0 +1,19 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "studio_conversations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "participantIds",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "deleted",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

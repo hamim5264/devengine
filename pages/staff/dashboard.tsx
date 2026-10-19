@@ -1,3 +1,4 @@
+import { CommunicationDashboard } from "@/components/communication/CommunicationEntry";
 import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
@@ -697,6 +698,7 @@ export default function StaffDashboard() {
       </Head>
 
       <div className="p-3.5 sm:p-6 lg:p-8 w-full max-w-[1560px] mx-auto space-y-6 sm:space-y-8">
+        <CommunicationDashboard />
         {/* ─────────────────────────────────────────────────────────────
             1. HERO EXECUTIVE BANNER & REAL-TIME CLOCK (Widened + Weekly Sprint)
         ───────────────────────────────────────────────────────────── */}
@@ -825,7 +827,7 @@ export default function StaffDashboard() {
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                   <span
-                    className="text-lg sm:text-2xl font-black font-mono tracking-wider"
+                    className="text-lg sm:text-2xl font-black font-mono tracking-wider tabular-nums whitespace-nowrap inline-block min-w-[11ch]"
                     style={{
                       color: isLight ? "#0e7490" : "#2cecf7",
                       textShadow: isLight ? "none" : "0 0 20px rgba(44,236,247,0.45)"
@@ -928,7 +930,7 @@ export default function StaffDashboard() {
             </div>
             <div>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-base sm:text-xl font-black font-mono tracking-tight" style={{ color: isLight ? "#0891b2" : "#2cecf7" }}>
+                <span className="text-base sm:text-xl font-black font-mono tracking-tight tabular-nums whitespace-nowrap" style={{ color: isLight ? "#0891b2" : "#2cecf7" }}>
                   {elapsedShiftText || (todayAttendance?.netWorkHours ? `${todayAttendance.netWorkHours}h net` : "00h 00m")}
                 </span>
                 <span className="text-[10px] font-mono font-bold text-emerald-500">

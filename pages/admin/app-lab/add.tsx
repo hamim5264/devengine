@@ -1,9 +1,9 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import HelixLoader from "@/components/HelixLoader";
@@ -39,10 +39,10 @@ export default function AddAppLab() {
   });
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
-      const ok = !!u && u.email === ADMIN_EMAIL;
+    return onAdminPageAccess(router, async (user) => {
       setReady(true);
-      if (!ok) router.replace("/login?redirect=/admin/app-lab/add");
+    }, () => {
+      setReady(false);
     });
   }, [router]);
 

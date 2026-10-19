@@ -1,3 +1,4 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/index.tsx
 // ─────────────────────────────────────────────────────────────
 // DevEngine Contract Center — Dashboard Overview
@@ -7,7 +8,6 @@ import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AdminLayout from "@/components/AdminLayout";
 import HelixLoader from "@/components/HelixLoader";
@@ -45,11 +45,12 @@ export default function ContractCenterDashboard() {
   const [auditLogs, setAuditLogs] = useState<CCAuditEvent[]>([]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      const ok = !!user && (user.email === ADMIN_EMAIL || true); // Allow authorized users
-      setIsAdmin(ok);
+    const unsub = onAdminPageAccess(router, async (user) => {
+      setIsAdmin(true);
       setAuthReady(true);
-      if (!user) router.replace("/login?redirect=/admin/contract-center");
+    }, () => {
+      setIsAdmin(false);
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

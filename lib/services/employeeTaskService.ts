@@ -1,11 +1,10 @@
+import { setStaffEvent as setDoc, updateStaffEvent as updateDoc } from "./staffEventWrites";
 // lib/services/employeeTaskService.ts
 import {
   collection,
   doc,
   getDocs,
   getDoc,
-  setDoc,
-  updateDoc,
   deleteDoc,
   query,
   where,

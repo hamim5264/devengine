@@ -1,6 +1,7 @@
 // lib/services/staffService.ts
 import {
   collection,
+  writeBatch,
   doc,
   getDocs,
   getDoc,
@@ -161,7 +162,10 @@ export async function createStaffAccount(data: {
     updatedAt: now,
   };
 
-  await setDoc(doc(db, STAFF_COLLECTION, id), staffMember);
+  const batch = writeBatch(db);
+  batch.set(doc(db, STAFF_COLLECTION, id), staffMember);
+  batch.set(doc(db, "studio_people", id), { uid: id, name: staffMember.name, avatarUrl: staffMember.avatarUrl || "", role: "employee", status: "active", departmentIds: [], chatSuspended: false });
+  await batch.commit();
   return staffMember;
 }
 
@@ -218,15 +222,26 @@ export async function updateStaffMember(
     }
   }
 
-  await updateDoc(doc(db, STAFF_COLLECTION, id), {
-    ...data,
-    updatedAt: new Date().toISOString(),
-  });
+  const batch = writeBatch(db);
+  batch.update(doc(db, STAFF_COLLECTION, id), { ...data, updatedAt: new Date().toISOString() });
+  const directory = await getDoc(doc(db, "studio_people", id));
+  if (directory.exists()) {
+    const projection: Record<string, string> = {};
+    if (data.name !== undefined) projection.name = data.name;
+    if (data.avatarUrl !== undefined) projection.avatarUrl = data.avatarUrl;
+    if (data.status !== undefined) projection.status = data.status;
+    if (Object.keys(projection).length) batch.update(directory.ref, projection);
+  }
+  await batch.commit();
 }
 
 /** Delete staff member from Firestore */
 export async function deleteStaffMember(id: string): Promise<void> {
-  await deleteDoc(doc(db, STAFF_COLLECTION, id));
+  const batch = writeBatch(db);
+  batch.delete(doc(db, STAFF_COLLECTION, id));
+  const directory = await getDoc(doc(db, "studio_people", id));
+  if (directory.exists()) batch.update(directory.ref, { status: "suspended", chatSuspended: true, departmentIds: [] });
+  await batch.commit();
 }
 
 // ── CRUD Staff Roles ──

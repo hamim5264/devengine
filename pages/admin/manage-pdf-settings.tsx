@@ -1,8 +1,8 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import HelixLoader from "@/components/HelixLoader";
 import { useTheme } from "@/context/ThemeContext";
@@ -35,11 +35,12 @@ export default function ManagePdfSettingsPage() {
 
   // Auth gate
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      const ok = !!user && user.email === ADMIN_EMAIL;
-      setIsAdmin(ok);
+    const unsub = onAdminPageAccess(router, async (user) => {
+      setIsAdmin(true);
       setAuthReady(true);
-      if (!ok) router.replace("/login?redirect=/admin/manage-pdf-settings");
+    }, () => {
+      setIsAdmin(false);
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);
@@ -88,7 +89,7 @@ export default function ManagePdfSettingsPage() {
 
     try {
       setSaving(true);
-      await savePdfBrandingSettings(settings, ADMIN_EMAIL);
+      await savePdfBrandingSettings(settings, auth.currentUser?.email || ADMIN_EMAIL);
       setOriginalSettings({ ...settings });
       setNotice({ text: "Invoice & PDF settings successfully updated in live database!", type: "success" });
     } catch (err: any) {
@@ -102,7 +103,7 @@ export default function ManagePdfSettingsPage() {
   const handleResetToDefaults = async () => {
     try {
       setResetting(true);
-      await resetPdfBrandingSettings(ADMIN_EMAIL);
+      await resetPdfBrandingSettings(auth.currentUser?.email || ADMIN_EMAIL);
       setSettings({ ...DEFAULT_PDF_BRANDING });
       setOriginalSettings({ ...DEFAULT_PDF_BRANDING });
       setShowResetModal(false);

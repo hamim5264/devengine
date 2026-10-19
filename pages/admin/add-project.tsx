@@ -1,3 +1,4 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
@@ -10,7 +11,6 @@ import {
   getDoc,
   Timestamp,
 } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { CurrencyPricing } from "@/types/currency";
@@ -120,13 +120,12 @@ export default function AddProjectPage() {
 
   // Admin-only access check (wait for auth)
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      const ok = !!user && user.email === ADMIN_EMAIL;
-      setIsAdmin(!!ok);
+    const unsub = onAdminPageAccess(router, async (user) => {
+      setIsAdmin(true);
       setAuthReady(true);
-      if (!ok) {
-        router.replace("/login");
-      }
+    }, () => {
+      setIsAdmin(false);
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

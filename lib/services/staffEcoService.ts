@@ -1,10 +1,9 @@
+import { setStaffEvent as setDoc, updateStaffEvent as updateDoc } from "./staffEventWrites";
 import {
   collection,
   doc,
   getDocs,
   getDoc,
-  setDoc,
-  updateDoc,
   query,
   where,
   orderBy,

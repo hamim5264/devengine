@@ -1,8 +1,9 @@
+import { CommunicationDashboard } from "@/components/communication/CommunicationEntry";
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { collection, getDocs, query, limit } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import AdminLayout from "@/components/AdminLayout";
@@ -237,11 +238,12 @@ export default function AdminDashboard() {
   const [showSyncDetails, setShowSyncDetails] = useState(false);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      const ok = !!user && user.email === ADMIN_EMAIL;
-      setIsAdmin(ok);
+    const unsub = onAdminPageAccess(router, async (user) => {
+      setIsAdmin(true);
       setAuthReady(true);
-      if (!ok) router.replace("/login");
+    }, () => {
+      setIsAdmin(false);
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);
@@ -586,6 +588,7 @@ export default function AdminDashboard() {
       </Head>
 
       <div className="max-w-7xl mx-auto px-5 sm:px-8 py-8 space-y-7">
+        <CommunicationDashboard />
         {/* ── STREAMLINED EXECUTIVE HEADER & LIVE CONTROLS ── */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-white/[0.08]">
           <div>

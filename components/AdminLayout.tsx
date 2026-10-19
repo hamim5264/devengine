@@ -1,10 +1,15 @@
+import communicationStyles from "@/components/communication/Communication.module.css";
+import { CommunicationHeader } from "@/components/communication/CommunicationEntry";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { signOut, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getCachedStaffByUid } from "@/lib/services/staffAuth";
+import { useAdminOrStaffAuth } from "@/lib/services/staffAuth";
+import { modulesForAdminRoute } from "@/lib/staffModules";
+import StaffLayout from "@/components/StaffLayout";
+import HelixLoader from "@/components/HelixLoader";
 import type { StaffMember } from "@/types/staff";
 import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
@@ -194,6 +199,10 @@ const NAV_GROUPS: NavGroup[] = [
     color: "#a855f7",
     icon: <IconUserCheck />,
     items: [
+      { label: "Messages", href: "/admin/messages", badge: "new" },
+      { label: "Notifications", href: "/admin/notifications", badge: "new" },
+      { label: "Departments", href: "/admin/departments", badge: "new" },
+      { label: "Broadcast Notices", href: "/admin/notices", badge: "new" },
       { label: "Employees", href: "/admin/manage-staff" },
       { label: "Employee Roles", href: "/admin/manage-staff-roles" },
       { label: "Employee Attendance", href: "/admin/manage-attendance", badge: "new" },
@@ -226,30 +235,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
   const isLight = theme === "light";
   const navScrollRef = useRef<HTMLDivElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isStaffUser, setIsStaffUser] = useState(false);
-  const [staffRecord, setStaffRecord] = useState<StaffMember | null>(null);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setIsStaffUser(false);
-        setStaffRecord(null);
-        return;
-      }
-      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com").toLowerCase();
-      if (user.email?.toLowerCase() === adminEmail) {
-        setIsStaffUser(false);
-        setStaffRecord(null);
-        return;
-      }
-      const staff = await getCachedStaffByUid(user.uid);
-      if (staff && staff.status === "active") {
-        setIsStaffUser(true);
-        setStaffRecord(staff);
-      }
-    });
-    return () => unsub();
-  }, []);
+  const { authReady, isAuthorized, isStaff: isStaffUser, staffData: staffRecord } = useAdminOrStaffAuth(modulesForAdminRoute(router.pathname));
 
   const visibleGroups = useMemo(() => {
     if (!isStaffUser || !staffRecord) return NAV_GROUPS;
@@ -372,13 +358,16 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
     }
   };
 
+  if (!authReady || !isAuthorized) return <div className="min-h-screen flex items-center justify-center bg-[var(--devengine-page)]"><HelixLoader size={44} color="#2cecf7" /></div>;
+  if (isStaffUser) return <StaffLayout title={title}>{children}</StaffLayout>;
+
   return (
     <>
       <Head><title>{title}</title><meta name="robots" content="noindex, nofollow" /></Head>
       <div className={`min-h-screen flex flex-col font-sans ${isLight ? "bg-[#f8fafc] text-slate-900" : "bg-[#07070f] text-white"}`}>
 
         {/* ── TOP HEADER ── */}
-        <header className="fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-2 sm:px-4 gap-1.5 sm:gap-3"
+        <header className={`${communicationStyles.adminHeader} fixed top-0 left-0 right-0 z-50 h-14 flex items-center px-2 sm:px-4 gap-1.5 sm:gap-3`}
           style={{
             background: isLight ? "rgba(255,255,255,0.96)" : "rgba(7,7,15,0.96)",
             borderBottom: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.06)",
@@ -437,6 +426,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
             </Link>
           )}
 
+          <CommunicationHeader />
           <HeaderControls />
 
           <a href="/" target="_blank" rel="noopener noreferrer"

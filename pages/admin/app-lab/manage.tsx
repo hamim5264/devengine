@@ -1,8 +1,8 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import AdminLayout from "@/components/AdminLayout";
-import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   onSnapshot,
@@ -28,12 +28,10 @@ export default function ManageAppLab() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => {
-      if (!u || u.email !== ADMIN_EMAIL) {
-        router.replace("/login?redirect=/admin/app-lab/manage");
-      } else {
-        setReady(true);
-      }
+    return onAdminPageAccess(router, async (user) => {
+      setReady(true);
+    }, () => {
+      setReady(false);
     });
   }, [router]);
 

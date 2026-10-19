@@ -1,9 +1,9 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import HelixLoader from "@/components/HelixLoader";
 import {
@@ -40,13 +40,12 @@ export default function ManageBinPage() {
   const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAdminPageAccess(router, async (user) => {
+      setIsAdmin(true);
       setAuthReady(true);
-      if (user?.email === ADMIN_EMAIL) {
-        setIsAdmin(true);
-      } else {
-        router.push("/login");
-      }
+    }, () => {
+      setIsAdmin(false);
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

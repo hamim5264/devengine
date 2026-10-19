@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from "react";
+import { CommunicationHeader } from "@/components/communication/CommunicationEntry";
+import React, { useState, useEffect, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { signOut, onAuthStateChanged } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getStaffByUid } from "@/lib/services/staffService";
+import { subscribeStudioAccess } from "@/lib/services/staffAuth";
+import { STUDIO_MODULES, hasStudioModule } from "@/lib/staffModules";
 import type { StaffMember } from "@/types/staff";
 import { STAFF_TYPE_LABELS } from "@/types/staff";
 import HelixLoader from "@/components/HelixLoader";
 import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
 import LandingFooter from "@/components/landing/LandingFooter";
+import styles from "@/components/staff/StaffLayout.module.css";
 
 // ── Nav structure matching AdminLayout, keyed by module ──
 interface NavItem {
@@ -112,89 +115,12 @@ const STAFF_WORKSPACE_GROUP: NavGroup = {
     { label: "My Agreement", href: "/staff/agreement", staffHref: "/staff/agreement", desc: "Official signed terms, compensation & legal contract" },
     { label: "Leaves & Off-Day Swap", href: "/admin/manage-leaves", staffHref: "/staff/leaves", desc: "Time-off applications & schedule swapping" },
     { label: "Daily Work Updates", href: "/admin/manage-work-updates", staffHref: "/staff/work-updates", desc: "EOD task logs, blockers & PR submissions" },
+    { label: "Messages", href: "/staff/messages", staffHref: "/staff/messages", desc: "Private conversations and department channels" },
+    { label: "Notifications", href: "/staff/notifications", staffHref: "/staff/notifications", desc: "Your requests, approvals and workspace activity" },
+    { label: "Departments", href: "/staff/departments", staffHref: "/staff/departments", desc: "Explore teams and meet your colleagues" },
+    { label: "Notice Board", href: "/staff/notices", staffHref: "/staff/notices", desc: "Company announcements, all in one place" },
   ],
 };
-
-// All possible module nav groups (filtered by allowedModules)
-const ALL_NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Commerce",
-    moduleKey: "commerce",
-    color: "#34d399",
-    icon: <IconBag />,
-    items: [
-      { label: "Orders & Payments", href: "/admin/manage-orders", staffHref: "/admin/manage-orders", desc: "Customer transactions & processing" },
-      { label: "Currencies", href: "/admin/manage-currencies", staffHref: "/admin/manage-currencies", desc: "Multi-currency rates & adjustments" },
-    ],
-  },
-  {
-    label: "Projects",
-    moduleKey: "projects",
-    color: "#60a5fa",
-    icon: <IconFolder />,
-    items: [
-      { label: "Add Project", href: "/admin/add-project", staffHref: "/admin/add-project", desc: "Publish new showcase entry" },
-      { label: "Manage Projects", href: "/admin/manage-projects", staffHref: "/admin/manage-projects", desc: "Edit & organize existing works" },
-      { label: "Manage Categories", href: "/admin/manage-categories", staffHref: "/admin/manage-categories", desc: "Taxonomy & organization" },
-      { label: "Agreements", href: "/admin/agreements", staffHref: "/admin/agreements", desc: "Client contract repository" },
-      { label: "Manage Tags", href: "/admin/manage-tags", staffHref: "/admin/manage-tags", desc: "Filter tags & technology stacks" },
-    ],
-  },
-  {
-    label: "Content CMS",
-    moduleKey: "content_cms",
-    color: "#a78bfa",
-    icon: <IconEdit />,
-    items: [
-      { label: "Landing", href: "/admin/manage-landing", staffHref: "/admin/manage-landing", desc: "Main showcase sections" },
-      { label: "Archive", href: "/admin/manage-archive", staffHref: "/admin/manage-archive", desc: "Studio project archive" },
-      { label: "Launchpad", href: "/admin/manage-launchpad", staffHref: "/admin/manage-launchpad", desc: "Venture accelerator records" },
-      { label: "Services", href: "/admin/manage-services", staffHref: "/admin/manage-services", desc: "Studio capabilities & packages" },
-      { label: "Blog", href: "/admin/manage-blog", staffHref: "/admin/manage-blog", desc: "Articles & publications" },
-      { label: "Reviews", href: "/admin/manage-reviews", staffHref: "/admin/manage-reviews", desc: "Client ratings & testimonials" },
-      { label: "About & Team", href: "/admin/manage-about", staffHref: "/admin/manage-about", desc: "Philosophy & employee roster" },
-      { label: "Careers", href: "/admin/manage-careers", staffHref: "/admin/manage-careers", desc: "Job postings & applications" },
-      { label: "Docs & API", href: "/admin/manage-documentation", staffHref: "/admin/manage-documentation", desc: "Technical guides & specs" },
-      { label: "Update Logs", href: "/admin/manage-update-logs", staffHref: "/admin/manage-update-logs", desc: "Changelog & version releases" },
-      { label: "Lab", href: "/admin/manage-lab", staffHref: "/admin/manage-lab", desc: "R&D experiments & tests" },
-      { label: "Lab Categories", href: "/admin/manage-lab-categories", staffHref: "/admin/manage-lab-categories", desc: "Experiment taxonomy" },
-    ],
-  },
-  {
-    label: "Social & Network",
-    moduleKey: "social_network",
-    color: "#38bdf8",
-    icon: <IconShare />,
-    items: [
-      { label: "Socials & Follow Us", href: "/admin/manage-socials", staffHref: "/admin/manage-socials", desc: "Platform channels & links" },
-      { label: "Network Hubs", href: "/admin/manage-network", staffHref: "/admin/manage-network", desc: "External partner nodes" },
-    ],
-  },
-  {
-    label: "Legal",
-    moduleKey: "legal",
-    color: "#fb923c",
-    icon: <IconDoc />,
-    items: [
-      { label: "App Policies & Hub", href: "/admin/manage-app-legal", staffHref: "/admin/manage-app-legal", desc: "Policy overview center" },
-      { label: "Terms & Conditions", href: "/admin/manage-terms", staffHref: "/admin/manage-terms", desc: "Service usage terms" },
-      { label: "Privacy Policy", href: "/admin/manage-privacy", staffHref: "/admin/manage-privacy", desc: "Data protection rules" },
-      { label: "License Agreement", href: "/admin/manage-license", staffHref: "/admin/manage-license", desc: "Software licensing terms" },
-      { label: "Refund Policy", href: "/admin/manage-refund", staffHref: "/admin/manage-refund", desc: "Customer refund guidelines" },
-      { label: "Security Protocol", href: "/admin/manage-security", staffHref: "/admin/manage-security", desc: "Defense & compliance specs" },
-    ],
-  },
-  {
-    label: "System",
-    moduleKey: "system",
-    color: "#f59e0b",
-    icon: <IconSettings />,
-    items: [
-      { label: "Maintenance Mode", href: "/admin/manage-maintenance", staffHref: "/admin/manage-maintenance", desc: "Toggle system locks" },
-      { label: "Recycle Bin", href: "/admin/manage-bin", staffHref: "/admin/manage-bin", desc: "Restore deleted records" },
-    ],
-  },
-];
 
 interface StaffLayoutProps {
   children: React.ReactNode;
@@ -208,7 +134,13 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
 
   const [staffData, setStaffData] = useState<StaffMember | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  const [filteredGroups, setFilteredGroups] = useState<NavGroup[]>([]);
+  const filteredGroups = useMemo<NavGroup[]>(() => [STAFF_WORKSPACE_GROUP,
+    ...STUDIO_MODULES.filter((module) => hasStudioModule(staffData, module.key)).map((module) => ({
+      label: module.label, moduleKey: module.key, color: "#2cecf7",
+      icon: <span className="material-symbols-outlined" aria-hidden="true">{module.icon}</span>,
+      items: module.items.map((entry) => ({ ...entry, staffHref: entry.href, desc: module.description })),
+    })),
+  ], [staffData]);
 
   // ── Futuristic Bento Command Center & Profile Modal States ──
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
@@ -218,17 +150,11 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
 
   // ── Auth + Staff data ──
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.replace("/staff");
-        return;
-      }
-      const staff = await getStaffByUid(user.uid);
-      if (!staff || staff.status !== "active") {
-        await signOut(auth);
-        localStorage.removeItem("isStaff");
-        localStorage.removeItem("staffUid");
-        router.replace("/staff");
+    const unsub = subscribeStudioAccess(undefined, ({ staff, authorized }) => {
+      if (!authorized || !staff) {
+        setStaffData(null);
+        setAuthReady(false);
+        void router.replace("/staff");
         return;
       }
       setStaffData(staff);
@@ -241,10 +167,6 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         setDevKittyEnabled(!isHidden);
       } catch {}
 
-      // Filter nav groups by allowed modules and prepend dedicated workspace
-      const allowed = new Set(staff.allowedModules || []);
-      const moduleGroups = ALL_NAV_GROUPS.filter((g) => allowed.has(g.moduleKey));
-      setFilteredGroups([STAFF_WORKSPACE_GROUP, ...moduleGroups]);
       setAuthReady(true);
     });
     return () => unsub();
@@ -313,23 +235,29 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         <title>{title}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
+      <style jsx global>{`
+        html { scrollbar-gutter: stable; overflow-x: clip; }
+        body { overflow-x: clip; }
+      `}</style>
 
-      <div className={`min-h-screen flex flex-col font-sans relative selection:bg-[#2cecf7] selection:text-[#02040a] ${
+      <div className={`${styles.shell} flex flex-col font-sans relative selection:bg-[#2cecf7] selection:text-[#02040a] ${
         isLight ? "bg-[#f5fbff] text-slate-900" : "bg-[#02040a] text-white"
       }`}>
         {/* Ambient Animated Cyber Glow Orbs in Background */}
-        <div className="fixed top-24 right-10 w-[450px] h-[450px] rounded-full bg-[#2cecf7]/5 blur-[120px] pointer-events-none anim-float-orb -z-10" />
-        <div className="fixed bottom-24 left-10 w-[450px] h-[450px] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none anim-float-orb -z-10" style={{ animationDuration: "9s" }} />
+        <div className={styles.ambient} aria-hidden="true">
+          <div className="absolute top-24 right-10 w-[450px] h-[450px] rounded-full bg-[#2cecf7]/5 blur-[120px] anim-float-orb" />
+          <div className="absolute bottom-24 left-10 w-[450px] h-[450px] rounded-full bg-[#2cecf7]/5 blur-[120px] anim-float-orb" style={{ animationDuration: "9s" }} />
+        </div>
 
         {/* ─────────────────────────────────────────────────────────────
             1. FLOATING ROUNDED CAPSULE HEADER (Matching Global View Style)
         ───────────────────────────────────────────────────────────── */}
         <header
-          className="navbar staff-navbar fixed top-2 sm:top-4 left-0 right-0 z-40 px-2 sm:px-6 pointer-events-none transition-all duration-300 !bg-transparent !border-0 !shadow-none"
+          className={`${styles.header} navbar staff-navbar fixed top-2 sm:top-4 left-0 right-0 z-40 px-2 sm:px-6 pointer-events-none duration-300 !bg-transparent !border-0 !shadow-none`}
           style={{ background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none" }}
         >
           <div
-            className="pointer-events-auto max-w-[1440px] mx-auto min-h-[52px] sm:min-h-[62px] px-2.5 sm:px-5 py-1.5 sm:py-2 rounded-full flex items-center justify-between gap-1.5 sm:gap-3 backdrop-blur-2xl transition-all duration-300 shadow-2xl anim-cyan-glow"
+            className={`${styles.headerCapsule} pointer-events-auto max-w-[1440px] mx-auto min-h-[52px] sm:min-h-[62px] px-2.5 sm:px-5 py-1.5 sm:py-2 rounded-full flex items-center justify-between gap-1.5 sm:gap-3 backdrop-blur-2xl duration-300 shadow-2xl anim-cyan-glow`}
             style={{
               background: isLight ? "rgba(255, 255, 255, 0.92)" : "rgba(10, 15, 29, 0.88)",
               border: isLight ? "1px solid rgba(44, 236, 247, 0.35)" : "1px solid rgba(44, 236, 247, 0.25)",
@@ -458,6 +386,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                 </span>
               </button>
 
+              <CommunicationHeader />
               <HeaderControls />
 
               {/* Global View (Only on large screens) */}
@@ -633,13 +562,9 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110 ${
-                              isActive
-                                ? "bg-[#2cecf7] text-[#02040a] shadow-[0_0_14px_#2cecf7]"
-                                : isLight
-                                ? "bg-cyan-100 text-cyan-800"
-                                : "bg-[#2cecf7]/10 text-[#2cecf7] border border-[#2cecf7]/20"
-                            }`}
+                            data-icon={item.staffHref.split("/").pop()}
+                            data-active={isActive || undefined}
+                            className={`${styles.paletteIcon} w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110`}
                           >
                             {item.label === "Dashboard" && <IconGrid size={18} />}
                             {item.label === "Attendance & Heatmap" && <IconUserCheck size={18} />}
@@ -647,6 +572,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                             {item.label === "My Agreement" && <IconDoc size={18} />}
                             {item.label === "Leaves & Off-Day Swap" && <IconShare size={18} />}
                             {item.label === "Daily Work Updates" && <IconEdit size={18} />}
+                            {["Messages", "Notifications", "Departments", "Notice Board"].includes(item.label) && <span className="material-symbols-outlined" aria-hidden="true">{({ Messages: "chat_bubble", Notifications: "notifications", Departments: "hub", "Notice Board": "campaign" } as Record<string, string>)[item.label]}</span>}
                           </div>
 
                           {isActive ? (
@@ -676,46 +602,23 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                 </div>
               </div>
 
-              {/* Additional Permitted Modules (CMS, Commerce, Projects, System, etc.) */}
-              {filteredGroups.length > 1 && (
-                <div>
-                  <p className="text-[11px] font-bold tracking-[0.12em] uppercase text-gray-400 mb-2 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    <span>ASSIGNED STUDIO MODULES</span>
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                    {filteredGroups.filter(g => g.moduleKey !== "__workspace__").map((group) => (
-                      <div key={group.label} className={`p-3 rounded-xl border ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
-                        <div className="flex items-center gap-2 mb-2 pb-1 border-b border-white/5">
-                          <span style={{ color: group.color }}>{group.icon}</span>
-                          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: group.color }}>
-                            {group.label}
-                          </span>
-                        </div>
-                        <div className="space-y-1">
-                          {group.items.map((sub) => (
-                            <Link
-                              key={sub.staffHref}
-                              href={sub.staffHref}
-                              onClick={() => setCommandCenterOpen(false)}
-                              className={`block px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                router.pathname === sub.staffHref
-                                  ? "bg-[#2cecf7]/15 text-[#2cecf7] font-semibold"
-                                  : isLight
-                                  ? "text-slate-700 hover:bg-slate-200 hover:text-slate-900"
-                                  : "text-gray-300 hover:bg-white/5 hover:text-white"
-                              }`}
-                            >
-                              {sub.label}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <section className={styles.assignedSection} aria-labelledby="assigned-studio-heading">
+                <div className={styles.assignedHeading}>
+                  <div><h3 id="assigned-studio-heading">Assigned Studio Modules</h3><p>Your admin-granted tools, ready to open.</p></div>
+                  <span>{filteredGroups.length - 1} assigned</span>
                 </div>
-              )}
+                {filteredGroups.length > 1 ? <div className={styles.moduleGrid}>
+                  {filteredGroups.filter((group) => group.moduleKey !== "__workspace__").map((group) => (
+                    <section key={group.moduleKey} className={styles.moduleCard}>
+                      <div className={styles.moduleHeading}><span className={styles.paletteIcon} data-icon={group.moduleKey}>{group.icon}</span><div><h4>{group.label}</h4><p>{group.items.length} {group.items.length === 1 ? "tool" : "tools"} available</p></div></div>
+                      <div className={styles.moduleLinks}>{group.items.map((entry) => <Link key={entry.staffHref} href={entry.staffHref}
+                        onClick={() => setCommandCenterOpen(false)} aria-current={router.pathname === entry.staffHref ? "page" : undefined}>
+                        <span>{entry.label}</span><span className="material-symbols-outlined" aria-hidden="true">arrow_outward</span>
+                      </Link>)}</div>
+                    </section>
+                  ))}
+                </div> : <p className={styles.moduleEmpty}>No studio modules assigned yet. Your workspace tools above are always available.</p>}
+              </section>
 
               </div>
 
@@ -752,7 +655,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         {/* ─────────────────────────────────────────────────────────────
             3. MAIN CONTENT WRAPPER
         ───────────────────────────────────────────────────────────── */}
-        <main className="flex-1 min-w-0 pt-20 sm:pt-24 pb-12 overflow-x-hidden min-h-screen relative z-10">
+        <main className={`${styles.main} flex-1 min-w-0 pt-20 sm:pt-24 pb-12 relative z-10`}>
           {children}
         </main>
 

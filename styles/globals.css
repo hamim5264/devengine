@@ -620,7 +620,7 @@ html.light .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
 /* 9. Form inputs, textareas & dropdown selects */
 html.light input:not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]):not([class*="staff-login-input"]):not([class*="transparent-input"]),
 html.light select,
-html.light textarea {
+html.light textarea:not([class*="transparent-input"]) {
   background-color: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;

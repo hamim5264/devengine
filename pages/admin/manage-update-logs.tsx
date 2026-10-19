@@ -1,9 +1,9 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import HelixLoader from "@/components/HelixLoader";
 import { UpdateLogEntry, UpdateLogFormData, UpdateLogTag } from "@/types/update-log";
@@ -50,11 +50,12 @@ export default function ManageUpdateLogs() {
 
   // Admin gate check
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      const ok = !!user && user.email === ADMIN_EMAIL;
-      setIsAdmin(ok);
+    const unsub = onAdminPageAccess(router, async (user) => {
+      setIsAdmin(true);
       setAuthReady(true);
-      if (!ok) router.replace("/login");
+    }, () => {
+      setIsAdmin(false);
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

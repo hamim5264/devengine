@@ -1,7 +1,7 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import Head from "next/head";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AdminLayout from "@/components/AdminLayout";
 import HelixLoader from "@/components/HelixLoader";
@@ -130,13 +130,11 @@ export default function ManageWorkUpdatesPage() {
   }, [taskForm.assignedToStaffId]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user || user.email !== ADMIN_EMAIL) {
-        router.replace("/admin/login");
-        return;
-      }
+    const unsub = onAdminPageAccess(router, async (user) => {
       await loadData();
       setAuthReady(true);
+    }, () => {
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router, loadData]);

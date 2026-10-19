@@ -1,4 +1,4 @@
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import {
   collection,
   doc,
@@ -49,7 +49,7 @@ export async function moveToBin(params: {
     itemType: params.itemType,
     data: params.data,
     metadata: params.metadata || {},
-    deletedBy: params.deletedBy || process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com",
+    deletedBy: params.deletedBy || auth.currentUser?.email || auth.currentUser?.uid || "Unknown user",
     deletedAt: serverTimestamp(),
   };
 
@@ -106,13 +106,13 @@ export async function restoreBinItem(item: BinItem): Promise<void> {
     throw new Error("Missing original collection or ID for recovery.");
   }
 
-  // 1. Re-insert to original collection
-  const originalRef = doc(db, item.originalCollection, item.originalId);
-  await setDoc(originalRef, item.data, { merge: true });
-
-  // 2. Remove from bin
-  const binRef = doc(db, BIN_COLLECTION, item.id);
-  await deleteDoc(binRef);
+  const user = auth.currentUser;
+  if (!user) throw new Error("Please sign in to restore archived items.");
+  const batch = writeBatch(db);
+  batch.set(doc(db, "recycle_restore_intents", user.uid), { binId: item.id });
+  batch.set(doc(db, item.originalCollection, item.originalId), item.data, { merge: true });
+  batch.delete(doc(db, BIN_COLLECTION, item.id));
+  await batch.commit();
 
   // 3. Log recovery event
   await logActivity({

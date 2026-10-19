@@ -20,12 +20,156 @@ service cloud.firestore {
         get(/databases/$(database)/documents/staff_members/$(request.auth.uid)).data.status == "active";
     }
 
-    function isAdminOrStaff() {
-      return isAdmin() || isStaff();
+    function canUseModules(modules) {
+      return isAdmin() || (isStaff() && (
+        get(/databases/$(database)/documents/staff_members/$(request.auth.uid)).data.get('allowedModules', []).hasAny(modules) ||
+        'all' in get(/databases/$(database)/documents/staff_members/$(request.auth.uid)).data.get('allowedModules', [])
+      ));
+    }
+
+    function canArchiveCollection(name) {
+      return (name in ['orders', 'currencies'] && canUseModules(['commerce'])) ||
+        (name in ['projects', 'tags', 'categories', 'lab_categories', 'agreements'] && canUseModules(['projects'])) ||
+        (name in ['blogs', 'reviews', 'lab_projects', 'lab_categories', 'appLab', 'team_members', 'job_circulars', 'job_applications', 'services', 'service_inquiries'] && canUseModules(['content_cms'])) ||
+        (name in ['footer_socials', 'network_hubs'] && canUseModules(['social_network'])) ||
+        (name in ['app_policies', 'app_data_deletion_requests'] && canUseModules(['legal']));
+    }
+
+    // Recovery is limited to the exact archived document, never arbitrary writes.
+    function archiveMatchesRestore(collectionName, documentId) {
+      let intent = getAfter(/databases/$(database)/documents/recycle_restore_intents/$(request.auth.uid));
+      let archived = get(/databases/$(database)/documents/recycle_bin/$(intent.data.binId));
+      return archived.data.originalCollection == collectionName &&
+        archived.data.originalId == documentId &&
+        request.resource.data == archived.data.data;
+    }
+
+    function canRestoreArchived(collectionName, documentId) {
+      return canUseModules(['system']) && archiveMatchesRestore(collectionName, documentId);
     }
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /* =========================
+       STUDIO COMMUNICATION — private, active-company access only
+    ========================== */
+    function studioMember() { return isAdmin() || isStaff(); }
+    function validStudioActor() {
+      return (!('studioEventAt' in request.resource.data)) ||
+        (resource != null && request.resource.data.studioEventAt == resource.data.get('studioEventAt', null)) ||
+        (request.resource.data.studioEventAt == request.time && request.resource.data.studioActorUid == request.auth.uid);
+    }
+    function studioPerson(uid) { return get(/databases/$(database)/documents/studio_people/$(uid)).data; }
+    function chatEnabled() {
+      return studioMember() && exists(/databases/$(database)/documents/studio_people/$(request.auth.uid)) &&
+        studioPerson(request.auth.uid).status == 'active' && !studioPerson(request.auth.uid).chatSuspended;
+    }
+    function canReadChat(chat) {
+      return chatEnabled() && (isAdmin() || (!chat.deleted && request.auth.uid in chat.participantIds));
+    }
+    function validDirect(chat) {
+      let otherUid = chat.participantIds[0] == request.auth.uid ? chat.participantIds[1] : chat.participantIds[0];
+      let other = studioPerson(otherUid);
+      return chat.participantIds.size() == 2 && request.auth.uid in chat.participantIds &&
+        other.uid != request.auth.uid && other.status == 'active' && !other.chatSuspended &&
+        (other.role == 'admin' || get(/databases/$(database)/documents/staff_members/$(otherUid)).data.status == 'active') &&
+        (isAdmin() || other.role == 'admin' || studioPerson(request.auth.uid).departmentIds.hasAny(other.departmentIds));
+    }
+    function canSendChat(chat) {
+      return canReadChat(chat) && !chat.deleted &&
+        (chat.kind == 'direct' ? validDirect(chat) :
+          !get(/databases/$(database)/documents/studio_departments/$(chat.departmentId)).data.deleted &&
+          (isAdmin() || request.auth.uid in get(/databases/$(database)/documents/studio_departments/$(chat.departmentId)).data.memberIds));
+    }
+    function existingChat(id) { return get(/databases/$(database)/documents/studio_conversations/$(id)).data; }
+
+    // This directory deliberately excludes email, password, compensation and module grants.
+    match /studio_people/{uid} {
+      allow read: if studioMember();
+      allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['uid', 'name', 'avatarUrl', 'role', 'status', 'departmentIds', 'chatSuspended']) &&
+        request.resource.data.uid == uid && request.resource.data.name is string &&
+        request.resource.data.departmentIds is list && request.resource.data.chatSuspended is bool;
+      allow delete: if isAdmin();
+    }
+    match /studio_departments/{id} {
+      allow read: if studioMember();
+      allow create, update: if isAdmin() && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 100 &&
+        request.resource.data.description is string && request.resource.data.description.size() <= 1000 &&
+        request.resource.data.memberIds is list && request.resource.data.memberIds.size() <= 100;
+      allow delete: if isAdmin();
+    }
+    match /studio_conversations/{id} {
+      allow get: if chatEnabled() && (resource == null || canReadChat(resource.data));
+      allow list: if canReadChat(resource.data);
+      allow create: if chatEnabled() && request.resource.data.keys().hasOnly(['kind', 'participantIds', 'departmentId', 'title', 'description', 'avatarUrl', 'createdAt', 'deleted']) &&
+        request.resource.data.deleted == false &&
+        (isAdmin() || (request.resource.data.kind == 'direct' && validDirect(request.resource.data)));
+      allow update, delete: if isAdmin();
+      match /messages/{messageId} {
+        allow read: if canReadChat(existingChat(id));
+        allow create: if canSendChat(existingChat(id)) && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt', 'sentAt', 'replyTo', 'replyText', 'replyName']) &&
+          request.resource.data.senderId == request.auth.uid && request.resource.data.senderName == studioPerson(request.auth.uid).name &&
+          request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 4000 &&
+          request.resource.data.createdAt is string && request.resource.data.createdAt.size() == 24 && request.resource.data.sentAt == request.time &&
+          request.resource.data.replyText is string && request.resource.data.replyText.size() <= 180 &&
+          (request.resource.data.replyTo == '' || exists(/databases/$(database)/documents/studio_conversations/$(id)/messages/$(request.resource.data.replyTo)));
+        allow delete: if isAdmin();
+        allow update: if false;
+
+      }
+      match /reactions/{reactionId} {
+        allow read: if canReadChat(existingChat(id));
+        allow create, update: if canSendChat(existingChat(id)) && request.resource.data.keys().hasOnly(['uid', 'messageId', 'emoji']) &&
+          request.resource.data.uid == request.auth.uid && reactionId == request.resource.data.messageId + '_' + request.auth.uid &&
+          request.resource.data.emoji in ['👍', '❤️', '😂', '🎉', '🙏', '👀'] &&
+          exists(/databases/$(database)/documents/studio_conversations/$(id)/messages/$(request.resource.data.messageId));
+        allow delete: if canSendChat(existingChat(id)) && resource.data.uid == request.auth.uid;
+      }
+      match /typing/{uid} {
+        allow read: if canReadChat(existingChat(id));
+        allow create, update: if canSendChat(existingChat(id)) && uid == request.auth.uid &&
+          request.resource.data.keys().hasOnly(['uid', 'name', 'expiresAt']) && request.resource.data.uid == uid &&
+          request.resource.data.name == studioPerson(uid).name && request.resource.data.expiresAt is number &&
+          request.resource.data.expiresAt <= request.time.toMillis() + 10000;
+        allow delete: if isAdmin() || (chatEnabled() && uid == request.auth.uid);
+      }
+    }
+    match /studio_notifications/{id} {
+      allow read: if studioMember() && resource.data.recipientId == request.auth.uid;
+      // Notifications originate only in trusted Firestore triggers.
+      allow create: if false;
+      allow update: if studioMember() && resource.data.recipientId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) && request.resource.data.read is bool;
+      allow delete: if studioMember() && resource.data.recipientId == request.auth.uid;
+    }
+    match /studio_notices/{id} {
+      allow read: if studioMember();
+      allow create, update: if isAdmin() && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 160 &&
+        request.resource.data.body is string && request.resource.data.body.size() > 0 && request.resource.data.body.size() <= 12000 &&
+        request.resource.data.priority in ['normal', 'important'];
+      allow delete: if isAdmin();
+    }
+    match /studio_user_settings/{uid} {
+      allow read: if studioMember() && uid == request.auth.uid;
+      allow create, update: if studioMember() && uid == request.auth.uid && request.resource.data.keys().hasOnly(['background']) &&
+        request.resource.data.background in ['aurora', 'grid', 'paper', 'stars', 'calm'];
+      match /chats/{chatId} {
+        allow read: if studioMember() && uid == request.auth.uid;
+        allow create, update: if studioMember() && uid == request.auth.uid &&
+          request.resource.data.keys().hasOnly(['archived', 'lastReadAt']) &&
+          (!('archived' in request.resource.data) || request.resource.data.archived is bool) &&
+          (!('lastReadAt' in request.resource.data) || request.resource.data.lastReadAt is string);
+      }
+      match /archived_messages/{messageId} {
+        allow read: if studioMember() && uid == request.auth.uid;
+        allow create, update: if studioMember() && uid == request.auth.uid && request.resource.data.keys().hasOnly(['chatId', 'messageId', 'archived']) && request.resource.data.archived is bool;
+      }
+      match /notice_reads/{noticeId} {
+        allow read: if studioMember() && uid == request.auth.uid;
+        allow create, update: if studioMember() && uid == request.auth.uid && request.resource.data.keys().hasOnly(['readAt']) && request.resource.data.readAt is string;
+      }
     }
 
     /* =========================
@@ -55,8 +199,10 @@ service cloud.firestore {
     ========================== */
     match /staff_attendance/{attendanceId} {
       allow read, write: if isAdmin();
-      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
-      allow create, update: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+      allow read: if isStaff() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create: if isStaff() && validStudioActor() && request.resource.data.staffUid == request.auth.uid && request.resource.data.staffId == request.auth.uid;
+      allow update: if isStaff() && validStudioActor() && resource.data.staffUid == request.auth.uid && resource.data.staffId == request.auth.uid &&
+        request.resource.data.staffUid == resource.data.staffUid && request.resource.data.staffId == resource.data.staffId;
     }
 
     /* =========================
@@ -64,8 +210,8 @@ service cloud.firestore {
     ========================== */
     match /staff_attendance_requests/{requestId} {
       allow read, write: if isAdmin();
-      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
-      allow create: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+      allow read: if isStaff() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create: if isStaff() && validStudioActor() && request.resource.data.staffUid == request.auth.uid && request.resource.data.staffId == request.auth.uid;
     }
 
     /* =========================
@@ -73,8 +219,10 @@ service cloud.firestore {
     ========================== */
     match /staff_work_updates/{updateId} {
       allow read, write: if isAdmin();
-      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
-      allow create, update: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+      allow read: if isStaff() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create: if isStaff() && validStudioActor() && request.resource.data.staffUid == request.auth.uid && request.resource.data.staffId == request.auth.uid;
+      allow update: if isStaff() && validStudioActor() && resource.data.staffUid == request.auth.uid && resource.data.staffId == request.auth.uid &&
+        request.resource.data.staffUid == resource.data.staffUid && request.resource.data.staffId == resource.data.staffId;
     }
 
     /* =========================
@@ -82,8 +230,8 @@ service cloud.firestore {
     ========================== */
     match /staff_leave_requests/{leaveId} {
       allow read, write: if isAdmin();
-      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
-      allow create: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+      allow read: if isStaff() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create: if isStaff() && validStudioActor() && request.resource.data.staffUid == request.auth.uid && request.resource.data.staffId == request.auth.uid;
     }
 
     /* =========================
@@ -91,8 +239,8 @@ service cloud.firestore {
     ========================== */
     match /staff_offday_swap_requests/{swapId} {
       allow read, write: if isAdmin();
-      allow read: if isSignedIn() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
-      allow create: if isSignedIn() && (request.resource.data.staffUid == request.auth.uid || request.resource.data.staffId == request.auth.uid);
+      allow read: if isStaff() && (resource == null || resource.data.staffUid == request.auth.uid || resource.data.staffId == request.auth.uid);
+      allow create: if isStaff() && validStudioActor() && request.resource.data.staffUid == request.auth.uid && request.resource.data.staffId == request.auth.uid;
     }
 
     /* =========================
@@ -100,8 +248,9 @@ service cloud.firestore {
     ========================== */
     match /employee_tasks/{taskId} {
       allow read, write: if isAdmin();
-      allow read: if isSignedIn() && (resource == null || resource.data.assignedToStaffUid == request.auth.uid || resource.data.assignedToStaffId == request.auth.uid || resource.data.assignedToEmail == request.auth.token.email);
-      allow update: if isSignedIn() && (resource != null && (resource.data.assignedToStaffUid == request.auth.uid || resource.data.assignedToStaffId == request.auth.uid || resource.data.assignedToEmail == request.auth.token.email));
+      allow read: if isStaff() && (resource == null || resource.data.assignedToStaffUid == request.auth.uid || resource.data.assignedToStaffId == request.auth.uid || resource.data.assignedToEmail == request.auth.token.email);
+      allow update: if isStaff() && validStudioActor() && (resource != null && (resource.data.assignedToStaffUid == request.auth.uid || resource.data.assignedToStaffId == request.auth.uid || resource.data.assignedToEmail == request.auth.token.email)) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'progressPercent', 'employeeNotes', 'submissionUrl', 'actualHours', 'startedAt', 'completedAt', 'submittedAt', 'updatedAt', 'studioActorUid', 'studioEventAt']);
     }
 
     /* =========================
@@ -110,7 +259,7 @@ service cloud.firestore {
     match /update_logs/{logId} {
       // Public can read system updates and changelogs
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['content_cms']);
     }
 
     /* =========================
@@ -119,7 +268,8 @@ service cloud.firestore {
     match /network_hubs/{hubId} {
       // Public can read network routing nodes and status
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['social_network']);
+      allow create, update: if canRestoreArchived('network_hubs', hubId);
     }
 
     /* =========================
@@ -128,7 +278,7 @@ service cloud.firestore {
     match /landing_sections/{sectionId} {
       // Public can read landing page configurations
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['content_cms']);
     }
 
     /* =========================
@@ -137,7 +287,7 @@ service cloud.firestore {
     match /terms_config/{docId} {
       // Public can read terms and conditions
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['legal']);
     }
 
     /* =========================
@@ -146,7 +296,7 @@ service cloud.firestore {
     match /privacy_config/{docId} {
       // Public can read privacy policy
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['legal']);
     }
 
     /* =========================
@@ -155,7 +305,7 @@ service cloud.firestore {
     match /security_config/{docId} {
       // Public can read security protocol
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['legal']);
     }
 
     /* =========================
@@ -164,7 +314,7 @@ service cloud.firestore {
     match /documentation_config/{docId} {
       // Public can read documentation & API access
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['content_cms']);
     }
 
     /* =========================
@@ -173,7 +323,7 @@ service cloud.firestore {
     match /license_config/{docId} {
       // Public can read commercial license agreement
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['legal']);
     }
 
     /* =========================
@@ -181,7 +331,7 @@ service cloud.firestore {
     ========================== */
     match /agreements/{agreementId} {
       // Admin has full CRUD access
-      allow read, write: if isAdmin();
+      allow read, write: if canUseModules(['projects']);
 
       // Contributors/Staff can read their own agreement (supports modern & legacy schemas)
       allow read: if isSignedIn() && (
@@ -192,6 +342,7 @@ service cloud.firestore {
         resource.data.staffId == request.auth.uid ||
         resource.data.staffUid == request.auth.uid
       );
+      allow create, update: if canRestoreArchived('agreements', agreementId);
     }
 
     /* =========================
@@ -199,7 +350,7 @@ service cloud.firestore {
     ========================== */
     match /agreement_addenda/{addendumId} {
       // Admin has full CRUD access over amendments
-      allow read, write: if isAdmin();
+      allow read, write: if canUseModules(['projects']);
 
       // Signed in counterparties can read their associated addenda
       allow read: if isSignedIn();
@@ -209,8 +360,8 @@ service cloud.firestore {
        REUSABLE AGREEMENT TEMPLATES
     ========================== */
     match /agreement_templates/{templateId} {
-      allow read: if isAdminOrStaff();
-      allow write: if isAdmin();
+      allow read: if canUseModules(['projects']);
+      allow write: if canUseModules(['projects']);
     }
 
     /* =========================
@@ -218,7 +369,7 @@ service cloud.firestore {
     ========================== */
     match /agreement_audit_logs/{logId} {
       // Append-only by administrators; immutable
-      allow read, create: if isAdmin();
+      allow read, create: if canUseModules(['projects']);
       allow update, delete: if false;
     }
 
@@ -228,7 +379,7 @@ service cloud.firestore {
     match /refund_config/{docId} {
       // Public can read refund policy
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['legal']);
     }
 
     /* =========================
@@ -237,7 +388,8 @@ service cloud.firestore {
     match /archive_config/{docId} {
       // Public can read archive configuration
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if (docId == 'currencies' && canUseModules(['commerce'])) ||
+        (docId != 'currencies' && canUseModules(['content_cms']));
     }
 
     /* =========================
@@ -246,7 +398,7 @@ service cloud.firestore {
     match /launchpad_config/{docId} {
       // Public can read launchpad configuration
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['content_cms']);
     }
 
     /* =========================
@@ -255,13 +407,15 @@ service cloud.firestore {
     match /services/{serviceId} {
       // Public can read services catalog
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('services', serviceId);
     }
 
     match /service_inquiries/{inquiryId} {
       // Public can submit project inquiries
       allow create: if true;
-      allow read, update, delete: if isAdminOrStaff();
+      allow read, update, delete: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('service_inquiries', inquiryId);
     }
 
     /* =========================
@@ -270,7 +424,8 @@ service cloud.firestore {
     match /lab_projects/{projectId} {
       // Public can read lab projects (visibility filtered client-side)
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('lab_projects', projectId);
     }
 
     /* =========================
@@ -278,12 +433,14 @@ service cloud.firestore {
     ========================== */
     match /lab_categories/{catId} {
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      allow write: if canUseModules(['content_cms', 'projects']);
+      allow create, update: if canRestoreArchived('lab_categories', catId);
     }
 
     match /categories/{catId} {
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      allow write: if canUseModules(['projects']);
+      allow create, update: if canRestoreArchived('categories', catId);
     }
 
     /* =========================
@@ -292,7 +449,8 @@ service cloud.firestore {
     match /projects/{projectId} {
       // Public can read projects (isPublic filter handled in queries/client)
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['projects']);
+      allow create, update: if canRestoreArchived('projects', projectId);
     }
 
     /* =========================
@@ -301,7 +459,8 @@ service cloud.firestore {
     match /appLab/{appId} {
       // Public can read apps
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('appLab', appId);
     }
 
     /* =========================
@@ -309,7 +468,8 @@ service cloud.firestore {
     ========================== */
     match /tags/{tagId} {
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['projects']);
+      allow create, update: if canRestoreArchived('tags', tagId);
     }
 
     /* =========================
@@ -317,7 +477,8 @@ service cloud.firestore {
     ========================== */
     match /currencies/{currencyId} {
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['commerce']);
+      allow create, update: if canRestoreArchived('currencies', currencyId);
     }
 
     /* =========================
@@ -341,8 +502,9 @@ service cloud.firestore {
       allow create: if true;
 
       // Admin can approve, reject, or delete any review; users can edit/delete their own
-      allow update, delete: if isAdmin() ||
+      allow update, delete: if canUseModules(['content_cms']) ||
         (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create, update: if canRestoreArchived('reviews', reviewId);
     }
 
     /* =========================
@@ -372,7 +534,8 @@ service cloud.firestore {
       allow read: if true;
 
       // Admin or authorized staff can update status or delete
-      allow update, delete: if isAdminOrStaff();
+      allow update, delete: if canUseModules(['commerce']);
+      allow create, update: if canRestoreArchived('orders', orderId);
     }
 
     /* =========================
@@ -381,7 +544,8 @@ service cloud.firestore {
     match /blogs/{blogId} {
       // Public can read all published or individual blogs
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      allow write: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('blogs', blogId);
     }
 
     /* =========================
@@ -389,12 +553,13 @@ service cloud.firestore {
     ========================== */
     match /team_members/{memberId} {
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      allow write: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('team_members', memberId);
     }
 
     match /studio_about/{docId} {
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      allow write: if canUseModules(['content_cms']);
     }
 
     /* =========================
@@ -403,7 +568,8 @@ service cloud.firestore {
     match /job_circulars/{circularId} {
       // Public can read all active circulars
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      allow write: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('job_circulars', circularId);
     }
 
     /* =========================
@@ -412,7 +578,8 @@ service cloud.firestore {
     match /job_applications/{applicationId} {
       // Anyone can submit a job application without logging in
       allow create: if true;
-      allow read, update, delete: if isAdminOrStaff();
+      allow read, update, delete: if canUseModules(['content_cms']);
+      allow create, update: if canRestoreArchived('job_applications', applicationId);
     }
 
     /* =========================
@@ -420,7 +587,8 @@ service cloud.firestore {
     ========================== */
     match /footer_socials/{linkId} {
       allow read: if true;
-      allow write: if isAdminOrStaff();
+      allow write: if canUseModules(['social_network']);
+      allow create, update: if canRestoreArchived('footer_socials', linkId);
     }
 
     /* =========================
@@ -429,7 +597,7 @@ service cloud.firestore {
     match /system_settings/{settingId} {
       allow read: if true;
       // Global theme and font policy is controlled exclusively by the admin.
-      allow write: if isAdmin() || (settingId != "theme_modes" && isStaff());
+      allow write: if isAdmin() || (settingId != "theme_modes" && canUseModules(['system']));
     }
 
     /* =========================
@@ -446,14 +614,21 @@ service cloud.firestore {
     match /activity_logs/{logId} {
       allow read: if true;
       allow create: if true;
-      allow update, delete: if isAdminOrStaff();
+      allow update, delete: if canUseModules(['system']);
     }
 
     /* =========================
        RECYCLE BIN (TRASH & RECOVERY)
     ========================== */
+    match /recycle_restore_intents/{userId} {
+      allow read, delete: if isOwner(userId) && canUseModules(['system']);
+      allow create, update: if isOwner(userId) && canUseModules(['system']) &&
+        request.resource.data.keys().hasOnly(['binId']) && request.resource.data.binId is string;
+    }
+
     match /recycle_bin/{binId} {
-      allow read, write: if isAdminOrStaff();
+      allow read, update, delete: if canUseModules(['system']);
+      allow create: if isAdmin() || canArchiveCollection(request.resource.data.originalCollection);
     }
 
     /* =========================
@@ -462,7 +637,8 @@ service cloud.firestore {
     match /app_policies/{policyId} {
       // Public & Google Play reviewers must be able to view policies without authentication
       allow read: if true;
-      allow create, update, delete: if isAdminOrStaff();
+      allow create, update, delete: if canUseModules(['legal']);
+      allow create, update: if canRestoreArchived('app_policies', policyId);
     }
 
     /* =========================
@@ -471,7 +647,8 @@ service cloud.firestore {
     match /app_data_deletion_requests/{requestId} {
       // Any app user can publicly submit an account/data deletion request
       allow create: if true;
-      allow read, update, delete: if isAdminOrStaff();
+      allow read, update, delete: if canUseModules(['legal']);
+      allow create, update: if canRestoreArchived('app_data_deletion_requests', requestId);
     }
 
     /* =========================
@@ -481,77 +658,77 @@ service cloud.firestore {
       // Public can read branding settings (needed for dynamic PDF invoices & agreements)
       allow read: if true;
       // Admin and authorized staff can write settings
-      allow write: if isAdmin() || isAdminOrStaff();
+      allow write: if canUseModules(['commerce', 'system', 'contract_center', 'projects']);
     }
 
     /* =========================
        DEVENGINE CONTRACT CENTER (cc_*)
     ========================== */
     match /cc_clients/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
     }
 
     match /cc_projects/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
     }
 
     match /cc_quotations/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
       // Public/client can view quotation via direct link/token
       allow read: if true;
     }
 
     match /cc_ndas/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
       allow read: if true;
     }
 
     match /cc_service_agreements/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
       allow read: if true;
     }
 
     match /cc_sow/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
       allow read: if true;
     }
 
     match /cc_change_orders/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
       allow read: if true;
     }
 
     match /cc_signatures/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
       // Counterparty can view signature request and submit signed signature
       allow read: if true;
       allow update: if true;
     }
 
     match /cc_milestones/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
     }
 
     match /cc_templates/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
     }
 
     match /cc_clauses/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
     }
 
     match /cc_settings/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if canUseModules(['contract_center']);
     }
 
     match /cc_number_sequences/{id} {
-      allow read, write: if isAdminOrStaff();
+      allow read, write: if canUseModules(['contract_center']);
     }
 
     match /cc_audit_trail/{id} {
       // Append-only audit log, immutable
-      allow read, create: if isAdminOrStaff();
+      allow read, create: if canUseModules(['contract_center']);
       allow update, delete: if false;
     }
   }

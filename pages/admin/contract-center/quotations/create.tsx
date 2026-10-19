@@ -1,3 +1,4 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/quotations/create.tsx
 // ─────────────────────────────────────────────────────────────
 // DevEngine Contract Center — Interactive Quotation Builder
@@ -7,7 +8,6 @@ import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AdminLayout from "@/components/AdminLayout";
 import HelixLoader from "@/components/HelixLoader";
@@ -107,9 +107,10 @@ export default function QuotationCreatePage() {
   ]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAdminPageAccess(router, async (user) => {
       setAuthReady(true);
-      if (!user) router.replace("/login?redirect=/admin/contract-center/quotations/create");
+    }, () => {
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

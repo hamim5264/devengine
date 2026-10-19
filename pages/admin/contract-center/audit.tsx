@@ -1,3 +1,4 @@
+import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/audit.tsx
 // ─────────────────────────────────────────────────────────────
 // DevEngine Contract Center — Immutable Audit Trail
@@ -6,7 +7,6 @@
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AdminLayout from "@/components/AdminLayout";
 import HelixLoader from "@/components/HelixLoader";
@@ -25,9 +25,10 @@ export default function AuditTrailPage() {
   const [typeFilter, setTypeFilter] = useState("all");
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const unsub = onAdminPageAccess(router, async (user) => {
       setAuthReady(true);
-      if (!user) router.replace("/login?redirect=/admin/contract-center/audit");
+    }, () => {
+      setAuthReady(false);
     });
     return () => unsub();
   }, [router]);

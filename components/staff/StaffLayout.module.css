@@ -1,0 +1,119 @@
+.shell {
+  width: 100%;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  isolation: isolate;
+  /* Clip visual effects without creating another vertical scroll container. */
+  overflow-x: clip;
+}
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.header,
+.headerCapsule {
+  /* Scrollbar and breakpoint changes must never animate the whole header. */
+  transition-property: background-color, border-color, color, box-shadow;
+}
+
+.main {
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow-x: clip;
+}
+
+.shell :global(.font-mono) {
+  /* Preserve the selected font while preventing ticking digits from reflowing. */
+  font-variant-numeric: tabular-nums;
+}
+
+.shell :global(.material-symbols-outlined) {
+  /* Reserve icon space while the icon font loads instead of sizing to its name. */
+  display: inline-block;
+  width: 1em;
+  min-width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.assignedSection { padding-top: 6px; font-family: var(--font-site, "Poppins"), sans-serif; }
+.assignedHeading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.assignedHeading h3 { margin: 0; color: var(--devengine-text); font-size: 1rem; font-weight: 600; letter-spacing: -.02em; }
+.assignedHeading p { color: var(--devengine-muted); font-size: .82rem; margin-top: 5px; }
+.assignedHeading > span { font-size: .75rem; padding: 5px 10px; border: 1px solid var(--devengine-border); background: var(--devengine-soft); color: var(--devengine-text); border-radius: 99px; }
+.moduleGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.moduleCard { min-width: 0; background: var(--devengine-surface); border: 1px solid var(--devengine-border); border-radius: 19px; padding: 18px; }
+.moduleHeading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.moduleHeading > span { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; color: #2cecf7; border: 1px solid var(--devengine-border); background: var(--devengine-soft); border-radius: 13px; }
+.moduleHeading h4 { color: var(--devengine-text); font-size: .95rem; font-weight: 600; }
+.moduleHeading p { color: var(--devengine-muted); font-size: .75rem; margin-top: 3px; }
+.shell .paletteIcon {
+  --icon-color: #2cecf7;
+  --icon-light: #2cecf7;
+  --icon-background: #14213d;
+  --icon-border: #2cecf755;
+  color: var(--icon-color);
+  background: var(--icon-background);
+  border: 1px solid var(--icon-border);
+  box-shadow: none;
+}
+.paletteIcon[data-icon="attendance"], .paletteIcon[data-icon="commerce"] {
+  --icon-color: #6ee7b7; --icon-light: #047857;
+  --icon-background: #10b98118; --icon-border: #10b98140;
+}
+.paletteIcon[data-icon="tasks"], .paletteIcon[data-icon="content_cms"] {
+  --icon-color: #fcd34d; --icon-light: #92400e;
+  --icon-background: #f59e0b18; --icon-border: #f59e0b40;
+}
+.paletteIcon[data-icon="agreement"], .paletteIcon[data-icon="contract_center"] {
+  --icon-color: #c4b5fd; --icon-light: #6d28d9;
+  --icon-background: #8b5cf618; --icon-border: #8b5cf640;
+}
+.paletteIcon[data-icon="leaves"], .paletteIcon[data-icon="social_network"] {
+  --icon-color: #f9a8d4; --icon-light: #be185d;
+  --icon-background: #ec489918; --icon-border: #ec489940;
+}
+.paletteIcon[data-icon="work-updates"], .paletteIcon[data-icon="projects"] {
+  --icon-color: #93c5fd; --icon-light: #1d4ed8;
+  --icon-background: #3b82f618; --icon-border: #3b82f640;
+}
+.paletteIcon[data-icon="legal"] {
+  --icon-color: #fdba74; --icon-light: #c2410c;
+  --icon-background: #f9731618; --icon-border: #f9731640;
+}
+.paletteIcon[data-icon="system"] {
+  --icon-color: #a5b4fc; --icon-light: #4338ca;
+  --icon-background: #6366f118; --icon-border: #6366f140;
+}
+:global(html.light) .shell .paletteIcon { color: var(--icon-light); }
+.shell .paletteIcon[data-active="true"] { box-shadow: 0 0 0 3px var(--icon-background); }
+.moduleLinks { display: grid; gap: 5px; }
+.moduleLinks a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 10px 12px; border: 1px solid transparent; border-radius: 11px; color: var(--devengine-text); font-size: .85rem; line-height: 1.5; transition: background-color .18s, border-color .18s; }
+.moduleLinks a > span:first-child { overflow-wrap: anywhere; }
+.moduleLinks a > span:last-child { color: #2cecf7; font-size: 18px; flex-shrink: 0; }
+.moduleLinks a:hover, .moduleLinks a[aria-current="page"] { background: var(--devengine-soft); border-color: var(--devengine-border); }
+.moduleLinks a:focus-visible { outline: 2px solid #2cecf7; outline-offset: 2px; }
+.moduleEmpty { padding: 20px; border: 1px dashed var(--devengine-border); border-radius: 16px; color: var(--devengine-muted); font-size: .85rem; line-height: 1.7; }
+@media (max-width: 600px) { .moduleGrid { grid-template-columns: 1fr; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .shell :global(.anim-float-orb),
+  .shell :global(.anim-cyan-glow) {
+    animation: none;
+  }
+}
+
+/* Profile and sign-out remain in the command center on compact headers. */
+@media (max-width:639px) {
+  .headerCapsule [title="View Profile & Preferences"],
+  .headerCapsule [title="Sign out of Employee Portal"] { display:none; }
+}

@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 import type { AttendanceRecord } from "@/types/staffEcoSystem";
+import CustomDatePickerField from "@/components/staff/CustomDatePickerField";
+import CustomSelectField from "@/components/staff/CustomSelectField";
+import attendanceStyles from "@/components/staff/Attendance.module.css";
 
 interface HeatmapProps {
   records: AttendanceRecord[];
@@ -8,6 +11,7 @@ interface HeatmapProps {
   assignedOffDays?: string[]; // e.g. ["Friday", "Saturday"]
   onSelectDate?: (date: string, record?: AttendanceRecord) => void;
   className?: string;
+  variant?: "default" | "employee";
 }
 
 interface DayCell {
@@ -30,13 +34,22 @@ const MONTH_SHORT = [
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function effectiveRecordStatus(record: AttendanceRecord) {
+  const hours = record.netWorkHours ?? record.totalHours ?? 0;
+  return record.clockOutTime && hours < 5 && (record.status === "present" || record.status === "on_break")
+    ? "half_day"
+    : record.status;
+}
+
 export default function AttendanceHeatmap({
   records,
   year = new Date().getFullYear(),
   assignedOffDays = ["Friday", "Saturday"],
   onSelectDate,
   className = "",
+  variant = "default",
 }: HeatmapProps) {
+  const isEmployee = variant === "employee";
   const { theme } = useTheme();
   const isLight = theme === "light";
 
@@ -229,10 +242,7 @@ export default function AttendanceHeatmap({
   const getCellColor = (cell: DayCell): string => {
     if (!cell.dateStr) return "bg-transparent border-transparent";
     if (cell.record) {
-      const hours = cell.record.netWorkHours !== undefined ? cell.record.netWorkHours : (cell.record.totalHours || 0);
-      const effStatus = (cell.record.clockOutTime && hours < 5 && (cell.record.status === "present" || cell.record.status === "on_break"))
-        ? "half_day"
-        : cell.record.status;
+      const effStatus = effectiveRecordStatus(cell.record);
 
       if (effStatus === "present") return "bg-emerald-500 hover:bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.35)]";
       if (effStatus === "late") return "bg-orange-500 hover:bg-orange-400 text-white shadow-[0_0_8px_rgba(249,115,22,0.35)]";
@@ -280,6 +290,10 @@ export default function AttendanceHeatmap({
 
   // Custom Glass Date Picker handlers
   const handleOpenDatePicker = () => {
+    if (isEmployee) {
+      setViewMode("daily");
+      return;
+    }
     const parts = (specificDateChoice || todayStr).split("-").map(Number);
     if (parts[0] && parts[1]) {
       setPickerYear(parts[0]);
@@ -376,11 +390,11 @@ export default function AttendanceHeatmap({
   }, [pickerYear, pickerMonth, todayStr, specificDateChoice, assignedOffDays, recordMap]);
 
   return (
-    <div className={`rounded-3xl border p-5 sm:p-7 backdrop-blur-xl shadow-xl space-y-6 transition-all ${
+    <div data-employee-attendance={isEmployee || undefined} className={`rounded-3xl border p-5 sm:p-7 backdrop-blur-xl shadow-xl space-y-6 transition-all ${
       isLight ? "bg-white border-slate-200/90 shadow-sm" : "border-white/10 bg-neutral-950/90 shadow-2xl"
     } ${className}`}>
       {/* ── TOP CONTROLS & TIMEFRAME FILTERS ── */}
-      <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b relative ${
+      <div data-part="matrix-heading" className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b relative ${
         isLight ? "border-slate-100" : "border-white/10"
       }`}>
         <div>
@@ -411,11 +425,12 @@ export default function AttendanceHeatmap({
 
         {/* View Mode Filter Tabs with 'Today' as default */}
         <div className="relative">
-          <div className={`flex items-center gap-1.5 p-1 rounded-2xl border self-start lg:self-auto flex-wrap ${
+          <div data-part="view-tabs" className={`flex items-center gap-1.5 p-1 rounded-2xl border self-start lg:self-auto flex-wrap ${
             isLight ? "bg-slate-100 border-slate-200" : "bg-black/60 border-white/10"
           }`}>
             <button
               type="button"
+              aria-pressed={viewMode === "today"}
               onClick={() => {
                 setViewMode("today");
                 setSpecificDateChoice(todayStr);
@@ -437,6 +452,7 @@ export default function AttendanceHeatmap({
             <button
               type="button"
               onClick={handleOpenDatePicker}
+              aria-pressed={viewMode === "daily"}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                 viewMode === "daily" || showCustomDatePicker
                   ? "bg-[#2cecf7] text-[#02040a] font-bold shadow-md shadow-[#2cecf7]/25"
@@ -451,6 +467,7 @@ export default function AttendanceHeatmap({
 
             <button
               type="button"
+              aria-pressed={viewMode === "monthly"}
               onClick={() => {
                 setViewMode("monthly");
                 setShowCustomDatePicker(false);
@@ -469,6 +486,7 @@ export default function AttendanceHeatmap({
 
             <button
               type="button"
+              aria-pressed={viewMode === "yearly"}
               onClick={() => {
                 setViewMode("yearly");
                 setShowCustomDatePicker(false);
@@ -487,7 +505,7 @@ export default function AttendanceHeatmap({
           </div>
 
           {/* ── CUSTOM GLASS DATE PICKER POPOVER (Replacing Browser Ugly Native Popup) ── */}
-          {showCustomDatePicker && (
+          {!isEmployee && showCustomDatePicker && (
             <div
               ref={datePickerRef}
               className={`absolute right-0 top-full mt-2 z-50 w-[300px] sm:w-[330px] p-4 rounded-3xl border shadow-2xl backdrop-blur-2xl transition-all duration-200 animate-in fade-in zoom-in-95 ${
@@ -587,7 +605,7 @@ export default function AttendanceHeatmap({
                     if (onSelectDate) onSelectDate(todayStr, recordMap.get(todayStr));
                   }}
                   className="font-bold cursor-pointer transition-colors"
-                  style={{ color: isLight ? "#0891b2" : "#2cecf7" }}
+                  style={{ color: isEmployee ? "var(--devengine-accent-text)" : isLight ? "#0891b2" : "#2cecf7" }}
                 >
                   Select Today
                 </button>
@@ -605,8 +623,8 @@ export default function AttendanceHeatmap({
       </div>
 
       {/* ── STATS CAPSULES ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex flex-wrap items-center gap-2">
+      <div data-part="matrix-stats" className="flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div data-part="metric-list" className="flex flex-wrap items-center gap-2">
           <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-2 transition-all hover:scale-102 ${
             isLight ? "bg-slate-50 border-slate-200 shadow-xs" : "bg-white/5 border-white/10"
           }`}>
@@ -636,7 +654,7 @@ export default function AttendanceHeatmap({
           }`}>
             <span className="material-symbols-outlined text-[#2cecf7] text-[14px]">schedule</span>
             <span className={isLight ? "text-slate-500" : "text-neutral-400"}>Work Hours:</span>
-            <span className="font-semibold" style={{ color: isLight ? "#0891b2" : "#2cecf7" }}>{stats.totalWorkHours}h</span>
+            <span className="font-semibold" style={{ color: isEmployee ? "var(--devengine-accent-text)" : isLight ? "#0891b2" : "#2cecf7" }}>{stats.totalWorkHours}h</span>
           </div>
         </div>
 
@@ -647,7 +665,13 @@ export default function AttendanceHeatmap({
           </div>
 
           {/* ── CUSTOM GLASS YEAR DROPDOWN (Replacing Browser Native Select) ── */}
-          <div className="relative" ref={yearDropdownRef}>
+          {isEmployee ? (
+            <CustomSelectField label="Year" value={String(selectedYear)}
+              className={attendanceStyles.yearField}
+              onChange={(value) => setSelectedYear(Number(value))}
+              options={Array.from(new Set([year, new Date().getFullYear(), new Date().getFullYear() - 1, new Date().getFullYear() - 2, ...records.map((record) => Number(record.date.slice(0, 4))).filter(Number.isFinite)]))
+                .sort((a, b) => b - a).map((value) => ({ value: String(value), label: String(value) }))} />
+          ) : <div className="relative" ref={yearDropdownRef}>
             <button
               type="button"
               onClick={() => setShowYearDropdown((prev) => !prev)}
@@ -691,13 +715,13 @@ export default function AttendanceHeatmap({
                 ))}
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
       {/* ── VIEW A: TODAY / SPECIFIC DATE INSPECTOR CARD (DEFAULT) ── */}
       {(viewMode === "today" || viewMode === "daily") && (
-        <div className={`rounded-2xl border p-5 sm:p-6 space-y-4 relative overflow-hidden backdrop-blur-xl transition-all ${
+        <div data-part="day-inspector" className={`rounded-2xl border p-5 sm:p-6 space-y-4 relative ${isEmployee ? "" : "overflow-hidden"} backdrop-blur-xl transition-all ${
           isLight
             ? "border-cyan-200/80 bg-gradient-to-r from-cyan-50/60 via-white to-blue-50/25 text-slate-900 shadow-sm"
             : "border-[#2cecf7]/20 bg-gradient-to-r from-[#081224] via-[#0a0f1d] to-[#07111e] text-white shadow-xl"
@@ -705,7 +729,7 @@ export default function AttendanceHeatmap({
           {/* Subtle Ambient Laser Line */}
           <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#2cecf7] to-transparent anim-sweep-laser opacity-60 pointer-events-none" />
 
-          <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b ${
+          <div data-part="inspector-heading" className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b ${
             isLight ? "border-slate-200" : "border-white/10"
           }`}>
             <div className="flex items-center gap-3">
@@ -714,7 +738,7 @@ export default function AttendanceHeatmap({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono uppercase tracking-wider font-bold" style={{ color: isLight ? "#0891b2" : "#2cecf7" }}>
+                  <span className="text-xs font-mono uppercase tracking-wider font-bold" style={{ color: isEmployee ? "var(--devengine-accent-text)" : isLight ? "#0891b2" : "#2cecf7" }}>
                     {viewMode === "today" ? "Today's Verified Punch Record" : "Selected Date Inspection"}
                   </span>
                   {viewMode === "today" && (
@@ -736,7 +760,16 @@ export default function AttendanceHeatmap({
             </div>
 
             {/* Quick Picker Shortcut */}
-            <div className="flex items-center gap-2">
+            <div data-part="inspector-date" className="flex items-center gap-2">
+              {isEmployee ? (
+                <CustomDatePickerField label="Change date" value={inspectTargetDate}
+                  className={attendanceStyles.customField} align="auto"
+                  onChange={(date) => {
+                    setSpecificDateChoice(date);
+                    setViewMode("daily");
+                    if (onSelectDate) onSelectDate(date, recordMap.get(date));
+                  }} />
+              ) : (
               <button
                 type="button"
                 onClick={handleOpenDatePicker}
@@ -749,11 +782,12 @@ export default function AttendanceHeatmap({
                 <span className="material-symbols-outlined text-[15px]">calendar_today</span>
                 <span>Change Date</span>
               </button>
+              )}
             </div>
           </div>
 
           {/* Dossier Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+          <div data-part="day-metrics" className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
             <div className={`p-3.5 rounded-xl border space-y-1 ${
               isLight ? "bg-white border-slate-200 shadow-xs" : "bg-black/40 border-white/5"
             }`}>
@@ -817,14 +851,14 @@ export default function AttendanceHeatmap({
 
             <div className={`p-3.5 rounded-xl border space-y-1 ${isLight ? "bg-white border-slate-200 shadow-xs" : "bg-black/40 border-white/5"}`}>
               <span className={`text-[10px] uppercase tracking-wider block ${isLight ? "text-slate-500" : "text-gray-400"}`}>Net Work Hours</span>
-              <span className="font-bold block text-sm" style={{ color: isLight ? "#0891b2" : "#2cecf7" }}>
+              <span className="font-bold block text-sm" style={{ color: isEmployee ? "var(--devengine-accent-text)" : isLight ? "#0891b2" : "#2cecf7" }}>
                 {inspectedRecord ? `${inspectedRecord.netWorkHours || inspectedRecord.totalHours || 0} hrs` : "—"}
               </span>
             </div>
           </div>
 
           {/* Break and Extra Information */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+          <div data-part="day-details" className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
             <div className={`p-3 rounded-xl border flex items-center justify-between ${
               isLight ? "bg-white/80 border-slate-200 shadow-xs" : "bg-white/[0.02] border-white/5"
             }`}>
@@ -864,7 +898,12 @@ export default function AttendanceHeatmap({
       {viewMode === "monthly" && (
         <div className="space-y-4">
           {/* Month selector pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 themed-scroll">
+          {isEmployee ? (
+            <CustomSelectField label="Month" value={String(selectedMonthIndex)}
+              className={attendanceStyles.monthField}
+              onChange={(value) => setSelectedMonthIndex(Number(value))}
+              options={MONTH_NAMES.map((label, index) => ({ value: String(index), label }))} />
+          ) : <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 themed-scroll">
             {MONTH_NAMES.map((m, idx) => (
               <button
                 key={m}
@@ -879,10 +918,10 @@ export default function AttendanceHeatmap({
                 {m}
               </button>
             ))}
-          </div>
+          </div>}
 
           {/* 7-column calendar grid */}
-          <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+          <div data-part="month-calendar" className="rounded-2xl border border-white/10 bg-black/40 p-4">
             <div className="grid grid-cols-7 gap-2 mb-2 text-center text-[11px] font-mono font-bold text-gray-400">
               {DAY_LABELS.map((d) => (
                 <div key={d} className="py-1">
@@ -956,18 +995,18 @@ export default function AttendanceHeatmap({
 
       {/* ── VIEW C: 52-WEEK CONTRIBUTION MATRIX (SHOWN IN YEARLY OR AS PERSISTENT EXPLORER) ── */}
       <div className="pt-2">
-        <div className="flex items-center justify-between mb-3">
+        <div data-part="heatmap-heading" className="flex items-center justify-between mb-3">
           <span className={`text-xs font-bold flex items-center gap-2 ${isLight ? "text-slate-800" : "text-gray-200"}`}>
             <span className="w-2 h-2 rounded-full bg-[#2cecf7] shadow-[0_0_8px_#2cecf7] animate-pulse" />
             <span>52-Week Attendance Heatmap Matrix ({selectedYear})</span>
           </span>
           <span className={`text-[10px] font-mono ${isLight ? "text-slate-400" : "text-neutral-500"}`}>
-            Hover cell to inspect telemetry • Click to open record
+            {isEmployee ? "Tap a day to view its record · Scroll to explore the year" : "Hover cell to inspect telemetry • Click to open record"}
           </span>
         </div>
 
         <div className="relative overflow-x-auto pb-2 themed-scroll">
-          <div className="min-w-[820px] w-full">
+          <div data-part="year-grid" className="min-w-[820px] w-full">
             {/* Months Header Labels */}
             <div className={`flex pl-8 pr-2 justify-between text-[10px] font-mono mb-2 select-none font-semibold ${
               isLight ? "text-slate-500" : "text-gray-400"
@@ -989,9 +1028,9 @@ export default function AttendanceHeatmap({
               </div>
 
               {/* 52-Week Matrix columns */}
-              <div className="flex gap-1 sm:gap-1.5 flex-1 justify-between">
+              <div data-part="year-columns" className="flex gap-1 sm:gap-1.5 flex-1 justify-between">
                 {weeks.map((week, wIndex) => (
-                  <div key={wIndex} className="flex flex-col gap-1 sm:gap-1.5 flex-1 items-center">
+                  <div data-part="year-week" key={wIndex} className="flex flex-col gap-1 sm:gap-1.5 flex-1 items-center">
                     {week.map((cell, dIndex) => {
                       const colorClass = getCellColor(cell);
                       const isToday = cell.dateStr === todayStr;
@@ -1000,9 +1039,11 @@ export default function AttendanceHeatmap({
                         <button
                           key={`${wIndex}-${dIndex}`}
                           type="button"
-                          aria-label={cell.dateStr || "Empty cell"}
+                          aria-label={isEmployee ? getCellTitle(cell) || "Empty cell" : cell.dateStr || "Empty cell"}
                           title={getCellTitle(cell)}
                           disabled={!cell.dateStr}
+                          data-part="heatmap-cell"
+                          data-status={cell.record ? effectiveRecordStatus(cell.record) : undefined}
                           onClick={() => {
                             if (cell.dateStr) {
                               setSpecificDateChoice(cell.dateStr);
@@ -1022,6 +1063,12 @@ export default function AttendanceHeatmap({
                             }
                           }}
                           onMouseLeave={() => setHoveredCell(null)}
+                          onFocus={isEmployee ? (event) => {
+                            if (!cell.dateStr) return;
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            setHoveredCell({ cell, centerX: rect.left + rect.width / 2, top: rect.top, bottom: rect.bottom });
+                          } : undefined}
+                          onBlur={isEmployee ? () => setHoveredCell(null) : undefined}
                           className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-[4px] transition-all duration-150 ${colorClass} ${
                             isToday ? "ring-2 ring-[#2cecf7] animate-pulse shadow-[0_0_12px_#2cecf7] z-10 scale-110" : ""
                           } ${
@@ -1134,13 +1181,13 @@ export default function AttendanceHeatmap({
       )}
 
       {/* Legend */}
-      <div className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t text-[11px] font-mono ${
+      <div data-part="matrix-legend" className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t text-[11px] font-mono ${
         isLight ? "border-slate-200 text-slate-500" : "border-white/10 text-neutral-400"
       }`}>
         <span className={isLight ? "text-slate-500" : "text-neutral-500"}>Scheduled Shifts: {assignedOffDays.join(", ")} Off</span>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500" />
+            <span data-part="legend-present" className="w-2.5 h-2.5 rounded-[2px] bg-emerald-500" />
             <span>Present</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -1152,11 +1199,11 @@ export default function AttendanceHeatmap({
             <span>Half Day</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-cyan-500" />
+            <span data-part="legend-remote" className="w-2.5 h-2.5 rounded-[2px] bg-cyan-500" />
             <span>Remote</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-[2px] bg-purple-500" />
+            <span data-part="legend-leave" className="w-2.5 h-2.5 rounded-[2px] bg-purple-500" />
             <span>Leave</span>
           </div>
           <div className="flex items-center gap-1.5">

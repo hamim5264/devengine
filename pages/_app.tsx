@@ -1,3 +1,4 @@
+import { CommunicationProvider } from "@/components/communication/CommunicationProvider";
 import React, { useEffect, useState } from "react";
 import type { AppProps } from "next/app";
 import Link from "next/link";
@@ -46,6 +47,7 @@ function MyApp({ Component, pageProps }: AppProps) {
   }, []);
 
   const currentPath = router.pathname;
+  const isEmployeeRoute = currentPath === "/staff" || currentPath.startsWith("/staff/");
   const isBypassPath = BYPASS_PATHS.some((p) => currentPath.startsWith(p));
 
   // 3. Website Visitor Analytics (Only for public-facing visitors)
@@ -64,6 +66,23 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider>
       <HeaderControlsProvider>
+      <CommunicationProvider>
+      {isEmployeeRoute && <style jsx global>{`
+        /* Keep the employee viewport width stable through loaders and dialogs. */
+        html {
+          scrollbar-gutter: stable;
+          overflow-x: clip;
+        }
+        body {
+          overflow-x: clip;
+        }
+        @supports (min-height: 100svh) {
+          /* Browser toolbar changes should not resize employee screen shells. */
+          .min-h-screen {
+            min-height: 100svh;
+          }
+        }
+      `}</style>}
       {/* Discreet Admin Floating Pill (ONLY visible to admin hamim.leon@gmail.com, NEVER to end users) */}
       {maintenanceConfig?.isEnabled && isAdmin && (
         <aside
@@ -98,6 +117,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </>
       )}
+      </CommunicationProvider>
       </HeaderControlsProvider>
     </ThemeProvider>
   );

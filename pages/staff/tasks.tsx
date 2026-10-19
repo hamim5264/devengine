@@ -11,6 +11,8 @@ import {
 import StaffLayout from "@/components/StaffLayout";
 import HelixLoader from "@/components/HelixLoader";
 import CustomSelectField from "@/components/staff/CustomSelectField";
+import AttachmentPicker from "@/components/common/AttachmentPicker";
+import AttachmentList from "@/components/common/AttachmentList";
 import { EmployeeHeading, EmployeeIcon, EmployeeMetric, EmployeeBadge, EmployeeProgress, EmployeeSearch, EmployeeEmpty, EmployeeLoading, EmployeeDialog } from "@/components/staff/EmployeeUI";
 import styles from "@/components/staff/EmployeeExperience.module.css";
 import type { StaffMember } from "@/types/staff";
@@ -18,6 +20,7 @@ import type {
   EmployeeTask,
   TaskPriority,
   TaskStatus,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 import {
   TASK_PRIORITY_LABELS,
@@ -52,6 +55,7 @@ export default function StaffTasksPage() {
   const [editProgress, setEditProgress] = useState<number>(0);
   const [editNotes, setEditNotes] = useState("");
   const [editSubmissionUrl, setEditSubmissionUrl] = useState("");
+  const [editSubmissionAttachments, setEditSubmissionAttachments] = useState<EcoAttachment[]>([]);
   const [editActualHours, setEditActualHours] = useState<number>(0);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
@@ -151,6 +155,7 @@ export default function StaffTasksPage() {
     setEditProgress(task.progressPercent || 0);
     setEditNotes(task.employeeNotes || "");
     setEditSubmissionUrl(task.submissionUrl || "");
+    setEditSubmissionAttachments(task.submissionAttachments || []);
     setEditActualHours(task.actualHours || 0);
     setUpdateSuccess(false);
     setUpdateError("");
@@ -169,6 +174,7 @@ export default function StaffTasksPage() {
         progressPercent: Number(editProgress),
         employeeNotes: editNotes,
         submissionUrl: editSubmissionUrl,
+        submissionAttachments: editSubmissionAttachments,
         actualHours: Number(editActualHours) || 0,
       });
 
@@ -304,6 +310,12 @@ export default function StaffTasksPage() {
                 <EmployeeProgress value={task.progressPercent} label="Task progress" />
                 {task.adminFeedback && <div className={styles.note}><h3>Admin feedback</h3><p>{task.adminFeedback}</p></div>}
                 {task.submissionUrl && <a className={styles.link} href={task.submissionUrl} target="_blank" rel="noopener noreferrer"><EmployeeIcon>link</EmployeeIcon>View deliverable</a>}
+                {task.adminAttachments && task.adminAttachments.length > 0 && (
+                  <AttachmentList attachments={task.adminAttachments} title="Admin Brief & Attachments" />
+                )}
+                {task.submissionAttachments && task.submissionAttachments.length > 0 && (
+                  <AttachmentList attachments={task.submissionAttachments} title="My Submitted Files" />
+                )}
                 <div className={styles.cardActions}>
                   {timing.locked ? <><button type="button" className={styles.secondaryButton} onClick={() => setViewingTask(task)}><EmployeeIcon>visibility</EmployeeIcon>View Task Details</button><p className={styles.lockHint}>Execution unlocks at the scheduled start time.</p></>
                     : task.status === "completed" ? <button type="button" className={styles.secondaryButton} onClick={() => setViewingTask(task)}><EmployeeIcon>task_alt</EmployeeIcon>Completed · View Details</button>
@@ -334,6 +346,13 @@ export default function StaffTasksPage() {
             <label className={styles.field}>Deliverable URL (optional)
               <input type="url" value={editSubmissionUrl} onChange={(event) => setEditSubmissionUrl(event.target.value)} placeholder="https://github.com/… or your design link" />
             </label>
+            <AttachmentPicker
+              label="Deliverable files / attachments (optional)"
+              hint="Upload project files, PDFs, design exports, or zip archives (max 5 files, up to 10 MB each)"
+              storageFolder={`task-submissions/${selectedTask.id}`}
+              value={editSubmissionAttachments}
+              onChange={setEditSubmissionAttachments}
+            />
             {updateSuccess && <p className={styles.feedback} role="status">Task progress updated successfully!</p>}
             {updateError && <p className={styles.feedback} data-tone="danger" role="alert">{updateError}</p>}
             <div className={styles.formActions}><button type="button" className={styles.secondaryButton} onClick={() => setSelectedTask(null)}>Cancel</button><button type="submit" className={styles.primaryButton} disabled={isUpdating || updateSuccess}>{isUpdating ? "Saving…" : "Save Updates"}<EmployeeIcon>check</EmployeeIcon></button></div>
@@ -357,6 +376,12 @@ export default function StaffTasksPage() {
             {viewingTask.employeeNotes && <div className={styles.note}><h3>Your progress notes</h3><p>{viewingTask.employeeNotes}</p></div>}
             {viewingTask.adminFeedback && <div className={styles.note}><h3>Administrator guidance</h3><p>{viewingTask.adminFeedback}</p></div>}
             {viewingTask.submissionUrl && <a href={viewingTask.submissionUrl} target="_blank" rel="noopener noreferrer" className={styles.link}><EmployeeIcon>link</EmployeeIcon>Open deliverable</a>}
+            {viewingTask.adminAttachments && viewingTask.adminAttachments.length > 0 && (
+              <AttachmentList attachments={viewingTask.adminAttachments} title="Admin Brief & Attachments" />
+            )}
+            {viewingTask.submissionAttachments && viewingTask.submissionAttachments.length > 0 && (
+              <AttachmentList attachments={viewingTask.submissionAttachments} title="Submitted Deliverables & Files" />
+            )}
             <div className={styles.formActions}><button type="button" className={styles.secondaryButton} onClick={() => setViewingTask(null)}>Close</button>
               {!viewingTiming.locked && <button type="button" className={styles.primaryButton} onClick={() => { const task = viewingTask; setViewingTask(null); handleOpenEdit(task); }}>Update Progress<EmployeeIcon>arrow_forward</EmployeeIcon></button>}
             </div>

@@ -56,6 +56,13 @@ export interface AttendanceRecord {
   updatedAt: string;
 }
 
+export interface EcoAttachment {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+}
+
 export interface AttendanceRegularizationRequest {
   id: string;
   staffId: string;
@@ -67,6 +74,7 @@ export interface AttendanceRegularizationRequest {
   clockInTime: string; // e.g. "09:30 AM"
   clockOutTime?: string; // e.g. "06:00 PM"
   reason: string;
+  attachments?: EcoAttachment[];
   status: RequestStatus;
   adminRemark?: string;
   reviewedBy?: string;
@@ -104,6 +112,7 @@ export interface DailyWorkUpdate {
   blockers?: string;
   hoursWorked: number;
   projectLinks?: string;
+  attachments?: EcoAttachment[];
   adminFeedback?: string;
   reviewedByAdmin?: boolean;
   reviewedAt?: string;
@@ -124,6 +133,7 @@ export interface LeaveRequest {
   totalDays: number;
   reason: string;
   emergencyContact?: string;
+  attachments?: EcoAttachment[];
   status: RequestStatus;
   adminRemark?: string;
   reviewedBy?: string;
@@ -154,6 +164,8 @@ export interface EmployeeTask {
   progressPercent: number; // 0 - 100
   employeeNotes?: string;
   submissionUrl?: string; // GitHub PR, Figma link, Drive link, etc.
+  adminAttachments?: EcoAttachment[];
+  submissionAttachments?: EcoAttachment[];
   adminFeedback?: string;
   estimatedHours?: number;
   actualHours?: number;

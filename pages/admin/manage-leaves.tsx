@@ -13,6 +13,7 @@ import {
 import type { StaffMember } from "@/types/staff";
 import type { LeaveRequest, LeaveRequestStatus } from "@/types/staffEcoSystem";
 import { LEAVE_TYPE_LABELS } from "@/types/staffEcoSystem";
+import AttachmentList from "@/components/common/AttachmentList";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
@@ -274,8 +275,13 @@ export default function ManageLeavesPage() {
                         <td className="py-3.5 px-4 font-mono text-cyan-400">
                           {l.totalDays} {l.totalDays === 1 ? "day" : "days"}
                         </td>
-                        <td className="py-3.5 px-4 text-gray-300 max-w-xs truncate">
-                          {l.reason}
+                        <td className="py-3.5 px-4 text-gray-300 max-w-xs">
+                          <div className="truncate">{l.reason}</div>
+                          {l.attachments && l.attachments.length > 0 && (
+                            <div className="mt-1.5">
+                              <AttachmentList attachments={l.attachments} showImagesAsThumbnails={false} />
+                            </div>
+                          )}
                         </td>
                         <td className="py-3.5 px-4">
                           {l.status === "approved" ? (
@@ -361,6 +367,14 @@ export default function ManageLeavesPage() {
                     <span className="text-gray-500">Emergency Phone:</span>{" "}
                     {reviewingLeave.emergencyContact}
                   </p>
+                )}
+                {reviewingLeave.attachments && reviewingLeave.attachments.length > 0 && (
+                  <div className="pt-2 border-t border-white/[0.08]">
+                    <span className="text-[11px] text-gray-400 block mb-1.5 font-mono uppercase tracking-wider">
+                      Attached Documents ({reviewingLeave.attachments.length})
+                    </span>
+                    <AttachmentList attachments={reviewingLeave.attachments} />
+                  </div>
                 )}
               </div>
 

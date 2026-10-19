@@ -80,8 +80,12 @@ export default function StaffAgreementPage() {
         {!agreement ? <>
           <EmployeeEmpty icon="description" title="Agreement Under Preparation"
             description="Your official employment agreement is currently being finalized by the DevEngine HR & legal department. Once executed, your full terms, compensation schedule, and signed legal contract will appear here.">
-            <div className={styles.actions}><EmployeeBadge tone="pending">Awaiting agreement</EmployeeBadge><a className={styles.secondaryButton} href="mailto:hamim.leon@gmail.com"><EmployeeIcon>mail</EmployeeIcon>Contact HR</a></div>
-            <a className={styles.link} href="mailto:hamim.leon@gmail.com">hamim.leon@gmail.com</a>
+            <div className={styles.actions}>
+              <EmployeeBadge tone="pending">Awaiting agreement</EmployeeBadge>
+              <a className={styles.secondaryButton} href="mailto:devenginesoftsolution@gmail.com">
+                <EmployeeIcon>mail</EmployeeIcon>Contact Administrator
+              </a>
+            </div>
           </EmployeeEmpty>
           <div className={styles.schedule} aria-label="Agreement sections available once prepared">
             <div><p><EmployeeIcon>payments</EmployeeIcon>Compensation details</p><strong>Payment terms & schedule</strong></div>

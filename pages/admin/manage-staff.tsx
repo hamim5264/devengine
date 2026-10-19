@@ -33,10 +33,13 @@ import {
   createAgreement,
   generateNextAgreementNumber,
 } from "@/lib/services/agreementService";
+import AttachmentPicker from "@/components/common/AttachmentPicker";
+import AttachmentList from "@/components/common/AttachmentList";
 import type {
   EmployeeTask,
   TaskPriority,
   TaskStatus,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 import {
   TASK_PRIORITY_LABELS,
@@ -442,6 +445,7 @@ export default function ManageStaffPage() {
     dueDate: string;
     dueTime: string;
     estimatedHours: number;
+    adminAttachments?: EcoAttachment[];
   }>({
     title: "",
     description: "",
@@ -452,6 +456,7 @@ export default function ManageStaffPage() {
     dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
     dueTime: "18:00",
     estimatedHours: 8,
+    adminAttachments: [],
   });
   const [assigningTask, setAssigningTask] = useState(false);
 
@@ -704,6 +709,7 @@ export default function ManageStaffPage() {
       dueDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
       dueTime: "18:00",
       estimatedHours: 8,
+      adminAttachments: [],
     });
     setShowAssignTaskModal(true);
   };
@@ -727,6 +733,7 @@ export default function ManageStaffPage() {
         dueDate: taskForm.dueDate,
         dueTime: taskForm.dueTime,
         estimatedHours: taskForm.estimatedHours,
+        adminAttachments: taskForm.adminAttachments || [],
       });
       setNotice({ type: "success", text: `Task assigned to ${taskAssigneeStaff.name} successfully!` });
       setShowAssignTaskModal(false);
@@ -2105,6 +2112,16 @@ export default function ManageStaffPage() {
                 </div>
               </div>
 
+              <div className="pt-2">
+                <AttachmentPicker
+                  label="Task Attachments & Spec Files (optional)"
+                  hint="Attach design files, specifications, guidelines, or assets (max 5 files, up to 10 MB each)"
+                  storageFolder="admin-tasks"
+                  value={taskForm.adminAttachments || []}
+                  onChange={(files) => setTaskForm({ ...taskForm, adminAttachments: files })}
+                />
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
@@ -2257,6 +2274,20 @@ export default function ManageStaffPage() {
                           </div>
                         )}
                       </div>
+                    )}
+
+                    {task.adminAttachments && task.adminAttachments.length > 0 && (
+                      <AttachmentList
+                        attachments={task.adminAttachments}
+                        title="Admin Brief & Attachments"
+                      />
+                    )}
+
+                    {task.submissionAttachments && task.submissionAttachments.length > 0 && (
+                      <AttachmentList
+                        attachments={task.submissionAttachments}
+                        title="Employee Submitted Files"
+                      />
                     )}
 
                     {/* Admin Review & Feedback Box */}

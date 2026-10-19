@@ -32,6 +32,16 @@ export default function StaffLoginPage() {
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
+  // Email format validation: requires proper RFC email format (e.g. user@domain.com or user@gmail.com)
+  const isEmailFormatValid = (val: string) => {
+    if (!val || val.trim().length === 0) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  };
+
+  const hasEmailWarning =
+    email.trim().length > 0 &&
+    (!email.includes("@") || !email.includes(".") || !isEmailFormatValid(email));
+
   // ── Auto-redirect if already logged in as staff ──
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -212,6 +222,7 @@ export default function StaffLoginPage() {
               emailLength={email.length}
               showPass={showPass}
               hasError={Boolean(error)}
+              hasWarning={hasEmailWarning && !error}
               loading={loading}
               isLight={isLight}
             />
@@ -314,21 +325,32 @@ export default function StaffLoginPage() {
                 >
                   <div
                     className="pl-3.5 pr-2.5 flex items-center justify-center pointer-events-none"
-                    style={{ color: "#2cecf7" }}
+                    style={{ color: hasEmailWarning && !error ? "#f59e0b" : "#2cecf7" }}
                   >
-                    <span className="material-symbols-outlined text-[18px]">mail</span>
+                    <span className="material-symbols-outlined text-[18px]">
+                      {hasEmailWarning && !error ? "warning" : "mail"}
+                    </span>
                   </div>
                   <input
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (error) setError("");
+                    }}
                     onFocus={() => setFocusedField("email")}
                     onBlur={() => setFocusedField((cur) => (cur === "email" ? null : cur))}
                     placeholder="name.devengine@gmail.com"
                     className="staff-login-input w-full bg-transparent pr-4 text-xs sm:text-sm focus:outline-none font-mono text-[var(--devengine-text)] placeholder:text-gray-400 placeholder:opacity-70 transition-colors"
                   />
                 </div>
+                {hasEmailWarning && !error && (
+                  <div className="flex items-center gap-1.5 pt-1 text-[11px] font-mono text-amber-500 animate-fadeIn">
+                    <span className="material-symbols-outlined text-[13px]">warning</span>
+                    <span>Please enter a valid email format (e.g. name.devengine@gmail.com)</span>
+                  </div>
+                )}
               </div>
 
               {/* Password Input */}
@@ -362,7 +384,10 @@ export default function StaffLoginPage() {
                     type={showPass ? "text" : "password"}
                     required
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (error) setError("");
+                    }}
                     onFocus={() => setFocusedField("password")}
                     onBlur={() => setFocusedField((cur) => (cur === "password" ? null : cur))}
                     placeholder="••••••••••••"
@@ -412,6 +437,21 @@ export default function StaffLoginPage() {
                   </>
                 )}
               </button>
+
+              {/* Forgot Password Link */}
+              <div className="pt-3 text-center">
+                <span className="text-xs text-[var(--devengine-muted)]">Forgot password? </span>
+                <a
+                  href="mailto:devenginesoftsolution@gmail.com?subject=DevEngine%20Staff%20Portal%20-%20Password%20Reset%20Request&body=Hello%20DevEngine%20Administration%2C%0A%0AI%20need%20assistance%20with%20resetting%20my%20DevEngine%20employee%20portal%20password.%0A%0AMy%20Corporate%20Email%3A%20%0AMy%20Full%20Name%3A%20%0A%0AThank%20you."
+                  className="text-xs font-semibold text-[#2cecf7] hover:underline inline-flex items-center gap-1 transition-colors group cursor-pointer"
+                  title="Contact Administration via devenginesoftsolution@gmail.com"
+                >
+                  <span>Contact Administration</span>
+                  <span className="material-symbols-outlined text-[13px] transition-transform group-hover:translate-x-0.5">
+                    mail
+                  </span>
+                </a>
+              </div>
             </form>
 
             {/* Security Notice */}

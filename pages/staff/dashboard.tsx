@@ -29,6 +29,7 @@ import StaffLayout from "@/components/StaffLayout";
 import AttendanceHeatmap from "@/components/AttendanceHeatmap";
 import CustomDatePickerField from "@/components/staff/CustomDatePickerField";
 import CustomSelectField, { SelectOption } from "@/components/staff/CustomSelectField";
+import AttachmentPicker from "@/components/common/AttachmentPicker";
 import HelixLoader from "@/components/HelixLoader";
 import { useTheme } from "@/context/ThemeContext";
 import type { StaffMember } from "@/types/staff";
@@ -41,6 +42,7 @@ import type {
   BreakType,
   EmployeeTask,
   TaskStatus,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 import {
   LEAVE_TYPE_LABELS,
@@ -149,6 +151,76 @@ const LEAVE_OPTIONS: SelectOption<LeaveType>[] = [
   },
 ];
 
+const TASK_STATUS_OPTIONS: SelectOption<TaskStatus>[] = [
+  {
+    value: "todo",
+    label: "To Do",
+    description: "Scheduled / backlog item",
+    iconBg: "bg-slate-500/15",
+    iconColor: "text-slate-400",
+    badge: "Queued",
+    icon: (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="9" />
+      </svg>
+    ),
+  },
+  {
+    value: "in_progress",
+    label: "In Progress",
+    description: "Actively working on this right now",
+    iconBg: "bg-cyan-500/15",
+    iconColor: "text-[#2cecf7]",
+    badge: "Active",
+    icon: (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+      </svg>
+    ),
+  },
+  {
+    value: "in_review",
+    label: "In Review",
+    description: "Submitted for QA or lead review",
+    iconBg: "bg-amber-500/15",
+    iconColor: "text-amber-400",
+    badge: "Review",
+    icon: (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    ),
+  },
+  {
+    value: "completed",
+    label: "Completed",
+    description: "Done and verified",
+    iconBg: "bg-emerald-500/15",
+    iconColor: "text-emerald-400",
+    badge: "Done",
+    icon: (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    ),
+  },
+  {
+    value: "blocked",
+    label: "Blocked",
+    description: "Blocked by dependency or waiting",
+    iconBg: "bg-rose-500/15",
+    iconColor: "text-rose-400",
+    badge: "Blocked",
+    icon: (
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+      </svg>
+    ),
+  },
+];
+
 export default function StaffDashboard() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -201,12 +273,20 @@ export default function StaffDashboard() {
   const [missedSuccessMsg, setMissedSuccessMsg] = useState("");
   const [missedErrorMsg, setMissedErrorMsg] = useState("");
 
-  const [workForm, setWorkForm] = useState({
+  const [workForm, setWorkForm] = useState<{
+    tasksCompleted: string;
+    tasksInProgress: string;
+    blockers: string;
+    hoursWorked: number;
+    projectLinks: string;
+    attachments: EcoAttachment[];
+  }>({
     tasksCompleted: "",
     tasksInProgress: "",
     blockers: "",
     hoursWorked: 8,
     projectLinks: "",
+    attachments: [],
   });
   const [isSubmittingWork, setIsSubmittingWork] = useState(false);
   const [workSuccessMsg, setWorkSuccessMsg] = useState("");
@@ -393,6 +473,7 @@ export default function StaffDashboard() {
           blockers: work.blockers || "",
           hoursWorked: work.hoursWorked || 8,
           projectLinks: work.projectLinks || "",
+          attachments: work.attachments || [],
         });
       }
     } catch (err) {
@@ -620,6 +701,7 @@ export default function StaffDashboard() {
         blockers: workForm.blockers,
         hoursWorked: Number(workForm.hoursWorked) || 0,
         projectLinks: workForm.projectLinks,
+        attachments: workForm.attachments,
       });
       setTodayWorkUpdate(updated);
       setWorkSuccessMsg("Work update saved successfully!");
@@ -1877,24 +1959,17 @@ export default function StaffDashboard() {
               </div>
 
               <form onSubmit={handleSaveQuickTask} className="space-y-4">
-                <div>
-                  <label className={`text-xs font-semibold block mb-1.5 ${isLight ? "text-slate-700" : "text-neutral-300"}`}>Status</label>
-                  <select
-                    value={taskStatusChoice}
-                    onChange={(e) => setTaskStatusChoice(e.target.value as TaskStatus)}
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-xs transition-all outline-none ${
-                      isLight
-                        ? "bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:border-[#2cecf7]"
-                        : "bg-black/40 border border-white/10 text-white focus:border-[#2cecf7]"
-                    }`}
-                  >
-                    <option value="todo">To Do</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="in_review">In Review</option>
-                    <option value="completed">Completed</option>
-                    <option value="blocked">Blocked</option>
-                  </select>
-                </div>
+                <CustomSelectField<TaskStatus>
+                  label="Status"
+                  value={taskStatusChoice}
+                  onChange={(val) => {
+                    setTaskStatusChoice(val);
+                    if (val === "completed" && taskProgressChoice < 100) {
+                      setTaskProgressChoice(100);
+                    }
+                  }}
+                  options={TASK_STATUS_OPTIONS}
+                />
 
                 <div>
                   <div className={`flex justify-between text-xs font-semibold mb-1.5 ${isLight ? "text-slate-700" : "text-neutral-300"}`}>
@@ -2287,6 +2362,14 @@ export default function StaffDashboard() {
                     }`}
                   />
                 </div>
+
+                <AttachmentPicker
+                  label="Attachments (Optional)"
+                  hint="PDF, images, documents (up to 10 MB, max 5)"
+                  storageFolder={`work-updates/${staffData?.id || "general"}`}
+                  value={workForm.attachments}
+                  onChange={(attachments) => setWorkForm({ ...workForm, attachments })}
+                />
 
                 {workSuccessMsg && (
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 text-xs font-semibold text-center">

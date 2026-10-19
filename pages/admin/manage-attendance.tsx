@@ -26,6 +26,7 @@ import type {
   OffDaySwapRequest,
 } from "@/types/staffEcoSystem";
 import { ATTENDANCE_STATUS_LABELS } from "@/types/staffEcoSystem";
+import AttachmentList from "@/components/common/AttachmentList";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
@@ -636,8 +637,13 @@ export default function ManageAttendancePage() {
                         <td className="py-3 px-4 whitespace-nowrap text-neutral-200">
                           {req.clockInTime} – {req.clockOutTime || "N/A"}
                         </td>
-                        <td className="py-3 px-4 text-neutral-300 max-w-xs truncate">
-                          {req.reason}
+                        <td className="py-3 px-4 text-neutral-300 max-w-xs">
+                          <div className="truncate">{req.reason}</div>
+                          {req.attachments && req.attachments.length > 0 && (
+                            <div className="mt-1">
+                              <AttachmentList attachments={req.attachments} showImagesAsThumbnails={false} />
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
                           <span
@@ -779,6 +785,14 @@ export default function ManageAttendancePage() {
                   <span className="text-neutral-400">Reason:</span>{" "}
                   <span className="text-neutral-200">{reviewingReq.reason}</span>
                 </div>
+                {reviewingReq.attachments && reviewingReq.attachments.length > 0 && (
+                  <div className="pt-2 border-t border-white/10">
+                    <span className="text-[11px] text-neutral-400 block mb-1.5 uppercase font-mono tracking-wider">
+                      Attached Documents ({reviewingReq.attachments.length})
+                    </span>
+                    <AttachmentList attachments={reviewingReq.attachments} />
+                  </div>
+                )}
               </div>
 
               <div>

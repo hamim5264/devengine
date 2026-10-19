@@ -91,6 +91,8 @@ service cloud.firestore {
       allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['uid', 'name', 'avatarUrl', 'role', 'status', 'departmentIds', 'chatSuspended']) &&
         request.resource.data.uid == uid && request.resource.data.name is string &&
         request.resource.data.departmentIds is list && request.resource.data.chatSuspended is bool;
+      allow update: if isStaff() && request.auth.uid == uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatarUrl']);
       allow delete: if isAdmin();
     }
     match /studio_departments/{id} {
@@ -106,12 +108,17 @@ service cloud.firestore {
       allow create: if chatEnabled() && request.resource.data.keys().hasOnly(['kind', 'participantIds', 'departmentId', 'title', 'description', 'avatarUrl', 'createdAt', 'deleted']) &&
         request.resource.data.deleted == false &&
         (isAdmin() || (request.resource.data.kind == 'direct' && validDirect(request.resource.data)));
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() || (canSendChat(resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt', 'lastSenderId', 'lastMessageId']) &&
+        request.resource.data.lastSenderId == request.auth.uid);
+      allow delete: if isAdmin();
       match /messages/{messageId} {
         allow read: if canReadChat(existingChat(id));
-        allow create: if canSendChat(existingChat(id)) && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt', 'sentAt', 'replyTo', 'replyText', 'replyName']) &&
+        allow create: if canSendChat(existingChat(id)) &&
+          request.resource.data.keys().hasOnly(['senderId', 'senderName', 'text', 'createdAt', 'sentAt', 'replyTo', 'replyText', 'replyName', 'attachments']) &&
           request.resource.data.senderId == request.auth.uid && request.resource.data.senderName == studioPerson(request.auth.uid).name &&
-          request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 4000 &&
+          request.resource.data.text is string && request.resource.data.text.size() <= 4000 &&
+          (request.resource.data.text.size() > 0 || ('attachments' in request.resource.data && request.resource.data.attachments is list && request.resource.data.attachments.size() > 0)) &&
           request.resource.data.createdAt is string && request.resource.data.createdAt.size() == 24 && request.resource.data.sentAt == request.time &&
           request.resource.data.replyText is string && request.resource.data.replyText.size() <= 180 &&
           (request.resource.data.replyTo == '' || exists(/databases/$(database)/documents/studio_conversations/$(id)/messages/$(request.resource.data.replyTo)));
@@ -154,7 +161,7 @@ service cloud.firestore {
     match /studio_user_settings/{uid} {
       allow read: if studioMember() && uid == request.auth.uid;
       allow create, update: if studioMember() && uid == request.auth.uid && request.resource.data.keys().hasOnly(['background']) &&
-        request.resource.data.background in ['aurora', 'grid', 'paper', 'stars', 'calm'];
+        request.resource.data.background in ['aurora', 'grid', 'paper', 'stars', 'calm', 'cyber', 'neon', 'hex', 'topo', 'nebula'];
       match /chats/{chatId} {
         allow read: if studioMember() && uid == request.auth.uid;
         allow create, update: if studioMember() && uid == request.auth.uid &&
@@ -181,6 +188,10 @@ service cloud.firestore {
 
       // Staff can read their own record (staffId == auth uid)
       allow read: if isSignedIn() && request.auth.uid == staffId;
+
+      // Staff can update their own name, avatarUrl and updatedAt
+      allow update: if isStaff() && request.auth.uid == staffId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatarUrl', 'updatedAt']);
     }
 
     /* =========================

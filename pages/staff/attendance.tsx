@@ -27,11 +27,14 @@ import type {
   AttendanceRecord,
   AttendanceRegularizationRequest,
   BreakType,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 import {
   ATTENDANCE_STATUS_LABELS,
   BREAK_TYPE_LABELS,
 } from "@/types/staffEcoSystem";
+import AttachmentPicker from "@/components/common/AttachmentPicker";
+import AttachmentList from "@/components/common/AttachmentList";
 
 function AttendanceIcon({ children }: { children: string }) {
   return <span className="material-symbols-outlined" aria-hidden="true">{children}</span>;
@@ -64,7 +67,9 @@ function AttendanceDialog({ title, icon, onClose, children }: {
           <AttendanceIcon>close</AttendanceIcon>
         </button>
       </div>
-      {children}
+      <div className={styles.dialogBody}>
+        {children}
+      </div>
     </dialog>
   );
 }
@@ -96,11 +101,18 @@ export default function StaffAttendancePage() {
 
   // Missed Request Modal
   const [showMissedModal, setShowMissedModal] = useState(false);
-  const [missedForm, setMissedForm] = useState({
+  const [missedForm, setMissedForm] = useState<{
+    targetDate: string;
+    clockInTime: string;
+    clockOutTime: string;
+    reason: string;
+    attachments: EcoAttachment[];
+  }>({
     targetDate: "",
     clockInTime: "09:30 AM",
     clockOutTime: "06:30 PM",
     reason: "",
+    attachments: [],
   });
   const [isSubmittingMissed, setIsSubmittingMissed] = useState(false);
   const [missedSuccess, setMissedSuccess] = useState("");
@@ -224,6 +236,7 @@ export default function StaffAttendancePage() {
         clockInTime: missedForm.clockInTime,
         clockOutTime: missedForm.clockOutTime,
         reason: missedForm.reason,
+        attachments: missedForm.attachments,
       });
       setMissedRequests((prev) => [req, ...prev]);
       setMissedSuccess("Regularization request submitted to admin for approval.");
@@ -235,6 +248,7 @@ export default function StaffAttendancePage() {
           clockInTime: "09:30 AM",
           clockOutTime: "06:30 PM",
           reason: "",
+          attachments: [],
         });
       }, 1500);
     } catch (err: any) {
@@ -378,7 +392,14 @@ export default function StaffAttendancePage() {
                       <tr key={req.id}>
                         <td data-label="Target date" className={styles.dateCell}>{req.targetDate}</td>
                         <td data-label="Claimed hours">{req.clockInTime} – {req.clockOutTime || "N/A"}</td>
-                        <td data-label="Reason" className={styles.notesCell}>{req.reason}</td>
+                        <td data-label="Reason" className={styles.notesCell}>
+                          <div>{req.reason}</div>
+                          {req.attachments && req.attachments.length > 0 && (
+                            <div style={{ marginTop: 5 }}>
+                              <AttachmentList attachments={req.attachments} />
+                            </div>
+                          )}
+                        </td>
                         <td data-label="Status"><AttendanceStatus status={req.status}>{req.status}</AttendanceStatus></td>
                         <td data-label="Admin remark" className={styles.notesCell}>{req.adminRemark || "—"}</td>
                         <td data-label="Submitted">{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "—"}</td>
@@ -429,6 +450,14 @@ export default function StaffAttendancePage() {
               <label className={styles.field}>Reason for the missed punch
                 <textarea required rows={4} value={missedForm.reason} onChange={(event) => setMissedForm({ ...missedForm, reason: event.target.value })} placeholder="Tell us what happened on this day…" />
               </label>
+              <AttachmentPicker
+                label="Supporting documents (Optional)"
+                hint="Max 5 files · up to 10 MB each"
+                folder="attendance_attachments"
+                prefix={staffData?.id}
+                value={missedForm.attachments}
+                onChange={(attachments) => setMissedForm((form) => ({ ...form, attachments }))}
+              />
               {!missedForm.targetDate && <p className={styles.fieldHint}>Select a past date to submit your request.</p>}
               {missedSuccess && <p className={styles.successMessage} role="status">{missedSuccess}</p>}
               {missedError && <p className={styles.errorMessage} role="alert">{missedError}</p>}

@@ -11,9 +11,16 @@ export interface StudioConversation {
   title: string; description: string; avatarUrl: string; createdAt: string; deleted: boolean;
   lastMessage?: string; lastMessageAt?: string; lastSenderId?: string;
 }
+export interface StudioMessageAttachment {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+}
 export interface StudioMessage {
   id: string; senderId: string; senderName: string; text: string; createdAt: string;
   replyTo: string; replyText: string; replyName: string;
+  attachments?: StudioMessageAttachment[];
 }
 export interface StudioNotification {
   id: string; recipientId: string; title: string; body: string; href: string;
@@ -24,4 +31,15 @@ export interface StudioNotice {
   authorId: string; createdAt: string; updatedAt: string;
 }
 export interface ConversationState { archived?: boolean; lastReadAt?: string }
-export type ChatBackground = 'aurora' | 'grid' | 'paper' | 'stars' | 'calm';
+export type ChatBackground =
+  | 'aurora'
+  | 'grid'
+  | 'paper'
+  | 'stars'
+  | 'calm'
+  | 'cyber'
+  | 'neon'
+  | 'hex'
+  | 'topo'
+  | 'nebula';
+

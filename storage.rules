@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Universal rules for DevEngine workspace & eco-system
+    match /{allPaths=**} {
+      // 1. Public read so images, PDFs, deliverables, and attachments render everywhere
+      allow read: if true;
+
+      // 2. Allow writes with 25 MB size limit (No 30-day expiration, zero blockers)
+      // Any authenticated admin/staff, or app client uploads safely under 25 MB
+      allow write: if request.resource.size < 25 * 1024 * 1024;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, runTransaction, setDoc, updateDoc, where, writeBatch, type DocumentData, type Query, type FirestoreError } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import type { Department, StudioPerson, StudioConversation, StudioMessage, ChatBackground } from '@/types/communication';
+import type { Department, StudioPerson, StudioConversation, StudioMessage, StudioMessageAttachment, ChatBackground } from '@/types/communication';
 
 export const communicationCollections = { people: 'studio_people', departments: 'studio_departments', chats: 'studio_conversations', notices: 'studio_notices', notifications: 'studio_notifications', users: 'studio_user_settings' };
 const C = communicationCollections;
@@ -88,9 +88,38 @@ export async function openDirectMessage(me: StudioPerson, person: StudioPerson) 
   await setDoc(conversationStateRef(me.uid, id), { archived: false }, { merge: true });
   return id;
 }
-export async function sendStudioMessage(chatId: string, me: StudioPerson, text: string, reply?: StudioMessage | null) {
-  const clean = text.trim(); if (!clean || clean.length > 4000) throw new Error('Write a message of up to 4,000 characters.');
-  await setDoc(doc(collection(db, C.chats, chatId, 'messages')), { senderId: me.uid, senderName: me.name, text: clean, createdAt: nowISO(), sentAt: serverTimestamp(), replyTo: reply?.id || '', replyText: reply?.text.slice(0, 180) || '', replyName: reply?.senderName || '' });
+export async function sendStudioMessage(chatId: string, me: StudioPerson, text: string, reply?: StudioMessage | null, attachments?: StudioMessageAttachment[]) {
+  const clean = text.trim();
+  const hasAttachments = Boolean(attachments && attachments.length > 0);
+  if (!clean && !hasAttachments) throw new Error('Write a message or attach a file.');
+  if (clean.length > 4000) throw new Error('Write a message of up to 4,000 characters.');
+  const msgDoc: Record<string, any> = {
+    senderId: me.uid,
+    senderName: me.name,
+    text: clean,
+    createdAt: nowISO(),
+    sentAt: serverTimestamp(),
+    replyTo: reply?.id || '',
+    replyText: reply?.text.slice(0, 180) || '',
+    replyName: reply?.senderName || '',
+  };
+  if (hasAttachments) {
+    msgDoc.attachments = attachments;
+  }
+  const messageRef = doc(collection(db, C.chats, chatId, 'messages'));
+  await setDoc(messageRef, msgDoc);
+
+  const preview = clean || (hasAttachments ? (attachments!.length === 1 ? `📎 ${attachments![0].name}` : `📎 ${attachments!.length} attachments`) : '');
+  try {
+    await updateDoc(doc(db, C.chats, chatId), {
+      lastMessage: preview,
+      lastMessageAt: nowISO(),
+      lastSenderId: me.uid,
+      lastMessageId: messageRef.id,
+    });
+  } catch (err) {
+    // Non-blocking
+  }
 }
 export const watchMessages = (id: string, callback: (messages: StudioMessage[]) => void, error: (e: FirestoreError) => void, count = 60) => watchStudio<StudioMessage>(query(collection(db, C.chats, id, 'messages'), orderBy('sentAt', 'desc'), limit(count)), rows => callback(rows.map(row => { const sentAt = (row as unknown as { sentAt?: { toDate: () => Date } }).sentAt; return { ...row, createdAt: sentAt?.toDate ? sentAt.toDate().toISOString() : row.createdAt }; }).reverse()), error);
 export const setChatBackground = (uid: string, background: ChatBackground) => setDoc(userSettingRef(uid), { background }, { merge: true });

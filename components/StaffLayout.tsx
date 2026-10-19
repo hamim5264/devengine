@@ -1,5 +1,5 @@
 import { CommunicationHeader } from "@/components/communication/CommunicationEntry";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,6 +15,8 @@ import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
 import LandingFooter from "@/components/landing/LandingFooter";
 import styles from "@/components/staff/StaffLayout.module.css";
+import DevKittyAnimatedIcon from "@/components/common/DevKittyAnimatedIcon";
+import { uploadStaffAvatar, updateStaffSelfProfile } from "@/lib/services/staffService";
 
 // ── Nav structure matching AdminLayout, keyed by module ──
 interface NavItem {
@@ -148,6 +150,18 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   const [devKittyEnabled, setDevKittyEnabled] = useState(true);
   const [profileCopied, setProfileCopied] = useState(false);
 
+  // Profile Edit State (Name and Avatar from File / URL)
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
+  const [avatarInputMode, setAvatarInputMode] = useState<"file" | "url">("file");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveError, setProfileSaveError] = useState("");
+  const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // ── Auth + Staff data ──
   useEffect(() => {
     const unsub = subscribeStudioAccess(undefined, ({ staff, authorized }) => {
@@ -218,6 +232,91 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
     localStorage.removeItem("isStaff");
     localStorage.removeItem("staffUid");
     router.push("/staff");
+  };
+
+  const handleStartEditProfile = () => {
+    if (!staffData) return;
+    setEditName(staffData.name);
+    setEditAvatarUrl(staffData.avatarUrl || "");
+    setAvatarPreviewUrl(staffData.avatarUrl || "");
+    setAvatarFile(null);
+    setAvatarInputMode("file");
+    setProfileSaveError("");
+    setProfileSaveSuccess(false);
+    setIsEditingProfile(true);
+  };
+
+  const handleCancelEditProfile = () => {
+    setIsEditingProfile(false);
+    setAvatarFile(null);
+    setProfileSaveError("");
+    setProfileSaveSuccess(false);
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setProfileSaveError("Please select an image file (PNG, JPG, WebP, etc.).");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setProfileSaveError("Image file size must be less than 10MB.");
+      return;
+    }
+    setProfileSaveError("");
+    setAvatarFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarPreviewUrl(objectUrl);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!staffData) return;
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
+      setProfileSaveError("Please enter your display name.");
+      return;
+    }
+
+    setIsSavingProfile(true);
+    setProfileSaveError("");
+
+    try {
+      let finalAvatarUrl = avatarPreviewUrl.trim();
+
+      // If a local file was chosen, upload to Firebase Storage
+      if (avatarFile) {
+        finalAvatarUrl = await uploadStaffAvatar(avatarFile, staffData.uid || staffData.id);
+      } else if (avatarInputMode === "url") {
+        finalAvatarUrl = editAvatarUrl.trim();
+      }
+
+      await updateStaffSelfProfile(staffData.uid || staffData.id, {
+        name: trimmedName,
+        avatarUrl: finalAvatarUrl,
+      });
+
+      setStaffData((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: trimmedName,
+              avatarUrl: finalAvatarUrl,
+            }
+          : null
+      );
+
+      setProfileSaveSuccess(true);
+      setTimeout(() => {
+        setIsEditingProfile(false);
+        setProfileSaveSuccess(false);
+      }, 900);
+    } catch (err: any) {
+      console.error("Save profile error:", err);
+      setProfileSaveError(err?.message || "Failed to update profile. Please try again.");
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   // ── Loading state ──
@@ -670,203 +769,523 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
             4. EMPLOYEE PROFILE & PREFERENCES MODAL
         ───────────────────────────────────────────────────────────── */}
         {showProfileModal && staffData && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border ${
-              isLight ? "bg-white text-slate-900 border-slate-200" : "bg-[#0a0f1d] text-white border-white/10"
-            }`}>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+            onClick={() => {
+              setShowProfileModal(false);
+              setIsEditingProfile(false);
+            }}
+          >
+            <div
+              className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border ${
+                isLight ? "bg-white text-slate-900 border-slate-200" : "bg-[#0a0f1d] text-white border-white/10"
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
-              <div className={`relative p-6 border-b ${
+              <div className={`relative p-5 sm:p-6 border-b ${
                 isLight ? "bg-gradient-to-r from-cyan-500/10 via-white to-blue-500/10 border-slate-200" : "bg-gradient-to-r from-[#2cecf7]/15 via-[#0a0f1d] to-blue-500/10 border-white/10"
               }`}>
                 <button
                   type="button"
-                  onClick={() => setShowProfileModal(false)}
-                  className={`absolute top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer ${
+                  onClick={() => {
+                    setShowProfileModal(false);
+                    setIsEditingProfile(false);
+                  }}
+                  className={`absolute top-4 sm:top-5 right-4 sm:right-5 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer ${
                     isLight ? "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900" : "bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white"
                   }`}
+                  title="Close"
                 >
                   <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
 
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#2cecf7]/15 border-2 border-[#2cecf7]/40 flex items-center justify-center flex-shrink-0 shadow-lg">
-                    {staffData.avatarUrl ? (
-                      <img src={staffData.avatarUrl} alt={staffData.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xl font-bold text-[#2cecf7]">
-                        {staffData.name.charAt(0).toUpperCase()}
+                {isEditingProfile ? (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCancelEditProfile}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer ${
+                        isLight ? "bg-slate-100 hover:bg-slate-200 text-slate-700" : "bg-white/5 hover:bg-white/15 text-gray-300"
+                      }`}
+                      title="Back to profile details"
+                    >
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#2cecf7] bg-[#2cecf7]/10 px-2.5 py-0.5 rounded-full border border-[#2cecf7]/25">
+                        Profile Customization
                       </span>
-                    )}
+                      <h3 className={`text-lg sm:text-xl font-bold mt-1 ${isLight ? "text-slate-900" : "text-white"}`}>Edit Account Profile</h3>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[#2cecf7] bg-[#2cecf7]/10 px-2.5 py-0.5 rounded-full border border-[#2cecf7]/25">
-                      Employee Account Profile
-                    </span>
-                    <h3 className={`text-xl font-bold mt-1 truncate ${isLight ? "text-slate-900" : "text-white"}`}>{staffData.name}</h3>
-                    <p className={`text-xs font-mono flex items-center gap-1.5 mt-0.5 ${isLight ? "text-slate-600" : "text-gray-400"}`}>
-                      <span>{staffData.email}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyText(staffData.email)}
-                        className="text-gray-400 hover:text-[#2cecf7] transition cursor-pointer p-0.5 rounded"
-                        title="Copy email address"
-                      >
-                        {profileCopied ? (
-                          <span className="text-emerald-500 font-bold text-xs">✓ Copied</span>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div
+                      onClick={handleStartEditProfile}
+                      className="relative group cursor-pointer shrink-0"
+                      title="Click to edit picture & name"
+                    >
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#2cecf7]/15 border-2 border-[#2cecf7]/40 flex items-center justify-center shadow-lg group-hover:border-[#2cecf7] transition">
+                        {staffData.avatarUrl ? (
+                          <img src={staffData.avatarUrl} alt={staffData.name} className="w-full h-full object-cover" />
                         ) : (
-                          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                          </svg>
+                          <span className="text-2xl font-bold text-[#2cecf7]">
+                            {staffData.name.charAt(0).toUpperCase()}
+                          </span>
                         )}
-                      </button>
-                    </p>
+                      </div>
+                      <div className="absolute inset-0 rounded-2xl bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition backdrop-blur-[1px]">
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#2cecf7" strokeWidth={2.2}>
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                          <circle cx="12" cy="13" r="4" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-[#2cecf7] bg-[#2cecf7]/10 px-2.5 py-0.5 rounded-full border border-[#2cecf7]/25">
+                          Employee Account Profile
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <h3 className={`text-xl font-bold truncate ${isLight ? "text-slate-900" : "text-white"}`}>{staffData.name}</h3>
+                        <button
+                          type="button"
+                          onClick={handleStartEditProfile}
+                          className="text-gray-400 hover:text-[#2cecf7] transition cursor-pointer p-1 rounded-lg"
+                          title="Edit name and profile picture"
+                        >
+                          <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                      </div>
+                      <p className={`text-xs font-mono flex items-center gap-1.5 mt-0.5 ${isLight ? "text-slate-600" : "text-gray-400"}`}>
+                        <span className="truncate">{staffData.email}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(staffData.email)}
+                          className="text-gray-400 hover:text-[#2cecf7] transition cursor-pointer p-0.5 rounded shrink-0"
+                          title="Copy email address"
+                        >
+                          {profileCopied ? (
+                            <span className="text-emerald-500 font-bold text-xs">✓ Copied</span>
+                          ) : (
+                            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                          )}
+                        </button>
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Body */}
-              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto themed-scroll">
-                {/* Employee Details Grid */}
-                <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                  <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Assigned Role</span>
-                    <span className="text-[#2cecf7] font-semibold block capitalize">
-                      {STAFF_TYPE_LABELS[staffData.staffType] || staffData.staffType}
+              {isEditingProfile ? (
+                <div className="p-5 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto themed-scroll">
+                  {/* Profile Picture Editor Card */}
+                  <div className={`p-4 rounded-2xl border space-y-3 ${
+                    isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
+                  }`}>
+                    <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block">
+                      Profile Picture
                     </span>
-                  </div>
 
-                  <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Account Status</span>
-                    <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Active Member
-                    </span>
-                  </div>
-
-                  <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Shift Timings</span>
-                    <span className={`font-semibold block ${isLight ? "text-slate-900" : "text-white"}`}>
-                      {staffData.shiftHours ? `${staffData.shiftHours.start} - ${staffData.shiftHours.end}` : "09:00 AM - 06:00 PM"}
-                    </span>
-                  </div>
-
-                  <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Weekly Off-Days</span>
-                    <span className="text-[#2cecf7] font-semibold block">
-                      {(staffData.assignedOffDays || ["Friday", "Saturday"]).join(", ")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Agreement Shortcut */}
-                <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
-                  isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.03] border-white/5"
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#2cecf7]/10 text-[#2cecf7] flex items-center justify-center shrink-0 border border-[#2cecf7]/20">
-                      <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                      </svg>
-                    </div>
-                    <div>
-                      <p className={`text-xs font-bold ${isLight ? "text-slate-900" : "text-white"}`}>Employment Agreement</p>
-                      <p className="text-[11px] text-gray-400">View signed terms, compensation & legal contract</p>
-                    </div>
-                  </div>
-                  <Link
-                    href="/staff/agreement"
-                    onClick={() => setShowProfileModal(false)}
-                    className="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"
-                    style={{
-                      background: isLight ? "#e5f8fc" : "rgba(44, 236, 247, 0.15)",
-                      border: "1px solid rgba(44, 236, 247, 0.3)",
-                      color: isLight ? "#0891b2" : "#2cecf7"
-                    }}
-                  >
-                    View
-                  </Link>
-                </div>
-
-                {/* DevKitty Mascot Widget Toggle */}
-                <div className={`p-4 rounded-2xl border space-y-2 ${
-                  isLight ? "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200" : "bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-transparent border-cyan-500/20"
-                }`}>
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-500 p-[1px] shrink-0">
-                        <div className={`w-full h-full rounded-xl flex items-center justify-center ${isLight ? "bg-white text-cyan-600" : "bg-[#080e1a] text-[#2cecf7]"}`}>
-                          <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4z" />
-                            <path d="M6 10v4a6 6 0 0 0 12 0v-4" />
-                            <circle cx="9" cy="11" r="1" fill="currentColor" />
-                            <circle cx="15" cy="11" r="1" fill="currentColor" />
-                          </svg>
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                      {/* Live Avatar Preview */}
+                      <div className="relative group shrink-0">
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[#2cecf7]/15 border-2 border-[#2cecf7] flex items-center justify-center shadow-lg shadow-[#2cecf7]/20">
+                          {avatarPreviewUrl ? (
+                            <img
+                              src={avatarPreviewUrl}
+                              alt="Avatar Preview"
+                              className="w-full h-full object-cover"
+                              onError={() => {
+                                if (avatarInputMode === "url") {
+                                  setProfileSaveError("Could not load image from URL. Please check the link.");
+                                }
+                              }}
+                            />
+                          ) : (
+                            <span className="text-3xl font-bold text-[#2cecf7]">
+                              {(editName || "S").charAt(0).toUpperCase()}
+                            </span>
+                          )}
                         </div>
+                        {avatarPreviewUrl && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvatarPreviewUrl("");
+                              setEditAvatarUrl("");
+                              setAvatarFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = "";
+                            }}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold shadow-md hover:bg-rose-600 transition cursor-pointer"
+                            title="Remove picture"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Source Switcher & Controls */}
+                      <div className="flex-1 w-full space-y-2.5">
+                        <div className="inline-flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/10 w-full">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvatarInputMode("file");
+                              setProfileSaveError("");
+                            }}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                              avatarInputMode === "file"
+                                ? "bg-[#2cecf7] text-[#02040a] shadow-sm"
+                                : isLight ? "text-slate-600 hover:text-slate-900" : "text-gray-400 hover:text-white"
+                            }`}
+                          >
+                            📁 Upload File
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvatarInputMode("url");
+                              setProfileSaveError("");
+                            }}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                              avatarInputMode === "url"
+                                ? "bg-[#2cecf7] text-[#02040a] shadow-sm"
+                                : isLight ? "text-slate-600 hover:text-slate-900" : "text-gray-400 hover:text-white"
+                            }`}
+                          >
+                            🔗 Image URL
+                          </button>
+                        </div>
+
+                        {avatarInputMode === "file" ? (
+                          <div>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                              onChange={handleAvatarFileChange}
+                              className="hidden"
+                              id="staff-profile-avatar-input"
+                            />
+                            <label
+                              htmlFor="staff-profile-avatar-input"
+                              className={`flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl border text-xs font-medium cursor-pointer transition ${
+                                isLight
+                                  ? "bg-white border-slate-300 hover:border-[#2cecf7] text-slate-700"
+                                  : "bg-[#080e1a] border-white/15 hover:border-[#2cecf7] text-gray-200"
+                              }`}
+                            >
+                              <span className="truncate">
+                                {avatarFile ? `✓ ${avatarFile.name}` : "Choose picture from device..."}
+                              </span>
+                              <span className="text-[10px] font-semibold text-[#2cecf7] bg-[#2cecf7]/10 px-2 py-0.5 rounded-md shrink-0">
+                                Browse
+                              </span>
+                            </label>
+                            <span className="text-[10px] text-gray-400 block mt-1">
+                              Supports PNG, JPG, WebP, GIF (Max 10 MB)
+                            </span>
+                          </div>
+                        ) : (
+                          <div>
+                            <input
+                              type="url"
+                              value={editAvatarUrl}
+                              onChange={(e) => {
+                                setEditAvatarUrl(e.target.value);
+                                setAvatarPreviewUrl(e.target.value);
+                                setProfileSaveError("");
+                              }}
+                              placeholder="https://example.com/avatar.jpg"
+                              className={`w-full px-3.5 py-2 rounded-xl border text-xs outline-none transition font-mono ${
+                                isLight
+                                  ? "bg-white border-slate-300 focus:border-[#2cecf7] text-slate-800"
+                                  : "bg-[#080e1a] border-white/15 focus:border-[#2cecf7] text-white"
+                              }`}
+                            />
+                            <span className="text-[10px] text-gray-400 block mt-1">
+                              Paste any direct online image URL
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Full Name Input */}
+                  <div className={`p-4 rounded-2xl border space-y-2 ${
+                    isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
+                  }`}>
+                    <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block">
+                      Full Name <span className="text-[#2cecf7]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => {
+                        setEditName(e.target.value);
+                        setProfileSaveError("");
+                      }}
+                      maxLength={60}
+                      placeholder="Enter your full name"
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-sm font-semibold outline-none transition ${
+                        isLight
+                          ? "bg-white border-slate-300 focus:border-[#2cecf7] text-slate-900"
+                          : "bg-[#080e1a] border-white/15 focus:border-[#2cecf7] text-white"
+                      }`}
+                    />
+                    <span className="text-[10px] text-gray-400 block">
+                      This name is publicly displayed on tasks, departments, and studio communication.
+                    </span>
+                  </div>
+
+                  {/* Account Email (Read-only) */}
+                  <div className={`p-4 rounded-2xl border space-y-1.5 opacity-80 ${
+                    isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Workspace Email</span>
+                      <span className="text-[9px] font-mono uppercase text-gray-400 bg-black/10 dark:bg-white/5 px-2 py-0.5 rounded">
+                        Managed by Admin
+                      </span>
+                    </div>
+                    <p className={`text-xs font-mono font-medium ${isLight ? "text-slate-700" : "text-gray-300"}`}>
+                      {staffData.email}
+                    </p>
+                  </div>
+
+                  {/* Alerts */}
+                  {profileSaveError && (
+                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-300 text-xs flex items-center gap-2">
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                      <span>{profileSaveError}</span>
+                    </div>
+                  )}
+
+                  {profileSaveSuccess && (
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 dark:text-emerald-300 text-xs flex items-center gap-2">
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                      <span>Profile updated successfully! Live across DevEngine.</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto themed-scroll">
+                  {/* Employee Details Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Assigned Role</span>
+                      <span className="text-[#2cecf7] font-semibold block capitalize">
+                        {STAFF_TYPE_LABELS[staffData.staffType] || staffData.staffType}
+                      </span>
+                    </div>
+
+                    <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Account Status</span>
+                      <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Active Member
+                      </span>
+                    </div>
+
+                    <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Shift Timings</span>
+                      <span className={`font-semibold block ${isLight ? "text-slate-900" : "text-white"}`}>
+                        {staffData.shiftHours ? `${staffData.shiftHours.start} - ${staffData.shiftHours.end}` : "09:00 AM - 06:00 PM"}
+                      </span>
+                    </div>
+
+                    <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Weekly Off-Days</span>
+                      <span className="text-[#2cecf7] font-semibold block">
+                        {(staffData.assignedOffDays || ["Friday", "Saturday"]).join(", ")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Agreement Shortcut */}
+                  <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
+                    isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.03] border-white/5"
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#2cecf7]/10 text-[#2cecf7] flex items-center justify-center shrink-0 border border-[#2cecf7]/20">
+                        <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                          <polyline points="14 2 14 8 20 8"/>
+                          <line x1="16" y1="13" x2="8" y2="13"/>
+                          <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
                       </div>
                       <div>
-                        <span className={`text-xs font-bold block ${isLight ? "text-slate-900" : "text-white"}`}>DevKitty Mascot Widget</span>
-                        <span className="text-[10px] text-gray-400">Floating assistant in workspace corner</span>
+                        <p className={`text-xs font-bold ${isLight ? "text-slate-900" : "text-white"}`}>Employment Agreement</p>
+                        <p className="text-[11px] text-gray-400">View signed terms, compensation & legal contract</p>
                       </div>
                     </div>
-
-                    {/* Interactive Switch */}
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={devKittyEnabled}
-                      onClick={handleToggleDevKitty}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        devKittyEnabled ? "bg-[#2cecf7]" : (isLight ? "bg-slate-300" : "bg-neutral-800")
-                      }`}
+                    <Link
+                      href="/staff/agreement"
+                      onClick={() => setShowProfileModal(false)}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"
+                      style={{
+                        background: isLight ? "#e5f8fc" : "rgba(44, 236, 247, 0.15)",
+                        border: "1px solid rgba(44, 236, 247, 0.3)",
+                        color: isLight ? "#0891b2" : "#2cecf7"
+                      }}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                          devKittyEnabled ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
+                      View
+                    </Link>
                   </div>
 
-                  <p className={`text-[11px] leading-relaxed font-sans ${isLight ? "text-slate-600" : "text-gray-300"}`}>
-                    {devKittyEnabled ? (
-                      <span className="text-emerald-500 font-semibold">Active:</span>
-                    ) : (
-                      <span className="text-amber-500 font-semibold">Hidden:</span>
-                    )}{" "}
-                    DevKitty is currently {devKittyEnabled ? "visible" : "hidden"} for your account. You can toggle this anytime without affecting other team members.
-                  </p>
+                  {/* DevKitty Mascot Widget Toggle */}
+                  <div className={`p-4 rounded-2xl border space-y-2 ${
+                    isLight ? "bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200" : "bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-transparent border-cyan-500/20"
+                  }`}>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <DevKittyAnimatedIcon
+                          size={40}
+                          active={devKittyEnabled}
+                          isLight={isLight}
+                          onClick={handleToggleDevKitty}
+                          title={devKittyEnabled ? "Click to hide DevKitty" : "Click to enable DevKitty"}
+                        />
+                        <div>
+                          <span className={`text-xs font-bold block ${isLight ? "text-slate-900" : "text-white"}`}>DevKitty Mascot Widget</span>
+                          <span className="text-[10px] text-gray-400">Floating assistant in workspace corner</span>
+                        </div>
+                      </div>
+
+                      {/* Interactive Switch */}
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={devKittyEnabled}
+                        onClick={handleToggleDevKitty}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                          devKittyEnabled ? "bg-[#2cecf7]" : (isLight ? "bg-slate-300" : "bg-neutral-800")
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                            devKittyEnabled ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    <p className={`text-[11px] leading-relaxed font-sans ${isLight ? "text-slate-600" : "text-gray-300"}`}>
+                      {devKittyEnabled ? (
+                        <span className="text-emerald-500 font-semibold">Active:</span>
+                      ) : (
+                        <span className="text-amber-500 font-semibold">Hidden:</span>
+                      )}{" "}
+                      DevKitty is currently {devKittyEnabled ? "visible" : "hidden"} for your account. You can toggle this anytime without affecting other team members.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Footer */}
               <div className={`p-4 border-t flex items-center justify-between gap-3 ${
                 isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
               }`}>
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-500 dark:text-rose-300 text-xs font-semibold transition cursor-pointer"
-                >
-                  Sign Out
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowProfileModal(false)}
-                  className="px-6 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
-                  style={{
-                    background: "#2cecf7",
-                    color: "#02040a",
-                    boxShadow: "0 0 20px rgba(44, 236, 247, 0.35)"
-                  }}
-                >
-                  Done
-                </button>
+                {isEditingProfile ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleCancelEditProfile}
+                      disabled={isSavingProfile}
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                        isLight
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                          : "bg-white/5 hover:bg-white/10 text-gray-300 border-white/10"
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveProfile}
+                      disabled={isSavingProfile || !editName.trim()}
+                      className="px-6 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        background: "#2cecf7",
+                        color: "#02040a",
+                        boxShadow: "0 0 20px rgba(44, 236, 247, 0.35)",
+                      }}
+                    >
+                      {isSavingProfile ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-[#02040a] border-t-transparent rounded-full animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <span>Save Changes</span>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 text-rose-500 dark:text-rose-300 text-xs font-semibold transition cursor-pointer"
+                    >
+                      Sign Out
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleStartEditProfile}
+                        className="px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                        style={{
+                          background: isLight ? "#e5f8fc" : "rgba(44, 236, 247, 0.12)",
+                          border: "1px solid rgba(44, 236, 247, 0.35)",
+                          color: isLight ? "#0891b2" : "#2cecf7",
+                        }}
+                      >
+                        <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                        <span>Edit Profile</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowProfileModal(false)}
+                        className="px-6 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                        style={{
+                          background: "#2cecf7",
+                          color: "#02040a",
+                          boxShadow: "0 0 20px rgba(44, 236, 247, 0.35)",
+                        }}
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

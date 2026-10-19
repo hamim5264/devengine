@@ -20,6 +20,7 @@ import type {
   AttendanceBreak,
   BreakType,
   OffDaySwapRequest,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 
 const ATTENDANCE_COLLECTION = "staff_attendance";
@@ -417,6 +418,7 @@ export async function submitMissedAttendanceRequest(params: {
   clockInTime: string;
   clockOutTime?: string;
   reason: string;
+  attachments?: EcoAttachment[];
 }): Promise<AttendanceRegularizationRequest> {
   const today = getTodayDateString();
   if (params.targetDate >= today) {
@@ -439,6 +441,7 @@ export async function submitMissedAttendanceRequest(params: {
     clockInTime: params.clockInTime,
     clockOutTime: params.clockOutTime || "",
     reason: params.reason,
+    attachments: params.attachments || [],
     status: "pending",
     createdAt: nowIso,
   };
@@ -560,6 +563,7 @@ export async function submitDailyWorkUpdate(params: {
   blockers?: string;
   hoursWorked: number;
   projectLinks?: string;
+  attachments?: EcoAttachment[];
 }): Promise<DailyWorkUpdate> {
   const dateStr = params.date || getTodayDateString();
   const docId = `work_${params.staffId}_${dateStr}`;
@@ -581,6 +585,7 @@ export async function submitDailyWorkUpdate(params: {
     blockers: params.blockers || "",
     hoursWorked: Number(params.hoursWorked) || 0,
     projectLinks: params.projectLinks || "",
+    attachments: params.attachments !== undefined ? params.attachments : (existing.exists() ? existing.data()?.attachments || [] : []),
     createdAt: existing.exists() ? existing.data()?.createdAt : nowIso,
     updatedAt: nowIso,
     reviewedByAdmin: existing.exists() ? existing.data()?.reviewedByAdmin : false,
@@ -702,6 +707,7 @@ export async function submitLeaveRequest(params: {
   endDate: string;
   reason: string;
   emergencyContact?: string;
+  attachments?: EcoAttachment[];
 }): Promise<LeaveRequest> {
   // Calculate total days
   const start = new Date(params.startDate);
@@ -725,6 +731,7 @@ export async function submitLeaveRequest(params: {
     totalDays: isNaN(diffDays) || diffDays < 1 ? 1 : diffDays,
     reason: params.reason,
     emergencyContact: params.emergencyContact || "",
+    attachments: params.attachments || [],
     status: "pending",
     createdAt: nowIso,
   };

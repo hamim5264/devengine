@@ -17,10 +17,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updatePassword,
+  updateProfile,
   signOut as firebaseSignOut,
 } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db, storage, auth } from "@/lib/firebase";
 import type { StaffMember, StaffType, StaffRole } from "@/types/staff";
 import { DEFAULT_STAFF_ROLES, ROLE_COLOR_PRESETS } from "@/types/staff";
 
@@ -233,6 +234,49 @@ export async function updateStaffMember(
     if (Object.keys(projection).length) batch.update(directory.ref, projection);
   }
   await batch.commit();
+}
+
+/** Update own profile (name and/or avatarUrl) for logged-in staff member */
+export async function updateStaffSelfProfile(
+  staffId: string,
+  data: { name: string; avatarUrl: string }
+): Promise<void> {
+  const now = new Date().toISOString();
+  const trimmedName = data.name.trim();
+  const trimmedAvatarUrl = data.avatarUrl.trim();
+
+  // 1. Update staff_members doc
+  await updateDoc(doc(db, STAFF_COLLECTION, staffId), {
+    name: trimmedName,
+    avatarUrl: trimmedAvatarUrl,
+    updatedAt: now,
+  });
+
+  // 2. Sync to studio_people doc if it exists
+  try {
+    const directoryRef = doc(db, "studio_people", staffId);
+    const directory = await getDoc(directoryRef);
+    if (directory.exists()) {
+      await updateDoc(directoryRef, {
+        name: trimmedName,
+        avatarUrl: trimmedAvatarUrl,
+      });
+    }
+  } catch (err) {
+    console.warn("[StaffService] studio_people sync warning:", err);
+  }
+
+  // 3. Update Firebase Auth user profile if currentUser matches
+  if (auth.currentUser && auth.currentUser.uid === staffId) {
+    try {
+      await updateProfile(auth.currentUser, {
+        displayName: trimmedName,
+        photoURL: trimmedAvatarUrl || null,
+      });
+    } catch (authErr) {
+      console.warn("[StaffService] Auth updateProfile warning:", authErr);
+    }
+  }
 }
 
 /** Delete staff member from Firestore */

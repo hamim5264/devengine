@@ -11,9 +11,11 @@ import {
 } from "@/lib/services/staffEcoService";
 import StaffLayout from "@/components/StaffLayout";
 import { EmployeeHeading, EmployeeIcon, EmployeeMetric, EmployeeBadge, EmployeeSearch, EmployeeEmpty, EmployeeLoading, EmployeeDialog } from "@/components/staff/EmployeeUI";
+import AttachmentPicker from "@/components/common/AttachmentPicker";
+import AttachmentList from "@/components/common/AttachmentList";
 import styles from "@/components/staff/EmployeeExperience.module.css";
 import type { StaffMember } from "@/types/staff";
-import type { DailyWorkUpdate } from "@/types/staffEcoSystem";
+import type { DailyWorkUpdate, EcoAttachment } from "@/types/staffEcoSystem";
 
 export default function StaffWorkUpdatesPage() {
   const router = useRouter();
@@ -26,12 +28,20 @@ export default function StaffWorkUpdatesPage() {
   // Editor Modal
   const [showEditor, setShowEditor] = useState(false);
   const [editDate, setEditDate] = useState(getTodayDateString());
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    tasksCompleted: string;
+    tasksInProgress: string;
+    blockers: string;
+    hoursWorked: number;
+    projectLinks: string;
+    attachments: EcoAttachment[];
+  }>({
     tasksCompleted: "",
     tasksInProgress: "",
     blockers: "",
     hoursWorked: 8,
     projectLinks: "",
+    attachments: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -52,6 +62,7 @@ export default function StaffWorkUpdatesPage() {
           blockers: todayUpdate.blockers || "",
           hoursWorked: todayUpdate.hoursWorked || 8,
           projectLinks: todayUpdate.projectLinks || "",
+          attachments: todayUpdate.attachments || [],
         });
       }
     } catch (err) {
@@ -89,6 +100,7 @@ export default function StaffWorkUpdatesPage() {
         blockers: existing.blockers || "",
         hoursWorked: existing.hoursWorked || 8,
         projectLinks: existing.projectLinks || "",
+        attachments: existing.attachments || [],
       });
     } else {
       setForm({
@@ -97,6 +109,7 @@ export default function StaffWorkUpdatesPage() {
         blockers: "",
         hoursWorked: 8,
         projectLinks: "",
+        attachments: [],
       });
     }
     setShowEditor(true);
@@ -121,6 +134,7 @@ export default function StaffWorkUpdatesPage() {
         blockers: form.blockers,
         hoursWorked: Number(form.hoursWorked) || 0,
         projectLinks: form.projectLinks,
+        attachments: form.attachments,
       });
 
       setWorkUpdates((prev) => {
@@ -190,6 +204,12 @@ export default function StaffWorkUpdatesPage() {
               {update.blockers && <div className={styles.note} data-tone="danger"><h4><EmployeeIcon>error_outline</EmployeeIcon>Blockers / support needed</h4><p>{update.blockers}</p></div>}
             </div>}
             {update.projectLinks && <div className={styles.reportSection}><h3>Related links</h3><a className={styles.link} href={update.projectLinks.startsWith("http") ? update.projectLinks : `https://${update.projectLinks}`} target="_blank" rel="noopener noreferrer"><EmployeeIcon>open_in_new</EmployeeIcon>{update.projectLinks}</a></div>}
+            {update.attachments && update.attachments.length > 0 && (
+              <div className={styles.reportSection}>
+                <h3>Attachments</h3>
+                <AttachmentList attachments={update.attachments} />
+              </div>
+            )}
             {update.adminFeedback && <div className={styles.note}><h4>Administrator feedback</h4><p>{update.adminFeedback}</p></div>}
           </article>)}
         </div>}
@@ -214,6 +234,13 @@ export default function StaffWorkUpdatesPage() {
             <label className={styles.field}>Project / PR / design link (optional)
               <input type="text" value={form.projectLinks} onChange={(event) => setForm({ ...form, projectLinks: event.target.value })} placeholder="https://github.com/…" />
             </label>
+            <AttachmentPicker
+              label="Attachments (Optional)"
+              hint="PDF, images, documents, screenshots, or zip (up to 10 MB, max 5)"
+              storageFolder={`work-updates/${staffData?.id || "general"}`}
+              value={form.attachments}
+              onChange={(attachments) => setForm({ ...form, attachments })}
+            />
             {successMsg && <p className={styles.feedback} role="status">{successMsg}</p>}
             {saveError && <p className={styles.feedback} data-tone="danger" role="alert">{saveError}</p>}
             <div className={styles.formActions}><button type="button" className={styles.secondaryButton} onClick={() => setShowEditor(false)}>Cancel</button><button type="submit" className={styles.primaryButton} disabled={isSubmitting || !!successMsg}>{isSubmitting ? "Saving…" : "Save Daily Update"}<EmployeeIcon>check</EmployeeIcon></button></div>

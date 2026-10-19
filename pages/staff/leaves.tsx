@@ -20,8 +20,11 @@ import type {
   LeaveRequest,
   LeaveType,
   OffDaySwapRequest,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 import { LEAVE_TYPE_LABELS } from "@/types/staffEcoSystem";
+import AttachmentPicker from "@/components/common/AttachmentPicker";
+import AttachmentList from "@/components/common/AttachmentList";
 
 export default function StaffLeavesPage() {
   const router = useRouter();
@@ -40,12 +43,14 @@ export default function StaffLeavesPage() {
     endDate: string;
     reason: string;
     emergencyContact: string;
+    attachments: EcoAttachment[];
   }>({
     leaveType: "casual",
     startDate: "",
     endDate: "",
     reason: "",
     emergencyContact: "",
+    attachments: [],
   });
   const [isSubmittingLeave, setIsSubmittingLeave] = useState(false);
   const [leaveSuccessMsg, setLeaveSuccessMsg] = useState("");
@@ -111,6 +116,7 @@ export default function StaffLeavesPage() {
         endDate: leaveForm.endDate,
         reason: leaveForm.reason,
         emergencyContact: leaveForm.emergencyContact,
+        attachments: leaveForm.attachments,
       });
 
       setLeaves((prev) => [created, ...prev]);
@@ -124,6 +130,7 @@ export default function StaffLeavesPage() {
           endDate: "",
           reason: "",
           emergencyContact: "",
+          attachments: [],
         });
       }, 1200);
     } catch (err) {
@@ -199,7 +206,14 @@ export default function StaffLeavesPage() {
                 <td data-label="Leave type">{LEAVE_TYPE_LABELS[leave.leaveType] || leave.leaveType}</td>
                 <td data-label="Duration"><div className={styles.dateRange}>{leave.startDate}<span>→</span>{leave.endDate}</div></td>
                 <td data-label="Days">{leave.totalDays} {leave.totalDays === 1 ? "day" : "days"}</td>
-                <td data-label="Reason" className={styles.longCell}>{leave.reason}</td>
+                <td data-label="Reason" className={styles.longCell}>
+                  <div>{leave.reason}</div>
+                  {leave.attachments && leave.attachments.length > 0 && (
+                    <div style={{ marginTop: 6 }}>
+                      <AttachmentList attachments={leave.attachments} />
+                    </div>
+                  )}
+                </td>
                 <td data-label="Status"><EmployeeBadge tone={leave.status}>{leave.status}</EmployeeBadge></td>
                 <td data-label="Admin remark" className={styles.longCell}>{leave.adminRemark || "—"}</td>
                 <td data-label="Applied">{leave.createdAt ? new Date(leave.createdAt).toLocaleDateString() : "—"}</td>
@@ -238,6 +252,14 @@ export default function StaffLeavesPage() {
             <label className={styles.field}>Emergency contact (optional)
               <input type="text" value={leaveForm.emergencyContact} onChange={(event) => setLeaveForm({ ...leaveForm, emergencyContact: event.target.value })} placeholder="Phone number or alternative contact" />
             </label>
+            <AttachmentPicker
+              label="Supporting documents (Optional)"
+              hint="Max 5 files · up to 10 MB each"
+              folder="leave_attachments"
+              prefix={staffData?.id}
+              value={leaveForm.attachments}
+              onChange={(attachments) => setLeaveForm({ ...leaveForm, attachments })}
+            />
             {leaveSuccessMsg && <p className={styles.feedback} role="status">{leaveSuccessMsg}</p>}
             {leaveError && <p className={styles.feedback} data-tone="danger" role="alert">{leaveError}</p>}
             <div className={styles.formActions}><button type="button" className={styles.secondaryButton} onClick={() => setShowApplyLeaveModal(false)}>Cancel</button><button type="submit" className={styles.primaryButton} disabled={isSubmittingLeave || !!leaveSuccessMsg || !leaveForm.startDate || !leaveForm.endDate}>{isSubmittingLeave ? "Submitting…" : "Submit Leave Request"}<EmployeeIcon>arrow_forward</EmployeeIcon></button></div>

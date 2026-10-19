@@ -9,14 +9,16 @@ export function EmployeeIcon({ children }: { children: string }) {
 export function EmployeeHeading({ eyebrow, title, description, icon, actions }: {
   eyebrow: string; title: string; description: string; icon: string; actions?: ReactNode;
 }) {
-  return <div className={styles.pageHeading}>
-    <div>
-      <p className={styles.eyebrow}>{eyebrow}</p>
-      <div className={styles.headingTitle}><span className={styles.iconTile}><EmployeeIcon>{icon}</EmployeeIcon></span><h1>{title}</h1></div>
-      <p className={styles.description}>{description}</p>
+  return (
+    <div className={styles.pageHeading}>
+      <div className={styles.headingContent}>
+        <p className={styles.eyebrow}>{eyebrow}</p>
+        <div className={styles.headingTitle}><span className={styles.iconTile}><EmployeeIcon>{icon}</EmployeeIcon></span><h1>{title}</h1></div>
+        <p className={styles.description}>{description}</p>
+      </div>
+      {actions && <div className={styles.actions}>{actions}</div>}
     </div>
-    {actions && <div className={styles.actions}>{actions}</div>}
-  </div>;
+  );
 }
 
 export function EmployeeMetric({ label, value, icon, warning = false }: {
@@ -44,10 +46,28 @@ export function EmployeeProgress({ value, label = "Progress" }: { value: number;
 export function EmployeeSearch({ value, onChange, placeholder, label }: {
   value: string; onChange: (value: string) => void; placeholder: string; label: string;
 }) {
-  return <label className={styles.search}><EmployeeIcon>search</EmployeeIcon>
-    <span className={styles.srOnly}>{label}</span>
-    <input type="search" value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
-  </label>;
+  return (
+    <label className={styles.search}>
+      <EmployeeIcon>search</EmployeeIcon>
+      <span className={styles.srOnly}>{label}</span>
+      <input
+        type="search"
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className={styles.searchInput}
+        style={{
+          background: "transparent",
+          backgroundColor: "transparent",
+          border: "none",
+          boxShadow: "none",
+          WebkitBoxShadow: "none",
+          WebkitAppearance: "none",
+          outline: "none",
+        }}
+      />
+    </label>
+  );
 }
 
 export function EmployeeEmpty({ icon, title, description, children }: {
@@ -83,11 +103,13 @@ export function EmployeeDialog({ title, description, icon, onClose, children, wi
   return <dialog ref={ref} className={styles.dialog} data-wide={wide || undefined} aria-labelledby={`${id}-title`}
     aria-describedby={description ? `${id}-description` : undefined}
     onCancel={(event) => { event.preventDefault(); onClose(); }}>
-    <div className={styles.dialogHeading}>
-      <div className={styles.headingTitle}><span className={styles.iconTile}><EmployeeIcon>{icon}</EmployeeIcon></span><h2 id={`${id}-title`}>{title}</h2></div>
-      <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close dialog"><EmployeeIcon>close</EmployeeIcon></button>
+    <div className={styles.dialogHeader}>
+      <div className={styles.dialogHeading}>
+        <div className={styles.headingTitle}><span className={styles.iconTile}><EmployeeIcon>{icon}</EmployeeIcon></span><h2 id={`${id}-title`}>{title}</h2></div>
+        <button type="button" className={styles.iconButton} onClick={onClose} aria-label="Close dialog"><EmployeeIcon>close</EmployeeIcon></button>
+      </div>
+      {description && <p id={`${id}-description`} className={styles.dialogDescription}>{description}</p>}
     </div>
-    {description && <p id={`${id}-description`} className={styles.dialogDescription}>{description}</p>}
     <div className={styles.dialogBody}>{children}</div>
   </dialog>;
 }

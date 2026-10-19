@@ -22,11 +22,14 @@ import type {
   EmployeeTask,
   TaskPriority,
   TaskStatus,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 import {
   TASK_STATUS_LABELS,
   TASK_PRIORITY_LABELS,
 } from "@/types/staffEcoSystem";
+import AttachmentPicker from "@/components/common/AttachmentPicker";
+import AttachmentList from "@/components/common/AttachmentList";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
@@ -89,6 +92,7 @@ export default function ManageWorkUpdatesPage() {
     status: TaskStatus;
     progressPercent: number;
     adminFeedback: string;
+    adminAttachments: EcoAttachment[];
   }>({
     assignedToStaffId: "",
     title: "",
@@ -103,6 +107,7 @@ export default function ManageWorkUpdatesPage() {
     status: "todo",
     progressPercent: 0,
     adminFeedback: "",
+    adminAttachments: [],
   });
 
   // Load all data
@@ -163,6 +168,7 @@ export default function ManageWorkUpdatesPage() {
       status: "todo",
       progressPercent: 0,
       adminFeedback: "",
+      adminAttachments: [],
     });
     setShowTaskModal(true);
   };
@@ -184,6 +190,7 @@ export default function ManageWorkUpdatesPage() {
       status: task.status || "todo",
       progressPercent: task.progressPercent || 0,
       adminFeedback: task.adminFeedback || "",
+      adminAttachments: task.adminAttachments || [],
     });
     setShowTaskModal(true);
   };
@@ -216,6 +223,7 @@ export default function ManageWorkUpdatesPage() {
           status: taskForm.status,
           progressPercent: Number(taskForm.progressPercent) || 0,
           adminFeedback: taskForm.adminFeedback.trim(),
+          adminAttachments: taskForm.adminAttachments,
         });
       } else {
         // Create new task
@@ -233,6 +241,7 @@ export default function ManageWorkUpdatesPage() {
           dueDate: taskForm.dueDate,
           dueTime: taskForm.dueTime,
           estimatedHours: Number(taskForm.estimatedHours) || 0,
+          adminAttachments: taskForm.adminAttachments,
         });
       }
 
@@ -701,6 +710,20 @@ export default function ManageWorkUpdatesPage() {
                             </div>
                           )}
 
+                          {task.adminAttachments && task.adminAttachments.length > 0 && (
+                            <div className="pt-1.5 space-y-1">
+                              <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider block">Task Brief Attachments:</span>
+                              <AttachmentList attachments={task.adminAttachments} />
+                            </div>
+                          )}
+
+                          {task.submissionAttachments && task.submissionAttachments.length > 0 && (
+                            <div className="pt-1.5 space-y-1">
+                              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider block">Employee Deliverables:</span>
+                              <AttachmentList attachments={task.submissionAttachments} />
+                            </div>
+                          )}
+
                           {/* Quick Status Bar */}
                           <div className="flex items-center justify-between gap-2 pt-1.5">
                             <span className="text-[10px] text-gray-500 font-mono">Change Status:</span>
@@ -873,6 +896,16 @@ export default function ManageWorkUpdatesPage() {
                           >
                             {item.projectLinks}
                           </a>
+                        </div>
+                      )}
+
+                      {/* Attached Files */}
+                      {item.attachments && item.attachments.length > 0 && (
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-cyan-400 block mb-1.5 tracking-wider">
+                            Attached Files ({item.attachments.length})
+                          </span>
+                          <AttachmentList attachments={item.attachments} />
                         </div>
                       )}
 
@@ -1150,6 +1183,26 @@ export default function ManageWorkUpdatesPage() {
                   onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                   className="w-full bg-black/50 border border-white/[0.1] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-600 resize-none leading-relaxed"
                 />
+              </div>
+
+              {/* Task Attachments Section */}
+              <div className="space-y-3 pt-1">
+                <AttachmentPicker
+                  label="Task Reference Documents / Briefs (Optional)"
+                  hint="Specs, briefs, design files (up to 10 MB each, max 5)"
+                  folder="task_attachments"
+                  prefix={taskForm.assignedToStaffId || "admin"}
+                  value={taskForm.adminAttachments}
+                  onChange={(adminAttachments) => setTaskForm({ ...taskForm, adminAttachments })}
+                />
+                {editingTask && editingTask.submissionAttachments && editingTask.submissionAttachments.length > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
+                    <span className="text-[11px] font-mono text-emerald-400 uppercase tracking-wider block">
+                      Employee Deliverables & Attachments ({editingTask.submissionAttachments.length})
+                    </span>
+                    <AttachmentList attachments={editingTask.submissionAttachments} />
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer Actions */}

@@ -16,6 +16,7 @@ import type {
   EmployeeTask,
   TaskPriority,
   TaskStatus,
+  EcoAttachment,
 } from "@/types/staffEcoSystem";
 
 const TASKS_COLLECTION = "employee_tasks";
@@ -39,6 +40,7 @@ export async function createEmployeeTask(params: {
   dueDate: string;
   dueTime?: string;
   estimatedHours?: number;
+  adminAttachments?: EcoAttachment[];
 }): Promise<EmployeeTask> {
   const taskId = `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const nowIso = new Date().toISOString();
@@ -64,6 +66,8 @@ export async function createEmployeeTask(params: {
     progressPercent: 0,
     employeeNotes: "",
     submissionUrl: "",
+    adminAttachments: params.adminAttachments || [],
+    submissionAttachments: [],
     adminFeedback: "",
     estimatedHours: Number(params.estimatedHours) || 0,
     actualHours: 0,

@@ -26,6 +26,24 @@ export function hasStudioModule(staff: StaffMember | null, module: string) {
   return staff?.status === "active" && (staff.allowedModules?.includes(module) || staff.allowedModules?.includes("all")) === true;
 }
 
+/** Check if a staff member may access a specific sub-module page within a module. */
+export function hasStudioSubModule(staff: StaffMember | null, moduleKey: string, href: string) {
+  if (!hasStudioModule(staff, moduleKey)) return false;
+  // If no granular sub-module map exists for this module, grant all sub-items (backward compatible)
+  const subs = staff?.allowedSubModules?.[moduleKey];
+  if (subs === undefined) return true;
+  return subs.includes(href);
+}
+
+/** Return only the sub-items a staff member may access within a module. */
+export function getFilteredModuleItems(staff: StaffMember | null, moduleKey: string) {
+  const mod = STUDIO_MODULES.find((m) => m.key === moduleKey);
+  if (!mod) return [];
+  const subs = staff?.allowedSubModules?.[moduleKey];
+  if (subs === undefined) return mod.items; // all allowed
+  return mod.items.filter((entry) => subs.includes(entry.href));
+}
+
 /** An empty result is admin-only. Never infer permission for unknown pages. */
 export function modulesForAdminRoute(path: string): string[] {
   const pathname = path.split(/[?#]/)[0].replace(/\/$/, "");

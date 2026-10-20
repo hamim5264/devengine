@@ -18,11 +18,230 @@ import {
   ROLE_COLOR_PRESETS,
   MODULE_CONFIG,
 } from "@/types/staff";
+import { STUDIO_MODULES } from "@/lib/staffModules";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
 const ALL_MODULE_KEYS = Object.keys(MODULE_CONFIG);
+
+// ── Role Module & Sub-Module Checkbox Grid (Top-Level Scope) ──
+interface RoleModuleGridProps {
+  selectedModules: string[];
+  selectedSubModules: Record<string, string[]>;
+  expandedModules: Record<string, boolean>;
+  onToggleExpand: (key: string) => void;
+  onToggleModule: (key: string) => void;
+  onToggleSubModule: (moduleKey: string, href: string) => void;
+  onToggleAllSubModules: (moduleKey: string) => void;
+  onToggleAllGlobal: () => void;
+}
+
+function RoleModuleGrid({
+  selectedModules,
+  selectedSubModules,
+  expandedModules,
+  onToggleExpand,
+  onToggleModule,
+  onToggleSubModule,
+  onToggleAllSubModules,
+  onToggleAllGlobal,
+}: RoleModuleGridProps) {
+  return (
+    <div className="space-y-3 pt-2 border-t border-[var(--devengine-border)]/60">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider block font-bold">
+            Default Module Permissions
+          </span>
+          <span className="text-[10px] text-[var(--devengine-muted)] opacity-75">
+            Expand any module to set default sub-module access for this role
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onToggleAllGlobal}
+          className="text-[11px] font-bold text-[#2cecf7] hover:underline transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-[#2cecf7]/10"
+        >
+          {selectedModules.length === ALL_MODULE_KEYS.length ? "Deselect All Modules" : "Select All Modules"}
+        </button>
+      </div>
+
+      <div className="space-y-2.5 max-h-[380px] overflow-y-auto themed-scroll pr-1">
+        {ALL_MODULE_KEYS.map((key) => {
+          const cfg = MODULE_CONFIG[key];
+          const studioMod = STUDIO_MODULES.find((m) => m.key === key);
+          const isChecked = selectedModules.includes(key);
+          const isExpanded = !!expandedModules[key];
+          const items = studioMod ? studioMod.items : [];
+          const allowedSubs = selectedSubModules[key] !== undefined
+            ? selectedSubModules[key]
+            : (isChecked ? items.map((i) => i.href) : []);
+          const allSubsSelected = items.length > 0 && items.every((i) => allowedSubs.includes(i.href));
+          const subCount = allowedSubs.length;
+
+          return (
+            <div
+              key={key}
+              className={`rounded-2xl border transition-all overflow-hidden ${
+                isChecked
+                  ? "bg-[var(--devengine-surface)] border-[#2cecf7]/30 shadow-sm"
+                  : "bg-[var(--devengine-surface)] border-[var(--devengine-border)] opacity-85 hover:opacity-100"
+              }`}
+            >
+              {/* Module Header Row */}
+              <div className="flex items-center justify-between p-3 gap-3">
+                {/* Left: Icon, Label, Description & Counter */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onToggleModule(key)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onToggleModule(key);
+                    }
+                  }}
+                  className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
+                >
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform active:scale-95"
+                    style={{ background: `${cfg.color}18`, color: cfg.color }}
+                  >
+                    <span className="material-symbols-outlined text-base">{cfg.icon}</span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs font-bold ${isChecked ? "text-[var(--devengine-text)]" : "text-[var(--devengine-muted)]"}`}>
+                        {cfg.label}
+                      </span>
+                      {isChecked && (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border"
+                          style={{
+                            backgroundColor: allSubsSelected ? "rgba(44, 236, 247, 0.12)" : "rgba(245, 158, 11, 0.12)",
+                            borderColor: allSubsSelected ? "rgba(44, 236, 247, 0.35)" : "rgba(245, 158, 11, 0.35)",
+                            color: allSubsSelected ? "#2cecf7" : "#f59e0b",
+                          }}
+                        >
+                          {allSubsSelected ? `All ${items.length} options` : `${subCount}/${items.length} sub-modules`}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-[var(--devengine-muted)] block truncate opacity-75 mt-0.5">
+                      {cfg.description}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: Expand Button & Module Checkbox */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleExpand(key);
+                    }}
+                    title={isExpanded ? "Collapse sub-modules" : "Customize sub-module permissions"}
+                    className={`h-7 px-2.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                      isExpanded
+                        ? "bg-[#2cecf7]/15 border-[#2cecf7]/40 text-[#2cecf7]"
+                        : "bg-[var(--devengine-raised)] border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] hover:border-[#2cecf7]/30"
+                    }`}
+                  >
+                    <span>{isExpanded ? "Hide" : "Expand"}</span>
+                    <span className="material-symbols-outlined text-sm">
+                      {isExpanded ? "expand_less" : "expand_more"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => onToggleModule(key)}
+                    aria-label={`Toggle ${cfg.label} module`}
+                    className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                      isChecked
+                        ? "bg-[#2cecf7] border-[#2cecf7] shadow-sm shadow-[#2cecf7]/30"
+                        : "border-[var(--devengine-border)] bg-[var(--devengine-raised)] hover:border-[#2cecf7]/40"
+                    }`}
+                  >
+                    {isChecked && (
+                      <span className="material-symbols-outlined text-[#02040a] text-sm font-bold">check</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-modules Expandable Section */}
+              {isExpanded && (
+                <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-1 border-t border-[var(--devengine-border)]/60 bg-[var(--devengine-raised)]/40">
+                  <div className="flex items-center justify-between py-2 border-b border-[var(--devengine-border)]/40 mb-2">
+                    <span className="text-[11px] font-mono font-medium text-[var(--devengine-muted)] flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">account_tree</span>
+                      Sub-module options ({items.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onToggleAllSubModules(key)}
+                      className="text-[11px] font-semibold text-[#2cecf7] hover:underline cursor-pointer"
+                    >
+                      {allSubsSelected ? "Deselect All Sub-items" : "Select All Sub-items"}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto themed-scroll pr-1">
+                    {items.map((subItem) => {
+                      const isSubChecked = allowedSubs.includes(subItem.href);
+                      return (
+                        <div
+                          key={subItem.href}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onToggleSubModule(key, subItem.href)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onToggleSubModule(key, subItem.href);
+                            }
+                          }}
+                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all cursor-pointer select-none ${
+                            isSubChecked
+                              ? "bg-[#2cecf7]/12 border-[#2cecf7]/45 shadow-xs"
+                              : "bg-[var(--devengine-surface)] border-[var(--devengine-border)] hover:border-[#2cecf7]/30"
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                              isSubChecked
+                                ? "bg-[#2cecf7] border-[#2cecf7]"
+                                : "border-[var(--devengine-border)] bg-[var(--devengine-raised)]"
+                            }`}
+                          >
+                            {isSubChecked && (
+                              <span className="material-symbols-outlined text-[#02040a] text-[11px] font-bold">check</span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs leading-snug break-words flex-1 ${
+                              isSubChecked ? "text-[var(--devengine-text)] font-semibold" : "text-[var(--devengine-muted)]"
+                            }`}
+                          >
+                            {subItem.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function ManageStaffRolesPage() {
   const router = useRouter();
@@ -52,6 +271,15 @@ export default function ManageStaffRolesPage() {
   const [roleDesc, setRoleDesc] = useState("");
   const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [selectedModules, setSelectedModules] = useState<string[]>(["overview"]);
+  const [selectedSubModules, setSelectedSubModules] = useState<Record<string, string[]>>({});
+  const [roleExpandedModules, setRoleExpandedModules] = useState<Record<string, boolean>>({});
+
+  const toggleRoleExpand = (key: string) => {
+    setRoleExpandedModules((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // Auth gate
   useEffect(() => {
@@ -103,6 +331,9 @@ export default function ManageStaffRolesPage() {
     setRoleDesc("");
     setSelectedColorIndex(0);
     setSelectedModules(["overview"]);
+    const overviewMod = STUDIO_MODULES.find((m) => m.key === "overview");
+    setSelectedSubModules({ overview: overviewMod ? overviewMod.items.map((i) => i.href) : ["/admin/dashboard"] });
+    setRoleExpandedModules({});
     setShowCreateModal(true);
   };
 
@@ -113,7 +344,21 @@ export default function ManageStaffRolesPage() {
     setRoleDesc(role.description || "");
     const presetIndex = ROLE_COLOR_PRESETS.findIndex((c) => c.text === role.color?.text);
     setSelectedColorIndex(presetIndex >= 0 ? presetIndex : 0);
-    setSelectedModules(role.defaultModules || ["overview"]);
+    const mods = role.defaultModules && role.defaultModules.length > 0 ? role.defaultModules : ["overview"];
+    setSelectedModules([...mods]);
+    const initialSubs: Record<string, string[]> = {};
+    mods.forEach((modKey) => {
+      if (role.defaultSubModules && role.defaultSubModules[modKey] && role.defaultSubModules[modKey].length > 0) {
+        initialSubs[modKey] = [...role.defaultSubModules[modKey]];
+      } else {
+        const mod = STUDIO_MODULES.find((m) => m.key === modKey);
+        if (mod) {
+          initialSubs[modKey] = mod.items.map((i) => i.href);
+        }
+      }
+    });
+    setSelectedSubModules(initialSubs);
+    setRoleExpandedModules({});
     setShowEditModal(true);
   };
 
@@ -131,6 +376,7 @@ export default function ManageStaffRolesPage() {
         description: roleDesc.trim(),
         color,
         defaultModules: selectedModules,
+        defaultSubModules: selectedSubModules,
       });
       setNotice({ type: "success", text: `Role "${roleLabel.trim()}" created successfully!` });
       setShowCreateModal(false);
@@ -156,6 +402,7 @@ export default function ManageStaffRolesPage() {
         description: roleDesc.trim(),
         color,
         defaultModules: selectedModules,
+        defaultSubModules: selectedSubModules,
         key: editingRole.key,
         isCustom: editingRole.isCustom ?? false,
       });
@@ -193,17 +440,84 @@ export default function ManageStaffRolesPage() {
     }
   };
 
-  const toggleModule = (key: string) => {
-    setSelectedModules((prev) =>
-      prev.includes(key) ? prev.filter((m) => m !== key) : [...prev, key]
-    );
+  const handleToggleModule = (key: string) => {
+    if (selectedModules.includes(key)) {
+      setSelectedModules((prev) => prev.filter((m) => m !== key));
+      setSelectedSubModules((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    } else {
+      setSelectedModules((prev) => [...prev, key]);
+      const mod = STUDIO_MODULES.find((m) => m.key === key);
+      if (mod) {
+        setSelectedSubModules((prev) => ({
+          ...prev,
+          [key]: mod.items.map((i) => i.href),
+        }));
+      }
+    }
   };
 
-  const toggleAllModules = () => {
-    setSelectedModules((prev) =>
-      prev.length === ALL_MODULE_KEYS.length ? [] : [...ALL_MODULE_KEYS]
-    );
+  const handleToggleSubModule = (moduleKey: string, href: string) => {
+    const mod = STUDIO_MODULES.find((m) => m.key === moduleKey);
+    if (!mod) return;
+
+    if (!selectedModules.includes(moduleKey)) {
+      setSelectedModules((prev) => [...prev, moduleKey]);
+    }
+
+    setSelectedSubModules((prev) => {
+      const currentSubs = prev[moduleKey] !== undefined ? [...prev[moduleKey]] : mod.items.map((i) => i.href);
+      const updatedSubs = currentSubs.includes(href)
+        ? currentSubs.filter((h) => h !== href)
+        : [...currentSubs, href];
+      return {
+        ...prev,
+        [moduleKey]: updatedSubs,
+      };
+    });
   };
+
+  const handleToggleAllSubModulesForModule = (moduleKey: string) => {
+    const mod = STUDIO_MODULES.find((m) => m.key === moduleKey);
+    if (!mod) return;
+
+    const allHrefs = mod.items.map((i) => i.href);
+    const currentSubs = selectedSubModules[moduleKey] !== undefined ? selectedSubModules[moduleKey] : allHrefs;
+    const isAllSelected = allHrefs.length > 0 && allHrefs.every((h) => currentSubs.includes(h));
+
+    if (isAllSelected) {
+      setSelectedSubModules((prev) => ({
+        ...prev,
+        [moduleKey]: [],
+      }));
+    } else {
+      if (!selectedModules.includes(moduleKey)) {
+        setSelectedModules((prev) => [...prev, moduleKey]);
+      }
+      setSelectedSubModules((prev) => ({
+        ...prev,
+        [moduleKey]: allHrefs,
+      }));
+    }
+  };
+
+  const handleToggleAllGlobal = () => {
+    if (selectedModules.length === ALL_MODULE_KEYS.length) {
+      setSelectedModules([]);
+      setSelectedSubModules({});
+    } else {
+      setSelectedModules([...ALL_MODULE_KEYS]);
+      const allSubMap: Record<string, string[]> = {};
+      STUDIO_MODULES.forEach((mod) => {
+        allSubMap[mod.key] = mod.items.map((i) => i.href);
+      });
+      setSelectedSubModules(allSubMap);
+    }
+  };
+
 
   // Filtered roles
   const filteredRoles = roles.filter((role) => {
@@ -334,7 +648,7 @@ export default function ManageStaffRolesPage() {
 
           {/* ── Search & Filter Controls ── */}
           <div className="p-4 rounded-2xl bg-[#0c0c16]/95 border border-white/[0.08] backdrop-blur-xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="relative w-full sm:w-80">
+            <div className="relative w-full sm:max-w-md flex-1">
               <span className="material-symbols-outlined text-gray-400 text-lg absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 search
               </span>
@@ -343,8 +657,18 @@ export default function ManageStaffRolesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search roles by name or key…"
-                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
+                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-9 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -481,6 +805,10 @@ export default function ManageStaffRolesPage() {
                             role.defaultModules.map((mKey) => {
                               const cfg = MODULE_CONFIG[mKey];
                               if (!cfg) return null;
+                              const studioMod = STUDIO_MODULES.find((m) => m.key === mKey);
+                              const totalItems = studioMod ? studioMod.items.length : 0;
+                              const subs = role.defaultSubModules?.[mKey];
+                              const count = subs !== undefined ? subs.length : totalItems;
                               return (
                                 <span
                                   key={mKey}
@@ -489,6 +817,17 @@ export default function ManageStaffRolesPage() {
                                 >
                                   <span className="material-symbols-outlined text-[11px]">{cfg.icon}</span>
                                   {cfg.label}
+                                  {totalItems > 0 && (
+                                    <span
+                                      className="text-[9px] px-1 py-0.2 rounded font-sans font-bold"
+                                      style={{
+                                        backgroundColor: count === totalItems ? "rgba(44, 236, 247, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                                        color: count === totalItems ? "#2cecf7" : "#f59e0b",
+                                      }}
+                                    >
+                                      {count === totalItems ? "All" : `${count}/${totalItems}`}
+                                    </span>
+                                  )}
                                 </span>
                               );
                             })
@@ -644,58 +983,17 @@ export default function ManageStaffRolesPage() {
                 </div>
               </div>
 
-              {/* Default Modules Checkbox */}
-              <div className="space-y-2.5 pt-2 border-t border-white/[0.06]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 font-mono uppercase tracking-wider">
-                    Default Module Permissions
-                  </span>
-                  <button
-                    type="button"
-                    onClick={toggleAllModules}
-                    className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
-                  >
-                    {selectedModules.length === ALL_MODULE_KEYS.length ? "Deselect All" : "Select All"}
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {ALL_MODULE_KEYS.map((key) => {
-                    const cfg = MODULE_CONFIG[key];
-                    const isChecked = selectedModules.includes(key);
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => toggleModule(key)}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
-                          isChecked
-                            ? "bg-white/[0.06] border-cyan-500/40"
-                            : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]"
-                        }`}
-                      >
-                        <div
-                          className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
-                          style={{ background: `${cfg.color}18`, color: cfg.color }}
-                        >
-                          <span className="material-symbols-outlined text-sm">{cfg.icon}</span>
-                        </div>
-                        <span className={`text-xs font-mono flex-1 truncate ${isChecked ? "text-white font-bold" : "text-gray-400"}`}>
-                          {cfg.label}
-                        </span>
-                        <div
-                          className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                            isChecked ? "bg-cyan-500 border-cyan-500" : "border-gray-600"
-                          }`}
-                        >
-                          {isChecked && (
-                            <span className="material-symbols-outlined text-white text-[10px]">check</span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* Default Modules & Sub-modules */}
+              <RoleModuleGrid
+                selectedModules={selectedModules}
+                selectedSubModules={selectedSubModules}
+                expandedModules={roleExpandedModules}
+                onToggleExpand={toggleRoleExpand}
+                onToggleModule={handleToggleModule}
+                onToggleSubModule={handleToggleSubModule}
+                onToggleAllSubModules={handleToggleAllSubModulesForModule}
+                onToggleAllGlobal={handleToggleAllGlobal}
+              />
 
               {/* Submit */}
               <button
@@ -808,58 +1106,17 @@ export default function ManageStaffRolesPage() {
                 </div>
               </div>
 
-              {/* Default Modules Checkbox */}
-              <div className="space-y-2.5 pt-2 border-t border-white/[0.06]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 font-mono uppercase tracking-wider">
-                    Default Module Permissions
-                  </span>
-                  <button
-                    type="button"
-                    onClick={toggleAllModules}
-                    className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
-                  >
-                    {selectedModules.length === ALL_MODULE_KEYS.length ? "Deselect All" : "Select All"}
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {ALL_MODULE_KEYS.map((key) => {
-                    const cfg = MODULE_CONFIG[key];
-                    const isChecked = selectedModules.includes(key);
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => toggleModule(key)}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
-                          isChecked
-                            ? "bg-white/[0.06] border-cyan-500/40"
-                            : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]"
-                        }`}
-                      >
-                        <div
-                          className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
-                          style={{ background: `${cfg.color}18`, color: cfg.color }}
-                        >
-                          <span className="material-symbols-outlined text-sm">{cfg.icon}</span>
-                        </div>
-                        <span className={`text-xs font-mono flex-1 truncate ${isChecked ? "text-white font-bold" : "text-gray-400"}`}>
-                          {cfg.label}
-                        </span>
-                        <div
-                          className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                            isChecked ? "bg-cyan-500 border-cyan-500" : "border-gray-600"
-                          }`}
-                        >
-                          {isChecked && (
-                            <span className="material-symbols-outlined text-white text-[10px]">check</span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {/* Default Modules & Sub-modules */}
+              <RoleModuleGrid
+                selectedModules={selectedModules}
+                selectedSubModules={selectedSubModules}
+                expandedModules={roleExpandedModules}
+                onToggleExpand={toggleRoleExpand}
+                onToggleModule={handleToggleModule}
+                onToggleSubModule={handleToggleSubModule}
+                onToggleAllSubModules={handleToggleAllSubModulesForModule}
+                onToggleAllGlobal={handleToggleAllGlobal}
+              />
 
               {/* Submit */}
               <button

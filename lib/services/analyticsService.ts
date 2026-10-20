@@ -44,10 +44,17 @@ function getTodayString(): string {
 
 /**
  * Record a public page view in Firestore.
- * Automatically updates total views and today's views.
+ * Automatically updates total views, today's views, and unique visitors.
+ * Completely real metrics — zero fake numbers.
  */
 export async function recordPageView(path: string): Promise<void> {
   if (typeof window === "undefined") return;
+
+  // Respect user cookie preferences if they explicitly declined non-essential tracking
+  const cookieConsent = localStorage.getItem("devengine_cookie_consent");
+  if (cookieConsent === "declined") {
+    return;
+  }
 
   // Prevent counting internal prefetch or repeated bursts within 10 seconds on the same path
   const lastPath = sessionStorage.getItem("devengine_last_view_path");
@@ -60,6 +67,15 @@ export async function recordPageView(path: string): Promise<void> {
   sessionStorage.setItem("devengine_last_view_path", path);
   sessionStorage.setItem("devengine_last_view_time", String(now));
 
+  // Genuine unique visitor device tracking via localStorage
+  let visitorId = localStorage.getItem("devengine_visitor_id");
+  const isNewUniqueVisitor = !visitorId;
+  if (!visitorId) {
+    visitorId = "vis_" + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+    localStorage.setItem("devengine_visitor_id", visitorId);
+  }
+
+  // Session tracking to identify unique browsing sessions
   const isNewSession = !sessionStorage.getItem("devengine_session_tracked");
   if (isNewSession) {
     sessionStorage.setItem("devengine_session_tracked", "true");
@@ -71,11 +87,11 @@ export async function recordPageView(path: string): Promise<void> {
   try {
     const snap = await getDoc(analyticsRef);
     if (!snap.exists()) {
-      // Initialize with base stats
+      // Initialize with exact real counts
       await setDoc(analyticsRef, {
-        totalViews: 1240, // realistic starting baseline
-        todayViews: 38,
-        uniqueVisitors: 890,
+        totalViews: 1,
+        todayViews: 1,
+        uniqueVisitors: isNewUniqueVisitor ? 1 : 0,
         todayDate: todayStr,
         lastVisitAt: serverTimestamp(),
       });
@@ -87,7 +103,7 @@ export async function recordPageView(path: string): Promise<void> {
         await updateDoc(analyticsRef, {
           totalViews: increment(1),
           todayViews: increment(1),
-          uniqueVisitors: isNewSession ? increment(1) : increment(0),
+          uniqueVisitors: isNewUniqueVisitor ? increment(1) : increment(0),
           lastVisitAt: serverTimestamp(),
         });
       } else {
@@ -95,19 +111,20 @@ export async function recordPageView(path: string): Promise<void> {
         await updateDoc(analyticsRef, {
           totalViews: increment(1),
           todayViews: 1,
-          uniqueVisitors: isNewSession ? increment(1) : increment(0),
+          uniqueVisitors: isNewUniqueVisitor ? increment(1) : increment(0),
           todayDate: todayStr,
           lastVisitAt: serverTimestamp(),
         });
       }
     }
 
-    // Occasionally record a high-level public visit activity (e.g. if new session or main landing/lab)
-    if (isNewSession || path === "/" || path === "/lab" || path === "/archive") {
+    // Record authentic activity log when a new session arrives
+    if (isNewSession) {
+      const displayPath = path === "/" ? "Home Platform" : path;
       await logActivity({
         type: "visit",
         title: "Visitor Traffic",
-        description: `Anonymous visitor browsed ${path === "/" ? "Home Platform" : path.replace("/", "").toUpperCase()}`,
+        description: `Visitor browsing ${displayPath}`,
         icon: "visibility",
       });
     }
@@ -118,7 +135,7 @@ export async function recordPageView(path: string): Promise<void> {
 }
 
 /**
- * Fetch current site analytics for admin dashboard
+ * Fetch current real site analytics for admin dashboard
  */
 export async function getSiteAnalytics(): Promise<AnalyticsSummary> {
   const todayStr = getTodayString();
@@ -130,18 +147,18 @@ export async function getSiteAnalytics(): Promise<AnalyticsSummary> {
       const data = snap.data();
       const isSameDay = data.todayDate === todayStr;
       return {
-        totalViews: data.totalViews ?? 1240,
-        todayViews: isSameDay ? (data.todayViews ?? 38) : 0,
-        uniqueVisitors: data.uniqueVisitors ?? 890,
+        totalViews: data.totalViews ?? 0,
+        todayViews: isSameDay ? (data.todayViews ?? 0) : 0,
+        uniqueVisitors: data.uniqueVisitors ?? 0,
         todayDate: todayStr,
         lastVisitAt: data.lastVisitAt,
       };
     } else {
-      // Seed initial summary document
+      // Seed initial summary document with genuine 0s
       const initial: AnalyticsSummary = {
-        totalViews: 1284,
-        todayViews: 46,
-        uniqueVisitors: 915,
+        totalViews: 0,
+        todayViews: 0,
+        uniqueVisitors: 0,
         todayDate: todayStr,
       };
       await setDoc(analyticsRef, {
@@ -153,16 +170,16 @@ export async function getSiteAnalytics(): Promise<AnalyticsSummary> {
   } catch (err) {
     console.error("Error fetching analytics:", err);
     return {
-      totalViews: 1284,
-      todayViews: 46,
-      uniqueVisitors: 915,
+      totalViews: 0,
+      todayViews: 0,
+      uniqueVisitors: 0,
       todayDate: todayStr,
     };
   }
 }
 
 /**
- * Log a structured activity event into activity_logs collection
+ * Log a structured real activity event into activity_logs collection
  */
 export async function logActivity(activity: {
   type: ActivityLog["type"];
@@ -182,7 +199,8 @@ export async function logActivity(activity: {
 }
 
 /**
- * Fetch latest recent activities for dashboard timeline
+ * Fetch latest genuine activities for dashboard timeline.
+ * Returns only real logged activities from Firestore — zero fake orders or fake numbers.
  */
 export async function getRecentActivities(maxItems: number = 8): Promise<ActivityLog[]> {
   try {
@@ -194,49 +212,7 @@ export async function getRecentActivities(maxItems: number = 8): Promise<Activit
     const snap = await getDocs(q);
 
     if (snap.empty) {
-      // Return structured default activities based on actual system events
-      return [
-        {
-          id: "act-1",
-          type: "system",
-          title: "Master Database Synchronized",
-          description: "All 21 modules pushed to Firestore successfully.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 15),
-          icon: "sync",
-        },
-        {
-          id: "act-2",
-          type: "project",
-          title: "Lab Projects Activated",
-          description: "Project Nexus, Aurora AI & Pulse Mobile updated to public status.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 45),
-          icon: "science",
-        },
-        {
-          id: "act-3",
-          type: "order",
-          title: "New License Order Received",
-          description: "Order placed for Find It ($7,000.00).",
-          timestamp: new Date(Date.now() - 1000 * 60 * 180),
-          icon: "shopping_bag",
-        },
-        {
-          id: "act-4",
-          type: "visit",
-          title: "High Visitor Traffic",
-          description: "Traffic surge recorded across DevEngine Archive catalog.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 360),
-          icon: "monitoring",
-        },
-        {
-          id: "act-5",
-          type: "order",
-          title: "Payment Verified",
-          description: "CraftyBay enterprise purchase ($30,000.00) verified.",
-          timestamp: new Date(Date.now() - 1000 * 60 * 720),
-          icon: "verified",
-        },
-      ];
+      return [];
     }
 
     return snap.docs.map((d) => ({
@@ -244,32 +220,22 @@ export async function getRecentActivities(maxItems: number = 8): Promise<Activit
       ...d.data(),
     })) as ActivityLog[];
   } catch (err) {
-    console.debug("getRecentActivities fallback:", err);
-    return [
-      {
-        id: "act-1",
-        type: "system",
-        title: "Master Database Synchronized",
-        description: "All 21 modules pushed to Firestore successfully.",
-        timestamp: new Date(Date.now() - 1000 * 60 * 15),
-        icon: "sync",
-      },
-      {
-        id: "act-2",
-        type: "project",
-        title: "Lab Projects Activated",
-        description: "Project Nexus, Aurora AI & Pulse Mobile updated to public status.",
-        timestamp: new Date(Date.now() - 1000 * 60 * 45),
-        icon: "science",
-      },
-      {
-        id: "act-3",
-        type: "order",
-        title: "New License Order Received",
-        description: "Order placed for Find It ($7,000.00).",
-        timestamp: new Date(Date.now() - 1000 * 60 * 180),
-        icon: "shopping_bag",
-      },
-    ];
+    console.debug("getRecentActivities notice:", err);
+    return [];
   }
+}
+
+/**
+ * Admin utility: Reset analytics counters to zero
+ */
+export async function resetAnalyticsToZero(): Promise<void> {
+  const todayStr = getTodayString();
+  const analyticsRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOC);
+  await setDoc(analyticsRef, {
+    totalViews: 0,
+    todayViews: 0,
+    uniqueVisitors: 0,
+    todayDate: todayStr,
+    lastVisitAt: serverTimestamp(),
+  });
 }

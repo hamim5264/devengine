@@ -56,15 +56,20 @@
 .moduleHeading > span { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; color: #2cecf7; border: 1px solid var(--devengine-border); background: var(--devengine-soft); border-radius: 13px; }
 .moduleHeading h4 { color: var(--devengine-text); font-size: .95rem; font-weight: 600; }
 .moduleHeading p { color: var(--devengine-muted); font-size: .75rem; margin-top: 3px; }
+.paletteIcon,
 .shell .paletteIcon {
   --icon-color: #2cecf7;
-  --icon-light: #2cecf7;
-  --icon-background: #14213d;
-  --icon-border: #2cecf755;
+  --icon-light: #0891b2;
+  --icon-background: rgba(44, 236, 247, 0.12);
+  --icon-border: rgba(44, 236, 247, 0.35);
   color: var(--icon-color);
   background: var(--icon-background);
   border: 1px solid var(--icon-border);
   box-shadow: none;
+}
+.paletteIcon[data-icon="dashboard"], .paletteIcon[data-icon="overview"] {
+  --icon-color: #2cecf7; --icon-light: #0891b2;
+  --icon-background: rgba(44, 236, 247, 0.14); --icon-border: rgba(44, 236, 247, 0.4);
 }
 .paletteIcon[data-icon="attendance"], .paletteIcon[data-icon="commerce"] {
   --icon-color: #6ee7b7; --icon-light: #047857;
@@ -78,6 +83,10 @@
   --icon-color: #c4b5fd; --icon-light: #6d28d9;
   --icon-background: #8b5cf618; --icon-border: #8b5cf640;
 }
+.paletteIcon[data-icon="certificates"] {
+  --icon-color: #fde047; --icon-light: #b45309;
+  --icon-background: #eab30818; --icon-border: #eab30840;
+}
 .paletteIcon[data-icon="leaves"], .paletteIcon[data-icon="social_network"] {
   --icon-color: #f9a8d4; --icon-light: #be185d;
   --icon-background: #ec489918; --icon-border: #ec489940;
@@ -85,6 +94,22 @@
 .paletteIcon[data-icon="work-updates"], .paletteIcon[data-icon="projects"] {
   --icon-color: #93c5fd; --icon-light: #1d4ed8;
   --icon-background: #3b82f618; --icon-border: #3b82f640;
+}
+.paletteIcon[data-icon="messages"] {
+  --icon-color: #38bdf8; --icon-light: #0284c7;
+  --icon-background: #0284c718; --icon-border: #0284c740;
+}
+.paletteIcon[data-icon="notifications"] {
+  --icon-color: #818cf8; --icon-light: #4338ca;
+  --icon-background: #6366f118; --icon-border: #6366f140;
+}
+.paletteIcon[data-icon="departments"] {
+  --icon-color: #5eead4; --icon-light: #0f766e;
+  --icon-background: #14b8a618; --icon-border: #14b8a640;
+}
+.paletteIcon[data-icon="notices"], .paletteIcon[data-icon="notice-board"] {
+  --icon-color: #fb923c; --icon-light: #c2410c;
+  --icon-background: #f9731618; --icon-border: #f9731640;
 }
 .paletteIcon[data-icon="legal"] {
   --icon-color: #fdba74; --icon-light: #c2410c;
@@ -94,8 +119,22 @@
   --icon-color: #a5b4fc; --icon-light: #4338ca;
   --icon-background: #6366f118; --icon-border: #6366f140;
 }
-:global(html.light) .shell .paletteIcon { color: var(--icon-light); }
-.shell .paletteIcon[data-active="true"] { box-shadow: 0 0 0 3px var(--icon-background); }
+:global(html.light) .paletteIcon,
+:global(html.light) .shell .paletteIcon {
+  color: var(--icon-light);
+  background: var(--icon-background);
+  border-color: var(--icon-border);
+}
+.paletteIcon[data-active="true"],
+.shell .paletteIcon[data-active="true"] {
+  border-color: #2cecf7;
+  box-shadow: 0 0 16px rgba(44, 236, 247, 0.35);
+}
+:global(html.light) .paletteIcon[data-active="true"],
+:global(html.light) .shell .paletteIcon[data-active="true"] {
+  border-color: #2cecf7;
+  box-shadow: 0 0 0 2px #2cecf7, 0 4px 14px rgba(44, 236, 247, 0.25);
+}
 .moduleLinks { display: grid; gap: 5px; }
 .moduleLinks a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 10px 12px; border: 1px solid transparent; border-radius: 11px; color: var(--devengine-text); font-size: .85rem; line-height: 1.5; transition: background-color .18s, border-color .18s; }
 .moduleLinks a > span:first-child { overflow-wrap: anywhere; }

@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { subscribeStudioAccess } from "@/lib/services/staffAuth";
-import { STUDIO_MODULES, hasStudioModule } from "@/lib/staffModules";
+import { STUDIO_MODULES, hasStudioModule, getFilteredModuleItems } from "@/lib/staffModules";
 import type { StaffMember } from "@/types/staff";
 import { STAFF_TYPE_LABELS } from "@/types/staff";
 import HelixLoader from "@/components/HelixLoader";
@@ -138,11 +138,14 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   const [staffData, setStaffData] = useState<StaffMember | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const filteredGroups = useMemo<NavGroup[]>(() => [STAFF_WORKSPACE_GROUP,
-    ...STUDIO_MODULES.filter((module) => hasStudioModule(staffData, module.key)).map((module) => ({
-      label: module.label, moduleKey: module.key, color: "#2cecf7",
-      icon: <span className="material-symbols-outlined" aria-hidden="true">{module.icon}</span>,
-      items: module.items.map((entry) => ({ ...entry, staffHref: entry.href, desc: module.description })),
-    })),
+    ...STUDIO_MODULES.filter((module) => hasStudioModule(staffData, module.key)).map((module) => {
+      const filteredItems = getFilteredModuleItems(staffData, module.key);
+      return {
+        label: module.label, moduleKey: module.key, color: "#2cecf7",
+        icon: <span className="material-symbols-outlined" aria-hidden="true">{module.icon}</span>,
+        items: filteredItems.map((entry) => ({ ...entry, staffHref: entry.href, desc: module.description })),
+      };
+    }).filter((g) => g.items.length > 0),
   ], [staffData]);
 
   // ── Futuristic Bento Command Center & Profile Modal States ──
@@ -670,9 +673,10 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                             {item.label === "Attendance & Heatmap" && <IconUserCheck size={18} />}
                             {item.label === "Tasks & Deadlines" && <IconFolder size={18} />}
                             {item.label === "My Agreement" && <IconDoc size={18} />}
+                            {item.label === "Certificates" && <span className="material-symbols-outlined" style={{ fontSize: 20 }} aria-hidden="true">workspace_premium</span>}
                             {item.label === "Leaves & Off-Day Swap" && <IconShare size={18} />}
                             {item.label === "Daily Work Updates" && <IconEdit size={18} />}
-                            {["Messages", "Notifications", "Departments", "Notice Board"].includes(item.label) && <span className="material-symbols-outlined" aria-hidden="true">{({ Messages: "chat_bubble", Notifications: "notifications", Departments: "hub", "Notice Board": "campaign" } as Record<string, string>)[item.label]}</span>}
+                            {["Messages", "Notifications", "Departments", "Notice Board"].includes(item.label) && <span className="material-symbols-outlined" style={{ fontSize: 20 }} aria-hidden="true">{({ Messages: "chat_bubble", Notifications: "notifications", Departments: "hub", "Notice Board": "campaign" } as Record<string, string>)[item.label]}</span>}
                           </div>
 
                           {isActive ? (

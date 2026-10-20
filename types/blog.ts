@@ -34,6 +34,8 @@ export interface BlogPost {
   tags: string[];
   stats?: BlogStat[];
   order?: number;
+  views?: number;
+  readsCount?: number;
   isPublished: boolean;
   publishedAt: string;
   createdAt: string;

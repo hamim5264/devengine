@@ -10,6 +10,7 @@ export type Theme = "dark" | "light";
 
 interface ThemeContextType {
   theme: Theme;
+  defaultTheme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
   allowDarkMode: boolean;
@@ -18,7 +19,8 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "dark",
+  theme: "light",
+  defaultTheme: "light",
   toggleTheme: () => {},
   setTheme: () => {},
   allowDarkMode: true,
@@ -27,10 +29,10 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
   const [themeModes, setThemeModes] = useState<ThemeModeSettings>(DEFAULT_THEME_MODES);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
-  const currentTheme = useRef<Theme>("dark");
+  const currentTheme = useRef<Theme>("light");
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
@@ -78,18 +80,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Real-time Firestore subscriber for active theme modes
   useEffect(() => {
-    // Restore the previous appearance while the first live settings arrive.
+    // Restore the previous appearance or default while the first live settings arrive.
     try {
       const saved = localStorage.getItem("devengine_theme");
-      if (saved === "light" || saved === "dark") {
-        setThemeState(saved);
-        applyTheme(saved);
-      }
+      const defSaved = localStorage.getItem("devengine_default_theme");
+      const initial = (saved === "light" || saved === "dark")
+        ? saved
+        : (defSaved === "dark" || defSaved === "light")
+        ? defSaved
+        : "light";
+      setThemeState(initial);
+      applyTheme(initial);
     } catch {}
 
     const unsub = subscribeThemeModeSettings((modes) => {
       setThemeModes(modes);
       setSettingsLoaded(true);
+
+      const targetDefault: Theme = modes.defaultTheme === "dark" ? "dark" : "light";
+      try {
+        localStorage.setItem("devengine_default_theme", targetDefault);
+      } catch {}
 
       // If admin only activated Light Mode: enforce Light globally for everyone
       if (!modes.allowDarkMode && modes.allowLightMode) {
@@ -107,7 +118,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           localStorage.setItem("devengine_theme", "dark");
         } catch {}
       }
-      // If both are enabled, fallback to user preference in localStorage or default to dark
+      // If both are enabled, fallback to user preference in localStorage or admin default
       else if (modes.allowDarkMode && modes.allowLightMode) {
         try {
           const saved = localStorage.getItem("devengine_theme") as Theme | null;
@@ -115,12 +126,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setThemeState(saved);
             applyTheme(saved);
           } else {
-            setThemeState("dark");
-            applyTheme("dark");
+            setThemeState(targetDefault);
+            applyTheme(targetDefault);
           }
         } catch {
-          setThemeState("dark");
-          applyTheme("dark");
+          setThemeState(targetDefault);
+          applyTheme(targetDefault);
         }
       }
     });
@@ -161,6 +172,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ThemeContext.Provider
       value={{
         theme,
+        defaultTheme: themeModes.defaultTheme || "light",
         toggleTheme,
         setTheme,
         allowDarkMode: themeModes.allowDarkMode,

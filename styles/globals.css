@@ -643,7 +643,7 @@ html.light select option {
 }
 
 /* 10. Headers & Sidebars in AdminLayout & StaffLayout */
-html.light header:not([class*="navbar"]):not([class*="staff"]):not([class*="pointer-events-none"]) {
+html.light header:not([class*="navbar"]):not([class*="staff"]):not([class*="pointer-events-none"]):not([class*="article"]):not([class*="editorial"]):not([class*="quiet"]) {
   background-color: rgba(255, 255, 255, 0.96) !important;
   border-bottom: 1px solid #e2e8f0 !important;
   box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
@@ -659,21 +659,21 @@ header.staff-navbar-header {
   box-shadow: none !important;
 }
 
-html.light aside {
+html.light aside:not([class*="editorialSidebar"]) {
   background-color: #ffffff !important;
   border-right: 1px solid #e2e8f0 !important;
 }
 
-html.light aside a:not([data-active="true"]) {
+html.light aside:not([class*="editorialSidebar"]) a:not([data-active="true"]) {
   color: #334155 !important;
 }
 
-html.light aside a:not([data-active="true"]):hover {
+html.light aside:not([class*="editorialSidebar"]) a:not([data-active="true"]):hover {
   background-color: rgba(15, 23, 42, 0.05) !important;
   color: #0f172a !important;
 }
 
-html.light aside button {
+html.light aside:not([class*="editorialSidebar"]) button {
   color: #475569 !important;
 }
 

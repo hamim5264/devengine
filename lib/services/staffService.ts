@@ -83,6 +83,7 @@ export async function createStaffAccount(data: {
   password: string;
   staffType: StaffType;
   allowedModules: string[];
+  allowedSubModules?: Record<string, string[]>;
   avatarUrl?: string;
   assignedOffDays?: string[];
   shiftHours?: { start: string; end: string; name?: string };
@@ -119,6 +120,7 @@ export async function createStaffAccount(data: {
     avatarUrl: data.avatarUrl || "",
     staffType: data.staffType,
     allowedModules: data.allowedModules,
+    allowedSubModules: data.allowedSubModules || {},
     status: "active",
     assignedOffDays: data.assignedOffDays || ["Friday", "Saturday"],
     shiftHours: data.shiftHours || { start: "09:00", end: "18:00", name: "Standard Shift" },
@@ -327,6 +329,7 @@ export async function createStaffRole(data: {
   description?: string;
   color?: { bg: string; text: string; border: string; hex?: string };
   defaultModules?: string[];
+  defaultSubModules?: Record<string, string[]>;
 }): Promise<StaffRole> {
   const rawKey = data.key || data.label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
   const key = rawKey || `role_${Date.now()}`;
@@ -342,6 +345,7 @@ export async function createStaffRole(data: {
     description: data.description || "",
     color,
     defaultModules: data.defaultModules || ["overview"],
+    defaultSubModules: data.defaultSubModules || {},
     isCustom: true,
     createdAt: now,
     updatedAt: now,

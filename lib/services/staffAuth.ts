@@ -5,7 +5,7 @@ import { type User, onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import type { StaffMember } from "@/types/staff";
-import { hasStudioModule, modulesForAdminRoute } from "@/lib/staffModules";
+import { hasStudioModule, hasStudioSubModule, modulesForAdminRoute } from "@/lib/staffModules";
 
 export const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 const isOwner = (user: User) => user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
@@ -30,10 +30,18 @@ interface AccessState {
 const denied: AccessState = { user: null, authorized: false, isAdmin: false, isStaff: false, staff: null };
 type RequiredModules = string | string[] | undefined;
 
-function staffMayEnter(staff: StaffMember, required: RequiredModules) {
+function staffMayEnter(staff: StaffMember, required: RequiredModules, pathname?: string) {
   if (staff.status !== "active") return false;
   if (required === undefined) return true;
-  return (Array.isArray(required) ? required : [required]).some((key) => hasStudioModule(staff, key));
+  const keys = Array.isArray(required) ? required : [required];
+  // First check module-level access
+  const hasModule = keys.some((key) => hasStudioModule(staff, key));
+  if (!hasModule) return false;
+  // If we have a specific pathname, also check sub-module access
+  if (pathname && staff.allowedSubModules) {
+    return keys.some((key) => hasStudioSubModule(staff, key, pathname));
+  }
+  return true;
 }
 
 /** Re-evaluate grants and suspension live; discard callbacks from old sessions. */

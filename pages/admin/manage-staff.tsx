@@ -35,6 +35,7 @@ import {
   getRoleLabel,
   getRoleBadgeColor,
 } from "@/types/staff";
+import { STUDIO_MODULES } from "@/lib/staffModules";
 import {
   createEmployeeTask,
   getEmployeeTasks,
@@ -440,6 +441,226 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
   );
 }
 
+// ── Module & Sub-Module Checkbox Grid ──
+interface ModuleGridProps {
+  selected: string[];
+  subModules: Record<string, string[]>;
+  expandedModules: Record<string, boolean>;
+  onToggleExpand: (key: string) => void;
+  onToggleModule: (key: string) => void;
+  onToggleSubModule: (moduleKey: string, href: string) => void;
+  onToggleAllSubModules: (moduleKey: string) => void;
+  onToggleAll: () => void;
+}
+
+function ModuleGrid({
+  selected,
+  subModules,
+  expandedModules,
+  onToggleExpand,
+  onToggleModule,
+  onToggleSubModule,
+  onToggleAllSubModules,
+  onToggleAll,
+}: ModuleGridProps) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-xs text-[var(--devengine-muted)] font-mono uppercase tracking-wider block font-bold">
+            Module & Sub-module Access
+          </span>
+          <span className="text-[11px] text-[var(--devengine-muted)] opacity-75">
+            Expand any module to customize granular permissions
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onToggleAll}
+          className="text-[11px] font-bold text-[#2cecf7] hover:underline transition-colors cursor-pointer py-1 px-2 rounded-lg hover:bg-[#2cecf7]/10"
+        >
+          {selected.length === ALL_MODULE_KEYS.length ? "Deselect All Modules" : "Select All Modules"}
+        </button>
+      </div>
+
+      <div className="space-y-2.5">
+        {ALL_MODULE_KEYS.map((key) => {
+          const cfg = MODULE_CONFIG[key];
+          const studioMod = STUDIO_MODULES.find((m) => m.key === key);
+          const isChecked = selected.includes(key);
+          const isExpanded = !!expandedModules[key];
+          const items = studioMod ? studioMod.items : [];
+          const allowedSubs = subModules[key] !== undefined
+            ? subModules[key]
+            : (isChecked ? items.map((i) => i.href) : []);
+          const allSubsSelected = items.length > 0 && items.every((i) => allowedSubs.includes(i.href));
+          const subCount = allowedSubs.length;
+
+          return (
+            <div
+              key={key}
+              className={`rounded-2xl border transition-all overflow-hidden ${
+                isChecked
+                  ? "bg-[var(--devengine-surface)] border-[#2cecf7]/30 shadow-sm"
+                  : "bg-[var(--devengine-surface)] border-[var(--devengine-border)] opacity-85 hover:opacity-100"
+              }`}
+            >
+              {/* Module Header Row */}
+              <div className="flex items-center justify-between p-3 sm:p-3.5 gap-3">
+                {/* Left: Icon, Label, Description & Counter */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onToggleModule(key)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onToggleModule(key);
+                    }
+                  }}
+                  className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
+                >
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform active:scale-95"
+                    style={{ background: `${cfg.color}18`, color: cfg.color }}
+                  >
+                    <span className="material-symbols-outlined text-lg">{cfg.icon}</span>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs font-bold ${isChecked ? "text-[var(--devengine-text)]" : "text-[var(--devengine-muted)]"}`}>
+                        {cfg.label}
+                      </span>
+                      {isChecked && (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border"
+                          style={{
+                            backgroundColor: allSubsSelected ? "rgba(44, 236, 247, 0.12)" : "rgba(245, 158, 11, 0.12)",
+                            borderColor: allSubsSelected ? "rgba(44, 236, 247, 0.35)" : "rgba(245, 158, 11, 0.35)",
+                            color: allSubsSelected ? "#2cecf7" : "#f59e0b",
+                          }}
+                        >
+                          {allSubsSelected ? `All ${items.length} options` : `${subCount}/${items.length} sub-modules`}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-[var(--devengine-muted)] block truncate opacity-75 mt-0.5">
+                      {cfg.description}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: Expand Button & Module Checkbox */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Expand/Collapse Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleExpand(key);
+                    }}
+                    title={isExpanded ? "Collapse sub-modules" : "Customize sub-module permissions"}
+                    className={`h-7 px-2.5 rounded-lg border text-[11px] font-mono flex items-center gap-1 transition-all cursor-pointer ${
+                      isExpanded
+                        ? "bg-[#2cecf7]/15 border-[#2cecf7]/40 text-[#2cecf7]"
+                        : "bg-[var(--devengine-raised)] border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] hover:border-[#2cecf7]/30"
+                    }`}
+                  >
+                    <span>{isExpanded ? "Hide" : "Expand"}</span>
+                    <span className="material-symbols-outlined text-sm">
+                      {isExpanded ? "expand_less" : "expand_more"}
+                    </span>
+                  </button>
+
+                  {/* Checkbox */}
+                  <button
+                    type="button"
+                    onClick={() => onToggleModule(key)}
+                    aria-label={`Toggle ${cfg.label} module`}
+                    className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all cursor-pointer ${
+                      isChecked
+                        ? "bg-[#2cecf7] border-[#2cecf7] shadow-sm shadow-[#2cecf7]/30"
+                        : "border-[var(--devengine-border)] bg-[var(--devengine-raised)] hover:border-[#2cecf7]/40"
+                    }`}
+                  >
+                    {isChecked && (
+                      <span className="material-symbols-outlined text-[#02040a] text-sm font-bold">check</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-modules Expandable Section */}
+              {isExpanded && (
+                <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-1 border-t border-[var(--devengine-border)]/60 bg-[var(--devengine-raised)]/40">
+                  <div className="flex items-center justify-between py-2 border-b border-[var(--devengine-border)]/40 mb-2">
+                    <span className="text-[11px] font-mono font-medium text-[var(--devengine-muted)] flex items-center gap-1">
+                      <span className="material-symbols-outlined text-xs">account_tree</span>
+                      Sub-module options ({items.length})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onToggleAllSubModules(key)}
+                      className="text-[11px] font-semibold text-[#2cecf7] hover:underline cursor-pointer"
+                    >
+                      {allSubsSelected ? "Deselect All Sub-items" : "Select All Sub-items"}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto themed-scroll pr-1">
+                    {items.map((subItem) => {
+                      const isSubChecked = allowedSubs.includes(subItem.href);
+                      return (
+                        <div
+                          key={subItem.href}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onToggleSubModule(key, subItem.href)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onToggleSubModule(key, subItem.href);
+                            }
+                          }}
+                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all cursor-pointer select-none ${
+                            isSubChecked
+                              ? "bg-[#2cecf7]/12 border-[#2cecf7]/45 shadow-xs"
+                              : "bg-[var(--devengine-surface)] border-[var(--devengine-border)] hover:border-[#2cecf7]/30"
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-all ${
+                              isSubChecked
+                                ? "bg-[#2cecf7] border-[#2cecf7]"
+                                : "border-[var(--devengine-border)] bg-[var(--devengine-raised)]"
+                            }`}
+                          >
+                            {isSubChecked && (
+                              <span className="material-symbols-outlined text-[#02040a] text-[11px] font-bold">check</span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs leading-snug break-words flex-1 ${
+                              isSubChecked ? "text-[var(--devengine-text)] font-semibold" : "text-[var(--devengine-muted)]"
+                            }`}
+                          >
+                            {subItem.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────
 export default function ManageStaffPage() {
   const router = useRouter();
@@ -479,6 +700,8 @@ export default function ManageStaffPage() {
   const [createAvatarUrl, setCreateAvatarUrl] = useState("");
   const [createType, setCreateType] = useState<string>("developer");
   const [createModules, setCreateModules] = useState<string[]>([]);
+  const [createSubModules, setCreateSubModules] = useState<Record<string, string[]>>({});
+  const [createExpandedModules, setCreateExpandedModules] = useState<Record<string, boolean>>({});
   const [creating, setCreating] = useState(false);
 
   // Agreement and Shift options during creation
@@ -566,6 +789,8 @@ export default function ManageStaffPage() {
   const [editAvatarUrl, setEditAvatarUrl] = useState("");
   const [editType, setEditType] = useState<string>("developer");
   const [editModules, setEditModules] = useState<string[]>([]);
+  const [editSubModules, setEditSubModules] = useState<Record<string, string[]>>({});
+  const [editExpandedModules, setEditExpandedModules] = useState<Record<string, boolean>>({});
   const [editStatus, setEditStatus] = useState<StaffStatus>("active");
   const [editSuspensionReason, setEditSuspensionReason] = useState("");
   const [editError, setEditError] = useState("");
@@ -668,8 +893,24 @@ export default function ManageStaffPage() {
     setCreateEmail("");
     setCreatePassword(generateStaffPassword());
     setCreateAvatarUrl("");
-    setCreateType(roles.length > 0 ? roles[0].key : "developer");
-    setCreateModules(["overview"]);
+    const firstRole = roles.length > 0 ? roles[0] : null;
+    const defaultType = firstRole ? firstRole.key : "developer";
+    setCreateType(defaultType);
+    const initMods = firstRole?.defaultModules && firstRole.defaultModules.length > 0
+      ? [...firstRole.defaultModules]
+      : ["overview"];
+    setCreateModules(initMods);
+    const subMap: Record<string, string[]> = {};
+    initMods.forEach((modKey) => {
+      if (firstRole?.defaultSubModules && firstRole.defaultSubModules[modKey] && firstRole.defaultSubModules[modKey].length > 0) {
+        subMap[modKey] = [...firstRole.defaultSubModules[modKey]];
+      } else {
+        const mod = STUDIO_MODULES.find((m) => m.key === modKey);
+        if (mod) subMap[modKey] = mod.items.map((i) => i.href);
+      }
+    });
+    setCreateSubModules(subMap);
+    setCreateExpandedModules({});
     setCreatedCreds(null);
     setShowCreatePass(true);
     setShowCreateModal(true);
@@ -787,6 +1028,7 @@ export default function ManageStaffPage() {
         avatarUrl: createAvatarUrl,
         staffType: createType,
         allowedModules: createModules,
+        allowedSubModules: createSubModules,
         assignedOffDays: offDaysChoice,
         shiftHours: { start: shiftStart, end: shiftEnd, name: "Standard Shift" },
         agreementId,
@@ -926,6 +1168,18 @@ export default function ManageStaffPage() {
     setEditAvatarUrl(member.avatarUrl || "");
     setEditType(member.staffType);
     setEditModules([...(member.allowedModules || [])]);
+    const initialEditSub: Record<string, string[]> = {};
+    (member.allowedModules || []).forEach((modKey) => {
+      if (member.allowedSubModules && member.allowedSubModules[modKey] && member.allowedSubModules[modKey].length > 0) {
+        initialEditSub[modKey] = [...member.allowedSubModules[modKey]];
+      } else {
+        const mod = STUDIO_MODULES.find((m) => m.key === modKey);
+        if (mod) {
+          initialEditSub[modKey] = mod.items.map((i) => i.href);
+        }
+      }
+    });
+    setEditSubModules(initialEditSub);
     setEditStatus(member.status);
     setEditSuspensionReason(member.suspensionReason || "");
     setEditError("");
@@ -947,6 +1201,7 @@ export default function ManageStaffPage() {
     setEditLastWorkingDay(member.resignationDetails?.lastWorkingDay || "");
     setEditResignationReason(member.resignationDetails?.reason || "");
     setShowEditPass(false);
+    setEditExpandedModules({});
     setShowEditModal(true);
   };
 
@@ -965,6 +1220,7 @@ export default function ManageStaffPage() {
           avatarUrl: editAvatarUrl,
           staffType: editType,
           allowedModules: editModules,
+          allowedSubModules: editSubModules,
           status: editStatus,
           suspensionReason: editStatus === "suspended" ? editSuspensionReason.trim() : undefined,
           suspendedBy: editStatus === "suspended" ? auth.currentUser?.uid : undefined,
@@ -1071,13 +1327,114 @@ export default function ManageStaffPage() {
     }));
   };
 
-  // ── Module toggle ──
-  const toggleModule = (modules: string[], key: string, setter: (v: string[]) => void) => {
-    setter(modules.includes(key) ? modules.filter((m) => m !== key) : [...modules, key]);
+  // ── Module & Sub-module toggles ──
+  const handleToggleModule = (
+    modules: string[],
+    setModules: React.Dispatch<React.SetStateAction<string[]>>,
+    subMods: Record<string, string[]>,
+    setSubMods: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
+    key: string
+  ) => {
+    if (modules.includes(key)) {
+      setModules(modules.filter((m) => m !== key));
+      setSubMods((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    } else {
+      setModules([...modules, key]);
+      const mod = STUDIO_MODULES.find((m) => m.key === key);
+      if (mod) {
+        setSubMods((prev) => ({
+          ...prev,
+          [key]: mod.items.map((i) => i.href),
+        }));
+      }
+    }
   };
 
-  const toggleAllModules = (modules: string[], setter: (v: string[]) => void) => {
-    setter(modules.length === ALL_MODULE_KEYS.length ? [] : [...ALL_MODULE_KEYS]);
+  const handleToggleSubModule = (
+    modules: string[],
+    setModules: React.Dispatch<React.SetStateAction<string[]>>,
+    subMods: Record<string, string[]>,
+    setSubMods: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
+    moduleKey: string,
+    href: string
+  ) => {
+    const mod = STUDIO_MODULES.find((m) => m.key === moduleKey);
+    if (!mod) return;
+
+    if (!modules.includes(moduleKey)) {
+      setModules((prev) => [...prev, moduleKey]);
+    }
+
+    setSubMods((prev) => {
+      const currentSubs = prev[moduleKey] !== undefined ? [...prev[moduleKey]] : mod.items.map((i) => i.href);
+      const updatedSubs = currentSubs.includes(href)
+        ? currentSubs.filter((h) => h !== href)
+        : [...currentSubs, href];
+      return {
+        ...prev,
+        [moduleKey]: updatedSubs,
+      };
+    });
+  };
+
+  const handleToggleAllSubModulesForModule = (
+    modules: string[],
+    setModules: React.Dispatch<React.SetStateAction<string[]>>,
+    subMods: Record<string, string[]>,
+    setSubMods: React.Dispatch<React.SetStateAction<Record<string, string[]>>>,
+    moduleKey: string
+  ) => {
+    const mod = STUDIO_MODULES.find((m) => m.key === moduleKey);
+    if (!mod) return;
+
+    const allHrefs = mod.items.map((i) => i.href);
+    const currentSubs = subMods[moduleKey] !== undefined ? subMods[moduleKey] : allHrefs;
+    const isAllSelected = allHrefs.length > 0 && allHrefs.every((h) => currentSubs.includes(h));
+
+    if (isAllSelected) {
+      setSubMods((prev) => ({
+        ...prev,
+        [moduleKey]: [],
+      }));
+    } else {
+      if (!modules.includes(moduleKey)) {
+        setModules((prev) => [...prev, moduleKey]);
+      }
+      setSubMods((prev) => ({
+        ...prev,
+        [moduleKey]: allHrefs,
+      }));
+    }
+  };
+
+  const toggleCreateExpand = (key: string) => {
+    setCreateExpandedModules((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleEditExpand = (key: string) => {
+    setEditExpandedModules((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleToggleAllGlobal = (
+    modules: string[],
+    setModules: React.Dispatch<React.SetStateAction<string[]>>,
+    setSubMods: React.Dispatch<React.SetStateAction<Record<string, string[]>>>
+  ) => {
+    if (modules.length === ALL_MODULE_KEYS.length) {
+      setModules([]);
+      setSubMods({});
+    } else {
+      setModules([...ALL_MODULE_KEYS]);
+      const allSubMap: Record<string, string[]> = {};
+      STUDIO_MODULES.forEach((mod) => {
+        allSubMap[mod.key] = mod.items.map((i) => i.href);
+      });
+      setSubMods(allSubMap);
+    }
   };
 
   // ── Filter ──
@@ -1109,79 +1466,6 @@ export default function ManageStaffPage() {
       </div>
     );
   }
-
-  // ── Module Checkbox Grid ──
-  const ModuleGrid = ({
-    selected,
-    onToggle,
-    onToggleAll,
-  }: {
-    selected: string[];
-    onToggle: (key: string) => void;
-    onToggleAll: () => void;
-  }) => (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-[var(--devengine-muted)] font-mono uppercase tracking-wider">Module Access</span>
-        <button
-          type="button"
-          onClick={onToggleAll}
-          className="text-[11px] font-bold text-[#2cecf7] hover:underline transition-colors cursor-pointer"
-        >
-          {selected.length === ALL_MODULE_KEYS.length ? "Deselect All" : "Select All"}
-        </button>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {ALL_MODULE_KEYS.map((key) => {
-          const cfg = MODULE_CONFIG[key];
-          const isChecked = selected.includes(key);
-          return (
-            <div
-              key={key}
-              role="button"
-              tabIndex={0}
-              onClick={() => onToggle(key)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onToggle(key);
-                }
-              }}
-              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all cursor-pointer select-none ${
-                isChecked
-                  ? "bg-[#2cecf7]/10 border-[#2cecf7]/40 shadow-sm"
-                  : "bg-[var(--devengine-surface)] border-[var(--devengine-border)] hover:border-[#2cecf7]/30"
-              }`}
-            >
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: `${cfg.color}18`, color: cfg.color }}
-              >
-                <span className="material-symbols-outlined text-base">{cfg.icon}</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className={`text-xs font-bold block ${isChecked ? "text-[var(--devengine-text)]" : "text-[var(--devengine-muted)]"}`}>
-                  {cfg.label}
-                </span>
-                <span className="text-[10px] text-[var(--devengine-muted)] block truncate opacity-75">{cfg.description}</span>
-              </div>
-              <div
-                className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
-                  isChecked
-                    ? "bg-[#2cecf7] border-[#2cecf7]"
-                    : "border-[var(--devengine-border)] bg-[var(--devengine-raised)]"
-                }`}
-              >
-                {isChecked && (
-                  <span className="material-symbols-outlined text-[#02040a] text-xs font-bold">check</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
 
   return (
     <AdminLayout title="Employee Management | DevEngine Admin">
@@ -1342,7 +1626,7 @@ export default function ManageStaffPage() {
 
           {/* ── Search Bar ── */}
           <div className="p-4 rounded-2xl bg-[#0c0c16]/95 border border-white/[0.08] backdrop-blur-xl shadow-xl flex items-center justify-between gap-4">
-            <div className="relative w-full sm:w-80">
+            <div className="relative w-full sm:max-w-md md:max-w-lg flex-1">
               <span className="material-symbols-outlined text-gray-400 text-lg absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 search
               </span>
@@ -1351,11 +1635,21 @@ export default function ManageStaffPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search employees by name, email, or role…"
-                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
+                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-9 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md text-gray-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  title="Clear search"
+                >
+                  <span className="material-symbols-outlined text-sm">close</span>
+                </button>
+              )}
             </div>
 
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
               <span className="text-xs font-mono text-gray-400">
                 Showing {filteredStaff.length} of {staff.length} employees
               </span>
@@ -1863,7 +2157,23 @@ export default function ManageStaffPage() {
                     <RoleSelector
                       roles={roles}
                       selectedRoleKey={createType}
-                      onSelectRole={setCreateType}
+                      onSelectRole={(newKey) => {
+                        setCreateType(newKey);
+                        const chosenRole = roles.find((r) => r.key === newKey);
+                        if (chosenRole && chosenRole.defaultModules && chosenRole.defaultModules.length > 0) {
+                          setCreateModules([...chosenRole.defaultModules]);
+                          const subMap: Record<string, string[]> = {};
+                          chosenRole.defaultModules.forEach((modKey) => {
+                            if (chosenRole.defaultSubModules && chosenRole.defaultSubModules[modKey] && chosenRole.defaultSubModules[modKey].length > 0) {
+                              subMap[modKey] = [...chosenRole.defaultSubModules[modKey]];
+                            } else {
+                              const mod = STUDIO_MODULES.find((m) => m.key === modKey);
+                              if (mod) subMap[modKey] = mod.items.map((i) => i.href);
+                            }
+                          });
+                          setCreateSubModules(subMap);
+                        }
+                      }}
                       onAddNewRole={handleAddNewRoleInline}
                     />
 
@@ -1871,8 +2181,13 @@ export default function ManageStaffPage() {
                     <div className="p-4 sm:p-5 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
                       <ModuleGrid
                         selected={createModules}
-                        onToggle={(key) => toggleModule(createModules, key, setCreateModules)}
-                        onToggleAll={() => toggleAllModules(createModules, setCreateModules)}
+                        subModules={createSubModules}
+                        expandedModules={createExpandedModules}
+                        onToggleExpand={toggleCreateExpand}
+                        onToggleModule={(key) => handleToggleModule(createModules, setCreateModules, createSubModules, setCreateSubModules, key)}
+                        onToggleSubModule={(moduleKey, href) => handleToggleSubModule(createModules, setCreateModules, createSubModules, setCreateSubModules, moduleKey, href)}
+                        onToggleAllSubModules={(moduleKey) => handleToggleAllSubModulesForModule(createModules, setCreateModules, createSubModules, setCreateSubModules, moduleKey)}
+                        onToggleAll={() => handleToggleAllGlobal(createModules, setCreateModules, setCreateSubModules)}
                       />
                     </div>
                   </div>
@@ -2386,8 +2701,13 @@ export default function ManageStaffPage() {
                   <div className="p-4 sm:p-5 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
                     <ModuleGrid
                       selected={editModules}
-                      onToggle={(key) => toggleModule(editModules, key, setEditModules)}
-                      onToggleAll={() => toggleAllModules(editModules, setEditModules)}
+                      subModules={editSubModules}
+                      expandedModules={editExpandedModules}
+                      onToggleExpand={toggleEditExpand}
+                      onToggleModule={(key) => handleToggleModule(editModules, setEditModules, editSubModules, setEditSubModules, key)}
+                      onToggleSubModule={(moduleKey, href) => handleToggleSubModule(editModules, setEditModules, editSubModules, setEditSubModules, moduleKey, href)}
+                      onToggleAllSubModules={(moduleKey) => handleToggleAllSubModulesForModule(editModules, setEditModules, editSubModules, setEditSubModules, moduleKey)}
+                      onToggleAll={() => handleToggleAllGlobal(editModules, setEditModules, setEditSubModules)}
                     />
                   </div>
                 </div>
@@ -3307,6 +3627,10 @@ export default function ManageStaffPage() {
                   {selectedDetailStaff.allowedModules.map((key) => {
                     const cfg = MODULE_CONFIG[key];
                     if (!cfg) return null;
+                    const studioMod = STUDIO_MODULES.find((m) => m.key === key);
+                    const totalItems = studioMod ? studioMod.items.length : 0;
+                    const subs = selectedDetailStaff.allowedSubModules?.[key];
+                    const count = subs !== undefined ? subs.length : totalItems;
                     return (
                       <span
                         key={key}
@@ -3314,7 +3638,18 @@ export default function ManageStaffPage() {
                         style={{ color: cfg.color }}
                       >
                         <span className="material-symbols-outlined text-sm">{cfg.icon}</span>
-                        {cfg.label}
+                        <span>{cfg.label}</span>
+                        {totalItems > 0 && (
+                          <span
+                            className="text-[10px] px-1.5 py-0.2 rounded-full font-sans font-bold"
+                            style={{
+                              backgroundColor: count === totalItems ? "rgba(44, 236, 247, 0.15)" : "rgba(245, 158, 11, 0.15)",
+                              color: count === totalItems ? "#2cecf7" : "#f59e0b",
+                            }}
+                          >
+                            {count === totalItems ? "All" : `${count}/${totalItems}`}
+                          </span>
+                        )}
                       </span>
                     );
                   })}
@@ -3432,7 +3767,31 @@ export default function ManageStaffPage() {
         <div className={manageStyles.success}><StaffAvatar name={deleteTarget.name} url={deleteTarget.avatarUrl} /><div><strong>{deleteTarget.name}</strong><p>{deleteTarget.email}</p></div></div>
         <p style={{ color: "var(--devengine-muted)", lineHeight: 1.8, marginTop: 20 }}>This permanently removes the employee account record. Choose Cancel to keep this employee.</p>
         {deleteError && <p role="alert" style={{ color: "#ed7084" }}>{deleteError}</p>}
-        <div className={manageStyles.dialogActions}><button disabled={!!actionInProgress} onClick={() => setDeleteTarget(null)}>Cancel</button><button disabled={!!actionInProgress} onClick={() => handleDelete(deleteTarget)} style={{ border: "1px solid #ed7084", color: "var(--devengine-text)" }}>{actionInProgress ? "Deleting…" : "Delete permanently"}</button></div>
+        <div className={manageStyles.dialogActions}>
+          <button className={manageStyles.button} disabled={!!actionInProgress} onClick={() => setDeleteTarget(null)}>Cancel</button>
+          <button
+            type="button"
+            disabled={!!actionInProgress}
+            onClick={() => handleDelete(deleteTarget)}
+            style={{
+              backgroundColor: "#ef4444",
+              borderColor: "#dc2626",
+              color: "#ffffff",
+              borderRadius: "9999px",
+              padding: "10px 24px",
+              fontWeight: 600,
+              fontSize: "13px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              cursor: "pointer",
+              boxShadow: "0 4px 14px rgba(239, 68, 68, 0.4)",
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px", color: "#ffffff" }}>delete_forever</span>
+            {actionInProgress ? "Deleting…" : "Delete permanently"}
+          </button>
+        </div>
       </EmployeeDialog>}
       {successMessage && <EmployeeDialog title="Saved successfully" icon="task_alt" onClose={() => setSuccessMessage("")}><div className={manageStyles.success}><EmployeeIcon>check_circle</EmployeeIcon><p>{successMessage}</p></div><div className={manageStyles.dialogActions}><button className={manageStyles.primary} onClick={() => setSuccessMessage("")}>Done</button></div></EmployeeDialog>}
     </AdminLayout>

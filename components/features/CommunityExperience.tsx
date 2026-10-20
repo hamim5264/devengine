@@ -25,7 +25,7 @@ export function Person({ name, role, avatarUrl }: { name: string; role?: string;
 }
 
 export function Author({ author }: { author: BlogAuthor }) {
-  return <Person name={author.name} role={author.role} avatarUrl={author.avatarUrl || "/assets/DevEngine-emblem.png"} />;
+  return <Person name={author.name} role={author.role} avatarUrl={author.avatarUrl} />;
 }
 
 export function SearchField({ value, onChange, label, placeholder, id }: { value: string; onChange: (value: string) => void; label: string; placeholder: string; id: string }) {
@@ -43,6 +43,6 @@ export function BlogCard({ post, compact = false, headingLevel = "h2" }: { post:
   const Heading = headingLevel;
   return <article className={`${styles.blogCard} ${featured ? styles.blogHero : ""} ${!compact && post.gridSpan === "wide" && !featured ? styles.blogWide : ""} ${compact ? styles.blogCompact : ""}`}>
     <Link className={styles.coverLink} href={`/blog/${post.slug}`} tabIndex={-1} aria-hidden="true"><CommunityImage src={post.coverImage} alt="" priority={featured} /></Link>
-    <div className={styles.blogCopy}><div className={styles.articleMeta}><span className={styles.category}><Icon name={category.icon} />{category.label}</span><span>{post.readTime}</span></div>{post.featured && !compact && <span className={styles.featuredLabel}>Editor’s pick</span>}<Heading className={styles.blogTitle}><Link href={`/blog/${post.slug}`}>{post.title}</Link></Heading><p className={styles.excerpt}>{post.excerpt}</p>{!compact && post.tags?.length > 0 && <div className={styles.tags}>{post.tags.slice(0, 3).map((tag) => <span key={tag}>#{tag}</span>)}</div>}<div className={styles.blogFooter}><Author author={post.author} /><Link className={styles.readLink} href={`/blog/${post.slug}`} aria-label={`Read ${post.title}`}>Read story <Icon name="arrow_forward" /></Link></div></div>
+    <div className={styles.blogCopy}><div className={styles.articleMeta}><span className={styles.category}><Icon name={category.icon} />{category.label}</span><span>{post.readTime}</span>{typeof (post.readsCount ?? post.views) === "number" && (post.readsCount ?? post.views ?? 0) > 0 && <span className={styles.metaReads}><Icon name="visibility" /><span>{(post.readsCount ?? post.views)?.toLocaleString()}</span></span>}</div>{post.featured && !compact && <span className={styles.featuredLabel}>Editor’s pick</span>}<Heading className={styles.blogTitle}><Link href={`/blog/${post.slug}`}>{post.title}</Link></Heading><p className={styles.excerpt}>{post.excerpt}</p>{!compact && post.tags?.length > 0 && <div className={styles.tags}>{post.tags.slice(0, 3).map((tag) => <span key={tag}>#{tag}</span>)}</div>}<div className={styles.blogFooter}><Author author={post.author} /><Link className={styles.readLink} href={`/blog/${post.slug}`} aria-label={`Read ${post.title}`}>Read story <Icon name="arrow_forward" /></Link></div></div>
   </article>;
 }

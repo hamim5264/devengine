@@ -1,7 +1,7 @@
 import AdminOverlay from "@/components/admin/AdminOverlay";
 import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
@@ -18,6 +18,11 @@ import {
   seedInitialBlogs,
 } from "@/lib/services/blogService";
 import { moveToBin } from "@/lib/services/binService";
+import {
+  getSavedAuthors,
+  uploadAuthorAvatar,
+  type BlogAuthorProfile,
+} from "@/lib/services/authorService";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
@@ -79,6 +84,12 @@ export default function ManageBlogPage() {
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
+  // Saved authors state for autocomplete and management
+  const [savedAuthors, setSavedAuthors] = useState<BlogAuthorProfile[]>([]);
+  const [authorDropdownOpen, setAuthorDropdownOpen] = useState(false);
+  const [authorUploading, setAuthorUploading] = useState(false);
+  const authorFileInputRef = useRef<HTMLInputElement | null>(null);
+
   // Delete Target
   const [deleteTarget, setDeleteTarget] = useState<BlogPost | null>(null);
 
@@ -94,12 +105,16 @@ export default function ManageBlogPage() {
     return () => unsub();
   }, [router]);
 
-  // Load posts
+  // Load posts and saved authors
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const data = await getAllBlogs();
+      const [data, authors] = await Promise.all([
+        getAllBlogs(),
+        getSavedAuthors(),
+      ]);
       setPosts(data);
+      setSavedAuthors(authors);
     } catch (err) {
       console.error("Failed to load blog posts:", err);
     } finally {
@@ -112,6 +127,52 @@ export default function ManageBlogPage() {
       loadPosts();
     }
   }, [isAdmin]);
+
+  const handleSelectAuthor = (author: BlogAuthorProfile) => {
+    setForm((prev) => ({
+      ...prev,
+      author: {
+        name: author.name,
+        role: author.role,
+        avatarUrl: author.avatarUrl || "/assets/DevEngine-emblem.png",
+      },
+    }));
+    setAuthorDropdownOpen(false);
+  };
+
+  const handleAuthorPicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAuthorUploading(true);
+    try {
+      const url = await uploadAuthorAvatar(file, form.author.name || "author");
+      setForm((prev) => ({
+        ...prev,
+        author: {
+          ...prev.author,
+          avatarUrl: url,
+        },
+      }));
+      setSavedAuthors((prev) => {
+        const nameLower = (form.author.name || "").trim().toLowerCase();
+        const exists = prev.find((a) => a.name.toLowerCase() === nameLower);
+        if (exists) {
+          return prev.map((a) =>
+            a.name.toLowerCase() === nameLower ? { ...a, avatarUrl: url } : a
+          );
+        }
+        return [...prev, { name: form.author.name || "Author", role: form.author.role || "Author", avatarUrl: url }];
+      });
+    } catch (err: any) {
+      console.error("Author avatar upload failed:", err);
+      alert("Failed to upload author picture: " + (err?.message || "Upload error"));
+    } finally {
+      setAuthorUploading(false);
+      if (authorFileInputRef.current) {
+        authorFileInputRef.current.value = "";
+      }
+    }
+  };
 
   // Seed handler
   const handleSeedDefaults = async () => {
@@ -385,30 +446,44 @@ export default function ManageBlogPage() {
         </div>
 
         {/* Metrics Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-white/[0.08] shadow-lg">
-            <div className="text-xs font-medium text-gray-400">Total Chronicles</div>
-            <div className="text-2xl font-bold text-white mt-1">{posts.length}</div>
-          </div>
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-emerald-500/20 shadow-lg">
-            <div className="text-xs font-medium text-emerald-400">Published</div>
-            <div className="text-2xl font-bold text-emerald-300 mt-1">
-              {posts.filter((p) => p.isPublished).length}
+        {(() => {
+          const totalReads = posts.reduce((sum, p) => sum + (p.readsCount || p.views || 0), 0);
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-white/[0.08] shadow-lg">
+                <div className="text-xs font-medium text-gray-400">Total Chronicles</div>
+                <div className="text-2xl font-bold text-white mt-1">{posts.length}</div>
+              </div>
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-emerald-500/20 shadow-lg">
+                <div className="text-xs font-medium text-emerald-400">Published</div>
+                <div className="text-2xl font-bold text-emerald-300 mt-1">
+                  {posts.filter((p) => p.isPublished).length}
+                </div>
+              </div>
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-amber-500/20 shadow-lg">
+                <div className="text-xs font-medium text-amber-400">Drafts</div>
+                <div className="text-2xl font-bold text-amber-300 mt-1">
+                  {posts.filter((p) => !p.isPublished).length}
+                </div>
+              </div>
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-teal-500/20 shadow-lg">
+                <div className="text-xs font-medium text-teal-300">Featured Stories</div>
+                <div className="text-2xl font-bold text-white mt-1">
+                  {posts.filter((p) => p.featured).length}
+                </div>
+              </div>
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-[#2cecf7]/30 shadow-lg col-span-2 sm:col-span-1">
+                <div className="text-xs font-medium text-[#2cecf7] flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-xs">visibility</span>
+                  <span>Total Reads</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1">
+                  {totalReads.toLocaleString()}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-amber-500/20 shadow-lg">
-            <div className="text-xs font-medium text-amber-400">Drafts</div>
-            <div className="text-2xl font-bold text-amber-300 mt-1">
-              {posts.filter((p) => !p.isPublished).length}
-            </div>
-          </div>
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#0c0c16]/95 border border-teal-500/20 shadow-lg">
-            <div className="text-xs font-medium text-teal-300">Featured Stories</div>
-            <div className="text-2xl font-bold text-white mt-1">
-              {posts.filter((p) => p.featured).length}
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* Filters & Search */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4 mb-6 bg-[#0c0c16]/95 p-4 rounded-2xl border border-white/[0.08] shadow-xl">
@@ -497,6 +572,7 @@ export default function ManageBlogPage() {
                     <th className="py-4 px-5">Category</th>
                     <th className="py-4 px-5">Layout Grid</th>
                     <th className="py-4 px-5">Author</th>
+                    <th className="py-4 px-5 text-center">Reads</th>
                     <th className="py-4 px-5 text-center">Status</th>
                     <th className="py-4 px-5 text-right">Actions</th>
                   </tr>
@@ -562,6 +638,14 @@ export default function ManageBlogPage() {
                           <div className="text-[10px] text-gray-400 font-mono">
                             {post.author.role}
                           </div>
+                        </td>
+
+                        {/* Reads Count */}
+                        <td className="py-4 px-5 text-center font-mono">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] text-xs text-white">
+                            <span className="material-symbols-outlined text-xs text-[#2cecf7]">visibility</span>
+                            <span>{(post.readsCount || post.views || 0).toLocaleString()}</span>
+                          </span>
                         </td>
 
                         {/* Status */}
@@ -845,37 +929,243 @@ export default function ManageBlogPage() {
                 />
               </div>
 
-              {/* Author & Tags */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                    Author Name
-                  </label>
-                  <input
-                    type="text"
-                    value={form.author.name}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        author: { ...form.author, name: e.target.value },
-                      })
-                    }
-                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white placeholder-gray-500 outline-none transition"
-                  />
+              {/* ══════════════════════════════════════════════════════
+                  AUTHOR & ATTRIBUTION STUDIO (Backend Synced)
+              ══════════════════════════════════════════════════════ */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-black/40 border border-teal-500/20 shadow-md space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-white/[0.06]">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-teal-400 text-sm">badge</span>
+                    <span className="text-xs font-bold text-white tracking-wide uppercase font-mono">
+                      Author Attribution &amp; Profile
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-teal-300 bg-teal-500/10 border border-teal-500/20 px-2.5 py-0.5 rounded-full font-mono">
+                    Auto-saved to Database
+                  </span>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                    Tags (Comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                    placeholder="e.g. Architecture, Outage, Scaling"
-                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white font-mono placeholder-gray-500 outline-none transition"
-                  />
+                {/* Quick select from previously saved authors */}
+                {savedAuthors.length > 0 && (
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-400 mb-2">
+                      Quick Select Saved Author:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {savedAuthors.map((authProfile) => {
+                        const isSelected =
+                          form.author.name.trim().toLowerCase() === authProfile.name.trim().toLowerCase();
+                        return (
+                          <button
+                            key={authProfile.name}
+                            type="button"
+                            onClick={() => handleSelectAuthor(authProfile)}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-2 border transition cursor-pointer ${
+                              isSelected
+                                ? "bg-teal-500/20 border-teal-400 text-teal-200 font-semibold shadow-sm"
+                                : "bg-white/[0.03] border-white/[0.08] text-gray-300 hover:border-teal-500/40 hover:text-white"
+                            }`}
+                          >
+                            <span className="w-5 h-5 rounded-full overflow-hidden bg-black/60 flex items-center justify-center text-[9px] font-bold text-teal-300 border border-white/10 shrink-0">
+                              {authProfile.avatarUrl ? (
+                                <img
+                                  src={authProfile.avatarUrl}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
+                                />
+                              ) : (
+                                authProfile.name.slice(0, 2).toUpperCase()
+                              )}
+                            </span>
+                            <span>{authProfile.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Author Name with Live Auto-Suggest + Author Role */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
+                      <span>Author Name</span>
+                      <span className="text-[10px] text-teal-400 font-mono">*Required</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.author.name}
+                      onFocus={() => setAuthorDropdownOpen(true)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setForm({
+                          ...form,
+                          author: { ...form.author, name: val },
+                        });
+                        setAuthorDropdownOpen(true);
+                      }}
+                      placeholder="e.g. MD. ABDUL HAMIM LEON"
+                      className="w-full h-11 bg-black/50 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white placeholder-gray-500 outline-none transition"
+                    />
+
+                    {/* Auto-suggest dropdown when typing */}
+                    {authorDropdownOpen && form.author.name.trim() && (
+                      <div
+                        className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 bg-[#0c0c16] border border-teal-500/30 rounded-xl shadow-2xl p-1.5 max-h-48 overflow-y-auto custom-scrollbar"
+                        onMouseLeave={() => setAuthorDropdownOpen(false)}
+                      >
+                        {savedAuthors
+                          .filter((a) =>
+                            a.name.toLowerCase().includes(form.author.name.toLowerCase())
+                          )
+                          .map((author) => (
+                            <button
+                              key={author.name}
+                              type="button"
+                              onClick={() => handleSelectAuthor(author)}
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-teal-500/10 flex items-center gap-2.5 transition text-xs text-gray-200 hover:text-white cursor-pointer"
+                            >
+                              <span className="w-6 h-6 rounded-full overflow-hidden bg-black/60 flex items-center justify-center text-[10px] font-bold text-teal-300 border border-white/10 shrink-0">
+                                {author.avatarUrl ? (
+                                  <img
+                                    src={author.avatarUrl}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  author.name.slice(0, 2).toUpperCase()
+                                )}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-semibold text-white truncate">{author.name}</div>
+                                <div className="text-[10px] text-gray-400 truncate">{author.role}</div>
+                              </div>
+                            </button>
+                          ))}
+                        <div className="pt-1 px-2 border-t border-white/[0.06] text-[10px] text-gray-500 font-mono flex items-center justify-between">
+                          <span>New name will be saved automatically</span>
+                          <button
+                            type="button"
+                            onClick={() => setAuthorDropdownOpen(false)}
+                            className="text-teal-400 hover:underline"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
+                      <span>Author Title / Role</span>
+                      <span className="text-[10px] text-gray-400 font-mono">Visible on site</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.author.role}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          author: { ...form.author, role: e.target.value },
+                        })
+                      }
+                      placeholder="e.g. Founder & Lead Architect"
+                      className="w-full h-11 bg-black/50 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white placeholder-gray-500 outline-none transition"
+                    />
+                  </div>
                 </div>
+
+                {/* Author Avatar Upload & Preview */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                  {/* Avatar Preview */}
+                  <div className="relative w-14 h-14 rounded-full overflow-hidden bg-[#0a101e] border-2 border-teal-400/50 shrink-0 shadow-lg shadow-teal-500/10 flex items-center justify-center">
+                    {form.author.avatarUrl ? (
+                      <img
+                        src={form.author.avatarUrl}
+                        alt="Author Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <span className="font-bold text-teal-300 text-sm font-mono">
+                        {(form.author.name || "DE").slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions & URL Input */}
+                  <div className="flex-1 min-w-0 space-y-2 w-full">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <button
+                        type="button"
+                        disabled={authorUploading}
+                        onClick={() => authorFileInputRef.current?.click()}
+                        className="px-3.5 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 text-xs font-semibold flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-xs">
+                          {authorUploading ? "hourglass_top" : "cloud_upload"}
+                        </span>
+                        <span>{authorUploading ? "Uploading Picture…" : "Upload Author Picture"}</span>
+                      </button>
+
+                      <input
+                        ref={authorFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAuthorPicUpload}
+                      />
+
+                      {form.author.avatarUrl && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm((prev) => ({
+                              ...prev,
+                              author: { ...prev.author, avatarUrl: "" },
+                            }))
+                          }
+                          className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-rose-500/20 text-gray-400 hover:text-rose-300 border border-white/[0.08] text-xs transition"
+                          title="Clear avatar"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="url"
+                      value={form.author.avatarUrl || ""}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          author: { ...form.author, avatarUrl: e.target.value },
+                        })
+                      }
+                      placeholder="Or paste direct image URL (Firebase, Cloudinary, etc.)"
+                      className="w-full h-9 bg-black/40 border border-white/[0.06] focus:border-teal-500/40 rounded-lg px-3 text-[11px] font-mono text-gray-300 placeholder-gray-600 outline-none transition"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1.5">
+                  Tags (Comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(e) => setTagsInput(e.target.value)}
+                  placeholder="e.g. Architecture, Outage, Scaling"
+                  className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white font-mono placeholder-gray-500 outline-none transition"
+                />
               </div>
 
               {/* Checkboxes: Featured & Published */}

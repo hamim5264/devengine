@@ -20,6 +20,7 @@ export interface StaffRole {
   description?: string;
   color?: { bg: string; text: string; border: string; hex?: string };
   defaultModules?: string[];
+  defaultSubModules?: Record<string, string[]>;
   isCustom?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -63,6 +64,7 @@ export interface StaffMember {
   avatarUrl?: string; // Profile picture URL or uploaded asset path
   staffType: StaffType;
   allowedModules: string[]; // Array of MODULE_KEY values
+  allowedSubModules?: Record<string, string[]>; // Optional granular sub-module permissions: { moduleKey: ["/admin/page1", ...] }
   status: StaffStatus;
   suspensionReason?: string;
   suspendedAt?: string;

@@ -5,6 +5,7 @@ import { normalizeSiteFont, SiteFont } from "@/lib/fonts";
 export interface ThemeModeSettings {
   allowDarkMode: boolean;
   allowLightMode: boolean;
+  defaultTheme: "light" | "dark";
   fontFamily: SiteFont;
   updatedAt?: string;
   updatedBy?: string;
@@ -13,6 +14,7 @@ export interface ThemeModeSettings {
 export const DEFAULT_THEME_MODES: ThemeModeSettings = {
   allowDarkMode: true,
   allowLightMode: true,
+  defaultTheme: "light",
   fontFamily: "default",
 };
 
@@ -32,9 +34,14 @@ export async function getThemeModeSettings(): Promise<ThemeModeSettings> {
     }
 
     const data = snap.data() as Partial<ThemeModeSettings>;
+    const defaultTheme = data.defaultTheme === "dark" || data.defaultTheme === "light"
+      ? data.defaultTheme
+      : "light";
+
     return {
       ...DEFAULT_THEME_MODES,
       ...data,
+      defaultTheme,
       fontFamily: normalizeSiteFont(data.fontFamily),
     };
   } catch (err) {
@@ -56,9 +63,14 @@ export function subscribeThemeModeSettings(
       (snap) => {
         if (snap.exists()) {
           const data = snap.data() as Partial<ThemeModeSettings>;
+          const defaultTheme = data.defaultTheme === "dark" || data.defaultTheme === "light"
+            ? data.defaultTheme
+            : "light";
+
           callback({
             ...DEFAULT_THEME_MODES,
             ...data,
+            defaultTheme,
             fontFamily: normalizeSiteFont(data.fontFamily),
           });
         } else {

@@ -556,7 +556,14 @@ service cloud.firestore {
       // Public can read all published or individual blogs
       allow read: if true;
       allow write: if canUseModules(['content_cms']);
+      // Allow public readers to atomically increment views/readsCount
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'readsCount']);
       allow create, update: if canRestoreArchived('blogs', blogId);
+    }
+
+    match /blog_authors/{authorId} {
+      allow read: if true;
+      allow write: if canUseModules(['content_cms']);
     }
 
     /* =========================

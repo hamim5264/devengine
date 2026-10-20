@@ -14,6 +14,7 @@ import { recordPageView } from "@/lib/services/analyticsService";
 import MaintenanceScreen from "@/components/maintenance/MaintenanceScreen";
 import { HeaderControlsProvider } from "@/components/HeaderControls";
 import { ThemeProvider } from "@/context/ThemeContext";
+import CookieConsent from "@/components/common/CookieConsent";
 import "../styles/globals.css";
 import "../styles/admin.css";
 
@@ -120,6 +121,9 @@ function MyApp({ Component, pageProps }: AppProps) {
           <Component {...pageProps} />
         </>
       )}
+
+      {/* Cookie and Privacy Consent Banner for visitors */}
+      <CookieConsent />
       </CommunicationProvider>
       </HeaderControlsProvider>
     </ThemeProvider>

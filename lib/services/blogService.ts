@@ -10,9 +10,12 @@ import {
   where,
   orderBy,
   Timestamp,
+  increment,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { BlogPost } from "@/types/blog";
+import { logActivity } from "@/lib/services/analyticsService";
+import { saveAuthorProfile } from "@/lib/services/authorService";
 
 const COLLECTION_NAME = "blogs";
 
@@ -384,6 +387,9 @@ export async function createBlog(
   };
   const sanitized = sanitizeFirestoreData(newPost);
   await setDoc(docRef, sanitized);
+  if (newPost.author?.name) {
+    saveAuthorProfile(newPost.author).catch(() => {});
+  }
   return docRef.id;
 }
 
@@ -400,6 +406,9 @@ export async function updateBlog(
     updatedAt: new Date().toISOString(),
   });
   await updateDoc(docRef, sanitized);
+  if (data.author?.name) {
+    saveAuthorProfile(data.author).catch(() => {});
+  }
 }
 
 /**
@@ -425,6 +434,8 @@ export async function seedInitialBlogs(): Promise<number> {
         await setDoc(docRef, {
           ...blog,
           id: docRef.id,
+          views: 0,
+          readsCount: 0,
         });
         seededCount++;
       }
@@ -433,5 +444,44 @@ export async function seedInitialBlogs(): Promise<number> {
   } catch (err) {
     console.warn("Notice: Initial blogs seed could not write to Firestore (requires admin login):", err);
     return 0;
+  }
+}
+
+/**
+ * Record a genuine blog read event.
+ * Atomically increments views & readsCount on the blog post in Firestore
+ * and logs an authentic CMS activity event. Deduplicates reads per browser session.
+ */
+export async function recordBlogRead(
+  blogId: string,
+  slug?: string,
+  title?: string
+): Promise<boolean> {
+  if (typeof window === "undefined" || !blogId) return false;
+  if (blogId.startsWith("seed-")) return false;
+
+  const sessionKey = `devengine_read_${blogId}`;
+  if (sessionStorage.getItem(sessionKey)) {
+    return false;
+  }
+  sessionStorage.setItem(sessionKey, "true");
+
+  try {
+    const docRef = doc(db, COLLECTION_NAME, blogId);
+    await updateDoc(docRef, {
+      views: increment(1),
+      readsCount: increment(1),
+    });
+
+    await logActivity({
+      type: "cms",
+      title: "Chronicle Read",
+      description: `Visitor read "${title || slug || "article"}"`,
+      icon: "menu_book",
+    });
+    return true;
+  } catch (err) {
+    console.debug("Notice: recordBlogRead:", err);
+    return false;
   }
 }

@@ -601,6 +601,7 @@ export function buildSynthesizedAgreementFromStaff(staff: StaffMember): Agreemen
       projectType: "Full-Time Technical Employment",
       startDate: effectiveDate,
       agreementEffectiveDate: effectiveDate,
+      workCommencementDate: effectiveDate,
       projectStatus: "Active",
       plannedLaunchDate: effectiveDate,
       targetCompletionDate:
@@ -641,10 +642,9 @@ export function buildSynthesizedAgreementFromStaff(staff: StaffMember): Agreemen
         id: "del_staff_core",
         title: "Technical Engineering & Operations Delivery",
         description: `Deliver professional software engineering, architecture, code quality, testing, and system maintenance according to DevEngine standards.`,
-        priority: "high",
+        priority: "High",
         acceptanceCriteria: "Sprint deliverables accepted, code reviewed and passed into production.",
-        estimatedHours: 40,
-        status: "in_progress",
+        acceptanceStatus: "in_progress",
       },
     ],
     terms: {

@@ -197,9 +197,7 @@ export default function ManageTagsPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
               Manage Project Tags
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
-              Create, edit, and organize taxonomy tags for catalog discovery and multi-filter matching.
-            </p>
+            <p className="text-xs text-gray-400 mt-1">Organize tags for project discovery.</p>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -315,7 +313,7 @@ export default function ManageTagsPage() {
                     type="text"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Enter tag name (e.g. Next.js, Trending)"
+                    placeholder="e.g. Next.js"
                     className="w-full h-11 pl-8 pr-4 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition"
                   />
                 </div>
@@ -338,12 +336,12 @@ export default function ManageTagsPage() {
                 <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-[18px]">
                   search
                 </span>
-                <input
+                <input data-admin-search
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter tags by name or slug..."
-                  className="w-full h-11 pl-10 pr-4 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition"
+                  placeholder="Find a tag"
+                  className="transparent-input bg-transparent w-full h-11 pl-10 pr-4 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition"
                 />
                 {searchQuery && (
                   <button

@@ -1,3 +1,4 @@
+import AdminStatusChip from "@/components/admin/AdminStatusChip";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
@@ -341,12 +342,12 @@ export default function ManageOrdersPage() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[18px]">
               search
             </span>
-            <input
+            <input data-admin-search
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by Order ID, customer, TrxID, project..."
-              className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/50 rounded-xl pl-9 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none transition font-sans"
+              placeholder="Find an order or customer"
+              className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/50 rounded-xl pl-9 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none transition font-sans"
             />
             {searchQuery && (
               <button
@@ -515,26 +516,7 @@ export default function ManageOrdersPage() {
                         </td>
 
                         {/* Status */}
-                        <td className="py-4 px-5 text-center">
-                          {isVerified && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                              Verified
-                            </span>
-                          )}
-                          {isPending && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/25">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                              Pending
-                            </span>
-                          )}
-                          {isRejected && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-400 border border-rose-500/25">
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                              Rejected
-                            </span>
-                          )}
-                        </td>
+                        <td className="py-4 px-5 text-center"><AdminStatusChip status={order.status || "pending"} /></td>
 
                         {/* Actions */}
                         <td className="py-4 px-5 text-right">

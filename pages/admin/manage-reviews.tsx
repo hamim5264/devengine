@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
@@ -242,7 +243,7 @@ export default function ManageReviewsPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#02040A] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#3EF3FF" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-jetbrains text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Credentials…
         </p>
@@ -285,9 +286,7 @@ export default function ManageReviewsPage() {
                   LIVE FIRESTORE
                 </span>
               </div>
-              <p className="text-gray-400 text-sm mt-1">
-                Moderate user submissions, approve or reject client feedback, and curate featured Trust Wall testimonials.
-              </p>
+              <p className="text-gray-400 text-sm mt-1">Review submissions and feature client feedback.</p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -299,7 +298,7 @@ export default function ManageReviewsPage() {
                 title="Populate with the 3 default featured reviews from user site"
               >
                 <span className="material-symbols-outlined text-[16px]">database</span>
-                <span>{seeding ? "SYNCING..." : "⚡ SEED DEFAULTS"}</span>
+                <span>{seeding ? "SYNCING..." : "LOAD STARTER CONTENT"}</span>
               </button>
               <Link
                 href="/reviews"
@@ -400,12 +399,12 @@ export default function ManageReviewsPage() {
               <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-[18px]">
                 search
               </span>
-              <input
+              <input data-admin-search
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search reviews, clients, roles..."
-                className="w-full h-11 bg-black/40 border border-white/[0.08] rounded-xl pl-10 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 transition-colors"
+                className="transparent-input bg-transparent w-full h-11 bg-black/40 border border-white/[0.08] rounded-xl pl-10 pr-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 transition-colors"
               />
             </div>
           </div>
@@ -711,7 +710,7 @@ export default function ManageReviewsPage() {
                     Status
                   </label>
                   <div className="relative">
-                    <select
+                    <AdminSelect
                       value={form.status}
                       onChange={(e) =>
                         setForm({ ...form, status: e.target.value as ReviewStatus })
@@ -721,7 +720,7 @@ export default function ManageReviewsPage() {
                       <option value="APPROVED" className="bg-[#0c0c16] text-white">APPROVED (Live on Trust Wall)</option>
                       <option value="PENDING" className="bg-[#0c0c16] text-white">PENDING (In Moderation)</option>
                       <option value="REJECTED" className="bg-[#0c0c16] text-white">REJECTED (Hidden)</option>
-                    </select>
+                    </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-400">
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                         <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
@@ -797,7 +796,7 @@ export default function ManageReviewsPage() {
             </p>
 
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-jetbrains">
-              💡 You can restore this review anytime from <strong>Dashboard &gt; Recycle Bin</strong>.
+              Restore this review from <strong>Dashboard &gt; Recycle Bin</strong>.
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

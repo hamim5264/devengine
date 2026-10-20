@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/audit.tsx
 // ─────────────────────────────────────────────────────────────
@@ -88,9 +89,7 @@ export default function AuditTrailPage() {
             <h1 className="text-2xl font-bold tracking-tight text-white mt-1">
               Audit Trail & Integrity Log
             </h1>
-            <p className="text-sm text-slate-400">
-              Complete tamper-evident event log recording all document creations, status changes, and signatures.
-            </p>
+            <p className="text-sm text-slate-400">Review document activity, changes, and signatures.</p>
           </div>
           <button
             onClick={loadData}
@@ -106,12 +105,12 @@ export default function AuditTrailPage() {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
-              placeholder="Search audit events by action, operator, reference #, details..."
+              placeholder="Find an audit event"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -128,7 +127,7 @@ export default function AuditTrailPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -139,7 +138,7 @@ export default function AuditTrailPage() {
               <option value="service_agreement">Service Agreements</option>
               <option value="sow">Statements of Work</option>
               <option value="change_order">Change Orders</option>
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -163,8 +162,8 @@ export default function AuditTrailPage() {
                     <td className="py-3 px-4 font-mono text-slate-400 whitespace-nowrap">
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 font-semibold text-white">
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-pink-400 font-mono text-[11px]">
+                    <td className="py-3 px-4 font-semibold text-[var(--devengine-text)]">
+                      <span className="px-2.5 py-1 rounded-md bg-[var(--devengine-soft)] text-[#2cecf7] border border-[#2cecf7]/25 font-mono text-[11px]">
                         {log.action}
                       </span>
                     </td>

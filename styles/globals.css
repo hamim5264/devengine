@@ -630,7 +630,7 @@ input[type="search"]::-webkit-search-results-decoration {
   display: none;
 }
 
-html.light input:not([type="checkbox"]):not([type="radio"]):not([class*="bg-transparent"]):not([class*="staff-login-input"]):not([class*="transparent-input"]),
+html.light input:not([type="checkbox"]):not([type="radio"]):not(:where([data-admin-content] input[type="search"],[data-admin-search])):not([class*="bg-transparent"]):not([class*="staff-login-input"]):not([class*="transparent-input"]),
 html.light select,
 html.light textarea:not([class*="transparent-input"]) {
   background-color: #ffffff !important;

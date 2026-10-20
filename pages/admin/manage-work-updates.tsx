@@ -1,3 +1,5 @@
+import AdminStatusChip from "@/components/admin/AdminStatusChip";
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import Head from "next/head";
 import { useEffect, useState, useCallback } from "react";
@@ -356,7 +358,7 @@ export default function ManageWorkUpdatesPage() {
         <title>Employee Work Updates & Tasks | DevEngine Admin</title>
       </Head>
 
-      <div className="min-h-screen bg-[#07070f] p-4 sm:p-6 lg:p-8">
+      <div data-workspace-updates className="min-h-screen bg-[#07070f] p-4 sm:p-6 lg:p-8">
         <main className="max-w-7xl mx-auto space-y-6">
           {/* ── Page Header ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
@@ -369,9 +371,7 @@ export default function ManageWorkUpdatesPage() {
                   Employee Tasks & Work Updates
                 </h1>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Assign and track sprint tasks, deadlines, and review daily engineering work logs.
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Manage tasks, deadlines, and daily reports.</p>
             </div>
 
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -505,7 +505,7 @@ export default function ManageWorkUpdatesPage() {
                     <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
                       Filter by Employee:
                     </label>
-                    <select
+                    <AdminSelect
                       value={taskStaffFilter}
                       onChange={(e) => setTaskStaffFilter(e.target.value)}
                       className="h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
@@ -519,7 +519,7 @@ export default function ManageWorkUpdatesPage() {
                           </option>
                         );
                       })}
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   {/* Status Filter */}
@@ -527,7 +527,7 @@ export default function ManageWorkUpdatesPage() {
                     <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
                       Status:
                     </label>
-                    <select
+                    <AdminSelect
                       value={taskStatusFilter}
                       onChange={(e) => setTaskStatusFilter(e.target.value)}
                       className="h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
@@ -537,7 +537,7 @@ export default function ManageWorkUpdatesPage() {
                       <option value="in_progress" className="bg-[#0e0e1a]">In Progress</option>
                       <option value="in_review" className="bg-[#0e0e1a]">Under Review</option>
                       <option value="completed" className="bg-[#0e0e1a]">Completed</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   {/* Priority Filter */}
@@ -545,7 +545,7 @@ export default function ManageWorkUpdatesPage() {
                     <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
                       Priority:
                     </label>
-                    <select
+                    <AdminSelect
                       value={taskPriorityFilter}
                       onChange={(e) => setTaskPriorityFilter(e.target.value)}
                       className="h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
@@ -555,7 +555,7 @@ export default function ManageWorkUpdatesPage() {
                       <option value="normal" className="bg-[#0e0e1a]">Normal</option>
                       <option value="high" className="bg-[#0e0e1a]">High</option>
                       <option value="urgent" className="bg-[#0e0e1a]">Urgent</option>
-                    </select>
+                    </AdminSelect>
                   </div>
                 </div>
 
@@ -606,7 +606,7 @@ export default function ManageWorkUpdatesPage() {
 
                     return (
                       <div
-                        key={task.id}
+                        data-task-card key={task.id}
                         className="p-5 rounded-2xl bg-[#0c0c16] border border-white/[0.08] hover:border-white/[0.15] transition-all space-y-3.5 relative flex flex-col justify-between"
                       >
                         {/* Top: Category & Priority & Quick Actions */}
@@ -619,9 +619,7 @@ export default function ManageWorkUpdatesPage() {
                               <span className={`px-2 py-0.5 rounded-md border text-[10px] font-mono uppercase font-semibold ${priorityColor}`}>
                                 {task.priority}
                               </span>
-                              <span className={`px-2 py-0.5 rounded-md border text-[10px] font-mono uppercase font-semibold ${statusBadge}`}>
-                                {TASK_STATUS_LABELS[task.status] || task.status}
-                              </span>
+                              <AdminStatusChip status={task.status} label={TASK_STATUS_LABELS[task.status] || task.status} />
                             </div>
 
                             <div className="flex items-center gap-1">
@@ -654,7 +652,7 @@ export default function ManageWorkUpdatesPage() {
 
                           {/* Description */}
                           {task.description && (
-                            <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+                            <p className="text-xs text-gray-400 line-clamp-3 leading-relaxed">
                               {task.description}
                             </p>
                           )}
@@ -664,7 +662,7 @@ export default function ManageWorkUpdatesPage() {
                         <div className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-3 text-xs">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center justify-center text-xs font-bold shrink-0">
-                              {task.assignedToName.charAt(0)}
+                              {(task.assignedToName || "E").charAt(0)}
                             </div>
                             <div className="min-w-0">
                               <span className="font-semibold text-white truncate block text-[11px]">
@@ -765,7 +763,7 @@ export default function ManageWorkUpdatesPage() {
                     <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
                       Filter by Employee:
                     </label>
-                    <select
+                    <AdminSelect
                       value={selectedStaffId}
                       onChange={(e) => setSelectedStaffId(e.target.value)}
                       className="h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
@@ -776,14 +774,14 @@ export default function ManageWorkUpdatesPage() {
                           {s.name} ({s.staffType})
                         </option>
                       ))}
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
                     <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
                       Filter by Date:
                     </label>
-                    <input
+                    <AdminDateInput
                       type="date"
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
@@ -971,7 +969,7 @@ export default function ManageWorkUpdatesPage() {
                 <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-1.5">
                   Assign To Team Member *
                 </label>
-                <select
+                <AdminSelect
                   required
                   value={taskForm.assignedToStaffId}
                   onChange={(e) => setTaskForm({ ...taskForm, assignedToStaffId: e.target.value })}
@@ -982,7 +980,7 @@ export default function ManageWorkUpdatesPage() {
                       {s.name} — {s.staffType} ({s.email})
                     </option>
                   ))}
-                </select>
+                </AdminSelect>
               </div>
 
               {/* 2. Task Title */}
@@ -1006,7 +1004,7 @@ export default function ManageWorkUpdatesPage() {
                   <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-1.5">
                     Category
                   </label>
-                  <select
+                  <AdminSelect
                     value={taskForm.category}
                     onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}
                     className="w-full h-11 bg-black/50 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer font-mono"
@@ -1016,14 +1014,14 @@ export default function ManageWorkUpdatesPage() {
                         {c}
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
                   <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-1.5">
                     Priority Level
                   </label>
-                  <select
+                  <AdminSelect
                     value={taskForm.priority}
                     onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
                     className="w-full h-11 bg-black/50 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 cursor-pointer font-mono"
@@ -1032,7 +1030,7 @@ export default function ManageWorkUpdatesPage() {
                     <option value="normal" className="bg-[#0e0e1a]">Normal Priority</option>
                     <option value="high" className="bg-[#0e0e1a]">High Priority</option>
                     <option value="urgent" className="bg-[#0e0e1a]">🚨 Urgent</option>
-                  </select>
+                  </AdminSelect>
                 </div>
               </div>
 
@@ -1049,7 +1047,7 @@ export default function ManageWorkUpdatesPage() {
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         Start Date *
                       </label>
-                      <input
+                      <AdminDateInput
                         type="date"
                         required
                         value={taskForm.startDate}
@@ -1061,7 +1059,7 @@ export default function ManageWorkUpdatesPage() {
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         Start Time
                       </label>
-                      <input
+                      <AdminDateInput
                         type="time"
                         value={taskForm.startTime}
                         onChange={(e) => setTaskForm({ ...taskForm, startTime: e.target.value })}
@@ -1085,7 +1083,7 @@ export default function ManageWorkUpdatesPage() {
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         End Date *
                       </label>
-                      <input
+                      <AdminDateInput
                         type="date"
                         required
                         value={taskForm.dueDate}
@@ -1097,7 +1095,7 @@ export default function ManageWorkUpdatesPage() {
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         End Time
                       </label>
-                      <input
+                      <AdminDateInput
                         type="time"
                         value={taskForm.dueTime}
                         onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
@@ -1127,7 +1125,7 @@ export default function ManageWorkUpdatesPage() {
                       <label className="text-[11px] font-mono text-gray-400 uppercase tracking-wider block mb-1.5">
                         Task Progress Status
                       </label>
-                      <select
+                      <AdminSelect
                         value={taskForm.status}
                         onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value as TaskStatus })}
                         className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
@@ -1136,7 +1134,7 @@ export default function ManageWorkUpdatesPage() {
                         <option value="in_progress" className="bg-[#0e0e1a]">In Progress</option>
                         <option value="in_review" className="bg-[#0e0e1a]">Under Review</option>
                         <option value="completed" className="bg-[#0e0e1a]">Completed</option>
-                      </select>
+                      </AdminSelect>
                     </div>
 
                     <div>
@@ -1162,7 +1160,7 @@ export default function ManageWorkUpdatesPage() {
                     </label>
                     <input
                       type="text"
-                      placeholder="Optional feedback or guidelines for the employee..."
+                      placeholder="Feedback for the employee"
                       value={taskForm.adminFeedback}
                       onChange={(e) => setTaskForm({ ...taskForm, adminFeedback: e.target.value })}
                       className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
@@ -1178,7 +1176,7 @@ export default function ManageWorkUpdatesPage() {
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Outline key deliverables, design files, repository branch, or expectations..."
+                  placeholder="Deliverables and reference links"
                   value={taskForm.description}
                   onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                   className="w-full bg-black/50 border border-white/[0.1] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-600 resize-none leading-relaxed"
@@ -1281,7 +1279,7 @@ export default function ManageWorkUpdatesPage() {
                 <textarea
                   required
                   rows={4}
-                  placeholder="e.g. Great progress on the API integration. Please coordinate with Design for the final assets."
+                  placeholder="Progress notes and next steps"
                   value={feedbackText}
                   onChange={(e) => setFeedbackText(e.target.value)}
                   className="w-full bg-black/40 border border-white/[0.1] rounded-xl p-3 text-sm text-white focus:outline-none focus:border-cyan-500 placeholder:text-gray-600 resize-none font-mono"

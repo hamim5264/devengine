@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -110,7 +111,7 @@ export default function ManageThemeSettingsPage() {
         <title>Theme & System Appearance | Admin Console</title>
       </Head>
 
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+      <div data-theme-settings className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="pb-4 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -167,7 +168,7 @@ export default function ManageThemeSettingsPage() {
 
           <div className="space-y-2">
             <label htmlFor="global-font" className="block text-sm font-medium text-neutral-200">Font family</label>
-            <select
+            <AdminSelect
               id="global-font"
               value={fontFamily}
               disabled={saving}
@@ -181,13 +182,13 @@ export default function ManageThemeSettingsPage() {
               {Object.entries(SITE_FONTS).map(([value, font]) => (
                 <option key={value} value={value}>{font.label}</option>
               ))}
-            </select>
+            </AdminSelect>
             <p id="global-font-help" className="text-xs text-neutral-400">
-              Original typography restores the current mix of Poppins and heading fonts. Icons and code samples keep their own fonts.
+              Preview your font below. Save to apply it across the platform.
             </p>
           </div>
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-3" style={{ fontFamily: SITE_FONTS[fontFamily].family }}>
+          <div data-admin-document className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-3" style={{ fontFamily: SITE_FONTS[fontFamily].family }}>
             <p className="text-xs uppercase tracking-wider text-teal-400">Font preview · {SITE_FONTS[fontFamily].label}</p>
             <p className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Build something extraordinary.</p>
             <p className="text-sm text-neutral-300">Your projects, your team, and your next big idea — all in one place.</p>
@@ -237,7 +238,7 @@ export default function ManageThemeSettingsPage() {
             className={`p-6 rounded-2xl border transition-all space-y-4 flex flex-col justify-between ${
               allowDark
                 ? "bg-[#0c0c16] border-indigo-500/40 shadow-xl shadow-indigo-500/5"
-                : "bg-white/[0.02] border-white/5 opacity-60"
+                : "bg-white/[0.02] border-white/5 "
             }`}
           >
             <div className="space-y-3">
@@ -259,27 +260,14 @@ export default function ManageThemeSettingsPage() {
               <div>
                 <h3 className="text-base font-bold text-white">Dark Mode</h3>
                 <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                  Deep obsidian backgrounds, futuristic cyber accents, and high-contrast ambient palettes tailored for nighttime productivity.
+                  Focused navy surfaces with clear, comfortable contrast.
                 </p>
               </div>
             </div>
 
             <div className="pt-4 border-t border-white/10 flex items-center justify-between">
               <span className="text-xs text-neutral-300 font-medium">Enable Dark Mode:</span>
-              <button
-                type="button"
-                onClick={handleToggleDark}
-                className={`relative w-13 h-7 rounded-full transition-colors cursor-pointer p-0.5 ${
-                  allowDark ? "bg-indigo-600" : "bg-neutral-700"
-                }`}
-                aria-label="Toggle Dark Mode"
-              >
-                <div
-                  className={`w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-200 ${
-                    allowDark ? "translate-x-6" : "translate-x-0"
-                  }`}
-                />
-              </button>
+              <button type="button" role="switch" aria-checked={allowDark} aria-label="Enable dark mode" onClick={handleToggleDark} className="admin-theme-switch"><span /></button>
             </div>
           </div>
 
@@ -288,7 +276,7 @@ export default function ManageThemeSettingsPage() {
             className={`p-6 rounded-2xl border transition-all space-y-4 flex flex-col justify-between ${
               allowLight
                 ? "bg-[#0c0c16] border-amber-500/40 shadow-xl shadow-amber-500/5"
-                : "bg-white/[0.02] border-white/5 opacity-60"
+                : "bg-white/[0.02] border-white/5 "
             }`}
           >
             <div className="space-y-3">
@@ -310,27 +298,14 @@ export default function ManageThemeSettingsPage() {
               <div>
                 <h3 className="text-base font-bold text-white">Light Mode</h3>
                 <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                  Crisp porcelain surfaces, high-contrast slate typography, refined pastel capsules, and executive clean borders.
+                  Bright surfaces and readable text throughout the platform.
                 </p>
               </div>
             </div>
 
             <div className="pt-4 border-t border-white/10 flex items-center justify-between">
               <span className="text-xs text-neutral-300 font-medium">Enable Light Mode:</span>
-              <button
-                type="button"
-                onClick={handleToggleLight}
-                className={`relative w-13 h-7 rounded-full transition-colors cursor-pointer p-0.5 ${
-                  allowLight ? "bg-amber-500" : "bg-neutral-700"
-                }`}
-                aria-label="Toggle Light Mode"
-              >
-                <div
-                  className={`w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-200 ${
-                    allowLight ? "translate-x-6" : "translate-x-0"
-                  }`}
-                />
-              </button>
+              <button type="button" role="switch" aria-checked={allowLight} aria-label="Enable light mode" onClick={handleToggleLight} className="admin-theme-switch"><span /></button>
             </div>
           </div>
         </div>

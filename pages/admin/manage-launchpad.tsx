@@ -833,9 +833,7 @@ export default function ManageLaunchpadPage() {
                 Live Showroom
               </span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">
-              Manage advertisement stage, Google Play & App Store carousel, notice alerts, and app collection.
-            </p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">Manage app releases, store links, and announcements.</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -1069,7 +1067,7 @@ export default function ManageLaunchpadPage() {
               </label>
               <textarea
                 rows={3}
-                placeholder="Brief introduction displayed beneath the title headline..."
+                placeholder="Short introduction"
                 value={config.overview.subtitle}
                 onChange={(e) =>
                   setConfig({
@@ -1325,7 +1323,7 @@ export default function ManageLaunchpadPage() {
                   className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-4"
                 >
                   <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                    <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                    <span className="text-xs font-mono text-[#2cecf7] font-bold">
                       Slide #{idx + 1}: {slide.title}
                     </span>
                     <button
@@ -1379,7 +1377,7 @@ export default function ManageLaunchpadPage() {
                           type="text"
                           value={slide.status}
                           onChange={(e) => handleUpdateSlide(idx, "status", e.target.value)}
-                          className="w-full bg-[#080e1a] border border-white/10 rounded p-2 text-xs text-[#38f2ff] font-bold font-mono"
+                          className="w-full bg-[#080e1a] border border-white/10 rounded p-2 text-xs text-[#2cecf7] font-bold font-mono"
                         />
                       </div>
                     </div>
@@ -1410,7 +1408,7 @@ export default function ManageLaunchpadPage() {
                           onChange={(e) => handleUpdateSlide(idx, "phoneImage", e.target.value)}
                           className="flex-1 bg-[#080e1a] border border-white/10 rounded p-2 text-xs text-white font-mono"
                         />
-                        <label className="px-3 py-2 bg-[#38f2ff] text-black text-xs font-mono font-bold rounded cursor-pointer hover:bg-[#00dbe8] shrink-0">
+                        <label className="px-3 py-2 bg-[#2cecf7] text-black text-xs font-mono font-bold rounded cursor-pointer hover:bg-[#00dbe8] shrink-0">
                           Upload
                           <input
                             type="file"
@@ -1449,7 +1447,7 @@ export default function ManageLaunchpadPage() {
                       </label>
                       <input
                         type="text"
-                        placeholder="https://play.google.com/store/apps/details?id=..."
+                        placeholder="Google Play URL"
                         value={slide.googlePlayUrl || ""}
                         onChange={(e) => handleUpdateSlide(idx, "googlePlayUrl", e.target.value)}
                         className="w-full bg-[#080e1a] border border-white/10 rounded p-2 text-xs text-white font-mono"
@@ -1459,7 +1457,7 @@ export default function ManageLaunchpadPage() {
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. Currently in review. Expected live this week!"
+                        placeholder="Release status or expected date"
                         value={slide.googlePlayMessage || ""}
                         onChange={(e) => handleUpdateSlide(idx, "googlePlayMessage", e.target.value)}
                         className="w-full bg-[#080e1a] border border-white/10 rounded p-2 text-xs text-gray-300"
@@ -1468,7 +1466,7 @@ export default function ManageLaunchpadPage() {
 
                     {/* Apple App Store */}
                     <div className="space-y-2">
-                      <label className="block text-[11px] font-mono text-[#38f2ff] font-bold">
+                      <label className="block text-[11px] font-mono text-[#2cecf7] font-bold">
                         Apple App Store Link
                       </label>
                       <input
@@ -1570,7 +1568,7 @@ export default function ManageLaunchpadPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-[#38f2ff] font-bold"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-[#2cecf7] font-bold"
                 />
               </div>
             </div>
@@ -1637,8 +1635,8 @@ export default function ManageLaunchpadPage() {
                 />
               </div>
 
-              <div className="p-4 rounded-xl bg-[#161c28] border border-[#38f2ff]/30 space-y-2">
-                <label className="block text-xs font-mono text-[#38f2ff] font-bold">
+              <div className="p-4 rounded-xl bg-[#161c28] border border-[#2cecf7]/30 space-y-2">
+                <label className="block text-xs font-mono text-[#2cecf7] font-bold">
                   Message on &quot;Download on App Store&quot; Tap
                 </label>
                 <textarea
@@ -1669,7 +1667,7 @@ export default function ManageLaunchpadPage() {
                   accept="image/*"
                   onChange={(e) => handleMobileAppUpload("mainPhoneImage", e)}
                   disabled={uploadingImage}
-                  className="w-full text-xs text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-mono file:bg-[#38f2ff] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
+                  className="w-full text-xs text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-mono file:bg-[#2cecf7] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
                 />
                 <input
                   type="text"
@@ -1696,7 +1694,7 @@ export default function ManageLaunchpadPage() {
                   accept="image/*"
                   onChange={(e) => handleMobileAppUpload("secondaryPhoneImage", e)}
                   disabled={uploadingImage}
-                  className="w-full text-xs text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-mono file:bg-[#38f2ff] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
+                  className="w-full text-xs text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-mono file:bg-[#2cecf7] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
                 />
                 <input
                   type="text"
@@ -1974,7 +1972,7 @@ export default function ManageLaunchpadPage() {
                   <button
                     type="button"
                     onClick={fetchApps}
-                    className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-[#38f2ff] hover:underline font-mono transition"
+                    className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-[#2cecf7] hover:underline font-mono transition"
                   >
                     ↻ Refresh Apps
                   </button>
@@ -1983,7 +1981,7 @@ export default function ManageLaunchpadPage() {
 
               {loadingApps ? (
                 <div className="p-8 text-center bg-[#0e131f] rounded-xl border border-white/10">
-                  <div className="w-5 h-5 border-2 border-[#38f2ff] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <div className="w-5 h-5 border-2 border-[#2cecf7] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
                   <p className="text-xs text-gray-400 font-mono">Loading apps from Firestore…</p>
                 </div>
               ) : appLabApps.length === 0 ? (
@@ -1992,7 +1990,7 @@ export default function ManageLaunchpadPage() {
                     No apps found in Firestore &quot;appLab&quot; collection.
                   </p>
                   <p className="text-xs text-gray-400 font-mono">
-                    Click &quot;⚡ Auto-Set Modern Dummy Images in Firebase&quot; or &quot;+ Add New App&quot; to populate your showroom!
+                    Add an app or load starter content to fill your collection.
                   </p>
                 </div>
               ) : (
@@ -2002,7 +2000,7 @@ export default function ManageLaunchpadPage() {
                     return (
                       <div
                         key={app.id}
-                        className="bg-[#0e131f] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-[#38f2ff]/30 transition shadow-lg relative"
+                        className="bg-[#0e131f] border border-white/10 rounded-2xl p-5 flex flex-col gap-4 hover:border-[#2cecf7]/30 transition shadow-lg relative"
                       >
                         {/* Top row: Thumbnail + Identity */}
                         <div className="flex flex-col sm:flex-row gap-4 items-start">
@@ -2020,7 +2018,7 @@ export default function ManageLaunchpadPage() {
                             </div>
 
                             {/* Upload Image File Button */}
-                            <label className="block w-full text-center px-2 py-1.5 bg-[#38f2ff]/10 hover:bg-[#38f2ff]/20 text-[#38f2ff] border border-[#38f2ff]/30 rounded-lg text-[10px] font-mono font-bold cursor-pointer transition">
+                            <label className="block w-full text-center px-2 py-1.5 bg-[#2cecf7]/10 hover:bg-[#2cecf7]/20 text-[#2cecf7] border border-[#2cecf7]/30 rounded-lg text-[10px] font-mono font-bold cursor-pointer transition">
                               {uploadingImage ? "Uploading…" : "Upload Image"}
                               <input
                                 type="file"
@@ -2048,7 +2046,7 @@ export default function ManageLaunchpadPage() {
                                 <h4 className="text-base font-bold text-white font-space">
                                   {app.name}
                                 </h4>
-                                <p className="text-xs text-[#38f2ff] font-mono line-clamp-1">
+                                <p className="text-xs text-[#2cecf7] font-mono line-clamp-1">
                                   {app.subtitle || "No tagline"}
                                 </p>
                               </div>
@@ -2192,13 +2190,13 @@ export default function ManageLaunchpadPage() {
                                     [app.id]: e.target.value,
                                   })
                                 }
-                                className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono placeholder:text-gray-600 focus:border-[#38f2ff] outline-none"
+                                className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono placeholder:text-gray-600 focus:border-[#2cecf7] outline-none"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSaveAppPreviewUrl(app.id)}
                                 disabled={savingLinks[app.id + "-prev"]}
-                                className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-[#38f2ff] border border-[#38f2ff]/30 text-xs font-mono font-bold rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0"
+                                className="px-3 py-1.5 bg-white/10 hover:bg-white/15 text-[#2cecf7] border border-[#2cecf7]/30 text-xs font-mono font-bold rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0"
                               >
                                 {savingLinks[app.id + "-prev"] ? "Saving…" : "Save Link"}
                               </button>
@@ -2225,12 +2223,12 @@ export default function ManageLaunchpadPage() {
                                     [app.id]: e.target.value,
                                   })
                                 }
-                                className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono placeholder:text-gray-600 focus:border-[#38f2ff] outline-none"
+                                className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono placeholder:text-gray-600 focus:border-[#2cecf7] outline-none"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSaveAppImageUrl(app.id)}
-                                className="px-3 py-1.5 bg-[#38f2ff] text-black text-xs font-mono font-bold rounded-lg hover:bg-[#00dbe8] transition cursor-pointer shrink-0"
+                                className="px-3 py-1.5 bg-[#2cecf7] text-black text-xs font-mono font-bold rounded-lg hover:bg-[#00dbe8] transition cursor-pointer shrink-0"
                               >
                                 Save Image
                               </button>
@@ -2245,7 +2243,7 @@ export default function ManageLaunchpadPage() {
                             <button
                               type="button"
                               onClick={() => handleOpenEditDetails(app)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#38f2ff]/10 hover:bg-[#38f2ff]/20 text-[#38f2ff] border border-[#38f2ff]/30 transition flex items-center gap-1 cursor-pointer"
+                              className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#2cecf7]/10 hover:bg-[#2cecf7]/20 text-[#2cecf7] border border-[#2cecf7]/30 transition flex items-center gap-1 cursor-pointer"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -2445,7 +2443,7 @@ export default function ManageLaunchpadPage() {
                         type="text"
                         value={detailsForm.previewUrl}
                         onChange={(e) => setDetailsForm({ ...detailsForm, previewUrl: e.target.value })}
-                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-[#38f2ff] outline-none"
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-[#2cecf7] outline-none"
                         placeholder="https://example.com/preview"
                       />
                       <p className="text-[10px] font-mono text-gray-400">
@@ -2465,20 +2463,20 @@ export default function ManageLaunchpadPage() {
                     value={detailsForm.description}
                     onChange={(e) => setDetailsForm({ ...detailsForm, description: e.target.value })}
                     className="w-full bg-[#080e1a] border border-white/10 rounded-xl p-3.5 text-xs sm:text-sm text-white font-sans focus:border-teal-400 outline-none resize-none leading-relaxed"
-                    placeholder="Comprehensive description of the application architecture and features..."
+                    placeholder="App features and architecture"
                   />
                 </div>
 
                 {/* 4. Developer Usage Warning Message */}
-                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-[#09101f] border-2 border-[#38f2ff]/30 shadow-inner">
+                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-[#09101f] border-2 border-[#2cecf7]/30 shadow-inner">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono font-bold text-[#38f2ff] flex items-center gap-1.5">
-                      <svg className="w-4 h-4 text-[#38f2ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <label className="text-xs font-mono font-bold text-[#2cecf7] flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-[#2cecf7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                       </svg>
                       Developer Usage &amp; Testing Warning Message (Details Screen)
                     </label>
-                    <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#38f2ff]/10 border border-[#38f2ff]/20">
+                    <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#2cecf7]/10 border border-[#2cecf7]/20">
                       Notice Banner
                     </span>
                   </div>
@@ -2486,8 +2484,8 @@ export default function ManageLaunchpadPage() {
                     rows={3}
                     value={detailsForm.devUsage}
                     onChange={(e) => setDetailsForm({ ...detailsForm, devUsage: e.target.value })}
-                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-cyan-200 font-mono focus:border-[#38f2ff] outline-none leading-relaxed resize-none"
-                    placeholder="Custom developer instructions: e.g. This build is intended strictly for authorized developer testing. Run within an Android 10+ virtual emulator. Do not inject sensitive production secrets..."
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-cyan-200 font-mono focus:border-[#2cecf7] outline-none leading-relaxed resize-none"
+                    placeholder="Testing requirements and limitations"
                   />
                   <p className="text-[10px] font-mono text-gray-400">
                     Displayed prominently on <code>/app-lab/[slug]</code> in place of the removed download/preview buttons.
@@ -2512,7 +2510,7 @@ export default function ManageLaunchpadPage() {
                     value={detailsForm.copyright}
                     onChange={(e) => setDetailsForm({ ...detailsForm, copyright: e.target.value })}
                     className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-gray-200 font-sans focus:border-indigo-400 outline-none leading-relaxed resize-none"
-                    placeholder="Copyright © 2026 DevEngine. All rights reserved. Reverse engineering, decompilation, or unauthorized commercial reproduction is strictly prohibited..."
+                    placeholder="Copyright and distribution terms"
                   />
                 </div>
 
@@ -2740,7 +2738,7 @@ export default function ManageLaunchpadPage() {
                         placeholder="https://preview.thedevengine.com"
                         value={newAppForm.previewUrl}
                         onChange={(e) => setNewAppForm({ ...newAppForm, previewUrl: e.target.value })}
-                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-[#38f2ff] outline-none"
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-[#2cecf7] outline-none"
                       />
                     </div>
                   </div>
@@ -2760,24 +2758,24 @@ export default function ManageLaunchpadPage() {
                 </div>
 
                 {/* Developer Usage Notice */}
-                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-[#09101f] border-2 border-[#38f2ff]/30 shadow-inner">
+                <div className="space-y-2 p-4 sm:p-5 rounded-2xl bg-[#09101f] border-2 border-[#2cecf7]/30 shadow-inner">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-mono font-bold text-[#38f2ff] flex items-center gap-1.5">
-                      <svg className="w-4 h-4 text-[#38f2ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <label className="text-xs font-mono font-bold text-[#2cecf7] flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-[#2cecf7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                       </svg>
                       Developer Usage &amp; Testing Warning Message (Details Page)
                     </label>
-                    <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#38f2ff]/10 border border-[#38f2ff]/20">
+                    <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#2cecf7]/10 border border-[#2cecf7]/20">
                       Notice Banner
                     </span>
                   </div>
                   <textarea
                     rows={3}
-                    placeholder="Instructions on how developers should execute, test, and sandbox this application..."
+                    placeholder="Setup and testing instructions"
                     value={newAppForm.devUsage}
                     onChange={(e) => setNewAppForm({ ...newAppForm, devUsage: e.target.value })}
-                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-cyan-200 font-mono focus:border-[#38f2ff] outline-none leading-relaxed resize-none"
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-cyan-200 font-mono focus:border-[#2cecf7] outline-none leading-relaxed resize-none"
                   />
                 </div>
 
@@ -2796,7 +2794,7 @@ export default function ManageLaunchpadPage() {
                   </div>
                   <textarea
                     rows={2}
-                    placeholder="DevEngine copyright and IP ownership statement..."
+                    placeholder="Copyright and ownership terms"
                     value={newAppForm.copyright}
                     onChange={(e) => setNewAppForm({ ...newAppForm, copyright: e.target.value })}
                     className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs text-gray-200 font-sans focus:border-indigo-400 outline-none leading-relaxed resize-none"
@@ -2876,7 +2874,7 @@ export default function ManageLaunchpadPage() {
                     disabled={creatingApp}
                     className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-black text-xs font-mono font-bold transition shadow-lg disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                   >
-                    {creatingApp ? "Publishing App…" : "🚀 Publish App to Showroom"}
+                    {creatingApp ? "Publishing App…" : "Publish app"}
                   </button>
                 </div>
               </div>
@@ -2913,7 +2911,7 @@ export default function ManageLaunchpadPage() {
               </p>
 
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-mono">
-                💡 A backup copy will be archived to your{" "}
+                A backup will be saved in your{" "}
                 <strong>Dashboard &gt; Recycle Bin</strong> for safe keeping.
               </div>
 
@@ -2973,7 +2971,7 @@ export default function ManageLaunchpadPage() {
               </p>
 
               <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 leading-relaxed font-mono">
-                ⚠️ On the public user side, the App Collection will automatically switch to displaying the official <strong>&quot;Catalog Staging &amp; Updates in Progress&quot;</strong> waiting state.
+                The public App Collection will show <strong>&quot;Catalog Staging &amp; Updates in Progress&quot;</strong> waiting state.
               </div>
 
               <div className="flex justify-end gap-3 pt-2">

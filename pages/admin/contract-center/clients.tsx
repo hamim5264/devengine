@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/clients.tsx
 // ─────────────────────────────────────────────────────────────
@@ -183,9 +184,7 @@ export default function ContractCenterClientsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Client Directory & Legal Entities</h1>
-            <p className="text-sm text-slate-400">
-              Manage client companies, authorized signatories, tax IDs, and contract preferences.
-            </p>
+            <p className="text-sm text-slate-400">Manage companies, contacts, and contract details.</p>
           </div>
           <button
             onClick={openAddModal}
@@ -205,12 +204,12 @@ export default function ContractCenterClientsPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
-              placeholder="Search clients by legal name, organization, client ID, email..."
+              placeholder="Find a client"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -227,7 +226,7 @@ export default function ContractCenterClientsPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -237,9 +236,9 @@ export default function ContractCenterClientsPage() {
               <option value="prospect">Prospect</option>
               <option value="inactive">Inactive</option>
               <option value="archived">Archived</option>
-            </select>
+            </AdminSelect>
 
-            <select
+            <AdminSelect
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -247,7 +246,7 @@ export default function ContractCenterClientsPage() {
               <option value="all">All Entity Types</option>
               <option value="organization">Organization</option>
               <option value="individual">Individual</option>
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -329,19 +328,19 @@ export default function ContractCenterClientsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Entity Type</label>
-                    <select
+                    <AdminSelect
                       value={formData.clientType}
                       onChange={(e) => setFormData({ ...formData, clientType: e.target.value as CCClientType })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                     >
                       <option value="organization">Organization / Company</option>
                       <option value="individual">Individual / Proprietor</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Status</label>
-                    <select
+                    <AdminSelect
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as CCClientStatus })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -350,7 +349,7 @@ export default function ContractCenterClientsPage() {
                       <option value="prospect">Prospect</option>
                       <option value="inactive">Inactive</option>
                       <option value="archived">Archived</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
@@ -424,7 +423,7 @@ export default function ContractCenterClientsPage() {
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Preferred Currency</label>
-                    <select
+                    <AdminSelect
                       value={formData.preferredCurrency}
                       onChange={(e) => setFormData({ ...formData, preferredCurrency: e.target.value as CCCurrency })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -434,7 +433,7 @@ export default function ContractCenterClientsPage() {
                       <option value="EUR">EUR (€)</option>
                       <option value="GBP">GBP (£)</option>
                       <option value="AED">AED</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>

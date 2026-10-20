@@ -1,3 +1,4 @@
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/agreements.tsx
 // ─────────────────────────────────────────────────────────────
@@ -353,13 +354,11 @@ export default function ServiceAgreementsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Master Service Agreements</h1>
-            <p className="text-sm text-slate-400">
-              Legally binding development contracts, IP transfer rights, liability terms, and milestone warranties.
-            </p>
+            <p className="text-sm text-slate-400">Manage development agreements and ownership terms.</p>
           </div>
           <button
             onClick={openAddModal}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg shadow-pink-500/25 hover:from-pink-400 hover:to-rose-500 transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#2cecf7] text-[#02040a] shadow-lg shadow-[#2cecf7]/20 hover:bg-[#53f2fb] transition-all"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -406,13 +405,13 @@ export default function ServiceAgreementsPage() {
             onClick={() => setViewTab("active")}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               viewTab === "active"
-                ? "bg-pink-500/15 border border-pink-500/30 text-pink-300 shadow-sm shadow-pink-500/20"
+                ? "bg-[#2cecf7]/15 border border-[#2cecf7]/30 text-[#2cecf7] shadow-sm shadow-[#2cecf7]/20"
                 : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
             }`}
           >
             <span className="material-symbols-outlined text-base">description</span>
             Active Agreements
-            <span className="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 text-[10px] font-mono">
+            <span className="px-2 py-0.5 rounded-full bg-[#2cecf7]/20 text-[#2cecf7] text-[10px] font-mono">
               {tabCounts.active}
             </span>
           </button>
@@ -453,12 +452,12 @@ export default function ServiceAgreementsPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
-              placeholder="Search agreements by contract #, client, title..."
+              placeholder="Find an agreement"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -475,7 +474,7 @@ export default function ServiceAgreementsPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -486,7 +485,7 @@ export default function ServiceAgreementsPage() {
                   {label}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -508,7 +507,7 @@ export default function ServiceAgreementsPage() {
               <tbody className="divide-y divide-slate-800/60">
                 {filtered.map((agr) => (
                   <tr key={agr.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="py-3 px-4 font-mono font-semibold text-pink-400">
+                    <td className="py-3 px-4 font-mono font-semibold text-[#2cecf7]">
                       {agr.agreementNumber}
                     </td>
                     <td className="py-3 px-4 max-w-[240px]">
@@ -685,7 +684,7 @@ export default function ServiceAgreementsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Sync from Approved Quotation</label>
-                    <select
+                    <AdminSelect
                       value={formData.quotationId}
                       onChange={(e) => handleQuotationSelect(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -696,12 +695,12 @@ export default function ServiceAgreementsPage() {
                           {q.quotationNumber} — {q.title}
                         </option>
                       ))}
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Client Entity *</label>
-                    <select
+                    <AdminSelect
                       required
                       value={formData.clientId}
                       onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
@@ -713,7 +712,7 @@ export default function ServiceAgreementsPage() {
                           {c.legalName}
                         </option>
                       ))}
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
@@ -728,7 +727,7 @@ export default function ServiceAgreementsPage() {
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Currency</label>
-                    <select
+                    <AdminSelect
                       value={formData.currency}
                       onChange={(e) => setFormData({ ...formData, currency: e.target.value as CCCurrency })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -737,12 +736,12 @@ export default function ServiceAgreementsPage() {
                       <option value="BDT">BDT (৳)</option>
                       <option value="EUR">EUR (€)</option>
                       <option value="GBP">GBP (£)</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Effective Date</label>
-                    <input
+                    <AdminDateInput
                       type="date"
                       value={formData.effectiveDate}
                       onChange={(e) => setFormData({ ...formData, effectiveDate: e.target.value })}
@@ -752,7 +751,7 @@ export default function ServiceAgreementsPage() {
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">IP Ownership Model</label>
-                    <select
+                    <AdminSelect
                       value={formData.ipOwnershipModel}
                       onChange={(e) => setFormData({ ...formData, ipOwnershipModel: e.target.value as CCIPOwnershipModel })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -760,7 +759,7 @@ export default function ServiceAgreementsPage() {
                       <option value="client_ownership">Full Client Ownership (IP Transfer upon payment)</option>
                       <option value="client_license">Client License</option>
                       <option value="devengine_ownership_licensed">DevEngine Ownership with Usage Rights</option>
-                    </select>
+                    </AdminSelect>
                   </div>
                 </div>
 

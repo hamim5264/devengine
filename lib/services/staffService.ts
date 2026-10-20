@@ -1,3 +1,4 @@
+import { uploadStorageAsset } from "@/lib/services/storageAssetService";
 // lib/services/staffService.ts
 import {
   collection,
@@ -8,6 +9,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   orderBy,
 } from "firebase/firestore";
@@ -66,54 +68,10 @@ export function generateStaffPassword(): string {
   return pw;
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (err) => reject(err);
-  });
-}
 
-/** Upload staff avatar via Firebase Storage with fallback to /api/upload-image */
-export async function uploadStaffAvatar(
-  file: File,
-  staffIdentifier: string = "staff"
-): Promise<string> {
-  const cleanExt = (file.name.split(".").pop() || "png").toLowerCase();
-  const filename = `${staffIdentifier.replace(/[^a-zA-Z0-9_-]/g, "_")}_${Date.now()}.${cleanExt}`;
-
-  // 1. Try Firebase Storage
-  try {
-    const storageRef = ref(storage, `staff/${filename}`);
-    await uploadBytes(storageRef, file);
-    const downloadUrl = await getDownloadURL(storageRef);
-    if (downloadUrl) return downloadUrl;
-  } catch (storageErr) {
-    console.warn("[StaffService] Firebase Storage upload failed, trying local fallback:", storageErr);
-  }
-
-  // 2. Fallback to API endpoint
-  try {
-    const base64Data = await fileToBase64(file);
-    const res = await fetch("/api/upload-image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filename,
-        base64Data,
-        folder: "staff",
-      }),
-    });
-    const data = await res.json();
-    if (res.ok && data?.url) {
-      return data.url;
-    }
-    throw new Error(data?.error || "Upload fallback failed");
-  } catch (apiErr: any) {
-    console.error("[StaffService] Fallback upload error:", apiErr);
-    throw new Error(apiErr?.message || "Failed to upload avatar image.");
-  }
+/** Persist staff avatars in Firebase Storage. */
+export async function uploadStaffAvatar(file: File, staffIdentifier = "staff"): Promise<string> {
+  return uploadStorageAsset(file, "staff", staffIdentifier, 10 * 1024 * 1024);
 }
 
 // ── CRUD Staff Accounts ──
@@ -129,6 +87,12 @@ export async function createStaffAccount(data: {
   assignedOffDays?: string[];
   shiftHours?: { start: string; end: string; name?: string };
   agreementId?: string;
+  employmentType?: StaffMember["employmentType"];
+  joiningDate?: string;
+  probationPeriodMonths?: number;
+  probationEndDate?: string;
+  emergencyContact?: StaffMember["emergencyContact"];
+  salaryManagement?: StaffMember["salaryManagement"];
 }): Promise<StaffMember> {
   const secondaryAuth = getSecondaryAuth();
 
@@ -159,6 +123,12 @@ export async function createStaffAccount(data: {
     assignedOffDays: data.assignedOffDays || ["Friday", "Saturday"],
     shiftHours: data.shiftHours || { start: "09:00", end: "18:00", name: "Standard Shift" },
     agreementId: data.agreementId || "",
+    employmentType: data.employmentType || "permanent",
+    joiningDate: data.joiningDate || now.split("T")[0],
+    probationPeriodMonths: data.probationPeriodMonths,
+    probationEndDate: data.probationEndDate,
+    emergencyContact: data.emergencyContact,
+    salaryManagement: data.salaryManagement,
     createdAt: now,
     updatedAt: now,
   };
@@ -207,24 +177,33 @@ export async function getStaffByUid(uid: string): Promise<StaffMember | null> {
 /** Update staff member (Firestore + Firebase Auth password if changed) */
 export async function updateStaffMember(
   id: string,
-  data: Partial<Pick<StaffMember, "name" | "staffType" | "allowedModules" | "status" | "password" | "avatarUrl">>,
+  data: Partial<StaffMember>,
   credentials?: { email: string; oldPassword?: string }
 ): Promise<void> {
-  // If password was edited and we know the previous password, update secondary Firebase Auth
-  if (data.password && credentials?.email && credentials?.oldPassword && data.password !== credentials.oldPassword) {
-    try {
-      const secondaryAuth = getSecondaryAuth();
-      const userCred = await signInWithEmailAndPassword(secondaryAuth, credentials.email, credentials.oldPassword);
-      await updatePassword(userCred.user, data.password);
-      await firebaseSignOut(secondaryAuth);
-    } catch (authErr) {
-      console.warn("[StaffService] Secondary Firebase Auth password sync warning:", authErr);
-      // Secondary auth sign-in might fail if password was already changed; Firestore update still proceeds.
-    }
+  if (data.status === "suspended" && !data.suspensionReason?.trim()) throw new Error("Add a reason before suspending this employee.");
+  if ((data.suspensionReason || "").length > 1000) throw new Error("Keep the suspension reason within 1,000 characters.");
+  if (data.password !== undefined && data.password !== credentials?.oldPassword && (data.password || credentials?.oldPassword) && data.password.length < 6) throw new Error("Password must contain at least 6 characters.");
+  const clean = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(item => item === undefined ? null : clean(item));
+    if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined).map(([key, item]) => [key, clean(item)]));
+    return value;
+  };
+  const removable = new Set(["probationPeriodMonths", "emergencyContact", "resignationDetails", "suspensionReason", "suspendedAt", "suspendedBy"]);
+  const payload: Record<string, unknown> = {};
+  Object.entries(data).forEach(([key, value]) => {
+    if (key === "password" && value === "" && !credentials?.oldPassword) return;
+    if (value !== undefined) payload[key] = clean(value);
+    else if (removable.has(key)) payload[key] = deleteField();
+  });
+  if (data.status === "suspended") {
+    payload.suspensionReason = data.suspensionReason!.trim();
+    payload.suspendedBy = auth.currentUser?.uid || "";
+    payload.suspendedAt = data.suspendedAt || new Date().toISOString();
+  } else if (data.status === "active") {
+    payload.suspensionReason = deleteField(); payload.suspendedAt = deleteField(); payload.suspendedBy = deleteField();
   }
-
   const batch = writeBatch(db);
-  batch.update(doc(db, STAFF_COLLECTION, id), { ...data, updatedAt: new Date().toISOString() });
+  batch.update(doc(db, STAFF_COLLECTION, id), { ...payload, updatedAt: new Date().toISOString() });
   const directory = await getDoc(doc(db, "studio_people", id));
   if (directory.exists()) {
     const projection: Record<string, string> = {};
@@ -233,7 +212,26 @@ export async function updateStaffMember(
     if (data.status !== undefined) projection.status = data.status;
     if (Object.keys(projection).length) batch.update(directory.ref, projection);
   }
-  await batch.commit();
+  const changingPassword = !!data.password && data.password !== credentials?.oldPassword;
+  const secondaryAuth = changingPassword ? getSecondaryAuth() : null;
+  let passwordChanged = false;
+  try {
+    if (changingPassword) {
+      if (!credentials?.email || !credentials.oldPassword) throw new Error("The current login password is unavailable. Reset the employee password before changing it here.");
+      const account = await signInWithEmailAndPassword(secondaryAuth!, credentials.email, credentials.oldPassword);
+      await updatePassword(account.user, data.password!);
+      passwordChanged = true;
+    }
+    await batch.commit();
+  } catch (error) {
+    if (passwordChanged && secondaryAuth?.currentUser && credentials?.oldPassword) {
+      try { await updatePassword(secondaryAuth.currentUser, credentials.oldPassword); }
+      catch { throw new Error("The login password changed, but the employee profile could not be saved. Reset the login password before retrying."); }
+    }
+    throw error;
+  } finally {
+    if (secondaryAuth) await firebaseSignOut(secondaryAuth).catch(() => {});
+  }
 }
 
 /** Update own profile (name and/or avatarUrl) for logged-in staff member */
@@ -295,19 +293,24 @@ export async function getStaffRoles(): Promise<StaffRole[]> {
   try {
     const colRef = collection(db, STAFF_ROLES_COLLECTION);
     const snap = await getDocs(colRef);
-    const customRoles: StaffRole[] = snap.docs.map((d) => ({
+    const firestoreRoles: StaffRole[] = snap.docs.map((d) => ({
       ...d.data(),
       id: d.id,
-      isCustom: true,
+      isCustom: d.data().isCustom !== undefined ? d.data().isCustom : true,
     } as StaffRole));
 
-    // Map default roles, allowing custom roles to override if same key exists
+    // Map default roles, allowing saved customizations in Firestore to merge and override
     const rolesMap = new Map<string, StaffRole>();
     for (const def of DEFAULT_STAFF_ROLES) {
       rolesMap.set(def.key, { ...def });
     }
-    for (const cust of customRoles) {
-      rolesMap.set(cust.key, cust);
+    for (const role of firestoreRoles) {
+      const existing = rolesMap.get(role.key);
+      rolesMap.set(role.key, {
+        ...(existing || {}),
+        ...role,
+        isCustom: existing ? (role.isCustom ?? false) : true,
+      });
     }
 
     return Array.from(rolesMap.values());
@@ -348,12 +351,18 @@ export async function createStaffRole(data: {
   return role;
 }
 
-/** Update an existing custom role */
+/** Update an existing role (custom or system default) */
 export async function updateStaffRole(id: string, data: Partial<StaffRole>): Promise<void> {
-  await updateDoc(doc(db, STAFF_ROLES_COLLECTION, id), {
-    ...data,
-    updatedAt: new Date().toISOString(),
-  });
+  const docId = id || (data as any).key;
+  await setDoc(
+    doc(db, STAFF_ROLES_COLLECTION, docId),
+    {
+      ...data,
+      id: docId,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
 }
 
 /** Delete a custom role */

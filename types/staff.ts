@@ -25,6 +25,35 @@ export interface StaffRole {
   updatedAt?: string;
 }
 
+export type EmploymentType = "probation" | "permanent" | "contract" | "intern";
+
+export interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
+export interface SalaryManagement {
+  basicSalary: number;
+  houseRent?: number;
+  medical?: number;
+  conveyance?: number;
+  otherAllowances?: number;
+  grossSalary: number;
+  currency: string;
+  paymentMethod: "bank_transfer" | "bkash" | "nagad" | "cash" | "wire" | string;
+  bankDetails?: string;
+  noticePeriodDays?: number;
+}
+
+export interface ResignationDetails {
+  resignedAt?: string;
+  lastWorkingDay?: string;
+  reason?: string;
+  status?: "pending" | "approved" | "completed" | "resigned" | "none" | string;
+  certificateIssued?: boolean;
+}
+
 export interface StaffMember {
   id: string;
   uid: string; // Firebase Auth UID
@@ -35,11 +64,25 @@ export interface StaffMember {
   staffType: StaffType;
   allowedModules: string[]; // Array of MODULE_KEY values
   status: StaffStatus;
+  suspensionReason?: string;
+  suspendedAt?: string;
+  suspendedBy?: string;
   phone?: string;
   designation?: string;
   assignedOffDays?: string[]; // e.g. ["Friday", "Saturday"]
   shiftHours?: { start: string; end: string; name?: string }; // e.g. { start: "09:00", end: "18:00", name: "Day Shift" }
   agreementId?: string; // ID of linked agreement in agreements collection
+  
+  // Extended HR & Management Profile
+  employmentType?: EmploymentType;
+  joiningDate?: string;
+  probationPeriodMonths?: number;
+  probationEndDate?: string;
+  emergencyContact?: EmergencyContact;
+  salaryManagement?: SalaryManagement;
+  resignationDetails?: ResignationDetails;
+  resignation?: ResignationDetails;
+
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
 }

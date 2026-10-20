@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 ﻿import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
@@ -255,7 +256,7 @@ export default function ManageNetworkPage() {
                       <td className="px-6 py-4 font-semibold text-white">{hub.name}</td>
                       <td className="px-6 py-4 font-mono text-teal-400">{hub.regionCode}</td>
                       <td className="px-6 py-4">
-                        <span className="font-mono text-xs px-2.5 py-1 rounded bg-[#38f2ff]/10 text-[#38f2ff] border border-[#38f2ff]/30">
+                        <span className="font-mono text-xs px-2.5 py-1 rounded bg-[#2cecf7]/10 text-[#2cecf7] border border-[#2cecf7]/30">
                           {hub.uptimeText}
                         </span>
                       </td>
@@ -357,7 +358,7 @@ export default function ManageNetworkPage() {
                   <label className="block text-xs font-mono text-gray-400 uppercase mb-1">
                     Status
                   </label>
-                  <select
+                  <AdminSelect
                     value={formData.status}
                     onChange={(e) =>
                       setFormData({ ...formData, status: e.target.value as HubStatusType })
@@ -368,7 +369,7 @@ export default function ManageNetworkPage() {
                     <option value="SYNCING">SYNCING</option>
                     <option value="MAINTENANCE">MAINTENANCE</option>
                     <option value="DEGRADED">DEGRADED</option>
-                  </select>
+                  </AdminSelect>
                 </div>
               </div>
 

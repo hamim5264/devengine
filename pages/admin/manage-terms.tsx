@@ -107,7 +107,7 @@ export default function ManageTermsPage() {
   if (!authReady || loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <HelixLoader size={50} color="#38f2ff" />
+        <HelixLoader size={50} color="#2cecf7" />
       </div>
     );
   }
@@ -128,7 +128,7 @@ export default function ManageTermsPage() {
               <div className="flex items-center gap-2 mb-1.5 font-jetbrains text-xs">
                 <Link
                   href="/admin/dashboard"
-                  className="text-[#38f2ff] hover:underline flex items-center gap-1"
+                  className="text-[#2cecf7] hover:underline flex items-center gap-1"
                 >
                   ← Back to Dashboard
                 </Link>
@@ -138,23 +138,21 @@ export default function ManageTermsPage() {
               <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                 Terms & Conditions CMS
               </h1>
-              <p className="text-sm text-[#849495] mt-1">
-                Edit legal agreements, ownership lifecycle, payment phases, and intellectual property terms.
-              </p>
+              <p className="text-sm text-[#849495] mt-1">Update service, payment, and ownership terms.</p>
             </div>
 
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleResetDefaults}
-                className="px-4 py-2 text-xs font-jetbrains rounded-lg border border-[#38f2ff]/30 text-[#38f2ff] hover:bg-[#38f2ff]/10 transition-colors"
+                className="px-4 py-2 text-xs font-jetbrains rounded-lg border border-[#2cecf7]/30 text-[#2cecf7] hover:bg-[#2cecf7]/10 transition-colors"
               >
                 Reset Defaults
               </button>
               <Link
                 href="/terms"
                 target="_blank"
-                className="px-5 py-2.5 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-[#38f2ff]/30 hover:scale-105 transition-all"
+                className="px-5 py-2.5 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-[#2cecf7]/30 hover:scale-105 transition-all"
               >
                 View Live Page ↗
               </Link>
@@ -166,7 +164,7 @@ export default function ManageTermsPage() {
             <div
               className={`mb-6 p-4 rounded-xl border text-xs font-jetbrains flex justify-between items-center ${
                 message.type === "success"
-                  ? "bg-[#38f2ff]/10 border-[#38f2ff]/40 text-[#38f2ff]"
+                  ? "bg-[#2cecf7]/10 border-[#2cecf7]/40 text-[#2cecf7]"
                   : "bg-red-900/30 border-red-500/40 text-red-200"
               }`}
             >
@@ -197,7 +195,7 @@ export default function ManageTermsPage() {
                 onClick={() => setActiveTab(tab.id as TermsTab)}
                 className={`px-4 py-2 rounded-lg font-jetbrains text-xs whitespace-nowrap transition-all ${
                   activeTab === tab.id
-                    ? "bg-[#38f2ff] text-[#02040A] font-bold shadow-[0_0_15px_rgba(56,242,255,0.4)]"
+                    ? "bg-[#2cecf7] text-[#02040A] font-bold shadow-[0_0_15px_rgba(56,242,255,0.4)]"
                     : "bg-[#0A0F1D] text-[#849495] hover:text-white border border-white/5"
                 }`}
               >
@@ -219,7 +217,7 @@ export default function ManageTermsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
@@ -227,7 +225,7 @@ export default function ManageTermsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Badge Text
                     </label>
                     <input
@@ -244,7 +242,7 @@ export default function ManageTermsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -262,7 +260,7 @@ export default function ManageTermsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Subtitle Description
                   </label>
                   <textarea
@@ -280,7 +278,7 @@ export default function ManageTermsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Last Updated Date
                     </label>
                     <input
@@ -297,7 +295,7 @@ export default function ManageTermsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Status Text (e.g. TERMS ACTIVE)
                     </label>
                     <input
@@ -327,14 +325,14 @@ export default function ManageTermsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Section Title
                   </label>
                   <input
@@ -351,7 +349,7 @@ export default function ManageTermsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Paragraphs
                   </label>
                   {config.agreement.paragraphs.map((para, idx) => (
@@ -413,14 +411,14 @@ export default function ManageTermsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Section Title
                   </label>
                   <input
@@ -437,7 +435,7 @@ export default function ManageTermsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Paragraphs
                   </label>
                   {config.eligibility.paragraphs.map((para, idx) => (
@@ -469,14 +467,14 @@ export default function ManageTermsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Section Title
                   </label>
                   <input
@@ -493,7 +491,7 @@ export default function ManageTermsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Paragraphs
                   </label>
                   {config.accounts.paragraphs.map((para, idx) => (
@@ -540,14 +538,14 @@ export default function ManageTermsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Title
                   </label>
                   <input
@@ -564,7 +562,7 @@ export default function ManageTermsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Description
                   </label>
                   <textarea
@@ -587,7 +585,7 @@ export default function ManageTermsPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {config.lifecycle.steps.map((step, sIdx) => (
                       <div key={sIdx} className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2">
-                        <label className="block text-[11px] font-jetbrains text-[#38f2ff] uppercase font-bold">
+                        <label className="block text-[11px] font-jetbrains text-[#2cecf7] uppercase font-bold">
                           Step #{sIdx + 1}
                         </label>
                         <input
@@ -630,14 +628,14 @@ export default function ManageTermsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Title
                   </label>
                   <input
@@ -672,7 +670,7 @@ export default function ManageTermsPage() {
                               paymentStructure: { ...config.paymentStructure, phases: updated },
                             });
                           }}
-                          className="px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-[#38f2ff] text-xs font-jetbrains font-bold"
+                          className="px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-[#2cecf7] text-xs font-jetbrains font-bold"
                         />
                         <input
                           type="text"
@@ -720,14 +718,14 @@ export default function ManageTermsPage() {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#38f2ff] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#38f2ff] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Title
                   </label>
                   <input
@@ -767,7 +765,7 @@ export default function ManageTermsPage() {
 
                   {/* Client Owned */}
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
-                    <h3 className="font-jetbrains text-xs text-[#38f2ff] uppercase font-bold">
+                    <h3 className="font-jetbrains text-xs text-[#2cecf7] uppercase font-bold">
                       Client Owned Items (Line-by-line)
                     </h3>
                     <textarea

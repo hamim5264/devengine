@@ -1,3 +1,5 @@
+import AdminOverlay from "@/components/admin/AdminOverlay";
+import { AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
@@ -235,7 +237,7 @@ export default function ManageMaintenancePage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#07070d] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#38f2ff" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-mono text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Authorization…
         </p>
@@ -247,7 +249,7 @@ export default function ManageMaintenancePage() {
     return (
       <AdminLayout>
         <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-[#07070d] text-white">
-          <HelixLoader size={48} color="#38f2ff" />
+          <HelixLoader size={48} color="#2cecf7" />
           <div className="text-center">
             <h3 className="font-mono text-sm font-semibold text-white uppercase tracking-wider">
               Loading Infrastructure Engine
@@ -265,7 +267,7 @@ export default function ManageMaintenancePage() {
         <title>System Maintenance Mode CMS — DevEngine Admin</title>
       </Head>
 
-      <div className="min-h-screen bg-[#07070d] text-white flex flex-col font-sans">
+      <div data-maintenance-editor className="min-h-screen bg-[#07070d] text-white flex flex-col font-sans">
         <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
           
           {/* Top Header & Breadcrumbs */}
@@ -274,14 +276,14 @@ export default function ManageMaintenancePage() {
               <div className="flex items-center gap-2 text-xs font-mono text-gray-500 mb-2">
                 <Link
                   href="/admin/dashboard"
-                  className="text-gray-400 hover:text-[#38f2ff] transition-colors"
+                  className="text-gray-400 hover:text-[#2cecf7] transition-colors"
                 >
                   Dashboard
                 </Link>
                 <span>/</span>
                 <span>System Infrastructure</span>
                 <span>/</span>
-                <span className="text-[#38f2ff] font-bold">Maintenance CMS</span>
+                <span className="text-[#2cecf7] font-bold">Maintenance CMS</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -290,18 +292,16 @@ export default function ManageMaintenancePage() {
                 </div>
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                    System Maintenance & Lockdown CMS
+                    Maintenance & Service Status
                   </h1>
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-mono text-cyan-300">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                  Live Firestore Telemetry
+                  Live settings
                 </div>
               </div>
 
-              <p className="text-sm text-gray-400 mt-2 max-w-3xl">
-                Configure the global maintenance lockdown, scheduled downtime countdown, deployment progress telemetry, and public announcements.
-              </p>
+              <p className="text-sm text-gray-400 mt-2 max-w-3xl">Manage maintenance, downtime, and public notices.</p>
             </div>
 
             {/* Header Actions */}
@@ -309,7 +309,7 @@ export default function ManageMaintenancePage() {
               <button
                 type="button"
                 onClick={() => setPreviewModalOpen(true)}
-                className="px-4 py-2.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-[#38f2ff] text-xs font-mono font-semibold tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10"
+                className="px-4 py-2.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-[#2cecf7] text-xs font-mono font-semibold tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-cyan-500/10"
               >
                 <span className="material-symbols-outlined text-base">visibility</span>
                 <span>Preview Screen</span>
@@ -504,7 +504,7 @@ export default function ManageMaintenancePage() {
                   <span className={`px-2.5 py-1 rounded-lg border ${
                     config.isEnabled ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-white/[0.03] border-white/10 text-gray-400"
                   }`}>
-                    {config.isEnabled ? "⛔ Public Routes: LOCKED" : "✓ Public Routes: LIVE"}
+                    {config.isEnabled ? "Public access paused" : "Public access active"}
                   </span>
                   <span className="px-2.5 py-1 rounded-lg border bg-emerald-500/10 border-emerald-500/30 text-emerald-300">
                     ✓ Admin Panel: ALWAYS ACCESSIBLE
@@ -534,54 +534,7 @@ export default function ManageMaintenancePage() {
                 </div>
 
                 {/* Tactile Hardware Master Toggle */}
-                <button
-                  type="button"
-                  onClick={handleToggleMaintenance}
-                  disabled={saving}
-                  className={`group relative inline-flex h-11 w-[86px] shrink-0 cursor-pointer items-center rounded-full border-2 p-[3px] transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-black ${
-                    config.isEnabled
-                      ? "bg-gradient-to-r from-amber-500 via-amber-400 to-orange-500 border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.6),inset_0_1px_2px_rgba(255,255,255,0.4)] focus-visible:ring-amber-400 hover:brightness-105"
-                      : "bg-[#0b101d] border-white/[0.14] hover:border-emerald-500/40 shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] focus-visible:ring-emerald-400"
-                  } active:scale-95`}
-                  aria-label="Toggle Global Maintenance Mode"
-                >
-                  <span className="sr-only">Toggle maintenance mode</span>
-
-                  {/* Background Track Label (Left: LOCK, Right: LIVE) */}
-                  <div className="absolute inset-0 flex items-center justify-between px-3 pointer-events-none select-none">
-                    <span
-                      className={`text-[9px] font-mono font-black tracking-widest transition-opacity duration-200 ${
-                        config.isEnabled ? "text-black/80 opacity-100" : "opacity-0"
-                      }`}
-                    >
-                      LOCK
-                    </span>
-                    <span
-                      className={`text-[9px] font-mono font-bold tracking-widest transition-opacity duration-200 ${
-                        !config.isEnabled ? "text-gray-400 opacity-100" : "opacity-0"
-                      }`}
-                    >
-                      LIVE
-                    </span>
-                  </div>
-
-                  {/* Sliding Knob */}
-                  <span
-                    className={`pointer-events-none relative inline-flex h-8 w-8 transform items-center justify-center rounded-full transition-transform duration-300 ease-out ${
-                      config.isEnabled
-                        ? "translate-x-[42px] bg-gradient-to-b from-white to-amber-50 border border-amber-200 shadow-[0_4px_12px_rgba(0,0,0,0.4),0_0_12px_rgba(245,158,11,0.5)]"
-                        : "translate-x-0 bg-gradient-to-b from-[#242b3d] to-[#121624] border border-white/20 shadow-[0_4px_10px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.3)]"
-                    }`}
-                  >
-                    <span
-                      className={`material-symbols-outlined text-[17px] transition-colors duration-200 ${
-                        config.isEnabled ? "text-amber-700 font-bold" : "text-emerald-400"
-                      }`}
-                    >
-                      {config.isEnabled ? "lock" : "lock_open"}
-                    </span>
-                  </span>
-                </button>
+                <button type="button" role="switch" aria-checked={config.isEnabled} aria-label="Enable maintenance mode" onClick={handleToggleMaintenance} disabled={saving} className="admin-maintenance-switch"><span /></button>
 
                 {/* Micro Action Helper */}
                 <span className="text-[11px] font-mono text-gray-400 text-center sm:text-right">
@@ -599,7 +552,7 @@ export default function ManageMaintenancePage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
                 <div>
                   <h3 className="text-lg font-bold text-white font-['Space_Grotesk'] flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[#38f2ff] text-[22px]">
+                    <span className="material-symbols-outlined text-[#2cecf7] text-[22px]">
                       timer
                     </span>
                     <span>1. Scheduled Downtime & Countdown Deadline</span>
@@ -633,56 +586,56 @@ export default function ManageMaintenancePage() {
                   <button
                     type="button"
                     onClick={() => handleAddMinutes(30)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +30 Mins
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddHours(1)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +1 Hour
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddHours(2)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +2 Hours
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddHours(6)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +6 Hours
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddHours(12)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +12 Hours
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddHours(24)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +24 Hours
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddDays(2)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +2 Days
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddDays(3)}
-                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#38f2ff]/10 hover:border-[#38f2ff]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#38f2ff] transition-all cursor-pointer text-center font-medium"
+                    className="px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/50 border border-white/[0.08] text-xs font-mono text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer text-center font-medium"
                   >
                     +3 Days
                   </button>
@@ -697,12 +650,12 @@ export default function ManageMaintenancePage() {
                     Target Resume Date & Time (Local Time) *
                   </label>
                   <div className="relative">
-                    <input
+                    <AdminDateInput
                       type="datetime-local"
                       required
                       value={formatDatetimeLocal(config.targetEndTime)}
                       onChange={handleDatetimeChange}
-                      className="w-full h-12 bg-black/40 border border-white/[0.12] rounded-xl px-4 text-sm text-white focus:outline-none focus:border-[#38f2ff] font-mono shadow-inner transition-colors"
+                      className="w-full h-12 bg-black/40 border border-white/[0.12] rounded-xl px-4 text-sm text-white focus:outline-none focus:border-[#2cecf7] font-mono shadow-inner transition-colors"
                     />
                   </div>
                   <div className="flex items-center justify-between text-[11px] text-gray-500 font-mono px-1">
@@ -730,19 +683,19 @@ export default function ManageMaintenancePage() {
                   {/* 4 Digital Segments */}
                   <div className="grid grid-cols-4 gap-2 text-center py-1">
                     <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-2.5">
-                      <div className="text-xl sm:text-2xl font-black font-mono text-[#38f2ff] tracking-tight">
+                      <div className="text-xl sm:text-2xl font-black font-mono text-[#2cecf7] tracking-tight">
                         {String(countdown.days).padStart(2, "0")}
                       </div>
                       <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider mt-0.5">Days</div>
                     </div>
                     <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-2.5">
-                      <div className="text-xl sm:text-2xl font-black font-mono text-[#38f2ff] tracking-tight">
+                      <div className="text-xl sm:text-2xl font-black font-mono text-[#2cecf7] tracking-tight">
                         {String(countdown.hours).padStart(2, "0")}
                       </div>
                       <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider mt-0.5">Hours</div>
                     </div>
                     <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-2.5">
-                      <div className="text-xl sm:text-2xl font-black font-mono text-[#38f2ff] tracking-tight">
+                      <div className="text-xl sm:text-2xl font-black font-mono text-[#2cecf7] tracking-tight">
                         {String(countdown.minutes).padStart(2, "0")}
                       </div>
                       <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider mt-0.5">Mins</div>
@@ -768,7 +721,7 @@ export default function ManageMaintenancePage() {
             <div className="bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl space-y-6">
               <div className="border-b border-white/[0.08] pb-4">
                 <h3 className="text-lg font-bold text-white font-['Space_Grotesk'] flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[#38f2ff] text-[22px]">
+                  <span className="material-symbols-outlined text-[#2cecf7] text-[22px]">
                     campaign
                   </span>
                   <span>2. Public Announcement & Notice Messaging</span>
@@ -792,7 +745,7 @@ export default function ManageMaintenancePage() {
                     value={config.badge}
                     onChange={(e) => setConfig({ ...config, badge: e.target.value })}
                     placeholder="e.g. SYSTEM UPGRADE IN PROGRESS"
-                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#38f2ff] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
+                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
                   />
                   {/* Quick Badge Suggestions */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -820,7 +773,7 @@ export default function ManageMaintenancePage() {
                     value={config.title}
                     onChange={(e) => setConfig({ ...config, title: e.target.value })}
                     placeholder="e.g. We're Building Something Better."
-                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#38f2ff] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
+                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
                   />
                   {/* Quick Title Suggestions */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -853,8 +806,8 @@ export default function ManageMaintenancePage() {
                   required
                   value={config.message}
                   onChange={(e) => setConfig({ ...config, message: e.target.value })}
-                  placeholder="Explain why the system is under maintenance and when it is expected to return..."
-                  className="w-full bg-black/40 border border-white/[0.08] focus:border-[#38f2ff] rounded-xl p-4 text-sm text-white focus:outline-none transition-colors resize-none leading-relaxed"
+                  placeholder="Maintenance reason and return time"
+                  className="w-full bg-black/40 border border-white/[0.08] focus:border-[#2cecf7] rounded-xl p-4 text-sm text-white focus:outline-none transition-colors resize-none leading-relaxed"
                 />
               </div>
 
@@ -887,7 +840,7 @@ export default function ManageMaintenancePage() {
             <div className="bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl space-y-6">
               <div className="border-b border-white/[0.08] pb-4">
                 <h3 className="text-lg font-bold text-white font-['Space_Grotesk'] flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[#38f2ff] text-[22px]">
+                  <span className="material-symbols-outlined text-[#2cecf7] text-[22px]">
                     tune
                   </span>
                   <span>3. Deployment Progress & Subsystem Telemetry</span>
@@ -909,7 +862,7 @@ export default function ManageMaintenancePage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black font-mono text-[#38f2ff]">
+                    <span className="text-2xl font-black font-mono text-[#2cecf7]">
                       {config.progressPercentage}%
                     </span>
                   </div>
@@ -928,7 +881,7 @@ export default function ManageMaintenancePage() {
                         progressPercentage: Number(e.target.value),
                       })
                     }
-                    className="w-full h-2.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-[#38f2ff]"
+                    className="w-full h-2.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-[#2cecf7]"
                   />
                   
                   {/* Preset Percentage Buttons */}
@@ -946,7 +899,7 @@ export default function ManageMaintenancePage() {
                         onClick={() => setConfig({ ...config, progressPercentage: p.val })}
                         className={`text-xs font-mono px-3 py-1 rounded-lg border transition-all cursor-pointer ${
                           config.progressPercentage === p.val
-                            ? "bg-[#38f2ff]/20 border-[#38f2ff] text-[#38f2ff] font-bold"
+                            ? "bg-[#2cecf7]/20 border-[#2cecf7] text-[#2cecf7] font-bold"
                             : "bg-white/[0.04] border-white/[0.08] text-gray-400 hover:text-white"
                         }`}
                       >
@@ -970,7 +923,7 @@ export default function ManageMaintenancePage() {
                       setConfig({ ...config, coreServicesStatus: e.target.value })
                     }
                     placeholder="e.g. Updating Modules..."
-                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#38f2ff] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
+                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
                   />
                   {/* Quick pills */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -998,7 +951,7 @@ export default function ManageMaintenancePage() {
                       setConfig({ ...config, databaseStatus: e.target.value })
                     }
                     placeholder="e.g. Optimizing Indexes"
-                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#38f2ff] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
+                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-white focus:outline-none transition-colors"
                   />
                   {/* Quick pills */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -1068,16 +1021,16 @@ export default function ManageMaintenancePage() {
 
         {/* FULLSCREEN PREVIEW MODAL */}
         {previewModalOpen && (
-          <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col overflow-hidden animate-fadeIn">
+          <AdminOverlay onClose={() => setPreviewModalOpen(false)} label="Maintenance screen preview" className="maintenance-preview fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex flex-col overflow-hidden animate-fadeIn">
             <div className="bg-[#0b0f19] border-b border-white/10 px-6 py-3.5 flex items-center justify-between z-50 shrink-0">
               <div className="flex items-center gap-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
                 <div>
                   <span className="font-mono text-xs text-white font-bold tracking-widest uppercase">
-                    MAINTENANCE SCREEN PREVIEW MODE
+                    Maintenance preview
                   </span>
                   <span className="text-[11px] font-mono text-gray-400 ml-2 hidden sm:inline">
-                    (Simulating user experience in real-time)
+                    Current settings
                   </span>
                 </div>
               </div>
@@ -1093,7 +1046,7 @@ export default function ManageMaintenancePage() {
             <div className="flex-1 overflow-y-auto">
               <MaintenanceScreen config={config} isAdminPreview />
             </div>
-          </div>
+          </AdminOverlay>
         )}
       </div>
     </AdminLayout>

@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import Head from "next/head";
 import { useEffect, useState, useCallback } from "react";
@@ -135,9 +136,7 @@ export default function ManageLeavesPage() {
               <h1 className="text-xl sm:text-2xl font-bold font-['Space_Grotesk'] text-white">
                 Employee Leave Management
               </h1>
-              <p className="text-xs text-gray-400 mt-1">
-                Review employee absence applications, authorize planned leaves, and track time-off balances.
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Review leave and off-day requests.</p>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -205,7 +204,7 @@ export default function ManageLeavesPage() {
                 <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
                   Status:
                 </label>
-                <select
+                <AdminSelect
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-amber-500"
@@ -214,14 +213,14 @@ export default function ManageLeavesPage() {
                   <option value="pending" className="bg-[#0e0e1a] text-white">Pending ({pendingLeaves.length})</option>
                   <option value="approved" className="bg-[#0e0e1a] text-white">Approved ({approvedLeaves.length})</option>
                   <option value="rejected" className="bg-[#0e0e1a] text-white">Rejected ({rejectedLeaves.length})</option>
-                </select>
+                </AdminSelect>
               </div>
 
               <div>
                 <label className="text-[10px] font-mono text-gray-400 uppercase block mb-1">
                   Employee:
                 </label>
-                <select
+                <AdminSelect
                   value={staffFilter}
                   onChange={(e) => setStaffFilter(e.target.value)}
                   className="h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-amber-500"
@@ -232,7 +231,7 @@ export default function ManageLeavesPage() {
                       {s.name} ({s.staffType})
                     </option>
                   ))}
-                </select>
+                </AdminSelect>
               </div>
             </div>
           </div>
@@ -384,7 +383,7 @@ export default function ManageLeavesPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Approved. Please hand over pending tasks."
+                  placeholder="Approval note"
                   value={adminRemark}
                   onChange={(e) => setAdminRemark(e.target.value)}
                   className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-amber-500"

@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/payments.tsx
 // ─────────────────────────────────────────────────────────────
@@ -160,9 +161,7 @@ export default function PaymentsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Payment Schedules & Receivables</h1>
-            <p className="text-sm text-slate-400">
-              Contractually scheduled milestone invoices, advance deposits, and settlement verifications.
-            </p>
+            <p className="text-sm text-slate-400">Track deposits, milestone payments, and settlements.</p>
           </div>
         </div>
 
@@ -197,12 +196,12 @@ export default function PaymentsPage() {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
-              placeholder="Search by milestone description, client, quote #..."
+              placeholder="Find a payment or milestone"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -219,7 +218,7 @@ export default function PaymentsPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -229,7 +228,7 @@ export default function PaymentsPage() {
               <option value="invoiced">Invoiced</option>
               <option value="paid">Paid</option>
               <option value="overdue">Overdue</option>
-            </select>
+            </AdminSelect>
           </div>
         </div>
 

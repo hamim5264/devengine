@@ -1,0 +1,12 @@
+.chip { --status-ink:var(--devengine-muted); --status-bg:var(--devengine-raised); --status-line:var(--devengine-border); display:inline-flex; align-items:center; gap:7px; padding:5px 10px; border:1px solid var(--status-line)!important; border-radius:8px; background:var(--status-bg)!important; color:var(--status-ink)!important; font-family:var(--font-site),sans-serif; font-size:12px; font-weight:550; line-height:1.5; white-space:nowrap; text-transform:capitalize; }
+.chip::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; flex:none; }
+.chip[data-tone=success] { --status-ink:#86e6b6; --status-bg:#123326; --status-line:#306348; }
+.chip[data-tone=warning] { --status-ink:#f6cf80; --status-bg:#352b18; --status-line:#776039; }
+.chip[data-tone=danger] { --status-ink:#fda4af; --status-bg:#381b28; --status-line:#75404d; }
+.chip[data-tone=review] { --status-ink:#d1baff; --status-bg:#2a2240; --status-line:#624b86; }
+.chip[data-tone=info] { --status-ink:#2cecf7; --status-bg:#102c36; --status-line:#23646d; }
+:global(html.light) .chip[data-tone=success] { --status-ink:#087650; --status-bg:#ecfdf3; --status-line:#9bd9b6; }
+:global(html.light) .chip[data-tone=warning] { --status-ink:#8a5708; --status-bg:#fff7e6; --status-line:#efd18e; }
+:global(html.light) .chip[data-tone=danger] { --status-ink:#b42342; --status-bg:#fff1f2; --status-line:#f0afb9; }
+:global(html.light) .chip[data-tone=review] { --status-ink:#6d3cb2; --status-bg:#f6f1ff; --status-line:#d5c0f1; }
+:global(html.light) .chip[data-tone=info] { --status-ink:#14213d; --status-bg:#e6fcfe; --status-line:#2cecf7; }

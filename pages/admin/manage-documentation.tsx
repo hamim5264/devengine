@@ -226,9 +226,7 @@ export default function ManageDocumentationPage() {
                   LIVE FIRESTORE
                 </span>
               </div>
-              <p className="text-gray-400 text-sm mt-1">
-                Customize architectural documentation hero banners, quick start terminal snippets, guides, and enterprise API endpoints.
-              </p>
+              <p className="text-gray-400 text-sm mt-1">Manage guides, setup instructions, and API details.</p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -463,9 +461,10 @@ export default function ManageDocumentationPage() {
 
               <div>
                 <label className="block text-xs font-jetbrains text-gray-400 mb-1.5 uppercase tracking-wider">
-                  CLI Code Snippet Content (Multi-line)
+                  Setup commands
                 </label>
                 <textarea
+                  data-admin-code
                   rows={10}
                   value={config.quickStart.codeSnippet}
                   onChange={(e) =>

@@ -99,12 +99,7 @@ export default function ManageAboutPage() {
       setFounder((prev) => ({ ...prev, avatarUrl: url }));
     } catch (err: any) {
       console.error("Failed to upload founder avatar:", err);
-      // Base64 fallback
-      const reader = new FileReader();
-      reader.onload = () => {
-        setFounder((prev) => ({ ...prev, avatarUrl: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      alert("Upload failed. Please retry; the image has not been saved.");
     } finally {
       setUploadingFounderAvatar(false);
     }
@@ -306,33 +301,12 @@ export default function ManageAboutPage() {
 
     setUploadingFile(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64Data = reader.result as string;
-        try {
-          const res = await fetch("/api/upload-team-avatar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              filename: file.name,
-              base64Data,
-            }),
-          });
-          const data = await res.json();
-          if (data.success && data.url) {
-            setMemberForm((prev) => ({ ...prev, avatarUrl: data.url }));
-          } else {
-            setMemberForm((prev) => ({ ...prev, avatarUrl: base64Data }));
-          }
-        } catch {
-          setMemberForm((prev) => ({ ...prev, avatarUrl: base64Data }));
-        }
-        setUploadingFile(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error("Local file upload error:", err);
-      alert("Failed to read image file.");
+      const url = await uploadLandingImage(file, "team");
+      setMemberForm(prev => ({ ...prev, avatarUrl: url }));
+    } catch (error) {
+      console.error("Team image upload failed:", error);
+      alert("Upload failed. Please retry; the image has not been saved.");
+    } finally {
       setUploadingFile(false);
     }
   };
@@ -360,7 +334,7 @@ export default function ManageAboutPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#02040A] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#3EF3FF" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-jetbrains text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Authorization…
         </p>
@@ -403,9 +377,7 @@ export default function ManageAboutPage() {
                   LIVE FIRESTORE
                 </span>
               </div>
-              <p className="text-gray-400 text-sm mt-1">
-                Manage the Founder & CEO profile, executive portfolio links, and extensible team member directory.
-              </p>
+              <p className="text-gray-400 text-sm mt-1">Update the founder profile and team directory.</p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -632,7 +604,7 @@ export default function ManageAboutPage() {
                             onChange={(e) =>
                               setFounder({ ...founder, avatarUrl: e.target.value })
                             }
-                            placeholder="e.g. /assets/CEO.png or https://example.com/ceo.jpg"
+                            placeholder="Image URL or asset path"
                             className="w-full h-11 bg-black/40 border border-white/[0.08] rounded-xl px-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 transition-colors"
                           />
                           {founder.avatarUrl !== "/assets/CEO.png" && (
@@ -1108,7 +1080,7 @@ export default function ManageAboutPage() {
                   onChange={(e) =>
                     setMemberForm({ ...memberForm, bio: e.target.value })
                   }
-                  placeholder="Describe engineering background, core focus areas, or project contributions..."
+                  placeholder="Experience and areas of expertise"
                   className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 resize-none transition-colors"
                 />
               </div>
@@ -1243,7 +1215,7 @@ export default function ManageAboutPage() {
             </p>
 
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-jetbrains">
-              💡 You can restore this team member anytime from <strong>Dashboard &gt; Recycle Bin</strong>.
+              Restore this team member from <strong>Dashboard &gt; Recycle Bin</strong>.
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

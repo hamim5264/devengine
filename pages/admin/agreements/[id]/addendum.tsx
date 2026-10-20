@@ -1,3 +1,4 @@
+import { AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
@@ -223,7 +224,7 @@ export default function AgreementAddendumPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#07070d] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#38f2ff" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-mono text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Authorization…
         </p>
@@ -259,9 +260,7 @@ export default function AgreementAddendumPage() {
                 <span className="material-symbols-outlined text-amber-400 text-3xl">history_edu</span>
                 <span>Contract Addendum & Amendment Workflow</span>
               </h1>
-              <p className="text-xs sm:text-sm text-gray-400 mt-1 font-mono">
-                Legally amend specific provisions while preserving original contract immutability and audit trails.
-              </p>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1 font-mono">Amend an agreement while preserving its history.</p>
             </div>
 
             <Link
@@ -296,7 +295,7 @@ export default function AgreementAddendumPage() {
 
           {loading ? (
             <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3">
-              <HelixLoader size={44} color="#38f2ff" />
+              <HelixLoader size={44} color="#2cecf7" />
               <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">
                 Loading Principal Agreement…
               </p>
@@ -384,7 +383,7 @@ export default function AgreementAddendumPage() {
 
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-mono text-gray-400 uppercase">Effective Date:</label>
-                    <input
+                    <AdminDateInput
                       type="date"
                       value={effectiveDate}
                       onChange={(e) => setEffectiveDate(e.target.value)}

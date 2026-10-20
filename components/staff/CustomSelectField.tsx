@@ -1,3 +1,4 @@
+import FloatingControlPanel from "@/components/admin/FloatingControlPanel";
 import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -9,6 +10,7 @@ export interface SelectOption<T extends string = string> {
   iconBg?: string;
   iconColor?: string;
   badge?: string;
+  disabled?: boolean;
 }
 
 interface CustomSelectFieldProps<T extends string = string> {
@@ -19,6 +21,10 @@ interface CustomSelectFieldProps<T extends string = string> {
   placeholder?: string;
   required?: boolean;
   className?: string;
+  disabled?: boolean;
+  floating?: boolean;
+  id?: string;
+  ariaLabel?: string;
 }
 
 export default function CustomSelectField<T extends string = string>({
@@ -29,6 +35,10 @@ export default function CustomSelectField<T extends string = string>({
   placeholder = "Select an option...",
   required = false,
   className = "",
+  disabled = false,
+  floating = false,
+  id,
+  ariaLabel,
 }: CustomSelectFieldProps<T>) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -76,6 +86,10 @@ export default function CustomSelectField<T extends string = string>({
       {/* Trigger Button */}
       <button
         type="button"
+        id={id}
+        disabled={disabled}
+        aria-label={ariaLabel || label || placeholder}
+        onKeyDown={(event) => { if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) { event.preventDefault(); setIsOpen(true); requestAnimationFrame(() => { const choices = containerRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]:not(:disabled)'); const index = event.key === "End" || event.key === "ArrowUp" ? (choices?.length || 1) - 1 : 0; choices?.[index]?.focus(); }); } }}
         onClick={() => setIsOpen((prev) => !prev)}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -125,8 +139,12 @@ export default function CustomSelectField<T extends string = string>({
 
       {/* Floating Glassmorphic Dropdown Menu */}
       {isOpen && (
-        <div
+        <FloatingControlPanel
+          anchor={containerRef}
+          floating={floating}
           role="listbox"
+          aria-label={ariaLabel || label || placeholder}
+          onKeyDown={(event) => { if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) { event.preventDefault(); const choices = Array.from(containerRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]:not(:disabled)') || []); const index = choices.indexOf(document.activeElement as HTMLButtonElement); const next = event.key === "Home" ? 0 : event.key === "End" ? choices.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + choices.length) % choices.length; choices[next]?.focus(); } if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setIsOpen(false); containerRef.current?.querySelector<HTMLButtonElement>('[aria-haspopup="listbox"]')?.focus(); } }}
           className={`absolute left-0 right-0 top-full mt-1.5 z-50 p-1.5 rounded-2xl border shadow-2xl backdrop-blur-2xl max-h-64 overflow-y-auto space-y-1 transition-all animate-in fade-in zoom-in-95 duration-150 ${
             isLight
               ? "bg-white/95 border-cyan-200 text-slate-900 shadow-[0_18px_45px_rgba(44,236,247,0.18),0_8px_20px_rgba(0,0,0,0.06)]"
@@ -143,10 +161,12 @@ export default function CustomSelectField<T extends string = string>({
                 key={option.value}
                 type="button"
                 role="option"
+                disabled={option.disabled}
                 aria-selected={isSelected}
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
+                  containerRef.current?.querySelector<HTMLButtonElement>('[aria-haspopup="listbox"]')?.focus();
                 }}
                 className={`w-full p-2.5 rounded-xl text-left flex items-center justify-between gap-3 transition-all cursor-pointer group ${
                   isSelected
@@ -213,7 +233,7 @@ export default function CustomSelectField<T extends string = string>({
               </button>
             );
           })}
-        </div>
+        </FloatingControlPanel>
       )}
     </div>
   );

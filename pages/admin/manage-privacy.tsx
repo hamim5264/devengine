@@ -235,7 +235,7 @@ export default function ManagePrivacyPage() {
         </Head>
         <main className="px-6 md:px-8 py-8 min-h-[calc(100vh-56px)] text-white">
           <div className="flex flex-col items-center justify-center">
-            <HelixLoader size={56} color="#38f2ff" />
+            <HelixLoader size={56} color="#2cecf7" />
             <p className="mt-4 text-[#849495] font-mono">Loading Privacy Policy CMS…</p>
           </div>
         </main>
@@ -255,7 +255,7 @@ export default function ManagePrivacyPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/admin/dashboard"
-                className="text-xs font-mono text-[#38f2ff] hover:underline"
+                className="text-xs font-mono text-[#2cecf7] hover:underline"
               >
                 ← Back to Dashboard
               </Link>
@@ -270,7 +270,7 @@ export default function ManagePrivacyPage() {
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-2 flex items-center gap-3">
               Privacy Policy CMS
-              <span className="text-xs font-mono px-2.5 py-1 rounded bg-[#38f2ff]/10 text-[#38f2ff] border border-[#38f2ff]/30">
+              <span className="text-xs font-mono px-2.5 py-1 rounded bg-[#2cecf7]/10 text-[#2cecf7] border border-[#2cecf7]/30">
                 Live Firestore
               </span>
             </h1>
@@ -287,7 +287,7 @@ export default function ManagePrivacyPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 text-xs font-mono font-bold rounded-lg bg-[#38f2ff] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#38f2ff]/20 transition disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-2 text-xs font-mono font-bold rounded-lg bg-[#2cecf7] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#2cecf7]/20 transition disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? (
                 <>
@@ -335,7 +335,7 @@ export default function ManagePrivacyPage() {
               onClick={() => setActiveTab(tab.id as PrivacyTab)}
               className={`px-4 py-2 rounded-lg text-xs font-mono transition-all ${
                 activeTab === tab.id
-                  ? "bg-[#38f2ff] text-black font-bold shadow-md shadow-[#38f2ff]/20"
+                  ? "bg-[#2cecf7] text-black font-bold shadow-md shadow-[#2cecf7]/20"
                   : "bg-[#161c28] text-gray-300 hover:bg-[#242a36] hover:text-white"
               }`}
             >
@@ -347,7 +347,7 @@ export default function ManagePrivacyPage() {
         {/* Tab 1: Header */}
         {activeTab === "header" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               Header & Hero Configuration
             </h2>
 
@@ -365,7 +365,7 @@ export default function ManagePrivacyPage() {
                       header: { ...config.header, badgeText: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -382,7 +382,7 @@ export default function ManagePrivacyPage() {
                       header: { ...config.header, lastUpdated: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -400,7 +400,7 @@ export default function ManagePrivacyPage() {
                     header: { ...config.header, title: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -417,7 +417,7 @@ export default function ManagePrivacyPage() {
                     header: { ...config.header, subtitle: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
           </div>
@@ -426,7 +426,7 @@ export default function ManagePrivacyPage() {
         {/* Tab 2: Overview */}
         {activeTab === "overview" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               01 - Overview & Key Principle
             </h2>
 
@@ -444,7 +444,7 @@ export default function ManagePrivacyPage() {
                       overview: { ...config.overview, sectionNum: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -461,7 +461,7 @@ export default function ManagePrivacyPage() {
                       overview: { ...config.overview, sectionTitle: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -479,7 +479,7 @@ export default function ManagePrivacyPage() {
                     overview: { ...config.overview, leadText: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -496,12 +496,12 @@ export default function ManagePrivacyPage() {
                     overview: { ...config.overview, subText: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
-            <div className="p-4 rounded-xl bg-[#161c28]/60 border border-[#38f2ff]/20 space-y-4">
-              <h3 className="text-sm font-mono text-[#38f2ff] font-bold">
+            <div className="p-4 rounded-xl bg-[#161c28]/60 border border-[#2cecf7]/20 space-y-4">
+              <h3 className="text-sm font-mono text-[#2cecf7] font-bold">
                 Key Principle Callout Box
               </h3>
               <div>
@@ -520,7 +520,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#1a202c] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#1a202c] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -540,7 +540,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#1a202c] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#1a202c] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -550,7 +550,7 @@ export default function ManagePrivacyPage() {
         {/* Tab 3: Information We Collect */}
         {activeTab === "informationCollected" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               02 - Information We Collect
             </h2>
 
@@ -571,7 +571,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -591,7 +591,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -612,7 +612,7 @@ export default function ManagePrivacyPage() {
                     },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -624,7 +624,7 @@ export default function ManagePrivacyPage() {
                 </h3>
                 <button
                   onClick={handleAddProvidedItem}
-                  className="px-3 py-1.5 text-xs font-mono rounded bg-[#38f2ff]/20 text-[#38f2ff] hover:bg-[#38f2ff]/30 transition"
+                  className="px-3 py-1.5 text-xs font-mono rounded bg-[#2cecf7]/20 text-[#2cecf7] hover:bg-[#2cecf7]/30 transition"
                 >
                   + Add Item
                 </button>
@@ -658,7 +658,7 @@ export default function ManagePrivacyPage() {
                         onChange={(e) =>
                           handleUpdateProvidedItem(idx, "title", e.target.value)
                         }
-                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -671,7 +671,7 @@ export default function ManagePrivacyPage() {
                         onChange={(e) =>
                           handleUpdateProvidedItem(idx, "description", e.target.value)
                         }
-                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -700,7 +700,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -720,7 +720,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -730,7 +730,7 @@ export default function ManagePrivacyPage() {
         {/* Tab 4: Data Flow & Security */}
         {activeTab === "dataFlow" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               03 - Data Flow & Security Visualization
             </h2>
 
@@ -748,7 +748,7 @@ export default function ManagePrivacyPage() {
                       dataFlow: { ...config.dataFlow, sectionNum: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -765,7 +765,7 @@ export default function ManagePrivacyPage() {
                       dataFlow: { ...config.dataFlow, sectionTitle: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -783,7 +783,7 @@ export default function ManagePrivacyPage() {
                     dataFlow: { ...config.dataFlow, introText: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -796,7 +796,7 @@ export default function ManagePrivacyPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Node 1 */}
                 <div className="p-4 rounded-xl bg-[#161c28] border border-white/10 space-y-3">
-                  <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                  <span className="text-xs font-mono text-[#2cecf7] font-bold">
                     Node 1: Client
                   </span>
                   <div>
@@ -815,7 +815,7 @@ export default function ManagePrivacyPage() {
                           },
                         })
                       }
-                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -834,14 +834,14 @@ export default function ManagePrivacyPage() {
                           },
                         })
                       }
-                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Node 2 */}
-                <div className="p-4 rounded-xl bg-[#161c28] border border-[#38f2ff]/30 space-y-3 shadow-[0_0_15px_rgba(56,242,255,0.05)]">
-                  <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                <div className="p-4 rounded-xl bg-[#161c28] border border-[#2cecf7]/30 space-y-3 shadow-[0_0_15px_rgba(56,242,255,0.05)]">
+                  <span className="text-xs font-mono text-[#2cecf7] font-bold">
                     Node 2: DevEngine Core
                   </span>
                   <div>
@@ -860,7 +860,7 @@ export default function ManagePrivacyPage() {
                           },
                         })
                       }
-                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -879,14 +879,14 @@ export default function ManagePrivacyPage() {
                           },
                         })
                       }
-                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 {/* Node 3 */}
                 <div className="p-4 rounded-xl bg-[#161c28] border border-white/10 space-y-3">
-                  <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                  <span className="text-xs font-mono text-[#2cecf7] font-bold">
                     Node 3: Secure Storage
                   </span>
                   <div>
@@ -905,7 +905,7 @@ export default function ManagePrivacyPage() {
                           },
                         })
                       }
-                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                   <div>
@@ -924,7 +924,7 @@ export default function ManagePrivacyPage() {
                           },
                         })
                       }
-                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -936,7 +936,7 @@ export default function ManagePrivacyPage() {
         {/* Tab 5: Cookies & Tracking */}
         {activeTab === "cookies" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               04 - Cookies & Tracking
             </h2>
 
@@ -954,7 +954,7 @@ export default function ManagePrivacyPage() {
                       cookies: { ...config.cookies, sectionNum: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -971,7 +971,7 @@ export default function ManagePrivacyPage() {
                       cookies: { ...config.cookies, sectionTitle: e.target.value },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -989,7 +989,7 @@ export default function ManagePrivacyPage() {
                     cookies: { ...config.cookies, paragraph1: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -1006,7 +1006,7 @@ export default function ManagePrivacyPage() {
                     cookies: { ...config.cookies, paragraph2: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
           </div>
@@ -1015,7 +1015,7 @@ export default function ManagePrivacyPage() {
         {/* Tab 6: User Rights */}
         {activeTab === "userRights" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               05 - User Rights Cards
             </h2>
 
@@ -1036,7 +1036,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -1056,7 +1056,7 @@ export default function ManagePrivacyPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -1077,7 +1077,7 @@ export default function ManagePrivacyPage() {
                     },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -1089,7 +1089,7 @@ export default function ManagePrivacyPage() {
                 </h3>
                 <button
                   onClick={handleAddRightItem}
-                  className="px-3 py-1.5 text-xs font-mono rounded bg-[#38f2ff]/20 text-[#38f2ff] hover:bg-[#38f2ff]/30 transition"
+                  className="px-3 py-1.5 text-xs font-mono rounded bg-[#2cecf7]/20 text-[#2cecf7] hover:bg-[#2cecf7]/30 transition"
                 >
                   + Add Right Card
                 </button>
@@ -1102,7 +1102,7 @@ export default function ManagePrivacyPage() {
                     className="p-4 rounded-xl bg-[#161c28] border border-white/5 space-y-3"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-[#38f2ff]">
+                      <span className="text-xs font-mono text-[#2cecf7]">
                         Card #{idx + 1}
                       </span>
                       <button
@@ -1123,7 +1123,7 @@ export default function ManagePrivacyPage() {
                         onChange={(e) =>
                           handleUpdateRightItem(idx, "title", e.target.value)
                         }
-                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
 
@@ -1137,7 +1137,7 @@ export default function ManagePrivacyPage() {
                         onChange={(e) =>
                           handleUpdateRightItem(idx, "description", e.target.value)
                         }
-                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1152,7 +1152,7 @@ export default function ManagePrivacyPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-8 py-3 text-sm font-mono font-bold rounded-lg bg-[#38f2ff] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#38f2ff]/20 transition disabled:opacity-50 flex items-center gap-2"
+            className="px-8 py-3 text-sm font-mono font-bold rounded-lg bg-[#2cecf7] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#2cecf7]/20 transition disabled:opacity-50 flex items-center gap-2"
           >
             {saving ? (
               <>

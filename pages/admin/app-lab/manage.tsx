@@ -109,7 +109,7 @@ export default function ManageAppLab() {
     return (
       <AdminLayout>
         <div className="min-h-screen bg-[#030712] flex items-center justify-center">
-          <HelixLoader size={48} color="#38f2ff" text="LOADING APP LAB CMS..." />
+          <HelixLoader size={48} color="#2cecf7" text="LOADING APP LAB CMS..." />
         </div>
       </AdminLayout>
     );
@@ -309,7 +309,7 @@ export default function ManageAppLab() {
               </p>
 
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-mono">
-                💡 You can restore this application anytime from{" "}
+                Restore this application from{" "}
                 <strong>Dashboard &gt; Recycle Bin</strong>.
               </div>
 

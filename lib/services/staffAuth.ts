@@ -1,3 +1,4 @@
+import { clearStaffSuspensionNotice, enforceStaffSuspension, getStaffSuspensionNotice } from "@/lib/services/staffSuspension";
 import { useEffect, useState } from "react";
 import { useRouter, type NextRouter } from "next/router";
 import { type User, onAuthStateChanged } from "firebase/auth";
@@ -44,10 +45,11 @@ export function subscribeStudioAccess(required: RequiredModules, onChange: (stat
     stopRecord?.();
     stopRecord = undefined;
     if (!user) { onChange(denied); return; }
-    if (isOwner(user)) { onChange({ user, authorized: true, isAdmin: true, isStaff: false, staff: null }); return; }
+    if (isOwner(user)) { clearStaffSuspensionNotice(); onChange({ user, authorized: true, isAdmin: true, isStaff: false, staff: null }); return; }
     stopRecord = onSnapshot(doc(db, "staff_members", user.uid), (snapshot) => {
       if (current !== generation) return;
       const staff = snapshot.exists() ? { ...snapshot.data(), id: snapshot.id, uid: user.uid } as StaffMember : null;
+      if (staff?.status === "suspended") void enforceStaffSuspension(staff).catch(() => {});
       onChange({ user, staff, authorized: !!staff && staffMayEnter(staff, required), isAdmin: false, isStaff: staff?.status === "active" });
     }, () => {
       if (current === generation) onChange({ ...denied, user });
@@ -57,7 +59,8 @@ export function subscribeStudioAccess(required: RequiredModules, onChange: (stat
 }
 
 function redirectDenied(router: NextRouter, state: AccessState) {
-  const destination = state.isStaff ? "/staff/dashboard" : state.user ? "/staff" : `/login?redirect=${encodeURIComponent(router.asPath)}`;
+  const suspended = state.staff?.status === "suspended" || (!state.user && !!getStaffSuspensionNotice());
+  const destination = suspended ? "/staff?suspended=1" : state.isStaff ? "/staff/dashboard" : state.user ? "/staff" : `/login?redirect=${encodeURIComponent(router.asPath)}`;
   if (router.asPath !== destination) void router.replace(destination);
 }
 

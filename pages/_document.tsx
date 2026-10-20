@@ -15,12 +15,11 @@ export default function Document() {
           rel="stylesheet"
         />
         {/* Favicons & Site Brand Icons */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="icon" type="image/png" href="/dev_url_logo.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="shortcut icon" href="/dev_url_logo.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=3" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=3" />
+        <link rel="icon" type="image/png" href="/dev_url_logo.png?v=3" />
+        <link rel="shortcut icon" type="image/png" href="/favicon-32x32.png?v=3" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=3" />
       </Head>
       <body className="bg-black text-[#dde2f3] antialiased selection:bg-[#38f2ff]/30 selection:text-white">
         <Main />

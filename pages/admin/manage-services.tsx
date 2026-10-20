@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
@@ -282,9 +283,7 @@ export default function ManageServicesPage() {
                 Live Firestore
               </span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">
-              Manage public engineering capabilities catalog, custom deliverables, and client consultation inquiries.
-            </p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">Manage services, deliverables, and inquiries.</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -457,11 +456,11 @@ export default function ManageServicesPage() {
                       {/* Deliverables Count */}
                       <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 pt-3 border-t border-white/[0.06] mb-5">
                         <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-white/[0.06] flex items-center gap-1.5 text-[11px]">
-                          <span>📦</span>
+                          <span className="material-symbols-outlined" aria-hidden="true">inventory_2</span>
                           <span>{svc.deliverables?.length || 0} Deliverables</span>
                         </span>
                         <span className="px-2.5 py-1 rounded-lg bg-black/40 border border-white/[0.06] flex items-center gap-1.5 text-[11px]">
-                          <span>🛠</span>
+                          <span className="material-symbols-outlined" aria-hidden="true">build</span>
                           <span>{svc.techStack?.length || 0} Tech Stacks</span>
                         </span>
                       </div>
@@ -564,22 +563,22 @@ export default function ManageServicesPage() {
 
                       <div className="flex flex-wrap items-center gap-2.5 text-xs text-gray-300">
                         <span className="px-3 py-1 rounded-xl bg-black/40 border border-white/[0.06] flex items-center gap-1.5 font-mono text-[11px]">
-                          <span className="text-teal-400">📧</span>
+                          <span className="material-symbols-outlined" aria-hidden="true">mail</span>
                           <span>{inq.clientEmail}</span>
                         </span>
                         {inq.clientPhone && (
                           <span className="px-3 py-1 rounded-xl bg-black/40 border border-white/[0.06] flex items-center gap-1.5 font-mono text-[11px]">
-                            <span className="text-teal-400">📱</span>
+                            <span className="material-symbols-outlined" aria-hidden="true">call</span>
                             <span>{inq.clientPhone}</span>
                           </span>
                         )}
                         <span className="px-3 py-1 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-300 flex items-center gap-1.5 font-mono text-[11px]">
-                          <span>🏷</span>
+                          <span className="material-symbols-outlined" aria-hidden="true">sell</span>
                           <span>{inq.serviceTitle || "General Service"}</span>
                         </span>
                         {inq.budgetRange && (
                           <span className="px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 flex items-center gap-1.5 font-mono text-[11px]">
-                            <span>💰</span>
+                            <span className="material-symbols-outlined" aria-hidden="true">payments</span>
                             <span>{inq.budgetRange}</span>
                           </span>
                         )}
@@ -593,7 +592,7 @@ export default function ManageServicesPage() {
                     {/* Status Actions */}
                     <div className="flex md:flex-col justify-between items-end gap-3 shrink-0">
                       <div className="relative min-w-[140px]">
-                        <select
+                        <AdminSelect
                           value={inq.status || "NEW"}
                           onChange={(e) =>
                             handleInquiryStatus(inq.id, e.target.value as any)
@@ -604,7 +603,7 @@ export default function ManageServicesPage() {
                           <option value="IN_REVIEW" className="bg-[#0c0c16] text-white">IN REVIEW</option>
                           <option value="CONTACTED" className="bg-[#0c0c16] text-white">CONTACTED</option>
                           <option value="RESOLVED" className="bg-[#0c0c16] text-white">RESOLVED</option>
-                        </select>
+                        </AdminSelect>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -693,7 +692,7 @@ export default function ManageServicesPage() {
                     <span className="text-[10px] text-teal-400 font-mono">*Required</span>
                   </label>
                   <div className="relative">
-                    <select
+                    <AdminSelect
                       value={editingService.category || "Web Architecture"}
                       onChange={(e) =>
                         setEditingService({ ...editingService, category: e.target.value })
@@ -705,7 +704,7 @@ export default function ManageServicesPage() {
                           {c}
                         </option>
                       ))}
-                    </select>
+                    </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -721,7 +720,7 @@ export default function ManageServicesPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. High-throughput Next.js & TypeScript microservices built for limitless scale."
+                  placeholder="Short service summary"
                   value={editingService.tagline || ""}
                   onChange={(e) =>
                     setEditingService({ ...editingService, tagline: e.target.value })
@@ -785,7 +784,7 @@ export default function ManageServicesPage() {
                 <textarea
                   rows={3}
                   required
-                  placeholder="Provide an executive-level summary of architecture, stack, and deliverables..."
+                  placeholder="Service overview and deliverables"
                   value={editingService.description || ""}
                   onChange={(e) =>
                     setEditingService({ ...editingService, description: e.target.value })
@@ -839,7 +838,7 @@ export default function ManageServicesPage() {
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Add deliverable item (e.g. Headless CMS Integration)..."
+                    placeholder="Add a deliverable"
                     value={newDeliverableInput}
                     onChange={(e) => setNewDeliverableInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -983,7 +982,7 @@ export default function ManageServicesPage() {
                     Visibility Status
                   </label>
                   <div className="relative">
-                    <select
+                    <AdminSelect
                       value={editingService.isPublic ? "true" : "false"}
                       onChange={(e) =>
                         setEditingService({
@@ -999,7 +998,7 @@ export default function ManageServicesPage() {
                       <option value="false" className="bg-[#0c0c16] text-amber-300">
                         Draft (UNPUBLISHED)
                       </option>
-                    </select>
+                    </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

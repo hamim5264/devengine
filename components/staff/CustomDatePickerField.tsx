@@ -1,3 +1,4 @@
+import FloatingControlPanel from "@/components/admin/FloatingControlPanel";
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -10,6 +11,10 @@ interface CustomDatePickerFieldProps {
   placeholder?: string;
   required?: boolean;
   className?: string;
+  disabled?: boolean;
+  floating?: boolean;
+  id?: string;
+  ariaLabel?: string;
   align?: "left" | "right" | "auto";
 }
 
@@ -28,6 +33,10 @@ export default function CustomDatePickerField({
   required = false,
   className = "",
   align = "auto",
+  disabled = false,
+  floating = false,
+  id,
+  ariaLabel,
 }: CustomDatePickerFieldProps) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -196,7 +205,7 @@ export default function CustomDatePickerField({
   }, [minDate, maxDate, todayStr]);
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
+    <div className={`relative ${className}`} ref={containerRef} onKeyDown={(event) => { if (isOpen && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setIsOpen(false); containerRef.current?.querySelector<HTMLButtonElement>('[aria-haspopup="dialog"]')?.focus(); } }}>
       {label && (
         <label className={`text-xs font-semibold block mb-1.5 ${isLight ? "text-slate-700" : "text-neutral-300"}`}>
           {label} {required && <span className="text-rose-500">*</span>}
@@ -206,6 +215,11 @@ export default function CustomDatePickerField({
       {/* Input Trigger Button */}
       <button
         type="button"
+        id={id}
+        disabled={disabled}
+        aria-label={ariaLabel || label || placeholder}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
         className={`w-full px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between gap-2 transition-all cursor-pointer border outline-none ${
           isOpen
@@ -248,7 +262,12 @@ export default function CustomDatePickerField({
 
       {/* Floating Glassmorphic Custom Calendar Popover */}
       {isOpen && (
-        <div
+        <FloatingControlPanel
+          anchor={containerRef}
+          floating={floating}
+          data-calendar
+          role="dialog"
+          aria-label="Choose date"
           className={`absolute ${
             align === "left"
               ? "left-0 right-auto"
@@ -359,7 +378,7 @@ export default function CustomDatePickerField({
               Close
             </button>
           </div>
-        </div>
+        </FloatingControlPanel>
       )}
     </div>
   );

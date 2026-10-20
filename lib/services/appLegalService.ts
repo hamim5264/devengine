@@ -1,3 +1,5 @@
+import emailjs from "@emailjs/browser";
+import { uploadStorageAsset } from "@/lib/services/storageAssetService";
 import {
   collection,
   doc,
@@ -127,60 +129,55 @@ export async function deleteAppPolicy(id: string): Promise<void> {
 }
 
 /**
- * Upload App Logo: attempts Firebase Storage first, falls back to local /api/upload-image
+ * Upload app logos to Firebase Storage.
  */
-export async function uploadAppLogo(
-  file: File,
-  appSlugOrName: string = "app"
-): Promise<string> {
-  const cleanExt = (file.name.split(".").pop() || "png").toLowerCase();
-  const safeName = appSlugOrName.toLowerCase().replace(/[^a-z0-9_-]/g, "_");
-  const filename = `logo_${safeName}_${Date.now()}.${cleanExt}`;
-
-  // 1. Try Firebase Storage
-  try {
-    const storageRef = ref(storage, `apps/${filename}`);
-    await uploadBytes(storageRef, file);
-    const downloadUrl = await getDownloadURL(storageRef);
-    if (downloadUrl) return downloadUrl;
-  } catch (storageErr) {
-    console.warn("[AppLegalService] Firebase Storage upload failed, attempting fallback:", storageErr);
-  }
-
-  // 2. Fallback to /api/upload-image
-  try {
-    const base64Data = await fileToBase64(file);
-    const res = await fetch("/api/upload-image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filename,
-        base64Data,
-        folder: "apps",
-      }),
-    });
-    const data = await res.json();
-    if (res.ok && data?.url) {
-      return data.url;
-    }
-    throw new Error(data?.error || "Upload fallback failed");
-  } catch (apiErr: any) {
-    console.error("[AppLegalService] Local upload fallback also failed:", apiErr);
-    throw new Error(apiErr?.message || "Failed to upload app logo.");
-  }
+export async function uploadAppLogo(file: File, appSlugOrName = "app"): Promise<string> {
+  return uploadStorageAsset(file, "apps", appSlugOrName);
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (err) => reject(err);
+
+export interface DeletionRequest {
+  registeredEmail: string;
+  userId?: string;
+  deletionType: string;
+  additionalDetails?: string;
+  appName?: string;
+  appSlug?: string;
+}
+
+/**
+ * Dispatch EmailJS notification for user data deletion request
+ */
+export async function submitDeletionRequest(request: DeletionRequest) {
+  const serviceId =
+    process.env.NEXT_PUBLIC_EMAILJS_DELETION_SERVICE_ID || "service_9hmg7pr";
+  const templateId =
+    process.env.NEXT_PUBLIC_EMAILJS_DELETION_TEMPLATE_ID || "template_fiiyq06";
+  const publicKey =
+    process.env.NEXT_PUBLIC_EMAILJS_DELETION_PUBLIC_KEY || "1ipf6_oqQBv5hFPv3";
+
+  const templateParams = {
+    registered_email: request.registeredEmail.trim(),
+    user_id: request.userId?.trim() || "Not provided",
+    deletion_type: request.deletionType,
+    additional_details:
+      request.additionalDetails?.trim() || "No additional details provided",
+    submitted_at: new Date().toLocaleString("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Dhaka",
+    }),
+    app_name: request.appName || "",
+    app_slug: request.appSlug || "",
+  };
+
+  return emailjs.send(serviceId, templateId, templateParams, {
+    publicKey,
   });
 }
 
 /**
- * Submit user data deletion request (public form)
+ * Submit user data deletion request (saves to Firestore AND dispatches EmailJS notification)
  */
 export async function submitDataDeletionRequest(
   data: Omit<AppDataDeletionRequest, "id" | "createdAt" | "status">
@@ -191,6 +188,22 @@ export async function submitDataDeletionRequest(
     status: "pending",
     createdAt: serverTimestamp(),
   });
+
+  // Dispatch EmailJS deletion template alert
+  try {
+    await submitDeletionRequest({
+      registeredEmail: data.userEmail,
+      userId: data.userIdOrUsername,
+      deletionType: data.requestType,
+      additionalDetails: data.reason,
+      appName: data.appName,
+      appSlug: data.appSlug,
+    });
+  } catch (emailErr) {
+    console.error("EmailJS deletion alert error:", emailErr);
+    // Request is still safely recorded in Firestore
+  }
+
   return docRef.id;
 }
 

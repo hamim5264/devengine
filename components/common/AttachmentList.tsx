@@ -7,18 +7,25 @@ import styles from "./AttachmentList.module.css";
 interface AttachmentListProps {
   attachments?: EcoAttachment[];
   showImagesAsThumbnails?: boolean;
+  title?: string;
 }
 
 export default function AttachmentList({
   attachments = [],
   showImagesAsThumbnails = true,
+  title,
 }: AttachmentListProps) {
   const [lightboxAtt, setLightboxAtt] = useState<EcoAttachment | null>(null);
 
   if (!attachments || attachments.length === 0) return null;
 
   return (
-    <>
+    <div className="space-y-1.5">
+      {title && (
+        <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--devengine-muted,#a7b6ce)] block font-semibold">
+          {title}
+        </span>
+      )}
       <div className={styles.list}>
         {attachments.map((att, idx) => {
           const isImg =
@@ -80,7 +87,7 @@ export default function AttachmentList({
         size={lightboxAtt?.size}
         onClose={() => setLightboxAtt(null)}
       />
-    </>
+    </div>
   );
 }
 

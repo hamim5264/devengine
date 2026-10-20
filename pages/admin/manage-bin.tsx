@@ -255,9 +255,7 @@ export default function ManageBinPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
               Recycle Bin
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
-              Recover deleted orders, lab projects, and CMS records anytime or permanently purge them.
-            </p>
+            <p className="text-xs text-gray-400 mt-1">Restore archived records or delete them permanently.</p>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -443,12 +441,12 @@ export default function ManageBinPage() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[18px]">
               search
             </span>
-            <input
+            <input data-admin-search
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search items by title, ID, or source collection..."
-              className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-rose-400/50 rounded-xl pl-9 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none transition font-sans"
+              placeholder="Find an archived item"
+              className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.08] focus:border-rose-400/50 rounded-xl pl-9 pr-8 text-xs text-white placeholder-gray-500 focus:outline-none transition font-sans"
             />
             {searchQuery && (
               <button

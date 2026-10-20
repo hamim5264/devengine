@@ -134,7 +134,7 @@ export default function ManageSecurityPage() {
         </Head>
         <main className="px-6 md:px-8 py-8 min-h-[calc(100vh-56px)] text-white">
           <div className="flex flex-col items-center justify-center">
-            <HelixLoader size={56} color="#38f2ff" />
+            <HelixLoader size={56} color="#2cecf7" />
             <p className="mt-4 text-[#849495] font-mono">
               Loading Security Protocol CMS…
             </p>
@@ -156,7 +156,7 @@ export default function ManageSecurityPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/admin/dashboard"
-                className="text-xs font-mono text-[#38f2ff] hover:underline"
+                className="text-xs font-mono text-[#2cecf7] hover:underline"
               >
                 ← Back to Dashboard
               </Link>
@@ -171,7 +171,7 @@ export default function ManageSecurityPage() {
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-2 flex items-center gap-3">
               Security Protocol CMS
-              <span className="text-xs font-mono px-2.5 py-1 rounded bg-[#38f2ff]/10 text-[#38f2ff] border border-[#38f2ff]/30">
+              <span className="text-xs font-mono px-2.5 py-1 rounded bg-[#2cecf7]/10 text-[#2cecf7] border border-[#2cecf7]/30">
                 Live Firestore
               </span>
             </h1>
@@ -188,7 +188,7 @@ export default function ManageSecurityPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 text-xs font-mono font-bold rounded-lg bg-[#38f2ff] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#38f2ff]/20 transition disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-2 text-xs font-mono font-bold rounded-lg bg-[#2cecf7] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#2cecf7]/20 transition disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? (
                 <>
@@ -234,7 +234,7 @@ export default function ManageSecurityPage() {
               onClick={() => setActiveTab(tab.id as SecurityTab)}
               className={`px-4 py-2 rounded-lg text-xs font-mono transition-all ${
                 activeTab === tab.id
-                  ? "bg-[#38f2ff] text-black font-bold shadow-md shadow-[#38f2ff]/20"
+                  ? "bg-[#2cecf7] text-black font-bold shadow-md shadow-[#2cecf7]/20"
                   : "bg-[#161c28] text-gray-300 hover:bg-[#242a36] hover:text-white"
               }`}
             >
@@ -246,7 +246,7 @@ export default function ManageSecurityPage() {
         {/* Tab 1: Header */}
         {activeTab === "header" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               Hero Section Configuration
             </h2>
 
@@ -263,7 +263,7 @@ export default function ManageSecurityPage() {
                     header: { ...config.header, statusBadge: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -280,7 +280,7 @@ export default function ManageSecurityPage() {
                     header: { ...config.header, title: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -297,7 +297,7 @@ export default function ManageSecurityPage() {
                     header: { ...config.header, subtitle: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
           </div>
@@ -306,7 +306,7 @@ export default function ManageSecurityPage() {
         {/* Tab 2: Encryption */}
         {activeTab === "encryption" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               Data Encryption & Bento Nodes
             </h2>
 
@@ -323,7 +323,7 @@ export default function ManageSecurityPage() {
                     encryption: { ...config.encryption, title: e.target.value },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -343,7 +343,7 @@ export default function ManageSecurityPage() {
                     },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -364,7 +364,7 @@ export default function ManageSecurityPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
               <div>
@@ -383,7 +383,7 @@ export default function ManageSecurityPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
               <div>
@@ -402,7 +402,7 @@ export default function ManageSecurityPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -411,7 +411,7 @@ export default function ManageSecurityPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
               {/* Node 1 */}
               <div className="p-4 rounded-xl bg-[#161c28] border border-white/5 space-y-3">
-                <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                <span className="text-xs font-mono text-[#2cecf7] font-bold">
                   Node 1 (Client Node)
                 </span>
                 <div>
@@ -430,7 +430,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -449,7 +449,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -468,7 +468,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -494,7 +494,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -513,7 +513,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -532,7 +532,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -559,7 +559,7 @@ export default function ManageSecurityPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded p-3 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded p-3 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
               <div>
@@ -578,7 +578,7 @@ export default function ManageSecurityPage() {
                       },
                     })
                   }
-                  className="w-full bg-[#161c28] border border-white/10 rounded p-3 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded p-3 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
             </div>
@@ -588,7 +588,7 @@ export default function ManageSecurityPage() {
         {/* Tab 3: Infrastructure */}
         {activeTab === "infrastructure" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               Infrastructure Security Configuration
             </h2>
 
@@ -608,7 +608,7 @@ export default function ManageSecurityPage() {
                     },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -628,7 +628,7 @@ export default function ManageSecurityPage() {
                     },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -656,7 +656,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -675,7 +675,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -698,7 +698,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -717,7 +717,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -740,7 +740,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -759,7 +759,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -770,7 +770,7 @@ export default function ManageSecurityPage() {
         {/* Tab 4: Access Control */}
         {activeTab === "accessControl" && (
           <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-6">
-            <h2 className="text-lg font-bold text-[#38f2ff] font-mono">
+            <h2 className="text-lg font-bold text-[#2cecf7] font-mono">
               Zero-Trust Access Control Configuration
             </h2>
 
@@ -790,7 +790,7 @@ export default function ManageSecurityPage() {
                     },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -810,14 +810,14 @@ export default function ManageSecurityPage() {
                     },
                   })
                 }
-                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
               {/* Method 1 */}
               <div className="p-4 rounded-xl bg-[#161c28] border border-white/5 space-y-3">
-                <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                <span className="text-xs font-mono text-[#2cecf7] font-bold">
                   Method 1 (Hardware Security Keys)
                 </span>
                 <div>
@@ -836,7 +836,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -855,7 +855,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -881,7 +881,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -900,7 +900,7 @@ export default function ManageSecurityPage() {
                         },
                       })
                     }
-                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#0e131f] border border-white/10 rounded p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -913,7 +913,7 @@ export default function ManageSecurityPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-8 py-3 text-sm font-mono font-bold rounded-lg bg-[#38f2ff] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#38f2ff]/20 transition disabled:opacity-50 flex items-center gap-2"
+            className="px-8 py-3 text-sm font-mono font-bold rounded-lg bg-[#2cecf7] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#2cecf7]/20 transition disabled:opacity-50 flex items-center gap-2"
           >
             {saving ? (
               <>

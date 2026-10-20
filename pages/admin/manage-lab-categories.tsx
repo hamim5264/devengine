@@ -267,9 +267,7 @@ export default function ManageLabCategoriesPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
               Manage Categories
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
-              Create, view, and organize global categories used across Lab experiments and software selectors.
-            </p>
+            <p className="text-xs text-gray-400 mt-1">Organize categories for lab projects.</p>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -432,7 +430,7 @@ export default function ManageLabCategoriesPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Distributed infrastructure, smart agent workflows, etc."
+                  placeholder="Short category description"
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl px-4 text-xs text-white placeholder-gray-500 transition outline-none"
@@ -476,12 +474,12 @@ export default function ManageLabCategoriesPage() {
 
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
-              <input
+              <input data-admin-search
                 type="text"
                 placeholder="Search categories..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-8 text-xs text-white placeholder-gray-500 transition outline-none"
+                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-8 text-xs text-white placeholder-gray-500 transition outline-none"
               />
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[16px]">
                 search

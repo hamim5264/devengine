@@ -55,7 +55,7 @@ export default function CreateAgreementPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#07070d] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#38f2ff" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-mono text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Authorization…
         </p>
@@ -94,9 +94,7 @@ export default function CreateAgreementPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                 Draft Project Agreement & Contract
               </h1>
-              <p className="text-xs sm:text-sm text-gray-400 mt-1 font-mono">
-                Generate tailored legal agreements with dynamic terms, deliverable builders, and DevEngine CEO endorsement.
-              </p>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1 font-mono">Prepare an agreement with terms and deliverables.</p>
             </div>
 
             <Link
@@ -110,7 +108,7 @@ export default function CreateAgreementPage() {
 
           {loading || !initialData ? (
             <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3">
-              <HelixLoader size={44} color="#38f2ff" />
+              <HelixLoader size={44} color="#2cecf7" />
               <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">
                 Initializing Agreement Template…
               </p>

@@ -8,7 +8,9 @@ export interface AppPolicy {
   category: string;
   packageName: string; // e.g. com.devengine.myapp
   playStoreUrl?: string; // Optional Google Play link
+  playStoreStatusMsg?: string; // Optional status message when Google Play is pending / in development
   appStoreUrl?: string; // Optional Apple App Store link
+  appStoreStatusMsg?: string; // Optional status message when Apple App Store is pending / in development
   contactEmail: string;
   effectiveDate: string; // e.g. "October 2026"
   privacyPolicy: string;

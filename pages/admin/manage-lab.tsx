@@ -1,3 +1,4 @@
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
@@ -353,7 +354,7 @@ export default function ManageLabPage() {
                 disabled={seeding}
                 className="px-4 py-2.5 rounded-xl border border-white/[0.08] hover:border-teal-500/40 bg-white/[0.03] hover:bg-white/[0.06] text-gray-300 hover:text-white text-xs font-mono transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                {seeding ? "Syncing..." : "⚡ Seed Default Projects"}
+                {seeding ? "Syncing..." : "Load starter projects"}
               </button>
               <button
                 type="button"
@@ -417,7 +418,7 @@ export default function ManageLabPage() {
                   disabled={seeding}
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-black font-semibold text-xs font-mono uppercase tracking-wider shadow-lg shadow-teal-500/20 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {seeding ? "Syncing..." : "⚡ Seed Default Projects"}
+                  {seeding ? "Syncing..." : "Load starter projects"}
                 </button>
                 <button
                   type="button"
@@ -652,7 +653,7 @@ export default function ManageLabPage() {
                       </Link>
                     </div>
                     <div className="relative">
-                      <select
+                      <AdminSelect
                         value={form.category}
                         onChange={(e) =>
                           setForm({ ...form, category: e.target.value as LabProjectCategory })
@@ -664,7 +665,7 @@ export default function ManageLabPage() {
                             {c}
                           </option>
                         ))}
-                      </select>
+                      </AdminSelect>
                       <svg className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
@@ -675,7 +676,7 @@ export default function ManageLabPage() {
                       Status
                     </label>
                     <div className="relative">
-                      <select
+                      <AdminSelect
                         value={form.status}
                         onChange={(e) =>
                           setForm({
@@ -690,7 +691,7 @@ export default function ManageLabPage() {
                             {s.replace(/_/g, " ")}
                           </option>
                         ))}
-                      </select>
+                      </AdminSelect>
                       <svg className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                       </svg>
@@ -736,7 +737,7 @@ export default function ManageLabPage() {
                     <label className="block text-xs font-mono text-gray-300 mb-1.5">
                       Estimated Release Date
                     </label>
-                    <input
+                    <AdminDateInput
                       type="date"
                       value={form.estimatedRelease}
                       onChange={(e) =>
@@ -809,7 +810,7 @@ export default function ManageLabPage() {
                   <div className="relative">
                     <input
                       type="url"
-                      placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                      placeholder="YouTube video URL"
                       value={form.youtubeUrl || ""}
                       onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
                       className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl pl-10 pr-4 text-white text-xs font-mono focus:outline-none transition-colors"

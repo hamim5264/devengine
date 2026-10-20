@@ -112,7 +112,7 @@ export default function AddAppLab() {
     return (
       <AdminLayout>
         <div className="min-h-screen bg-[#030712] flex items-center justify-center">
-          <HelixLoader size={48} color="#38f2ff" text="AUTHENTICATING ADMIN..." />
+          <HelixLoader size={48} color="#2cecf7" text="AUTHENTICATING ADMIN..." />
         </div>
       </AdminLayout>
     );
@@ -152,9 +152,7 @@ export default function AddAppLab() {
               CMS V2
             </span>
           </h1>
-          <p className="text-sm font-mono text-gray-400 mt-1">
-            Specify download Google Drive links, live preview demo URLs, developer guidelines &amp; copyright claims
-          </p>
+          <p className="text-sm font-mono text-gray-400 mt-1">Add an app, download links, and testing details.</p>
         </div>
 
         {/* Form Container */}
@@ -245,7 +243,7 @@ export default function AddAppLab() {
                 </label>
                 <input
                   className={inputClass}
-                  placeholder="https://drive.google.com/uc?export=download&id=..."
+                  placeholder="Direct download URL"
                   value={form.apkUrl}
                   onChange={(e) => setForm({ ...form, apkUrl: e.target.value })}
                 />
@@ -283,28 +281,28 @@ export default function AddAppLab() {
             </h2>
             <textarea
               className={`${textareaClass} h-28`}
-              placeholder="Describe the application architecture, target audience, and engineering specs..."
+              placeholder="App overview and technical details"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </section>
 
           {/* Developer Usage Notice (User Requested) */}
-          <section className="space-y-3 p-5 rounded-2xl bg-[#09101f] border-2 border-[#38f2ff]/30">
+          <section className="space-y-3 p-5 rounded-2xl bg-[#09101f] border-2 border-[#2cecf7]/30">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-space font-bold text-[#38f2ff] flex items-center gap-2">
-                <svg className="w-5 h-5 text-[#38f2ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <h2 className="text-base font-space font-bold text-[#2cecf7] flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#2cecf7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                 </svg>
                 Developer Usage &amp; Testing Warning Message (Details Page)
               </h2>
-              <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#38f2ff]/10">
+              <span className="text-[10px] font-mono text-cyan-300 uppercase px-2 py-0.5 rounded bg-[#2cecf7]/10">
                 Notice Banner
               </span>
             </div>
             <textarea
-              className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-xs text-cyan-200 font-mono focus:border-[#38f2ff] outline-none leading-relaxed h-28"
-              placeholder="Instructions on how developers should execute, test, and sandbox this application..."
+              className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-xs text-cyan-200 font-mono focus:border-[#2cecf7] outline-none leading-relaxed h-28"
+              placeholder="Setup and testing instructions"
               value={form.devUsage}
               onChange={(e) => setForm({ ...form, devUsage: e.target.value })}
             />
@@ -323,7 +321,7 @@ export default function AddAppLab() {
             </h2>
             <textarea
               className="w-full bg-black/60 border border-white/10 rounded-xl p-3.5 text-xs text-gray-200 font-sans focus:border-indigo-400 outline-none leading-relaxed h-20"
-              placeholder="Copyright © 2026 DevEngine. All rights reserved. Intellectual property notice and distribution terms..."
+              placeholder="Copyright and distribution terms"
               value={form.copyright}
               onChange={(e) => setForm({ ...form, copyright: e.target.value })}
             />
@@ -364,7 +362,7 @@ export default function AddAppLab() {
               </h2>
               <div className="flex gap-2">
                 <label className="px-3 py-1.5 bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 border border-teal-500/40 rounded-lg text-xs font-mono font-bold cursor-pointer transition flex items-center gap-1.5">
-                  {uploadingImage ? "Uploading..." : "📁 Upload Image"}
+                  {uploadingImage ? "Uploading..." : "Upload image"}
                   <input
                     type="file"
                     accept="image/*"
@@ -409,7 +407,7 @@ export default function AddAppLab() {
 
             <textarea
               className={`${textareaClass} h-24`}
-              placeholder="Paste direct image URLs or use the upload button above"
+              placeholder="Image URLs, one per line"
               value={form.images}
               onChange={(e) => setForm({ ...form, images: e.target.value })}
             />
@@ -434,7 +432,7 @@ export default function AddAppLab() {
             disabled={submitting}
             className="w-full bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 transition text-black font-mono font-bold py-4 rounded-xl text-base flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(20,184,166,0.3)] disabled:opacity-50 cursor-pointer"
           >
-            {submitting ? "Publishing App to Showroom…" : "🚀 Publish App to Showroom"}
+            {submitting ? "Publishing App to Showroom…" : "Publish app"}
           </button>
         </form>
       </main>

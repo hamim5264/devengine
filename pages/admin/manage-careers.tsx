@@ -1,3 +1,5 @@
+import AdminOverlay from "@/components/admin/AdminOverlay";
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
@@ -330,7 +332,7 @@ export default function ManageCareersPage() {
           <title>Careers Admin | DevEngine</title>
         </Head>
         <main className="px-6 md:px-8 py-8 min-h-[calc(100vh-56px)] text-white">
-          <HelixLoader size={48} color="#3EF3FF" />
+          <HelixLoader size={48} color="#2cecf7" />
           <p className="mt-4 text-xs font-jetbrains text-gray-400 uppercase tracking-widest">
             Verifying Architectural Access…
           </p>
@@ -382,9 +384,7 @@ export default function ManageCareersPage() {
                   LIVE FIRESTORE
                 </span>
               </div>
-              <p className="text-gray-400 text-sm mt-1">
-                Publish career circulars, configure compensation tiers, and review candidate dossiers.
-              </p>
+              <p className="text-gray-400 text-sm mt-1">Manage open roles and applications.</p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
@@ -813,7 +813,7 @@ export default function ManageCareersPage() {
 
       {/* ADD / EDIT CIRCULAR MODAL (Bounded Container) */}
       {circularModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fadeIn">
+        <AdminOverlay className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-fadeIn" onClose={() => setCircularModalOpen(false)} label="Job circular editor" >
           <div className="w-full max-w-3xl max-h-[90vh] bg-[#0c0c16]/98 border border-white/[0.08] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
             {/* Pinned Header */}
             <div className="px-6 sm:px-8 py-5 border-b border-white/[0.08] flex items-center justify-between shrink-0 bg-white/[0.02]">
@@ -822,7 +822,7 @@ export default function ManageCareersPage() {
                   RECRUITMENT DIRECTORY
                 </span>
                 <h3 className="text-2xl font-bold text-white font-['Space_Grotesk'] mt-0.5">
-                  {circularForm.id ? "Edit Job Circular" : "Post New Job Circular"}
+                  {circularForm.id ? "Edit Job Circular" : "Post a job opening"}
                 </h3>
               </div>
               <button
@@ -876,7 +876,7 @@ export default function ManageCareersPage() {
                     Employment Type
                   </label>
                   <div className="relative">
-                    <select
+                    <AdminSelect
                       value={circularForm.employmentType}
                       onChange={(e) =>
                         setCircularForm({
@@ -890,7 +890,7 @@ export default function ManageCareersPage() {
                       <option value="Part-time" className="bg-[#0c0c16] text-white">Part-time</option>
                       <option value="Contract" className="bg-[#0c0c16] text-white">Contract</option>
                       <option value="Remote" className="bg-[#0c0c16] text-white">Remote</option>
-                    </select>
+                    </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-400">
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                         <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
@@ -957,7 +957,7 @@ export default function ManageCareersPage() {
                     Status
                   </label>
                   <div className="relative">
-                    <select
+                    <AdminSelect
                       value={circularForm.status}
                       onChange={(e) =>
                         setCircularForm({
@@ -969,7 +969,7 @@ export default function ManageCareersPage() {
                     >
                       <option value="open" className="bg-[#0c0c16] text-white">OPEN (Accepting Applications)</option>
                       <option value="closed" className="bg-[#0c0c16] text-white">CLOSED (Archived / Hired)</option>
-                    </select>
+                    </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-gray-400">
                       <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
                         <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
@@ -990,7 +990,7 @@ export default function ManageCareersPage() {
                   onChange={(e) =>
                     setCircularForm({ ...circularForm, overview: e.target.value })
                   }
-                  placeholder="Summary of this engineering or design position..."
+                  placeholder="Role summary"
                   className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 resize-none transition-colors"
                 />
               </div>
@@ -1044,7 +1044,7 @@ export default function ManageCareersPage() {
                     onChange={(e) =>
                       setCircularForm({ ...circularForm, benefits: e.target.value })
                     }
-                    placeholder="Flexible working hours, Hardware stipend, Remote work..."
+                    placeholder="Benefits, separated by commas"
                     className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 resize-none transition-colors"
                   />
                 </div>
@@ -1059,7 +1059,7 @@ export default function ManageCareersPage() {
                     onChange={(e) =>
                       setCircularForm({ ...circularForm, skills: e.target.value })
                     }
-                    placeholder="Figma, Design Systems, UX Wireframing, Prototyping"
+                    placeholder="Skills, separated by commas"
                     className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 resize-none transition-colors"
                   />
                 </div>
@@ -1085,7 +1085,7 @@ export default function ManageCareersPage() {
                   <label className="block text-xs font-jetbrains text-gray-400 mb-1.5 uppercase tracking-wider">
                     Countdown Target (Date for Live Ticker)
                   </label>
-                  <input
+                  <AdminDateInput
                     type="date"
                     value={circularForm.deadlineDate ? circularForm.deadlineDate.slice(0, 10) : ""}
                     onChange={(e) =>
@@ -1120,7 +1120,7 @@ export default function ManageCareersPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AdminOverlay>
       )}
 
       {/* COVER NOTE MODAL */}
@@ -1181,7 +1181,7 @@ export default function ManageCareersPage() {
             </p>
 
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-jetbrains">
-              💡 You can restore this job circular anytime from <strong>Dashboard &gt; Recycle Bin</strong>.
+              Restore this job from <strong>Dashboard &gt; Recycle Bin</strong>.
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -1230,7 +1230,7 @@ export default function ManageCareersPage() {
             </p>
 
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300/90 leading-relaxed font-jetbrains">
-              💡 You can restore this application anytime from <strong>Dashboard &gt; Recycle Bin</strong>.
+              Restore this application from <strong>Dashboard &gt; Recycle Bin</strong>.
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

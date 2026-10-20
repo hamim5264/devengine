@@ -151,11 +151,13 @@ export default function ManageStaffRolesPage() {
     const color = ROLE_COLOR_PRESETS[selectedColorIndex];
     setSubmitting(true);
     try {
-      await updateStaffRole(editingRole.id, {
+      await updateStaffRole(editingRole.id || editingRole.key, {
         label: roleLabel.trim(),
         description: roleDesc.trim(),
         color,
         defaultModules: selectedModules,
+        key: editingRole.key,
+        isCustom: editingRole.isCustom ?? false,
       });
       setNotice({ type: "success", text: `Role "${roleLabel.trim()}" updated successfully!` });
       setShowEditModal(false);
@@ -226,7 +228,7 @@ export default function ManageStaffRolesPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#07070f] flex items-center justify-center">
-        <HelixLoader size={44} color="#38f2ff" />
+        <HelixLoader size={44} color="#2cecf7" />
       </div>
     );
   }
@@ -336,12 +338,12 @@ export default function ManageStaffRolesPage() {
               <span className="material-symbols-outlined text-gray-400 text-lg absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 search
               </span>
-              <input
+              <input data-admin-search
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search roles by name or key…"
-                className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
+                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
               />
             </div>
 
@@ -385,7 +387,7 @@ export default function ManageStaffRolesPage() {
           {/* ── Roles Grid ── */}
           {loading ? (
             <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3 bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl p-12">
-              <HelixLoader size={44} color="#38f2ff" />
+              <HelixLoader size={44} color="#2cecf7" />
               <p className="text-xs font-mono text-gray-400 tracking-wider uppercase">Loading Roles…</p>
             </div>
           ) : filteredRoles.length === 0 ? (
@@ -510,16 +512,15 @@ export default function ManageStaffRolesPage() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        {role.isCustom && (
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(role)}
-                            title="Edit Role"
-                            className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 text-gray-400 hover:text-cyan-300 border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                          >
-                            <span className="material-symbols-outlined text-sm">edit</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(role)}
+                          title={`Edit ${role.label} Role`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 text-gray-300 hover:text-cyan-300 border border-white/[0.08] hover:border-cyan-500/30 text-xs font-mono font-medium transition-all cursor-pointer active:scale-95"
+                        >
+                          <span className="material-symbols-outlined text-sm">edit</span>
+                          <span>Edit</span>
+                        </button>
                         {role.isCustom && (
                           <button
                             type="button"
@@ -530,9 +531,6 @@ export default function ManageStaffRolesPage() {
                           >
                             <span className="material-symbols-outlined text-sm">delete</span>
                           </button>
-                        )}
-                        {!role.isCustom && (
-                          <span className="text-[11px] font-mono text-gray-500 italic">Protected</span>
                         )}
                       </div>
                     </div>
@@ -553,7 +551,7 @@ export default function ManageStaffRolesPage() {
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => { if (!submitting) setShowCreateModal(false); }}
           />
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
@@ -712,7 +710,7 @@ export default function ManageStaffRolesPage() {
               >
                 {submitting ? (
                   <>
-                    <HelixLoader size={18} color="#38f2ff" />
+                    <HelixLoader size={18} color="#2cecf7" />
                     <span className="text-gray-300">Creating Role…</span>
                   </>
                 ) : (
@@ -736,7 +734,7 @@ export default function ManageStaffRolesPage() {
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => { if (!submitting) setShowEditModal(false); }}
           />
-          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
@@ -876,7 +874,7 @@ export default function ManageStaffRolesPage() {
               >
                 {submitting ? (
                   <>
-                    <HelixLoader size={18} color="#38f2ff" />
+                    <HelixLoader size={18} color="#2cecf7" />
                     <span className="text-gray-300">Saving Changes…</span>
                   </>
                 ) : (

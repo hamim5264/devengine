@@ -1,3 +1,4 @@
+import EmployeeSessionGuard from "@/components/staff/EmployeeSessionGuard";
 import { CommunicationProvider } from "@/components/communication/CommunicationProvider";
 import React, { useEffect, useState } from "react";
 import type { AppProps } from "next/app";
@@ -14,12 +15,13 @@ import MaintenanceScreen from "@/components/maintenance/MaintenanceScreen";
 import { HeaderControlsProvider } from "@/components/HeaderControls";
 import { ThemeProvider } from "@/context/ThemeContext";
 import "../styles/globals.css";
+import "../styles/admin.css";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
 // Paths that are always accessible during maintenance
-const BYPASS_PATHS = ["/admin", "/login", "/staff", "/maintenance", "/api"];
+const BYPASS_PATHS = ["/admin", "/login", "/staff", "/maintenance", "/api", "/project-overview/"];
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -52,7 +54,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   // 3. Website Visitor Analytics (Only for public-facing visitors)
   useEffect(() => {
-    if (!currentPath.startsWith("/admin") && !currentPath.startsWith("/api") && currentPath !== "/login") {
+    if (!currentPath.startsWith("/admin") && !currentPath.startsWith("/api") && !currentPath.startsWith("/project-overview/") && currentPath !== "/login") {
       recordPageView(router.asPath);
     }
   }, [router.asPath, currentPath]);
@@ -67,6 +69,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <ThemeProvider>
       <HeaderControlsProvider>
       <CommunicationProvider>
+      <EmployeeSessionGuard />
       {isEmployeeRoute && <style jsx global>{`
         /* Keep the employee viewport width stable through loaders and dialogs. */
         html {

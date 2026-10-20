@@ -17,7 +17,9 @@ import {
   AgreementStatus,
   AgreementAddendumRecord,
   AgreementClauseTemplate,
+  DEFAULT_DEVENGINE_INFO,
 } from "@/types/agreement";
+import type { StaffMember } from "@/types/staff";
 
 const AGREEMENTS_COLLECTION = "agreements";
 const ADDENDA_COLLECTION = "agreement_addenda";
@@ -501,12 +503,189 @@ export async function deleteAgreement(id: string): Promise<void> {
 }
 
 /**
+ * Synthesize a comprehensive AgreementRecord directly from a StaffMember record.
+ * This guarantees the employee sees their full official contract, salary breakdown,
+ * schedule, and tenure configured by admin, even without a standalone agreement document.
+ */
+export function buildSynthesizedAgreementFromStaff(staff: StaffMember): AgreementRecord {
+  const currency = staff.salaryManagement?.currency || "BDT";
+  const grossSalary =
+    staff.salaryManagement?.grossSalary ||
+    (staff.salaryManagement?.basicSalary || 0) +
+      (staff.salaryManagement?.houseRent || 0) +
+      (staff.salaryManagement?.medical || 0);
+  const basicSalary = staff.salaryManagement?.basicSalary || 0;
+  const houseRent = staff.salaryManagement?.houseRent || 0;
+  const medical = staff.salaryManagement?.medical || 0;
+  const noticeDays = staff.salaryManagement?.noticePeriodDays || 30;
+  const effectiveDate =
+    staff.joiningDate ||
+    (staff.createdAt ? staff.createdAt.split("T")[0] : new Date().toISOString().split("T")[0]);
+
+  const employmentTypeMap: Record<string, string> = {
+    probation: "Probationary Employment Agreement",
+    permanent: "Permanent Employment Agreement",
+    contract: "Contractual Engineering Agreement",
+    intern: "Internship & Learning Agreement",
+  };
+  const typeLabel = staff.employmentType
+    ? employmentTypeMap[staff.employmentType] || "Official Employment Agreement"
+    : "Official Employment Agreement";
+
+  const agrNum =
+    staff.agreementId && staff.agreementId.startsWith("DEV-AGR-")
+      ? staff.agreementId
+      : `DEV-AGR-${new Date().getFullYear()}-${staff.id ? staff.id.slice(0, 6).toUpperCase() : "HR"}`;
+
+  const customClauses: { id?: string; title: string; content: string }[] = [];
+
+  // 1. Salary breakdown clause
+  if (grossSalary > 0) {
+    customClauses.push({
+      id: "salary_breakdown",
+      title: "Compensation Structure & Salary Breakdown",
+      content:
+        `Total Monthly Gross Compensation is established at ${currency} ${grossSalary.toLocaleString()} payable monthly.\n\n` +
+        `The itemized structure consists of:\n` +
+        `- Basic Monthly Salary: ${currency} ${basicSalary.toLocaleString()}\n` +
+        `- House Rent Allowance: ${currency} ${houseRent.toLocaleString()}\n` +
+        `- Medical & Utility Allowance: ${currency} ${medical.toLocaleString()}\n\n` +
+        `Disbursement Method: ${(staff.salaryManagement?.paymentMethod || "Bank Transfer").toUpperCase()} (${staff.salaryManagement?.bankDetails || "Account on file with HR"}).`,
+    });
+  }
+
+  // 2. Tenure & probation clause
+  customClauses.push({
+    id: "tenure_classification",
+    title: "Employment Classification, Tenure & Notice Period",
+    content:
+      `Employee is engaged under the classification of ${typeLabel}.\n\n` +
+      `Official Joining / Effective Date: ${effectiveDate}.\n` +
+      (staff.employmentType === "probation"
+        ? `Probationary Period: ${staff.probationPeriodMonths || 3} months, with targeted evaluation date of ${staff.probationEndDate || "as per performance review"}.\n\n`
+        : "") +
+      `Required Termination / Separation Notice Period: ${noticeDays} days written notice required by either party.`,
+  });
+
+  // 3. Shift hours & schedule
+  customClauses.push({
+    id: "working_schedule",
+    title: "Working Hours, Schedule & Rostered Off-Days",
+    content:
+      `Standard Working Shift: ${staff.shiftHours ? `${staff.shiftHours.start} - ${staff.shiftHours.end}` : "09:00 - 18:00"}.\n\n` +
+      `Weekly Availability Commitment: 40 Hours per week.\n\n` +
+      `Scheduled Weekly Off-Days: ${(staff.assignedOffDays || ["Friday", "Saturday"]).join(", ")}.`,
+  });
+
+  // 4. Emergency contact
+  if (staff.emergencyContact?.name) {
+    customClauses.push({
+      id: "emergency_record",
+      title: "Emergency HR Contact Information",
+      content:
+        `Designated Emergency Contact: ${staff.emergencyContact.name} (${staff.emergencyContact.relationship || "Contact"}).\n\n` +
+        `Emergency Phone: ${staff.emergencyContact.phone || "On file"}.`,
+    });
+  }
+
+  return {
+    id: staff.agreementId || `staff_agr_${staff.id || staff.uid}`,
+    agreementNumber: agrNum,
+    agreementType: "retainer",
+    agreementTypeLabel: typeLabel,
+    status: "executed",
+    version: "1.0",
+    project: {
+      projectId: "devengine_internal",
+      projectName: "DevEngine Operations & Engineering",
+      projectType: "Full-Time Technical Employment",
+      startDate: effectiveDate,
+      agreementEffectiveDate: effectiveDate,
+      projectStatus: "Active",
+      plannedLaunchDate: effectiveDate,
+      targetCompletionDate:
+        staff.employmentType === "probation"
+          ? staff.probationEndDate || "Per probation schedule"
+          : "Continuing active employment",
+      expectedCompletionDate:
+        staff.employmentType === "probation"
+          ? staff.probationEndDate || "Per probation schedule"
+          : "Continuing active employment",
+      description: `Official employment agreement and terms for ${staff.name} (${staff.designation || staff.staffType}).`,
+    },
+    developer: {
+      legalName: staff.name,
+      fullName: staff.name,
+      email: staff.email,
+      role: staff.designation || staff.staffType,
+      partyType: "individual",
+      phone: staff.phone || staff.emergencyContact?.phone || "N/A",
+      address: "Dhaka, Bangladesh",
+      emergencyContact: staff.emergencyContact
+        ? `${staff.emergencyContact.name} (${staff.emergencyContact.relationship}) - ${staff.emergencyContact.phone}`
+        : "",
+    },
+    devengine: { ...DEFAULT_DEVENGINE_INFO },
+    compensation: {
+      model: "retainer",
+      currency: currency,
+      monthlyRetainerAmount: grossSalary,
+      fixedAmount: grossSalary,
+      totalContractValue: grossSalary * 12,
+      paymentFrequency: "Monthly",
+      availabilityHoursPerWeek: 40,
+      paymentDuePeriodDays: 7,
+    },
+    deliverables: [
+      {
+        id: "del_staff_core",
+        title: "Technical Engineering & Operations Delivery",
+        description: `Deliver professional software engineering, architecture, code quality, testing, and system maintenance according to DevEngine standards.`,
+        priority: "high",
+        acceptanceCriteria: "Sprint deliverables accepted, code reviewed and passed into production.",
+        estimatedHours: 40,
+        status: "in_progress",
+      },
+    ],
+    terms: {
+      noticePeriodDays: noticeDays,
+      bugFixPeriodDays: 30,
+      confidentialityDurationYears: 3,
+      paymentDuePeriodDays: 7,
+      acceptancePeriodDays: 7,
+      terminationNoticeDays: noticeDays,
+      disputeResolutionMethod: "Amicable Negotiation, followed by Arbitral Conciliation in Dhaka",
+      governingLaw: "Laws of the People's Republic of Bangladesh",
+      jurisdiction: "Competent Courts of Dhaka, Bangladesh",
+      nonSolicitationYears: 2,
+      ipOwnershipModel: "work_for_hire",
+      preExistingIpDisclosed: false,
+      thirdPartyLicensesAllowed: "Permissive open-source licenses (MIT, Apache 2.0, BSD)",
+      moralRightsWaiver: "explicit_waiver",
+      personalDataProtectionClause: true,
+      securityBreachNotificationHours: 24,
+      repositoryOwnershipHandover: true,
+      changeRequestWrittenRequirement: false,
+      nonCompeteIncluded: false,
+      severabilityIncluded: true,
+      electronicSignatureAccepted: true,
+    },
+    customClauses,
+    createdBy: "DevEngine Administration",
+    createdAt: staff.createdAt || new Date().toISOString(),
+    updatedBy: "DevEngine Administration",
+    updatedAt: staff.updatedAt || new Date().toISOString(),
+  };
+}
+
+/**
  * Find agreement linked to a staff member (by agreementId, staffId, or contributorEmail)
  */
 export async function getAgreementForStaff(params: {
   agreementId?: string;
   staffId?: string;
   staffEmail?: string;
+  staff?: StaffMember | null;
 }): Promise<AgreementRecord | null> {
   try {
     if (params.agreementId) {
@@ -514,26 +693,48 @@ export async function getAgreementForStaff(params: {
       if (agr) return agr;
     }
 
-    const colRef = collection(db, AGREEMENTS_COLLECTION);
-    const snap = await getDocs(colRef);
     const emailNorm = params.staffEmail?.trim().toLowerCase();
-
-    for (const docSnap of snap.docs) {
-      const data = { id: docSnap.id, ...docSnap.data() } as AgreementRecord;
-      if (
-        (data as any).staffId === params.staffId ||
-        (data as any).staffUid === params.staffId ||
-        (emailNorm && (
-          data.developer?.email?.trim().toLowerCase() === emailNorm ||
-          (data as any).contributor?.contributorEmail?.trim().toLowerCase() === emailNorm
-        ))
-      ) {
-        return data;
+    if (emailNorm) {
+      try {
+        const qEmail = query(
+          collection(db, AGREEMENTS_COLLECTION),
+          where("developer.email", "==", emailNorm)
+        );
+        const snap = await getDocs(qEmail);
+        if (!snap.empty) {
+          return { id: snap.docs[0].id, ...(snap.docs[0].data() as any) };
+        }
+      } catch (err) {
+        console.warn("Could not query agreements by developer.email:", err);
       }
     }
+
+    if (params.staffId) {
+      try {
+        const qStaffId = query(
+          collection(db, AGREEMENTS_COLLECTION),
+          where("staffId", "==", params.staffId)
+        );
+        const snap = await getDocs(qStaffId);
+        if (!snap.empty) {
+          return { id: snap.docs[0].id, ...(snap.docs[0].data() as any) };
+        }
+      } catch (err) {
+        console.warn("Could not query agreements by staffId:", err);
+      }
+    }
+
+    // Direct fallback from staff data
+    if (params.staff) {
+      return buildSynthesizedAgreementFromStaff(params.staff);
+    }
+
     return null;
   } catch (err) {
     console.error("Error in getAgreementForStaff:", err);
+    if (params.staff) {
+      return buildSynthesizedAgreementFromStaff(params.staff);
+    }
     return null;
   }
 }

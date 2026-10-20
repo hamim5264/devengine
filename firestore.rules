@@ -669,7 +669,44 @@ service cloud.firestore {
       // Public can read branding settings (needed for dynamic PDF invoices & agreements)
       allow read: if true;
       // Admin and authorized staff can write settings
-      allow write: if canUseModules(['commerce', 'system', 'contract_center', 'projects']);
+      allow write: if (settingId == 'admin_profile' && isAdmin()) ||
+        (settingId != 'admin_profile' && canUseModules(['commerce', 'system', 'contract_center', 'projects']));
+    }
+
+    // Certificates remain private to the employee and the owner administrator.
+    match /employee_certificates/{id} {
+      allow read: if isAdmin() || (isStaff() && resource.data.employeeId == request.auth.uid);
+      allow create: if isAdmin() || (isStaff() &&
+        request.resource.data.employeeId == request.auth.uid &&
+        request.resource.data.employeeEmail == request.auth.token.email &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.type in ['experience', 'resignation_relieving', 'internship', 'salary', 'recommendation', 'custom'] &&
+        request.resource.data.reason is string && request.resource.data.reason.size() > 0 && request.resource.data.reason.size() <= 4000 &&
+        !('issuedAt' in request.resource.data));
+      allow update, delete: if isAdmin();
+    }
+
+    // Client proposals are readable only through an unguessable link. No public directory listing.
+    match /shared_project_briefs/{token} {
+      allow get: if isAdmin() || (token.matches('^[a-f0-9]{64}$') && resource.data.enabled == true);
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() && token.matches('^[a-f0-9]{64}$') &&
+        request.resource.data.keys().hasOnly(['brief', 'publisher', 'enabled', 'updatedAt']) &&
+        request.resource.data.brief is map && request.resource.data.publisher is map &&
+        request.resource.data.enabled is bool;
+      allow delete: if isAdmin();
+    }
+
+    // Internal client planning drafts are accessible only to the owner admin.
+    match /admin_project_briefs/{id} {
+      allow read, delete: if isAdmin();
+      allow create, update: if isAdmin() &&
+        request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 160 &&
+        request.resource.data.client is string && request.resource.data.client.size() > 0 && request.resource.data.client.size() <= 160 &&
+        request.resource.data.currency is string && request.resource.data.currency.size() == 3 &&
+        request.resource.data.status in ['draft', 'ready'] &&
+        request.resource.data.costs is list && request.resource.data.costs.size() <= 60 &&
+        request.resource.data.createdBy == request.auth.uid;
     }
 
     /* =========================

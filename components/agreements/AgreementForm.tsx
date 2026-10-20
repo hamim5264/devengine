@@ -1,3 +1,4 @@
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -724,7 +725,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
               <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                 Agreement Effective Date *
               </label>
-              <input
+              <AdminDateInput
                 type="date"
                 required
                 value={formData.project.agreementEffectiveDate}
@@ -743,7 +744,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
               <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                 Work Commencement Date *
               </label>
-              <input
+              <AdminDateInput
                 type="date"
                 required
                 value={formData.project.workCommencementDate || formData.project.agreementEffectiveDate}
@@ -766,7 +767,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
               <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                 Target Completion Date *
               </label>
-              <input
+              <AdminDateInput
                 type="date"
                 required
                 value={formData.project.targetCompletionDate || formData.project.expectedCompletionDate || ""}
@@ -789,7 +790,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
               <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                 Planned Production-Release Target
               </label>
-              <input
+              <AdminDateInput
                 type="date"
                 value={formData.project.plannedLaunchDate || ""}
                 onChange={(e) =>
@@ -937,7 +938,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                 <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                   Party Type *
                 </label>
-                <select
+                <AdminSelect
                   value={formData.developer.partyType || "individual"}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -951,7 +952,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                   <option value="individual">Individual Professional</option>
                   <option value="registered_company">Registered Corporate Entity</option>
                   <option value="entity">Independent Studio / Firm</option>
-                </select>
+                </AdminSelect>
               </div>
 
               <div className="space-y-2">
@@ -1188,7 +1189,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                   <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                     Participation Duration Model *
                   </label>
-                  <select
+                  <AdminSelect
                     value={formData.compensation.profitTerms?.durationModel || "ongoing_indefinite"}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -1211,7 +1212,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                   <span className="text-[10px] font-mono text-cyan-400">
                     {formData.compensation.profitTerms?.durationModel === "ongoing_indefinite"
                       ? "✓ Ongoing: No fixed expiry date or 24-month sunset."
@@ -1224,7 +1225,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                   <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                     Post-Service Separation Treatment *
                   </label>
-                  <select
+                  <AdminSelect
                     value={formData.compensation.profitTerms?.postServiceTreatment || "full_continuing"}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -1246,7 +1247,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                   <span className="text-[10px] font-mono text-cyan-400">
                     {formData.compensation.profitTerms?.postServiceTreatment === "full_continuing"
                       ? "✓ Entitlement survives end of active service."
@@ -1335,7 +1336,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                   <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
                     Distribution Frequency & Schedule
                   </label>
-                  <select
+                  <AdminSelect
                     value={formData.compensation.profitTerms?.paymentFrequency || "Quarterly"}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -1356,7 +1357,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                     <option value="Monthly within 10 days of calendar month-end">Monthly</option>
                     <option value="Bi-annually within 30 days of half-year close">Bi-annually</option>
                     <option value="Annually upon audited fiscal reconciliation">Annually</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div className="space-y-2">
@@ -1709,7 +1710,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
 
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-mono text-gray-400 uppercase">Target Completion Date</label>
-                        <input
+                        <AdminDateInput
                           type="date"
                           value={m.expectedCompletionDate || ""}
                           onChange={(e) => handleUpdateMilestone(idx, "expectedCompletionDate", e.target.value)}
@@ -1843,7 +1844,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
 
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-mono text-gray-400 uppercase">Priority Level</label>
-                      <select
+                      <AdminSelect
                         value={d.priority}
                         onChange={(e) => handleUpdateDeliverable(idx, "priority", e.target.value)}
                         aria-label="Priority Level"
@@ -1853,7 +1854,7 @@ export default function AgreementForm({ initialData, isEditing = false }: Agreem
                         <option value="High">High</option>
                         <option value="Medium">Medium</option>
                         <option value="Low">Low</option>
-                      </select>
+                      </AdminSelect>
                     </div>
 
                     <div className="space-y-1.5">

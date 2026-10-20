@@ -1,3 +1,5 @@
+import AdminOverlay from "@/components/admin/AdminOverlay";
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
@@ -299,7 +301,7 @@ export default function ManageBlogPage() {
   if (!authReady || !isAdmin) {
     return (
       <main className="min-h-screen pt-44 pb-32 flex flex-col items-center justify-center bg-[#02040A] text-white">
-        <HelixLoader size={48} color="#3EF3FF" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-jetbrains text-xs text-gray-400">Verifying Admin Access…</p>
       </main>
     );
@@ -345,9 +347,7 @@ export default function ManageBlogPage() {
                 Live Firestore
               </span>
             </h1>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">
-              Publish engineering deep dives, failure retrospectives, milestones, and architectural chronicles.
-            </p>
+            <p className="text-xs sm:text-sm text-gray-400 mt-1">Publish stories, lessons, and engineering insights.</p>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
@@ -416,12 +416,12 @@ export default function ManageBlogPage() {
             <svg className="w-4 h-4 absolute left-3 top-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input
+            <input data-admin-search
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search chronicles by title or slug..."
-              className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl pl-9 pr-3 text-xs text-white placeholder-gray-500 outline-none transition"
+              className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl pl-9 pr-3 text-xs text-white placeholder-gray-500 outline-none transition"
             />
           </div>
 
@@ -445,7 +445,7 @@ export default function ManageBlogPage() {
 
             {/* Category Select */}
             <div className="relative">
-              <select
+              <AdminSelect
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="h-10 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 text-gray-300 text-xs rounded-xl px-3.5 pr-8 appearance-none cursor-pointer outline-none transition"
@@ -456,7 +456,7 @@ export default function ManageBlogPage() {
                     {c.label}
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -598,7 +598,7 @@ export default function ManageBlogPage() {
                               type="button"
                               onClick={() => handleOpenEdit(post, idx)}
                               className="p-2 rounded-xl hover:bg-teal-500/10 text-gray-400 hover:text-teal-300 transition cursor-pointer"
-                              title="Edit Chronicle"
+                              title="Edit blog post"
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -631,7 +631,7 @@ export default function ManageBlogPage() {
           CREATE / EDIT CHRONICLE MODAL (BOUNDED)
       ══════════════════════════════════════════════════════ */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fade-in">
+        <AdminOverlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fade-in" onClose={() => setModalOpen(false)} label="Blog editor" >
           <div className="bg-[#0c0c16] border border-white/[0.12] rounded-3xl max-w-3xl w-full shadow-2xl relative max-h-[90vh] text-white flex flex-col overflow-hidden">
             {/* Pinned Header */}
             <div className="flex justify-between items-start px-6 sm:px-8 py-5 border-b border-white/[0.08] bg-[#0c0c16] shrink-0">
@@ -641,7 +641,7 @@ export default function ManageBlogPage() {
                   <span>Publication Editor</span>
                 </div>
                 <h3 className="font-bold text-xl sm:text-2xl text-white tracking-tight">
-                  {editingPost ? "Edit Chronicle" : "Draft New Chronicle"}
+                  {editingPost ? "Edit blog post" : "Create blog post"}
                 </h3>
               </div>
               <button
@@ -704,7 +704,7 @@ export default function ManageBlogPage() {
                   type="text"
                   value={form.subtitle}
                   onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
-                  placeholder="e.g. A Raw Post-Mortem on What Broke and How We Rebuilt"
+                  placeholder="One-line introduction"
                   className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white placeholder-gray-500 outline-none transition"
                 />
               </div>
@@ -717,7 +717,7 @@ export default function ManageBlogPage() {
                     <span className="text-[10px] text-teal-400 font-mono">*Required</span>
                   </label>
                   <div className="relative">
-                    <select
+                    <AdminSelect
                       value={form.category}
                       onChange={(e) =>
                         setForm({ ...form, category: e.target.value as BlogCategory })
@@ -729,7 +729,7 @@ export default function ManageBlogPage() {
                           {c.label}
                         </option>
                       ))}
-                    </select>
+                    </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -744,7 +744,7 @@ export default function ManageBlogPage() {
                     <span className="text-[10px] text-teal-400 font-mono">*Required</span>
                   </label>
                   <div className="relative">
-                    <select
+                    <AdminSelect
                       value={form.gridSpan}
                       onChange={(e) =>
                         setForm({ ...form, gridSpan: e.target.value as GridSpanType })
@@ -756,7 +756,7 @@ export default function ManageBlogPage() {
                           {g.label}
                         </option>
                       ))}
-                    </select>
+                    </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -815,7 +815,7 @@ export default function ManageBlogPage() {
               {/* Excerpt */}
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
-                  <span>Summary / Excerpt</span>
+                  <span>Short summary</span>
                   <span className="text-[10px] text-teal-400 font-mono">*Required</span>
                 </label>
                 <textarea
@@ -823,7 +823,7 @@ export default function ManageBlogPage() {
                   required
                   value={form.excerpt}
                   onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-                  placeholder="A compelling 2-3 sentence overview shown in the grid..."
+                  placeholder="Short article summary"
                   className="w-full bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl p-3.5 text-xs text-white placeholder-gray-500 outline-none resize-none leading-relaxed transition"
                 />
               </div>
@@ -831,15 +831,16 @@ export default function ManageBlogPage() {
               {/* Full Content */}
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
-                  <span>Full Article Content (Markdown format)</span>
+                  <span>Article content (Markdown)</span>
                   <span className="text-[10px] text-teal-400 font-mono">*Required</span>
                 </label>
                 <textarea
+                  data-admin-code
                   rows={8}
                   required
                   value={form.content}
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
-                  placeholder="Use ## for section titles, ### for subheadings, - for bullets, ``` for code blocks..."
+                  placeholder="Markdown: ## heading, - list, ``` code"
                   className="w-full bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl p-3.5 text-xs font-mono text-gray-200 placeholder-gray-500 outline-none leading-relaxed transition"
                 />
               </div>
@@ -886,7 +887,7 @@ export default function ManageBlogPage() {
                     onChange={(e) => setForm({ ...form, featured: e.target.checked })}
                     className="w-4 h-4 rounded border-white/20 bg-black/40 text-teal-400 focus:ring-0 cursor-pointer"
                   />
-                  <span className="text-gray-200">Featured Chronicle (Top Highlight)</span>
+                  <span className="text-gray-200">Featured post</span>
                 </label>
 
                 <label className="flex items-center gap-2.5 cursor-pointer text-xs">
@@ -896,7 +897,7 @@ export default function ManageBlogPage() {
                     onChange={(e) => setForm({ ...form, isPublished: e.target.checked })}
                     className="w-4 h-4 rounded border-white/20 bg-black/40 text-emerald-400 focus:ring-0 cursor-pointer"
                   />
-                  <span className="text-emerald-400 font-semibold">Publish Immediately</span>
+                  <span className="text-emerald-400 font-semibold">Publish now</span>
                 </label>
               </div>
             </form>
@@ -919,18 +920,18 @@ export default function ManageBlogPage() {
                 {saving && (
                   <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                 )}
-                <span>{saving ? "Saving…" : editingPost ? "Update Chronicle" : "Publish Chronicle"}</span>
+                <span>{saving ? "Saving…" : editingPost ? "Update Chronicle" : "Save blog post"}</span>
               </button>
             </div>
           </div>
-        </div>
+        </AdminOverlay>
       )}
 
       {/* ══════════════════════════════════════════════════════
           DELETE CONFIRMATION MODAL (SOFT DELETE -> RECYCLE BIN)
       ══════════════════════════════════════════════════════ */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
+        <AdminOverlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in" onClose={() => setDeleteTarget(null)} label="Delete article" >
           <div className="bg-[#0e0e1a] border border-rose-500/30 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center shrink-0">
@@ -978,7 +979,7 @@ export default function ManageBlogPage() {
               </button>
             </div>
           </div>
-        </div>
+        </AdminOverlay>
       )}
     </AdminLayout>
   );

@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import { useEffect, useState } from "react";
 import Head from "next/head";
@@ -350,12 +351,12 @@ export default function ManageProjectsPage() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[18px]">
               search
             </span>
-            <input
+            <input data-admin-search
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search projects by title, subtitle, or tech tags..."
-              className="w-full h-10 pl-9 pr-4 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl text-xs text-white placeholder-gray-500 outline-none transition"
+              placeholder="Find a project"
+              className="transparent-input bg-transparent w-full h-10 pl-9 pr-4 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl text-xs text-white placeholder-gray-500 outline-none transition"
             />
             {searchQuery && (
               <button
@@ -371,7 +372,7 @@ export default function ManageProjectsPage() {
           <div className="flex items-center gap-2 flex-wrap">
             {/* Category Selector */}
             <div className="relative">
-              <select
+              <AdminSelect
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-3 pr-8 text-xs text-gray-300 font-medium capitalize outline-none transition cursor-pointer appearance-none"
@@ -381,7 +382,7 @@ export default function ManageProjectsPage() {
                     {c === "all" ? "All Categories" : c}
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
               <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-[16px]">
                 expand_more
               </span>
@@ -475,9 +476,9 @@ export default function ManageProjectsPage() {
                         <img
                           src={(project as any).images?.[0] || project.imageUrl || project.image}
                           alt={project.title}
-                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                          className="admin-project-cover w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c16]/80 via-transparent to-transparent opacity-60 pointer-events-none" />
+                        
                       </div>
                     )}
 

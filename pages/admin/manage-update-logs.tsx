@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
@@ -281,9 +282,7 @@ export default function ManageUpdateLogs() {
                   Live Firestore
                 </div>
               </div>
-              <p className="text-sm text-gray-400 mt-1">
-                Manage, publish, and order chronological updates displayed in the system console.
-              </p>
+              <p className="text-sm text-gray-400 mt-1">Publish and organize product updates.</p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -490,7 +489,7 @@ export default function ManageUpdateLogs() {
                       Tag / Status *
                     </label>
                     <div className="relative">
-                      <select
+                      <AdminSelect
                         value={formData.tag}
                         onChange={(e) =>
                           setFormData({
@@ -505,7 +504,7 @@ export default function ManageUpdateLogs() {
                         <option value="PATCHED">PATCHED</option>
                         <option value="SECURITY">SECURITY</option>
                         <option value="FEATURE">FEATURE</option>
-                      </select>
+                      </AdminSelect>
                       <svg
                         className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none"
                         fill="none"

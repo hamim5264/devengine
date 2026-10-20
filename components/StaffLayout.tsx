@@ -115,6 +115,7 @@ const STAFF_WORKSPACE_GROUP: NavGroup = {
     { label: "Attendance & Heatmap", href: "/admin/manage-attendance", staffHref: "/staff/attendance", desc: "Punch logs, work hours & yearly presence calendar" },
     { label: "Tasks & Deadlines", href: "/staff/tasks", staffHref: "/staff/tasks", desc: "Sprint backlog, active milestones & priorities" },
     { label: "My Agreement", href: "/staff/agreement", staffHref: "/staff/agreement", desc: "Official signed terms, compensation & legal contract" },
+    { label: "Certificates", href: "/admin/manage-certificates", staffHref: "/staff/certificates", desc: "Official experience, relieving, internship & verification certificates" },
     { label: "Leaves & Off-Day Swap", href: "/admin/manage-leaves", staffHref: "/staff/leaves", desc: "Time-off applications & schedule swapping" },
     { label: "Daily Work Updates", href: "/admin/manage-work-updates", staffHref: "/staff/work-updates", desc: "EOD task logs, blockers & PR submissions" },
     { label: "Messages", href: "/staff/messages", staffHref: "/staff/messages", desc: "Private conversations and department channels" },
@@ -168,7 +169,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
       if (!authorized || !staff) {
         setStaffData(null);
         setAuthReady(false);
-        void router.replace("/staff");
+        void router.replace(staff?.status === "suspended" ? "/staff?suspended=1" : "/staff");
         return;
       }
       setStaffData(staff);

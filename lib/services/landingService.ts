@@ -1,3 +1,4 @@
+import { uploadStorageAsset } from "@/lib/services/storageAssetService";
 import {
   collection,
   doc,
@@ -260,30 +261,10 @@ export async function updateLandingSection<K extends keyof LandingConfig>(
 }
 
 /**
- * Admin: Upload an image file to Firebase Storage (with base64 fallback)
+ * Admin: Upload an image file to Firebase Storage.
  */
-export async function uploadLandingImage(
-  file: File,
-  folder = "landing"
-): Promise<string> {
-  try {
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9_.-]/g, "_");
-    const storagePath = `${folder}/${Date.now()}_${cleanFileName}`;
-    const storageRef = ref(storage, storagePath);
-
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadUrl = await getDownloadURL(snapshot.ref);
-    return downloadUrl;
-  } catch (err) {
-    console.warn("Firebase Storage upload fallback triggered:", err);
-    // Fallback to local DataURL so user can still preview and save images locally
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-      reader.readAsDataURL(file);
-    });
-  }
+export async function uploadLandingImage(file: File, folder = "landing"): Promise<string> {
+  return uploadStorageAsset(file, folder);
 }
 
 /**

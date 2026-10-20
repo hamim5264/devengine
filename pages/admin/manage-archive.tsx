@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
@@ -557,7 +558,7 @@ export default function ManageArchivePage() {
         </Head>
         <main className="px-6 md:px-8 py-8 min-h-[calc(100vh-56px)] text-white">
           <div className="flex flex-col items-center justify-center">
-            <HelixLoader size={56} color="#38f2ff" />
+            <HelixLoader size={56} color="#2cecf7" />
             <p className="mt-4 text-[#849495] font-mono">Loading Archive CMS…</p>
           </div>
         </main>
@@ -818,7 +819,7 @@ export default function ManageArchivePage() {
                   Select Existing Project from Database
                 </label>
                 <div className="relative">
-                  <select
+                  <AdminSelect
                     value={config.featuredCaseStudy.projectId}
                     onChange={(e) => handleSelectFeaturedProject(e.target.value)}
                     className="w-full h-11 bg-black/60 border border-teal-500/30 rounded-xl px-4 pr-10 text-sm text-white focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400/40 transition appearance-none cursor-pointer"
@@ -829,7 +830,7 @@ export default function ManageArchivePage() {
                         {p.title} ({p.category.toUpperCase()}) — ৳ {p.discount || p.price}
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -871,7 +872,7 @@ export default function ManageArchivePage() {
                         },
                       })
                     }
-                    placeholder="e.g. /projects/case-study or /projects/custom-slug or external link"
+                    placeholder="Page path or external URL"
                     className="w-full h-11 bg-black/60 border border-cyan-500/30 focus:border-cyan-400 rounded-xl px-4 text-sm text-white placeholder-gray-500 transition font-mono focus:outline-none"
                   />
                   <p className="text-[11px] text-gray-500 mt-1">
@@ -1142,7 +1143,7 @@ export default function ManageArchivePage() {
             <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-4">
               <h3 className="text-sm font-mono text-white font-bold flex items-center justify-between">
                 <span>01. Hero Banner Image</span>
-                <span className="text-xs text-[#38f2ff]">Top full-width background</span>
+                <span className="text-xs text-[#2cecf7]">Top full-width background</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                 <div className="space-y-3">
@@ -1155,7 +1156,7 @@ export default function ManageArchivePage() {
                       accept="image/*"
                       onChange={handleCaseStudyHeroUpload}
                       disabled={uploadingImage}
-                      className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#38f2ff] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
+                      className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#2cecf7] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
                     />
                   </div>
                   <div>
@@ -1167,7 +1168,7 @@ export default function ManageArchivePage() {
                       placeholder="https://..."
                       value={currentCaseStudy.heroImage}
                       onChange={(e) => updateCaseStudy({ heroImage: e.target.value })}
-                      className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1200,8 +1201,8 @@ export default function ManageArchivePage() {
                 rows={4}
                 value={currentCaseStudy.challenge}
                 onChange={(e) => updateCaseStudy({ challenge: e.target.value })}
-                placeholder="Describe the real-world engineering challenge, market gap, or technical bottleneck..."
-                className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-xs text-white leading-relaxed focus:border-[#38f2ff] focus:outline-none"
+                placeholder="Problem and project goals"
+                className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-xs text-white leading-relaxed focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -1219,8 +1220,8 @@ export default function ManageArchivePage() {
                   rows={4}
                   value={currentCaseStudy.approach}
                   onChange={(e) => updateCaseStudy({ approach: e.target.value })}
-                  placeholder="Explain the architectural pattern, state management strategy, framework choice..."
-                  className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-xs text-white leading-relaxed focus:border-[#38f2ff] focus:outline-none"
+                  placeholder="Architecture and key decisions"
+                  className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-xs text-white leading-relaxed focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -1235,7 +1236,7 @@ export default function ManageArchivePage() {
                       accept="image/*"
                       onChange={handleArchitectureUpload}
                       disabled={uploadingImage}
-                      className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#38f2ff] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
+                      className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#2cecf7] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
                     />
                   </div>
                   <div>
@@ -1247,7 +1248,7 @@ export default function ManageArchivePage() {
                       placeholder="https://..."
                       value={currentCaseStudy.architectureDiagram}
                       onChange={(e) => updateCaseStudy({ architectureDiagram: e.target.value })}
-                      className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -1284,7 +1285,7 @@ export default function ManageArchivePage() {
                 <button
                   type="button"
                   onClick={handleAddFeature}
-                  className="px-3 py-1.5 rounded-lg bg-[#38f2ff]/20 text-[#38f2ff] hover:bg-[#38f2ff]/30 text-xs font-mono font-bold transition"
+                  className="px-3 py-1.5 rounded-lg bg-[#2cecf7]/20 text-[#2cecf7] hover:bg-[#2cecf7]/30 text-xs font-mono font-bold transition"
                 >
                   + Add Feature
                 </button>
@@ -1297,7 +1298,7 @@ export default function ManageArchivePage() {
                     className="p-4 rounded-xl bg-[#080e1a] border border-white/10 space-y-3 relative group"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                      <span className="text-xs font-mono text-[#2cecf7] font-bold">
                         Feature #{idx + 1}
                       </span>
                       <button
@@ -1318,7 +1319,7 @@ export default function ManageArchivePage() {
                           type="text"
                           value={feat.title}
                           onChange={(e) => handleUpdateFeature(idx, "title", e.target.value)}
-                          className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                          className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                         />
                       </div>
                       <div>
@@ -1331,9 +1332,9 @@ export default function ManageArchivePage() {
                             placeholder="https://..."
                             value={feat.image || ""}
                             onChange={(e) => handleUpdateFeature(idx, "image", e.target.value)}
-                            className="flex-1 bg-[#161c28] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                            className="flex-1 bg-[#161c28] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                           />
-                          <label className="px-3 py-2 bg-[#38f2ff] text-black text-xs font-mono font-bold rounded-lg cursor-pointer hover:bg-[#00dbe8] shrink-0">
+                          <label className="px-3 py-2 bg-[#2cecf7] text-black text-xs font-mono font-bold rounded-lg cursor-pointer hover:bg-[#00dbe8] shrink-0">
                             Upload
                             <input
                               type="file"
@@ -1354,7 +1355,7 @@ export default function ManageArchivePage() {
                         rows={2}
                         value={feat.description}
                         onChange={(e) => handleUpdateFeature(idx, "description", e.target.value)}
-                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2.5 text-xs text-white leading-relaxed focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2.5 text-xs text-white leading-relaxed focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1376,7 +1377,7 @@ export default function ManageArchivePage() {
                 <button
                   type="button"
                   onClick={handleAddTimeline}
-                  className="px-3 py-1.5 rounded-lg bg-[#38f2ff]/20 text-[#38f2ff] hover:bg-[#38f2ff]/30 text-xs font-mono font-bold transition"
+                  className="px-3 py-1.5 rounded-lg bg-[#2cecf7]/20 text-[#2cecf7] hover:bg-[#2cecf7]/30 text-xs font-mono font-bold transition"
                 >
                   + Add Phase
                 </button>
@@ -1394,7 +1395,7 @@ export default function ManageArchivePage() {
                         type="text"
                         value={item.phase}
                         onChange={(e) => handleUpdateTimeline(idx, "phase", e.target.value)}
-                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none font-mono"
+                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none font-mono"
                       />
                     </div>
                     <div className="md:col-span-3">
@@ -1403,7 +1404,7 @@ export default function ManageArchivePage() {
                         type="text"
                         value={item.title}
                         onChange={(e) => handleUpdateTimeline(idx, "title", e.target.value)}
-                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                     <div className="md:col-span-6">
@@ -1412,7 +1413,7 @@ export default function ManageArchivePage() {
                         type="text"
                         value={item.description}
                         onChange={(e) => handleUpdateTimeline(idx, "description", e.target.value)}
-                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                     <div className="md:col-span-1 flex justify-end">
@@ -1444,7 +1445,7 @@ export default function ManageArchivePage() {
                 <button
                   type="button"
                   onClick={handleAddResult}
-                  className="px-3 py-1.5 rounded-lg bg-[#38f2ff]/20 text-[#38f2ff] hover:bg-[#38f2ff]/30 text-xs font-mono font-bold transition"
+                  className="px-3 py-1.5 rounded-lg bg-[#2cecf7]/20 text-[#2cecf7] hover:bg-[#2cecf7]/30 text-xs font-mono font-bold transition"
                 >
                   + Add Metric
                 </button>
@@ -1457,7 +1458,7 @@ export default function ManageArchivePage() {
                     className="p-4 rounded-xl bg-[#080e1a] border border-white/10 space-y-3"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                      <span className="text-xs font-mono text-[#2cecf7] font-bold">
                         Stat #{idx + 1}
                       </span>
                       <button
@@ -1477,7 +1478,7 @@ export default function ManageArchivePage() {
                           value={res.metric}
                           onChange={(e) => handleUpdateResult(idx, "metric", e.target.value)}
                           placeholder="e.g. Latency"
-                          className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                          className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                         />
                       </div>
                       <div>
@@ -1487,7 +1488,7 @@ export default function ManageArchivePage() {
                           value={res.value}
                           onChange={(e) => handleUpdateResult(idx, "value", e.target.value)}
                           placeholder="e.g. <150ms"
-                          className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-[#38f2ff] font-bold focus:border-[#38f2ff] focus:outline-none font-mono"
+                          className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-[#2cecf7] font-bold focus:border-[#2cecf7] focus:outline-none font-mono"
                         />
                       </div>
                     </div>
@@ -1499,7 +1500,7 @@ export default function ManageArchivePage() {
                         value={res.description}
                         onChange={(e) => handleUpdateResult(idx, "description", e.target.value)}
                         placeholder="e.g. 5x faster than previous version"
-                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#161c28] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -1517,8 +1518,8 @@ export default function ManageArchivePage() {
                 rows={5}
                 value={currentCaseStudy.technicalDeepDive}
                 onChange={(e) => updateCaseStudy({ technicalDeepDive: e.target.value })}
-                placeholder="Detailed breakdown of stack, state management, caching layer, failover handling..."
-                className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-xs text-white leading-relaxed focus:border-[#38f2ff] focus:outline-none"
+                placeholder="Stack and implementation details"
+                className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-xs text-white leading-relaxed focus:border-[#2cecf7] focus:outline-none"
               />
             </div>
 
@@ -1533,7 +1534,7 @@ export default function ManageArchivePage() {
                     Screenshots and UI renders displayed in a masonry showcase
                   </p>
                 </div>
-                <label className="px-4 py-2 rounded-lg bg-[#38f2ff] text-black font-mono text-xs font-bold hover:bg-[#00dbe8] transition cursor-pointer self-start sm:self-auto">
+                <label className="px-4 py-2 rounded-lg bg-[#2cecf7] text-black font-mono text-xs font-bold hover:bg-[#00dbe8] transition cursor-pointer self-start sm:self-auto">
                   + Upload Screenshot
                   <input
                     type="file"
@@ -1548,7 +1549,7 @@ export default function ManageArchivePage() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Or paste screenshot image URL directly (e.g. https://...)"
+                  placeholder="Screenshot URL"
                   id="newGalleryUrlInput"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -1558,7 +1559,7 @@ export default function ManageArchivePage() {
                       target.value = "";
                     }
                   }}
-                  className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none font-mono"
+                  className="flex-1 bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none font-mono"
                 />
                 <button
                   type="button"
@@ -1623,7 +1624,7 @@ export default function ManageArchivePage() {
                       },
                     })
                   }
-                  className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
@@ -1643,7 +1644,7 @@ export default function ManageArchivePage() {
                         },
                       })
                     }
-                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1661,7 +1662,7 @@ export default function ManageArchivePage() {
                         },
                       })
                     }
-                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -1681,7 +1682,7 @@ export default function ManageArchivePage() {
                     type="text"
                     value={currentCaseStudy.ctaTitle}
                     onChange={(e) => updateCaseStudy({ ctaTitle: e.target.value })}
-                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none font-bold"
+                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none font-bold"
                   />
                 </div>
                 <div>
@@ -1692,7 +1693,7 @@ export default function ManageArchivePage() {
                     type="text"
                     value={currentCaseStudy.ctaDescription}
                     onChange={(e) => updateCaseStudy({ ctaDescription: e.target.value })}
-                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -1956,7 +1957,7 @@ export default function ManageArchivePage() {
                         Associated Project (Dropdown Link)
                       </label>
                       <div className="relative">
-                        <select
+                        <AdminSelect
                           value={slide.projectId || ""}
                           onChange={(e) =>
                             handleUpdateOfferSlide(idx, "projectId", e.target.value)
@@ -1969,7 +1970,7 @@ export default function ManageArchivePage() {
                               {p.title}
                             </option>
                           ))}
-                        </select>
+                        </AdminSelect>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2037,7 +2038,7 @@ export default function ManageArchivePage() {
                     </label>
                     <textarea
                       rows={2}
-                      placeholder="Brief highlight description of the deal or promotion..."
+                      placeholder="Short promotion summary"
                       value={slide.description}
                       onChange={(e) =>
                         handleUpdateOfferSlide(idx, "description", e.target.value)
@@ -2287,7 +2288,7 @@ export default function ManageArchivePage() {
               <div>
                 <h3 className="text-base font-bold text-white font-mono flex items-center justify-between">
                   <span>Default Project Dummy Images (Bento & Catalog Frames)</span>
-                  <span className="text-xs text-[#38f2ff]">
+                  <span className="text-xs text-[#2cecf7]">
                     Editable Links & File Uploads
                   </span>
                 </h3>
@@ -2318,7 +2319,7 @@ export default function ManageArchivePage() {
                       className="p-4 rounded-xl bg-[#161c28] border border-white/10 space-y-3"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono text-[#38f2ff] font-bold">
+                        <span className="text-xs font-mono text-[#2cecf7] font-bold">
                           {slotName}
                         </span>
                         <span className="text-[10px] text-gray-500 font-mono">
@@ -2353,7 +2354,7 @@ export default function ManageArchivePage() {
                             type="file"
                             accept="image/*"
                             onChange={(e) => handleUploadDefaultImage(slotIdx, e)}
-                            className="w-full text-[11px] text-gray-300 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[10px] file:font-mono file:bg-[#38f2ff] file:text-black hover:file:bg-[#00dbe8]"
+                            className="w-full text-[11px] text-gray-300 file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[10px] file:font-mono file:bg-[#2cecf7] file:text-black hover:file:bg-[#00dbe8]"
                           />
                         </div>
                       </div>
@@ -2370,7 +2371,7 @@ export default function ManageArchivePage() {
                             handleUpdateDefaultImage(slotIdx, e.target.value)
                           }
                           placeholder="https://..."
-                          className="w-full bg-[#080e1a] border border-white/10 rounded p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none font-mono"
+                          className="w-full bg-[#080e1a] border border-white/10 rounded p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none font-mono"
                         />
                       </div>
                     </div>
@@ -2624,7 +2625,7 @@ export default function ManageArchivePage() {
 
           return (
             <div className="bg-[#0e131f] border border-white/10 rounded-xl p-6 space-y-8">
-              <h2 className="text-lg font-bold text-[#38f2ff] font-mono flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#2cecf7] font-mono flex items-center justify-between">
                 <span>Case Study Content Editor</span>
                 <span className="text-xs text-gray-400 font-normal">
                   All fields appear on /projects/case-study
@@ -2633,7 +2634,7 @@ export default function ManageArchivePage() {
 
               {/* ── Hero Image ── */}
               <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-3">
-                <label className="block text-xs font-mono text-[#38f2ff] font-bold">
+                <label className="block text-xs font-mono text-[#2cecf7] font-bold">
                   Hero Banner Image
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2655,7 +2656,7 @@ export default function ManageArchivePage() {
                           }
                         }}
                         disabled={uploadingImage}
-                        className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#38f2ff] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
+                        className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#2cecf7] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
                       />
                     </div>
                     <div>
@@ -2664,7 +2665,7 @@ export default function ManageArchivePage() {
                         type="text"
                         value={csContent.heroImage}
                         onChange={(e) => updateCS({ heroImage: e.target.value })}
-                        className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                   </div>
@@ -2678,29 +2679,29 @@ export default function ManageArchivePage() {
 
               {/* ── Challenge ── */}
               <div>
-                <label className="block text-xs font-mono text-[#38f2ff] font-bold mb-2">The Challenge (Problem Statement)</label>
+                <label className="block text-xs font-mono text-[#2cecf7] font-bold mb-2">The Challenge (Problem Statement)</label>
                 <textarea
                   rows={4}
                   value={csContent.challenge}
                   onChange={(e) => updateCS({ challenge: e.target.value })}
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
               {/* ── Approach ── */}
               <div>
-                <label className="block text-xs font-mono text-[#38f2ff] font-bold mb-2">The Approach (Architecture & Design Philosophy)</label>
+                <label className="block text-xs font-mono text-[#2cecf7] font-bold mb-2">The Approach (Architecture & Design Philosophy)</label>
                 <textarea
                   rows={5}
                   value={csContent.approach}
                   onChange={(e) => updateCS({ approach: e.target.value })}
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                 />
               </div>
 
               {/* ── Architecture Diagram ── */}
               <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-3">
-                <label className="block text-xs font-mono text-[#38f2ff] font-bold">Architecture Diagram</label>
+                <label className="block text-xs font-mono text-[#2cecf7] font-bold">Architecture Diagram</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <input
@@ -2718,14 +2719,14 @@ export default function ManageArchivePage() {
                         }
                       }}
                       disabled={uploadingImage}
-                      className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#38f2ff] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
+                      className="w-full text-xs text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-mono file:bg-[#2cecf7] file:text-black hover:file:bg-[#00dbe8] file:cursor-pointer"
                     />
                     <input
                       type="text"
                       placeholder="Or paste URL..."
                       value={csContent.architectureDiagram}
                       onChange={(e) => updateCS({ architectureDiagram: e.target.value })}
-                      className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                   {csContent.architectureDiagram && (
@@ -2739,7 +2740,7 @@ export default function ManageArchivePage() {
               {/* ── Key Features (Dynamic List) ── */}
               <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-[#38f2ff] font-bold">Key Features</label>
+                  <label className="text-xs font-mono text-[#2cecf7] font-bold">Key Features</label>
                   <button
                     type="button"
                     onClick={() => {
@@ -2750,7 +2751,7 @@ export default function ManageArchivePage() {
                         ],
                       });
                     }}
-                    className="px-3 py-1 text-xs font-mono bg-[#38f2ff]/20 text-[#38f2ff] rounded hover:bg-[#38f2ff]/30 transition"
+                    className="px-3 py-1 text-xs font-mono bg-[#2cecf7]/20 text-[#2cecf7] rounded hover:bg-[#2cecf7]/30 transition"
                   >
                     + Add Feature
                   </button>
@@ -2781,7 +2782,7 @@ export default function ManageArchivePage() {
                         updated[idx] = { ...updated[idx], title: e.target.value };
                         updateCS({ keyFeatures: updated });
                       }}
-                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                     <textarea
                       rows={2}
@@ -2792,7 +2793,7 @@ export default function ManageArchivePage() {
                         updated[idx] = { ...updated[idx], description: e.target.value };
                         updateCS({ keyFeatures: updated });
                       }}
-                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                     <input
                       type="text"
@@ -2803,7 +2804,7 @@ export default function ManageArchivePage() {
                         updated[idx] = { ...updated[idx], image: e.target.value };
                         updateCS({ keyFeatures: updated });
                       }}
-                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-xs text-gray-300 focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-xs text-gray-300 focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 ))}
@@ -2812,7 +2813,7 @@ export default function ManageArchivePage() {
               {/* ── Results & Metrics (Dynamic List) ── */}
               <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-[#38f2ff] font-bold">Results & Impact Metrics</label>
+                  <label className="text-xs font-mono text-[#2cecf7] font-bold">Results & Impact Metrics</label>
                   <button
                     type="button"
                     onClick={() => {
@@ -2823,7 +2824,7 @@ export default function ManageArchivePage() {
                         ],
                       });
                     }}
-                    className="px-3 py-1 text-xs font-mono bg-[#38f2ff]/20 text-[#38f2ff] rounded hover:bg-[#38f2ff]/30 transition"
+                    className="px-3 py-1 text-xs font-mono bg-[#2cecf7]/20 text-[#2cecf7] rounded hover:bg-[#2cecf7]/30 transition"
                   >
                     + Add Metric
                   </button>
@@ -2855,7 +2856,7 @@ export default function ManageArchivePage() {
                           updated[idx] = { ...updated[idx], metric: e.target.value };
                           updateCS({ results: updated });
                         }}
-                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                       <input
                         type="text"
@@ -2866,7 +2867,7 @@ export default function ManageArchivePage() {
                           updated[idx] = { ...updated[idx], value: e.target.value };
                           updateCS({ results: updated });
                         }}
-                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                     <input
@@ -2878,7 +2879,7 @@ export default function ManageArchivePage() {
                         updated[idx] = { ...updated[idx], description: e.target.value };
                         updateCS({ results: updated });
                       }}
-                      className="w-full mt-3 bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-gray-300 focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full mt-3 bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-gray-300 focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 ))}
@@ -2887,7 +2888,7 @@ export default function ManageArchivePage() {
               {/* ── Development Timeline (Dynamic List) ── */}
               <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-[#38f2ff] font-bold">Development Timeline</label>
+                  <label className="text-xs font-mono text-[#2cecf7] font-bold">Development Timeline</label>
                   <button
                     type="button"
                     onClick={() => {
@@ -2898,7 +2899,7 @@ export default function ManageArchivePage() {
                         ],
                       });
                     }}
-                    className="px-3 py-1 text-xs font-mono bg-[#38f2ff]/20 text-[#38f2ff] rounded hover:bg-[#38f2ff]/30 transition"
+                    className="px-3 py-1 text-xs font-mono bg-[#2cecf7]/20 text-[#2cecf7] rounded hover:bg-[#2cecf7]/30 transition"
                   >
                     + Add Phase
                   </button>
@@ -2930,7 +2931,7 @@ export default function ManageArchivePage() {
                           updated[idx] = { ...updated[idx], phase: e.target.value };
                           updateCS({ timeline: updated });
                         }}
-                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                       <input
                         type="text"
@@ -2941,7 +2942,7 @@ export default function ManageArchivePage() {
                           updated[idx] = { ...updated[idx], title: e.target.value };
                           updateCS({ timeline: updated });
                         }}
-                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                     </div>
                     <textarea
@@ -2953,7 +2954,7 @@ export default function ManageArchivePage() {
                         updated[idx] = { ...updated[idx], description: e.target.value };
                         updateCS({ timeline: updated });
                       }}
-                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                      className="w-full bg-[#161c28] border border-white/10 rounded p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                     />
                   </div>
                 ))}
@@ -2961,12 +2962,12 @@ export default function ManageArchivePage() {
 
               {/* ── Technical Deep-Dive ── */}
               <div>
-                <label className="block text-xs font-mono text-[#38f2ff] font-bold mb-2">Technical Deep-Dive</label>
+                <label className="block text-xs font-mono text-[#2cecf7] font-bold mb-2">Technical Deep-Dive</label>
                 <textarea
                   rows={8}
                   value={csContent.technicalDeepDive}
                   onChange={(e) => updateCS({ technicalDeepDive: e.target.value })}
-                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none font-mono"
+                  className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none font-mono"
                 />
                 <p className="text-[10px] text-gray-500 mt-1 font-mono">
                   Detailed technical narrative about the project&apos;s architecture and implementation.
@@ -2976,13 +2977,13 @@ export default function ManageArchivePage() {
               {/* ── Gallery (Dynamic URL List) ── */}
               <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-mono text-[#38f2ff] font-bold">Gallery Screenshots</label>
+                  <label className="text-xs font-mono text-[#2cecf7] font-bold">Gallery Screenshots</label>
                   <button
                     type="button"
                     onClick={() => {
                       updateCS({ gallery: [...csContent.gallery, ""] });
                     }}
-                    className="px-3 py-1 text-xs font-mono bg-[#38f2ff]/20 text-[#38f2ff] rounded hover:bg-[#38f2ff]/30 transition"
+                    className="px-3 py-1 text-xs font-mono bg-[#2cecf7]/20 text-[#2cecf7] rounded hover:bg-[#2cecf7]/30 transition"
                   >
                     + Add Image
                   </button>
@@ -3014,7 +3015,7 @@ export default function ManageArchivePage() {
                           updated[idx] = e.target.value;
                           updateCS({ gallery: updated });
                         }}
-                        className="w-full bg-[#161c28] border border-white/10 rounded p-2 text-xs text-white focus:border-[#38f2ff] focus:outline-none"
+                        className="w-full bg-[#161c28] border border-white/10 rounded p-2 text-xs text-white focus:border-[#2cecf7] focus:outline-none"
                       />
                       <input
                         type="file"
@@ -3033,7 +3034,7 @@ export default function ManageArchivePage() {
                           }
                         }}
                         disabled={uploadingImage}
-                        className="w-full text-[10px] text-gray-400 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-mono file:bg-[#38f2ff]/20 file:text-[#38f2ff] file:cursor-pointer"
+                        className="w-full text-[10px] text-gray-400 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-mono file:bg-[#2cecf7]/20 file:text-[#2cecf7] file:cursor-pointer"
                       />
                       {url && (
                         <div className="relative h-[80px] rounded overflow-hidden border border-white/10">
@@ -3047,7 +3048,7 @@ export default function ManageArchivePage() {
 
               {/* ── Testimonial ── */}
               <div className="p-5 rounded-xl bg-[#161c28] border border-white/10 space-y-3">
-                <label className="block text-xs font-mono text-[#38f2ff] font-bold">Testimonial / Endorsement</label>
+                <label className="block text-xs font-mono text-[#2cecf7] font-bold">Testimonial / Endorsement</label>
                 <textarea
                   rows={3}
                   placeholder="Quote text"
@@ -3057,7 +3058,7 @@ export default function ManageArchivePage() {
                       testimonial: { ...csContent.testimonial, quote: e.target.value },
                     });
                   }}
-                  className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-sm text-white italic focus:border-[#38f2ff] focus:outline-none"
+                  className="w-full bg-[#080e1a] border border-white/10 rounded-lg p-3 text-sm text-white italic focus:border-[#2cecf7] focus:outline-none"
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <input
@@ -3069,7 +3070,7 @@ export default function ManageArchivePage() {
                         testimonial: { ...csContent.testimonial, author: e.target.value },
                       });
                     }}
-                    className="bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                   <input
                     type="text"
@@ -3080,7 +3081,7 @@ export default function ManageArchivePage() {
                         testimonial: { ...csContent.testimonial, role: e.target.value },
                       });
                     }}
-                    className="bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="bg-[#080e1a] border border-white/10 rounded-lg p-2.5 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -3088,21 +3089,21 @@ export default function ManageArchivePage() {
               {/* ── CTA (Call to Action) ── */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-xs font-mono text-[#38f2ff] font-bold mb-2">CTA Title</label>
+                  <label className="block text-xs font-mono text-[#2cecf7] font-bold mb-2">CTA Title</label>
                   <input
                     type="text"
                     value={csContent.ctaTitle}
                     onChange={(e) => updateCS({ ctaTitle: e.target.value })}
-                    className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-mono text-[#38f2ff] font-bold mb-2">CTA Description</label>
+                  <label className="block text-xs font-mono text-[#2cecf7] font-bold mb-2">CTA Description</label>
                   <input
                     type="text"
                     value={csContent.ctaDescription}
                     onChange={(e) => updateCS({ ctaDescription: e.target.value })}
-                    className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#38f2ff] focus:outline-none"
+                    className="w-full bg-[#161c28] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-[#2cecf7] focus:outline-none"
                   />
                 </div>
               </div>
@@ -3115,7 +3116,7 @@ export default function ManageArchivePage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-8 py-3 text-sm font-mono font-bold rounded-lg bg-[#38f2ff] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#38f2ff]/20 transition disabled:opacity-50 flex items-center gap-2"
+            className="px-8 py-3 text-sm font-mono font-bold rounded-lg bg-[#2cecf7] hover:bg-[#00dbe8] text-black shadow-lg shadow-[#2cecf7]/20 transition disabled:opacity-50 flex items-center gap-2"
           >
             {saving ? (
               <>

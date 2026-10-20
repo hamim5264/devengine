@@ -1,3 +1,4 @@
+import { uploadStorageAsset } from "@/lib/services/storageAssetService";
 import { storage, app } from "@/lib/firebase";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { EcoAttachment } from "@/types/staffEcoSystem";
@@ -51,115 +52,11 @@ export function validateFilesBatch(
 }
 
 /**
- * Uploads a single file to Firebase Storage with multi-bucket resolution and smart fallback.
+ * Uploads a file to the configured Firebase Storage bucket.
  */
-export async function uploadFileToStorage(
-  file: File,
-  folder: string,
-  prefix?: string
-): Promise<EcoAttachment> {
-  const check = validateFileSize(file);
-  if (!check.valid) {
-    throw new Error(check.error || "File exceeds size limit of 10 MB.");
-  }
-
-  // Ensure clean path without leading/trailing or multiple consecutive slashes
-  const cleanFolder = (folder || "attachments")
-    .split("/")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .join("/");
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const uniqueKey = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-  const fileName = prefix ? `${prefix}_${uniqueKey}_${safeName}` : `${uniqueKey}_${safeName}`;
-  const fullPath = cleanFolder ? `${cleanFolder}/${fileName}` : `attachments/${fileName}`;
-
-  // Standard contentType only; omit customMetadata to avoid strict CORS preflight blocking
-  const metadata = file.type ? { contentType: file.type } : undefined;
-  const timeoutMs = 25000;
-
-  // Resolve primary and alternative bucket candidates
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "dev-engine-aec69";
-  const primaryBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${projectId}.appspot.com`;
-  const alternateBucket = primaryBucket.includes("firebasestorage.app")
-    ? `${projectId}.appspot.com`
-    : `${projectId}.firebasestorage.app`;
-
-  const storageCandidates = [
-    storage,
-    getStorage(app, `gs://${alternateBucket}`),
-  ];
-
-  let lastError: unknown = null;
-
-  for (const st of storageCandidates) {
-    try {
-      const storageRef = ref(st, fullPath);
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(
-          () =>
-            reject(
-              new Error(
-                `Upload timed out for "${file.name}". Please verify your network connection and storage settings.`
-              )
-            ),
-          timeoutMs
-        );
-      });
-
-      if (metadata) {
-        await Promise.race([uploadBytes(storageRef, file, metadata), timeoutPromise]);
-      } else {
-        await Promise.race([uploadBytes(storageRef, file), timeoutPromise]);
-      }
-      const url = await getDownloadURL(storageRef);
-
-      return {
-        name: file.name,
-        url,
-        size: file.size,
-        type: file.type || "application/octet-stream",
-      };
-    } catch (err: unknown) {
-      lastError = err;
-      console.warn(`[fileUploadService] Attempt with storage bucket candidate failed:`, err);
-    }
-  }
-
-  // If Cloud Storage bucket is not yet created in Firebase Console:
-  // For files <= 800 KB, fall back to Data URL so user testing, chat, and forms do not break
-  if (file.size <= 800 * 1024) {
-    try {
-      console.info(`[fileUploadService] Cloud Storage bucket unavailable; falling back to Data URL for "${file.name}".`);
-      const dataUrl = await readFileAsDataUrl(file);
-      return {
-        name: file.name,
-        url: dataUrl,
-        size: file.size,
-        type: file.type || "application/octet-stream",
-      };
-    } catch (readErr) {
-      console.error("[fileUploadService] Data URL fallback failed:", readErr);
-    }
-  }
-
-  // If upload failed and file is too large for fallback:
-  console.error("[fileUploadService] upload error:", lastError);
-  const msg = lastError instanceof Error ? lastError.message : String(lastError || "");
-  if (msg.includes("bucket-not-found") || msg.includes("does not exist") || msg.includes("404")) {
-    throw new Error(
-      `Firebase Storage is not activated yet. In Firebase Console Storage, click "Get started" to create your bucket.`
-    );
-  } else if (msg.includes("unauthorized") || msg.includes("permission")) {
-    throw new Error(
-      `Storage permission denied. In Firebase Console -> Storage -> Rules, allow authenticated users to write.`
-    );
-  } else if (msg.includes("CORS") || msg.includes("preflight")) {
-    throw new Error(`Upload failed: CORS network policy blocked upload (${file.name}).`);
-  }
-
-  throw lastError instanceof Error ? lastError : new Error(`Upload failed for "${file.name}".`);
+export async function uploadFileToStorage(file: File, folder: string, prefix?: string): Promise<EcoAttachment> {
+  const url = await uploadStorageAsset(file, folder || "attachments", prefix, MAX_FILE_SIZE_BYTES);
+  return { name: file.name, url, size: file.size, type: file.type || "application/octet-stream" };
 }
 
 /**

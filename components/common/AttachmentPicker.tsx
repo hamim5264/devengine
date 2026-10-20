@@ -13,7 +13,8 @@ import styles from "./AttachmentPicker.module.css";
 interface AttachmentPickerProps {
   value: EcoAttachment[];
   onChange: (attachments: EcoAttachment[]) => void;
-  folder: string;
+  folder?: string;
+  storageFolder?: string;
   prefix?: string;
   maxFiles?: number;
   label?: string;
@@ -26,6 +27,7 @@ export default function AttachmentPicker({
   value = [],
   onChange,
   folder,
+  storageFolder,
   prefix,
   maxFiles = MAX_FILES_PER_BATCH,
   label = "Attachments (Optional)",
@@ -33,6 +35,7 @@ export default function AttachmentPicker({
   disabled = false,
   accept = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt",
 }: AttachmentPickerProps) {
+  const targetFolder = folder || storageFolder || "attachments";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<{ id: string; name: string; size: number }[]>([]);
@@ -73,7 +76,7 @@ export default function AttachmentPicker({
         const file = newFiles[i];
         const tempId = tempIds[i].id;
         try {
-          const uploaded = await uploadFileToStorage(file, folder, prefix);
+          const uploaded = await uploadFileToStorage(file, targetFolder, prefix);
           uploadedList.push(uploaded);
         } finally {
           setUploadingFiles((prev) => prev.filter((item) => item.id !== tempId));

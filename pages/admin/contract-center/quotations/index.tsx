@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/quotations/index.tsx
 // ─────────────────────────────────────────────────────────────
@@ -258,9 +259,7 @@ export default function QuotationsIndexPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Quotations & Commercial Proposals</h1>
-            <p className="text-sm text-slate-400">
-              Draft, version, review, and track client quotations with itemized deliverables and payment schedules.
-            </p>
+            <p className="text-sm text-slate-400">Create and track client quotations.</p>
           </div>
           <Link
             href="/admin/contract-center/quotations/create"
@@ -311,13 +310,13 @@ export default function QuotationsIndexPage() {
             onClick={() => setViewTab("active")}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               viewTab === "active"
-                ? "bg-pink-500/15 border border-pink-500/30 text-pink-300 shadow-sm shadow-pink-500/20"
+                ? "bg-[#2cecf7]/15 border border-[#2cecf7]/30 text-[#2cecf7] shadow-sm shadow-[#2cecf7]/20"
                 : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
             }`}
           >
             <span className="material-symbols-outlined text-base">description</span>
             Active Quotations
-            <span className="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 text-[10px] font-mono">
+            <span className="px-2 py-0.5 rounded-full bg-[#2cecf7]/20 text-[#2cecf7] text-[10px] font-mono">
               {tabCounts.active}
             </span>
           </button>
@@ -358,12 +357,12 @@ export default function QuotationsIndexPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
               placeholder="Search by quote #, title, or client name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -380,7 +379,7 @@ export default function QuotationsIndexPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -391,7 +390,7 @@ export default function QuotationsIndexPage() {
                   {label}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -416,7 +415,7 @@ export default function QuotationsIndexPage() {
                   return (
                     <tr key={q.id} className="hover:bg-slate-800/30 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-mono font-semibold text-pink-400">{q.quotationNumber}</div>
+                        <div className="font-mono font-semibold text-[#2cecf7]">{q.quotationNumber}</div>
                         <div className="text-[10px] text-slate-500 font-mono">v{q.version}</div>
                       </td>
                       <td className="py-3 px-4 max-w-[240px]">
@@ -439,7 +438,7 @@ export default function QuotationsIndexPage() {
                         <div className="flex flex-col gap-1 items-start">
                           <CCStatusBadge status={q.status} />
                           {allowedTransitions.length > 0 && viewTab === "active" && (
-                            <select
+                            <AdminSelect
                               onChange={(e) => {
                                 if (e.target.value) handleStatusChange(q, e.target.value as CCQuotationStatus);
                               }}
@@ -454,7 +453,7 @@ export default function QuotationsIndexPage() {
                                   → {CC_QUOTATION_STATUS_LABELS[st]}
                                 </option>
                               ))}
-                            </select>
+                            </AdminSelect>
                           )}
                         </div>
                       </td>

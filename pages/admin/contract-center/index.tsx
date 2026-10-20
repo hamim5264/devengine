@@ -173,9 +173,7 @@ export default function ContractCenterDashboard() {
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
               Contract & Agreement Center
             </h1>
-            <p className="text-sm text-slate-400">
-              Manage client relationships, itemized quotations, NDAs, statements of work, and legally binding agreements.
-            </p>
+            <p className="text-sm text-slate-400">Manage clients, quotations, and contract workflows.</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -407,42 +405,42 @@ export default function ContractCenterDashboard() {
                   href="/admin/contract-center/quotations/create"
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-slate-300 hover:text-white hover:border-pink-500/40 transition-all text-center"
                 >
-                  <span className="text-lg mb-1">📄</span>
+                  <span className="material-symbols-outlined text-lg mb-1" aria-hidden="true">request_quote</span>
                   <span className="font-medium">Quote Builder</span>
                 </Link>
                 <Link
                   href="/admin/contract-center/ndas"
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-slate-300 hover:text-white hover:border-pink-500/40 transition-all text-center"
                 >
-                  <span className="text-lg mb-1">🔒</span>
+                  <span className="material-symbols-outlined text-lg mb-1" aria-hidden="true">lock</span>
                   <span className="font-medium">Mutual NDA</span>
                 </Link>
                 <Link
                   href="/admin/contract-center/sow"
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-slate-300 hover:text-white hover:border-pink-500/40 transition-all text-center"
                 >
-                  <span className="text-lg mb-1">📋</span>
+                  <span className="material-symbols-outlined text-lg mb-1" aria-hidden="true">assignment</span>
                   <span className="font-medium">Statements of Work</span>
                 </Link>
                 <Link
                   href="/admin/contract-center/signatures"
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-slate-300 hover:text-white hover:border-pink-500/40 transition-all text-center"
                 >
-                  <span className="text-lg mb-1">✍️</span>
+                  <span className="material-symbols-outlined text-lg mb-1" aria-hidden="true">draw</span>
                   <span className="font-medium">Signatures Hub</span>
                 </Link>
                 <Link
                   href="/admin/contract-center/milestones"
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-slate-300 hover:text-white hover:border-pink-500/40 transition-all text-center"
                 >
-                  <span className="text-lg mb-1">🎯</span>
+                  <span className="material-symbols-outlined text-lg mb-1" aria-hidden="true">flag</span>
                   <span className="font-medium">Milestones Tracker</span>
                 </Link>
                 <Link
                   href="/admin/contract-center/change-orders"
                   className="flex flex-col items-center justify-center p-3 rounded-xl bg-slate-800/40 border border-slate-800 text-slate-300 hover:text-white hover:border-pink-500/40 transition-all text-center"
                 >
-                  <span className="text-lg mb-1">🔄</span>
+                  <span className="material-symbols-outlined text-lg mb-1" aria-hidden="true">sync</span>
                   <span className="font-medium">Change Orders</span>
                 </Link>
               </div>

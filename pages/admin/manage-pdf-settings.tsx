@@ -149,9 +149,7 @@ export default function ManagePdfSettingsPage() {
               <h1 className={`text-2xl font-extrabold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
                 Invoice &amp; PDF Settings
               </h1>
-              <p className={`text-sm mt-0.5 ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                Manage company website, developer portfolio, Gmail, phone, address and signatory on all generated invoices.
-              </p>
+              <p className={`text-sm mt-0.5 ${isLight ? "text-slate-500" : "text-slate-400"}`}>Update invoice branding and company details.</p>
             </div>
           </div>
 

@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/sow.tsx
 // ─────────────────────────────────────────────────────────────
@@ -166,9 +167,7 @@ export default function SOWManagementPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Statements of Work (SOWs)</h1>
-            <p className="text-sm text-slate-400">
-              Detailed technical deliverables, milestone scopes, and acceptance criteria under Master Agreements.
-            </p>
+            <p className="text-sm text-slate-400">Define deliverables, milestones, and acceptance criteria.</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -188,12 +187,12 @@ export default function SOWManagementPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
-              placeholder="Search SOWs by reference #, title, client..."
+              placeholder="Find a statement of work"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -210,7 +209,7 @@ export default function SOWManagementPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -221,7 +220,7 @@ export default function SOWManagementPage() {
                   {label}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -294,7 +293,7 @@ export default function SOWManagementPage() {
               <form onSubmit={handleSave} className="mt-4 space-y-4 text-xs">
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Select Master Agreement *</label>
-                  <select
+                  <AdminSelect
                     required
                     value={formData.serviceAgreementId}
                     onChange={(e) => setFormData({ ...formData, serviceAgreementId: e.target.value })}
@@ -306,7 +305,7 @@ export default function SOWManagementPage() {
                         {a.agreementNumber} — {a.title} ({a.clientName})
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
@@ -314,7 +313,7 @@ export default function SOWManagementPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. SOW 01: Core Web & Mobile App Staging Delivery"
+                    placeholder="e.g. Web and mobile staging delivery"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"

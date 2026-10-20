@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/signatures.tsx
 // ─────────────────────────────────────────────────────────────
@@ -148,9 +149,7 @@ export default function SignaturesHubPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">E-Signatures & Audit Verification</h1>
-            <p className="text-sm text-slate-400">
-              Track signing requests, cryptographic integrity tokens, timestamps, and legal execution status.
-            </p>
+            <p className="text-sm text-slate-400">Track signing requests and execution status.</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -170,12 +169,12 @@ export default function SignaturesHubPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
               placeholder="Search by document ref #, signer name, email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -192,7 +191,7 @@ export default function SignaturesHubPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -202,7 +201,7 @@ export default function SignaturesHubPage() {
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
               <option value="expired">Expired</option>
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -279,7 +278,7 @@ export default function SignaturesHubPage() {
               <form onSubmit={handleSave} className="mt-4 space-y-4 text-xs">
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Document Type</label>
-                  <select
+                  <AdminSelect
                     value={formData.documentType}
                     onChange={(e) => setFormData({ ...formData, documentType: e.target.value as CCDocumentType })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -289,7 +288,7 @@ export default function SignaturesHubPage() {
                     <option value="quotation">Quotation / Proposal Acceptance</option>
                     <option value="sow">Statement of Work</option>
                     <option value="change_order">Change Order Addendum</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
@@ -332,7 +331,7 @@ export default function SignaturesHubPage() {
 
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Signer Role</label>
-                  <select
+                  <AdminSelect
                     value={formData.signerRole}
                     onChange={(e) => setFormData({ ...formData, signerRole: e.target.value as CCSignerRole })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -340,7 +339,7 @@ export default function SignaturesHubPage() {
                     <option value="client_authorized">Client Authorized Signatory</option>
                     <option value="devengine_authorized">DevEngine Authorized Executive</option>
                     <option value="witness">Witness</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">

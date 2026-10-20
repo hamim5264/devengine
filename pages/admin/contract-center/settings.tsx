@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/settings.tsx
 // ─────────────────────────────────────────────────────────────
@@ -121,9 +122,7 @@ export default function ContractSettingsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Contract Center Global Settings</h1>
-            <p className="text-sm text-slate-400">
-              Configure DevEngine's legal entity metadata, default currencies, signing parameters, and business identity.
-            </p>
+            <p className="text-sm text-slate-400">Manage company details and contract defaults.</p>
           </div>
 
           <button
@@ -237,7 +236,7 @@ export default function ContractSettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block font-medium text-slate-300 mb-1">Default Base Currency</label>
-                <select
+                <AdminSelect
                   value={formData.defaultCurrency}
                   onChange={(e) => setFormData({ ...formData, defaultCurrency: e.target.value as CCCurrency })}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -246,7 +245,7 @@ export default function ContractSettingsPage() {
                   <option value="BDT">BDT (৳)</option>
                   <option value="EUR">EUR (€)</option>
                   <option value="GBP">GBP (£)</option>
-                </select>
+                </AdminSelect>
               </div>
 
               <div>

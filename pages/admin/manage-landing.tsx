@@ -149,7 +149,7 @@ export default function ManageLandingPage() {
   if (!authReady || loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <HelixLoader size={50} color="#3EF3FF" />
+        <HelixLoader size={50} color="#2cecf7" />
       </div>
     );
   }
@@ -170,7 +170,7 @@ export default function ManageLandingPage() {
               <div className="flex items-center gap-2 mb-1.5 font-jetbrains text-xs">
                 <Link
                   href="/admin/dashboard"
-                  className="text-[#3EF3FF] hover:underline flex items-center gap-1"
+                  className="text-[#2cecf7] hover:underline flex items-center gap-1"
                 >
                   ← Back to Dashboard
                 </Link>
@@ -180,23 +180,21 @@ export default function ManageLandingPage() {
               <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                 Dashboard Landing CMS
               </h1>
-              <p className="text-sm text-[#849495] mt-1">
-                Edit headlines, descriptions, statistics, and upload mockup images for all landing sections.
-              </p>
+              <p className="text-sm text-[#849495] mt-1">Update landing content, images, and statistics.</p>
             </div>
 
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleSeedDefaults}
-                className="px-4 py-2 text-xs font-jetbrains rounded-lg border border-[#3EF3FF]/30 text-[#3EF3FF] hover:bg-[#3EF3FF]/10 transition-colors"
+                className="px-4 py-2 text-xs font-jetbrains rounded-lg border border-[#2cecf7]/30 text-[#2cecf7] hover:bg-[#2cecf7]/10 transition-colors"
               >
                 Reset / Seed Defaults
               </button>
               <Link
                 href="/home"
                 target="_blank"
-                className="px-5 py-2.5 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-[#3EF3FF]/30 hover:scale-105 transition-all"
+                className="px-5 py-2.5 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-[#2cecf7]/30 hover:scale-105 transition-all"
               >
                 View Live Page ↗
               </Link>
@@ -208,7 +206,7 @@ export default function ManageLandingPage() {
             <div
               className={`mb-6 p-4 rounded-xl border text-xs font-jetbrains flex justify-between items-center ${
                 message.type === "success"
-                  ? "bg-[#3EF3FF]/10 border-[#3EF3FF]/40 text-[#3EF3FF]"
+                  ? "bg-[#2cecf7]/10 border-[#2cecf7]/40 text-[#2cecf7]"
                   : "bg-red-900/30 border-red-500/40 text-red-200"
               }`}
             >
@@ -244,7 +242,7 @@ export default function ManageLandingPage() {
                 onClick={() => setActiveTab(tab.id as SectionTab)}
                 className={`px-4 py-2 rounded-lg font-jetbrains text-xs whitespace-nowrap transition-all ${
                   activeTab === tab.id
-                    ? "bg-[#3EF3FF] text-[#02040A] font-bold shadow-[0_0_15px_rgba(62,243,255,0.4)]"
+                    ? "bg-[#2cecf7] text-[#02040A] font-bold shadow-[0_0_15px_rgba(62,243,255,0.4)]"
                     : "bg-[#0A0F1D] text-[#849495] hover:text-white border border-white/5"
                 }`}
               >
@@ -266,7 +264,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("hero")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Hero Section"}
                   </button>
@@ -274,7 +272,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Badge Text
                     </label>
                     <input
@@ -291,7 +289,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title Prefix
                     </label>
                     <input
@@ -309,7 +307,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Title Gradient Highlight
                   </label>
                   <input
@@ -326,7 +324,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Subtitle Description
                   </label>
                   <textarea
@@ -419,7 +417,7 @@ export default function ManageLandingPage() {
                   {/* Desktop Mockup Frame Image */}
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                      <span className="font-jetbrains text-xs text-[#3EF3FF] uppercase font-bold">
+                      <span className="font-jetbrains text-xs text-[#2cecf7] uppercase font-bold">
                         1. Desktop Mockup Frame Image
                       </span>
                       <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-jetbrains text-white transition-colors">
@@ -468,7 +466,7 @@ export default function ManageLandingPage() {
                   {/* Tablet Mockup Frame Image */}
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                      <span className="font-jetbrains text-xs text-[#3EF3FF] uppercase font-bold">
+                      <span className="font-jetbrains text-xs text-[#2cecf7] uppercase font-bold">
                         2. Tablet Mockup Frame Image
                       </span>
                       <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-jetbrains text-white transition-colors">
@@ -517,7 +515,7 @@ export default function ManageLandingPage() {
                   {/* Mobile Mockup Frame Image */}
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                      <span className="font-jetbrains text-xs text-[#3EF3FF] uppercase font-bold">
+                      <span className="font-jetbrains text-xs text-[#2cecf7] uppercase font-bold">
                         3. Mobile Mockup Frame Image
                       </span>
                       <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-jetbrains text-white transition-colors">
@@ -577,14 +575,14 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("intro")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Intro"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Heading Prefix
                   </label>
                   <input
@@ -601,7 +599,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Heading Highlight
                   </label>
                   <input
@@ -630,7 +628,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("techStack")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Tech Stack"}
                   </button>
@@ -638,7 +636,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -655,7 +653,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -673,7 +671,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Technologies (Comma separated)
                   </label>
                   <input
@@ -705,7 +703,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("mobile")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Mobile Section"}
                   </button>
@@ -713,7 +711,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -730,7 +728,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -748,7 +746,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Description
                   </label>
                   <textarea
@@ -768,7 +766,7 @@ export default function ManageLandingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-jetbrains text-xs text-[#3EF3FF] uppercase font-bold">
+                      <span className="font-jetbrains text-xs text-[#2cecf7] uppercase font-bold">
                         Phone 1 Image (Front)
                       </span>
                       <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-jetbrains text-white transition-colors">
@@ -815,7 +813,7 @@ export default function ManageLandingPage() {
 
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-jetbrains text-xs text-[#3EF3FF] uppercase font-bold">
+                      <span className="font-jetbrains text-xs text-[#2cecf7] uppercase font-bold">
                         Phone 2 Image (Back)
                       </span>
                       <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-jetbrains text-white transition-colors">
@@ -874,7 +872,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("webPlatform")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Web Platform"}
                   </button>
@@ -882,7 +880,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -899,7 +897,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -917,7 +915,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Browser Frame URL Bar Text
                   </label>
                   <input
@@ -936,7 +934,7 @@ export default function ManageLandingPage() {
                 {/* Web Screen Image Uploader */}
                 <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="font-jetbrains text-xs text-[#3EF3FF] uppercase font-bold">
+                    <span className="font-jetbrains text-xs text-[#2cecf7] uppercase font-bold">
                       Enterprise Dashboard Screen Image
                     </span>
                     <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-jetbrains text-white transition-colors">
@@ -994,7 +992,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("aiLab")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save AI Lab"}
                   </button>
@@ -1002,7 +1000,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -1019,7 +1017,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -1037,7 +1035,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Description
                   </label>
                   <textarea
@@ -1066,14 +1064,14 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("defense")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Defense"}
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Title
                   </label>
                   <input
@@ -1090,7 +1088,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Description
                   </label>
                   <textarea
@@ -1119,7 +1117,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("customSolutions")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Custom Solutions"}
                   </button>
@@ -1127,7 +1125,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -1144,7 +1142,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -1169,7 +1167,7 @@ export default function ManageLandingPage() {
 
                   {config.customSolutions.cards.map((card, idx) => (
                     <div key={idx} className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
-                      <div className="font-jetbrains text-xs text-[#3EF3FF] font-bold">
+                      <div className="font-jetbrains text-xs text-[#2cecf7] font-bold">
                         Card #{idx + 1} {card.isLarge ? "(Large 2x2)" : "(1x1)"}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1253,7 +1251,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("featuredProducts")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Products"}
                   </button>
@@ -1261,7 +1259,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -1278,7 +1276,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -1304,7 +1302,7 @@ export default function ManageLandingPage() {
                   {config.featuredProducts.products.map((prod, pIdx) => (
                     <div key={pIdx} className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">
                       <div className="flex justify-between items-center">
-                        <span className="font-jetbrains text-xs text-[#3EF3FF] font-bold">
+                        <span className="font-jetbrains text-xs text-[#2cecf7] font-bold">
                           Product #{pIdx + 1}
                         </span>
                         <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-jetbrains text-white transition-colors">
@@ -1414,7 +1412,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("process")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Process"}
                   </button>
@@ -1422,7 +1420,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -1439,7 +1437,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -1474,7 +1472,7 @@ export default function ManageLandingPage() {
                             updated[sIdx] = { ...updated[sIdx], stageNumber: e.target.value };
                             setConfig({ ...config, process: { ...config.process, stages: updated } });
                           }}
-                          className="w-32 px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-[#3EF3FF] font-jetbrains text-xs"
+                          className="w-32 px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-[#2cecf7] font-jetbrains text-xs"
                         />
                         <input
                           type="text"
@@ -1516,7 +1514,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("testimonials")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Testimonials"}
                   </button>
@@ -1524,7 +1522,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -1541,7 +1539,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -1627,7 +1625,7 @@ export default function ManageLandingPage() {
                     type="button"
                     onClick={() => handleSaveSection("contact")}
                     disabled={saving}
-                    className="px-6 py-2 bg-[#3EF3FF] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save Contact"}
                   </button>
@@ -1635,7 +1633,7 @@ export default function ManageLandingPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Tag
                     </label>
                     <input
@@ -1652,7 +1650,7 @@ export default function ManageLandingPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                    <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                       Title
                     </label>
                     <input
@@ -1670,7 +1668,7 @@ export default function ManageLandingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-jetbrains text-[#3EF3FF] uppercase mb-1">
+                  <label className="block text-xs font-jetbrains text-[#2cecf7] uppercase mb-1">
                     Subtitle Description
                   </label>
                   <textarea

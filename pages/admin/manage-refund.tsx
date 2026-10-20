@@ -219,9 +219,7 @@ export default function ManageRefundPage() {
                   Live Firestore
                 </div>
               </div>
-              <p className="text-sm text-gray-400 mt-1">
-                Configure strict non-refundable terms for digital software licenses, duplicate payment resolutions, and audit protocols.
-              </p>
+              <p className="text-sm text-gray-400 mt-1">Manage refund terms and payment exceptions.</p>
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">

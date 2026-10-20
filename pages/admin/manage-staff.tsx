@@ -1,6 +1,11 @@
+import TaskAssignmentSheet from "@/components/admin/TaskAssignmentSheet";
+import { EmployeeDialog, EmployeeIcon } from "@/components/staff/EmployeeUI";
+import StaffAvatar from "@/components/staff/StaffAvatar";
+import manageStyles from "@/components/staff/StaffManagement.module.css";
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -17,7 +22,14 @@ import {
   getStaffRoles,
   createStaffRole,
 } from "@/lib/services/staffService";
-import type { StaffMember, StaffRole, StaffStatus } from "@/types/staff";
+import type {
+  StaffMember,
+  StaffRole,
+  StaffStatus,
+  EmploymentType,
+  EmergencyContact,
+  SalaryManagement,
+} from "@/types/staff";
 import {
   MODULE_CONFIG,
   getRoleLabel,
@@ -112,44 +124,56 @@ function RoleSelector({
 
   return (
     <div className="relative space-y-1.5" ref={wrapperRef}>
-      <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block">
+      <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider block">
         Employee Role
       </label>
 
       {/* Trigger Button */}
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full h-11 bg-black/40 border border-white/[0.1] hover:border-white/[0.2] rounded-xl px-3.5 flex items-center justify-between text-left transition-all cursor-pointer"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
+        className="w-full min-h-[46px] bg-[var(--devengine-raised)] border border-[var(--devengine-border)] hover:border-[#2cecf7]/60 rounded-xl px-3.5 py-1.5 flex items-center justify-between text-left transition-all cursor-pointer shadow-sm select-none"
       >
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0">
           <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono font-medium ${selectedBadgeColor.bg} ${selectedBadgeColor.text} ${selectedBadgeColor.border}`}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono font-medium shrink-0"
+            style={{
+              backgroundColor: selectedBadgeColor.hex ? `${selectedBadgeColor.hex}18` : "rgba(44, 236, 247, 0.12)",
+              color: selectedBadgeColor.hex || "#2cecf7",
+              borderColor: selectedBadgeColor.hex ? `${selectedBadgeColor.hex}40` : "rgba(44, 236, 247, 0.3)",
+            }}
           >
             <span className="material-symbols-outlined text-xs">badge</span>
             {selectedLabel}
           </span>
           {selectedRole?.description && (
-            <span className="text-[11px] text-gray-500 font-mono truncate hidden sm:inline">
+            <span className="text-[11px] text-[var(--devengine-muted)] font-mono truncate hidden sm:inline">
               — {selectedRole.description}
             </span>
           )}
         </div>
         <span
-          className={`material-symbols-outlined text-gray-400 text-sm transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
+          className={`material-symbols-outlined text-[var(--devengine-muted)] text-base transition-transform duration-200 shrink-0 ${
+            isOpen ? "rotate-180 text-[#2cecf7]" : ""
           }`}
         >
           expand_more
         </span>
-      </button>
+      </div>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1.5 p-2 bg-[#0d0d1b] border border-white/[0.12] rounded-2xl shadow-2xl space-y-2 backdrop-blur-2xl">
+        <div className="absolute top-full left-0 right-0 z-50 mt-1.5 p-2.5 bg-[var(--devengine-surface)] border border-[var(--devengine-border)] rounded-2xl shadow-2xl space-y-2 backdrop-blur-2xl">
           {/* Search Input */}
           <div className="relative">
-            <span className="material-symbols-outlined text-gray-400 text-sm absolute left-3 top-1/2 -translate-y-1/2">
+            <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
               search
             </span>
             <input
@@ -157,75 +181,104 @@ function RoleSelector({
               autoFocus
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search or enter new role..."
-              className="w-full h-9 bg-black/50 border border-white/[0.1] rounded-xl pl-9 pr-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
+              placeholder="Search role or type custom name..."
+              className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl pl-9 pr-3 text-xs text-[var(--devengine-text)] placeholder:text-[var(--devengine-muted)] focus:outline-none font-mono transition-colors"
             />
           </div>
 
           {/* Role List */}
-          <div className="max-h-52 overflow-y-auto themed-scroll space-y-1 pr-1">
+          <div className="max-h-56 overflow-y-auto themed-scroll space-y-1 pr-1">
             {filtered.map((role) => {
               const isSelected = role.key === selectedRoleKey;
               const color = getRoleBadgeColor(role.key, roles);
 
               return (
-                <button
+                <div
                   key={role.key}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     onSelectRole(role.key);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-all cursor-pointer ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectRole(role.key);
+                      setIsOpen(false);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer select-none ${
                     isSelected
-                      ? "bg-cyan-500/15 border border-cyan-500/30"
-                      : "hover:bg-white/[0.04] border border-transparent"
+                      ? "bg-[#2cecf7]/12 border border-[#2cecf7]/40 shadow-sm"
+                      : "hover:bg-[var(--devengine-raised)] border border-transparent"
                   }`}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-mono font-medium ${color.bg} ${color.text} ${color.border}`}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono font-medium shrink-0"
+                      style={{
+                        backgroundColor: color.hex ? `${color.hex}18` : "rgba(44, 236, 247, 0.12)",
+                        color: color.hex || "#2cecf7",
+                        borderColor: color.hex ? `${color.hex}40` : "rgba(44, 236, 247, 0.3)",
+                      }}
                     >
                       <span className="material-symbols-outlined text-xs">badge</span>
                       {role.label}
                     </span>
-                    <span className="text-[10px] text-gray-500 font-mono truncate">
-                      {role.key}
-                    </span>
+                    {role.description ? (
+                      <span className="text-[11px] text-[var(--devengine-muted)] truncate max-w-[220px]">
+                        {role.description}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-[var(--devengine-muted)] font-mono truncate uppercase opacity-60">
+                        {role.key}
+                      </span>
+                    )}
                   </div>
                   {isSelected && (
-                    <span className="material-symbols-outlined text-cyan-400 text-sm">check</span>
+                    <span className="material-symbols-outlined text-[#2cecf7] text-base shrink-0">
+                      check_circle
+                    </span>
                   )}
-                </button>
+                </div>
               );
             })}
 
             {filtered.length === 0 && !searchTerm.trim() && (
-              <p className="text-xs text-gray-500 font-mono text-center py-3">No roles found.</p>
+              <p className="text-xs text-[var(--devengine-muted)] font-mono text-center py-4">No roles found.</p>
             )}
 
             {/* Create new role option if no exact match */}
             {searchTerm.trim() && !exactMatch && (
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 onClick={handleCreate}
-                disabled={isCreatingRole}
-                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-mono transition-all cursor-pointer text-left"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCreate();
+                  }
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#2cecf7]/10 hover:bg-[#2cecf7]/20 border border-[#2cecf7]/30 text-[#2cecf7] text-xs font-mono transition-all cursor-pointer select-none ${
+                  isCreatingRole ? "opacity-60 pointer-events-none" : ""
+                }`}
               >
                 {isCreatingRole ? (
                   <>
-                    <HelixLoader size={14} color="#38f2ff" />
+                    <HelixLoader size={14} color="#2cecf7" />
                     <span>Creating role &quot;{searchTerm.trim()}&quot;…</span>
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-base">add_circle</span>
                     <span>
-                      Add new role: <strong className="text-white">&quot;{searchTerm.trim()}&quot;</strong>
+                      Add new role: <strong className="text-[var(--devengine-text)] font-semibold">&quot;{searchTerm.trim()}&quot;</strong>
                     </span>
                   </>
                 )}
-              </button>
+              </div>
             )}
           </div>
         </div>
@@ -272,20 +325,20 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
   const initial = staffName.trim() ? staffName.trim().charAt(0).toUpperCase() : "S";
 
   return (
-    <div className="space-y-2 p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+    <div className="space-y-2.5 p-3.5 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)]">
       <div className="flex items-center justify-between">
-        <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider flex items-center gap-1.5">
+        <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider flex items-center gap-1.5">
           Profile Image
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/[0.06] text-gray-400">File & Link</span>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--devengine-soft)] text-[var(--devengine-muted)] border border-[var(--devengine-border)]">File & Link</span>
         </label>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setMode("upload")}
-            className={`px-2 py-0.5 rounded-lg text-[10px] font-mono transition-all cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
               mode === "upload"
-                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                : "text-gray-400 hover:text-white"
+                ? "bg-[#2cecf7] text-[#02040a] font-bold"
+                : "text-[var(--devengine-muted)] hover:text-[var(--devengine-text)]"
             }`}
           >
             File Upload
@@ -293,10 +346,10 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
           <button
             type="button"
             onClick={() => setMode("url")}
-            className={`px-2 py-0.5 rounded-lg text-[10px] font-mono transition-all cursor-pointer ${
+            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-medium transition-all cursor-pointer ${
               mode === "url"
-                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                : "text-gray-400 hover:text-white"
+                ? "bg-[#2cecf7] text-[#02040a] font-bold"
+                : "text-[var(--devengine-muted)] hover:text-[var(--devengine-text)]"
             }`}
           >
             Image URL
@@ -306,7 +359,7 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
 
       <div className="flex items-center gap-3.5">
         {/* Preview circle */}
-        <div className="relative w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-white/[0.12] flex items-center justify-center flex-shrink-0 shadow-md">
+        <div className="relative w-12 h-12 rounded-2xl overflow-hidden bg-[var(--devengine-surface)] border border-[var(--devengine-border)] flex items-center justify-center flex-shrink-0 shadow-sm">
           {avatarUrl ? (
             <img
               src={avatarUrl}
@@ -315,11 +368,11 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
               onError={() => onChange("")}
             />
           ) : (
-            <span className="text-lg font-bold text-white">{initial}</span>
+            <span className="text-base font-bold text-[var(--devengine-text)]">{initial}</span>
           )}
           {uploading && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-              <HelixLoader size={16} color="#38f2ff" />
+              <HelixLoader size={16} color="#2cecf7" />
             </div>
           )}
         </div>
@@ -339,23 +392,23 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
               <div className="flex items-center gap-2">
                 <label
                   htmlFor="staff-avatar-upload"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] text-gray-200 border border-white/[0.08] hover:border-cyan-500/30 text-xs font-mono cursor-pointer transition-all active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--devengine-surface)] hover:bg-[var(--devengine-soft)] text-[var(--devengine-text)] border border-[var(--devengine-border)] hover:border-[#2cecf7]/50 text-xs font-mono cursor-pointer transition-all active:scale-95 shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-sm text-cyan-400">upload_file</span>
+                  <span className="material-symbols-outlined text-sm text-[#2cecf7]">upload_file</span>
                   {uploading ? "Uploading…" : avatarUrl ? "Change Photo" : "Upload File"}
                 </label>
                 {avatarUrl && (
                   <button
                     type="button"
                     onClick={() => onChange("")}
-                    className="p-1.5 rounded-xl bg-white/[0.02] hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-xl bg-[var(--devengine-surface)] hover:bg-rose-500/10 text-[var(--devengine-muted)] hover:text-rose-400 border border-[var(--devengine-border)] transition-colors cursor-pointer"
                     title="Remove Avatar"
                   >
                     <span className="material-symbols-outlined text-sm">delete</span>
                   </button>
                 )}
               </div>
-              <p className="text-[10px] text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB</p>
+              <p className="text-[10px] text-[var(--devengine-muted)] mt-1 font-mono">PNG, JPG, WEBP up to 10MB</p>
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -364,13 +417,13 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
                 value={avatarUrl}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder="https://example.com/avatar.jpg"
-                className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
+                className="w-full h-9 bg-[var(--devengine-surface)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] placeholder:text-[var(--devengine-muted)] font-mono focus:outline-none transition-colors"
               />
               {avatarUrl && (
                 <button
                   type="button"
                   onClick={() => onChange("")}
-                  className="p-2 rounded-xl bg-white/[0.02] hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 transition-colors cursor-pointer shrink-0"
+                  className="p-2 rounded-xl bg-[var(--devengine-surface)] hover:bg-rose-500/10 text-[var(--devengine-muted)] hover:text-rose-400 border border-[var(--devengine-border)] transition-colors cursor-pointer shrink-0"
                   title="Clear URL"
                 >
                   <span className="material-symbols-outlined text-sm">clear</span>
@@ -390,11 +443,16 @@ function AvatarInput({ avatarUrl, onChange, staffName }: AvatarInputProps) {
 // ─── Main Component ───────────────────────────────────────────
 export default function ManageStaffPage() {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [roles, setRoles] = useState<StaffRole[]>([]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Notice
   const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
@@ -431,6 +489,40 @@ export default function ManageStaffPage() {
   const [shiftStart, setShiftStart] = useState("09:00");
   const [shiftEnd, setShiftEnd] = useState("18:00");
   const [offDaysChoice, setOffDaysChoice] = useState<string[]>(["Friday", "Saturday"]);
+
+  // Onboarding, Tenure & HR Details during creation
+  const [createEmploymentType, setCreateEmploymentType] = useState<EmploymentType>("probation");
+  const [createJoiningDate, setCreateJoiningDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [createProbationMonths, setCreateProbationMonths] = useState<number>(3);
+  const [createNoticeDays, setCreateNoticeDays] = useState<number>(30);
+
+  // Salary Breakdown Management
+  const [createBasicSalary, setCreateBasicSalary] = useState<number>(35000);
+  const [createHouseRent, setCreateHouseRent] = useState<number>(10000);
+  const [createMedical, setCreateMedical] = useState<number>(5000);
+  const [createPaymentMethod, setCreatePaymentMethod] = useState<string>("bank_transfer");
+  const [createBankDetails, setCreateBankDetails] = useState<string>("");
+
+  // Emergency Contact
+  const [createEmergencyName, setCreateEmergencyName] = useState<string>("");
+  const [createEmergencyRel, setCreateEmergencyRel] = useState<string>("Spouse");
+  const [createEmergencyPhone, setCreateEmergencyPhone] = useState<string>("");
+
+  // Calculated values for creation
+  const grossCalculatedSalary = useMemo(() => {
+    return (Number(createBasicSalary) || 0) + (Number(createHouseRent) || 0) + (Number(createMedical) || 0);
+  }, [createBasicSalary, createHouseRent, createMedical]);
+
+  const calculatedProbationEndDate = useMemo(() => {
+    if (!createJoiningDate || createEmploymentType !== "probation") return "";
+    try {
+      const d = new Date(createJoiningDate);
+      d.setMonth(d.getMonth() + Number(createProbationMonths || 3));
+      return d.toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  }, [createJoiningDate, createProbationMonths, createEmploymentType]);
 
   // Task assignment modal
   const [showAssignTaskModal, setShowAssignTaskModal] = useState(false);
@@ -475,6 +567,31 @@ export default function ManageStaffPage() {
   const [editType, setEditType] = useState<string>("developer");
   const [editModules, setEditModules] = useState<string[]>([]);
   const [editStatus, setEditStatus] = useState<StaffStatus>("active");
+  const [editSuspensionReason, setEditSuspensionReason] = useState("");
+  const [editError, setEditError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [suspensionTarget, setSuspensionTarget] = useState<StaffMember | null>(null);
+  const [suspensionReason, setSuspensionReason] = useState("");
+  const [suspensionError, setSuspensionError] = useState("");
+  const [editEmploymentType, setEditEmploymentType] = useState<EmploymentType>("permanent");
+  const [editJoiningDate, setEditJoiningDate] = useState<string>("");
+  const [editProbationMonths, setEditProbationMonths] = useState<number>(3);
+  const [editEmergencyName, setEditEmergencyName] = useState<string>("");
+  const [editEmergencyRel, setEditEmergencyRel] = useState<string>("Spouse");
+  const [editEmergencyPhone, setEditEmergencyPhone] = useState<string>("");
+  const [editBasicSalary, setEditBasicSalary] = useState<number>(0);
+  const [editHouseRent, setEditHouseRent] = useState<number>(0);
+  const [editMedical, setEditMedical] = useState<number>(0);
+  const [editGrossSalary, setEditGrossSalary] = useState<number>(0);
+  const [editCurrency, setEditCurrency] = useState<string>("BDT");
+  const [editPaymentMethod, setEditPaymentMethod] = useState<string>("bank_transfer");
+  const [editBankDetails, setEditBankDetails] = useState<string>("");
+  const [editNoticeDays, setEditNoticeDays] = useState<number>(30);
+  const [editResignationStatus, setEditResignationStatus] = useState<string>("none");
+  const [editLastWorkingDay, setEditLastWorkingDay] = useState<string>("");
+  const [editResignationReason, setEditResignationReason] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
   // Copy feedback
@@ -617,8 +734,11 @@ export default function ManageStaffPage() {
               fullName: createName.trim(),
               email: createEmail,
               role: createType,
-              phone: "",
+              phone: createEmergencyPhone.trim(),
               address: "",
+              emergencyContact: createEmergencyName.trim()
+                ? `${createEmergencyName.trim()} (${createEmergencyRel}) - ${createEmergencyPhone.trim()}`
+                : "",
             },
             devengine: {
               companyName: "DevEngine Systems Inc.",
@@ -631,20 +751,20 @@ export default function ManageStaffPage() {
             compensation: {
               model: agreementTypeChoice,
               currency: agreementCurrency,
-              monthlyRetainerAmount: agreementSalary,
-              fixedAmount: agreementSalary,
-              totalContractValue: agreementSalary * 12,
+              monthlyRetainerAmount: grossCalculatedSalary || agreementSalary,
+              fixedAmount: grossCalculatedSalary || agreementSalary,
+              totalContractValue: (grossCalculatedSalary || agreementSalary) * 12,
               paymentFrequency: "Monthly",
               availabilityHoursPerWeek: 40,
             },
             deliverables: [],
             terms: {
-              noticePeriodDays: 30,
+              noticePeriodDays: createNoticeDays,
               bugFixPeriodDays: 30,
               confidentialityDurationYears: 3,
               paymentDuePeriodDays: 7,
               acceptancePeriodDays: 7,
-              terminationNoticeDays: 30,
+              terminationNoticeDays: createNoticeDays,
               disputeResolutionMethod: "Amicable Negotiation, followed by Arbitral Conciliation",
               governingLaw: "Laws of the People's Republic of Bangladesh",
               jurisdiction: "Competent Courts of Dhaka, Bangladesh",
@@ -670,6 +790,27 @@ export default function ManageStaffPage() {
         assignedOffDays: offDaysChoice,
         shiftHours: { start: shiftStart, end: shiftEnd, name: "Standard Shift" },
         agreementId,
+        employmentType: createEmploymentType,
+        joiningDate: createJoiningDate,
+        probationPeriodMonths: createEmploymentType === "probation" ? Number(createProbationMonths) : undefined,
+        probationEndDate: createEmploymentType === "probation" ? calculatedProbationEndDate : undefined,
+        emergencyContact: createEmergencyName.trim()
+          ? {
+              name: createEmergencyName.trim(),
+              relationship: createEmergencyRel.trim(),
+              phone: createEmergencyPhone.trim(),
+            }
+          : undefined,
+        salaryManagement: {
+          basicSalary: Number(createBasicSalary) || 0,
+          houseRent: Number(createHouseRent) || 0,
+          medical: Number(createMedical) || 0,
+          grossSalary: grossCalculatedSalary,
+          currency: agreementCurrency,
+          paymentMethod: createPaymentMethod,
+          bankDetails: createBankDetails.trim(),
+          noticePeriodDays: Number(createNoticeDays) || 30,
+        },
       });
 
       setCreatedCreds({
@@ -784,72 +925,130 @@ export default function ManageStaffPage() {
     setEditPassword(member.password || "");
     setEditAvatarUrl(member.avatarUrl || "");
     setEditType(member.staffType);
-    setEditModules([...member.allowedModules]);
+    setEditModules([...(member.allowedModules || [])]);
     setEditStatus(member.status);
+    setEditSuspensionReason(member.suspensionReason || "");
+    setEditError("");
+    setEditEmploymentType(member.employmentType || "permanent");
+    setEditJoiningDate(member.joiningDate || (member.createdAt ? member.createdAt.split("T")[0] : ""));
+    setEditProbationMonths(member.probationPeriodMonths || 3);
+    setEditEmergencyName(member.emergencyContact?.name || "");
+    setEditEmergencyRel(member.emergencyContact?.relationship || "Spouse");
+    setEditEmergencyPhone(member.emergencyContact?.phone || "");
+    setEditBasicSalary(member.salaryManagement?.basicSalary || 0);
+    setEditHouseRent(member.salaryManagement?.houseRent || 0);
+    setEditMedical(member.salaryManagement?.medical || 0);
+    setEditGrossSalary(member.salaryManagement?.grossSalary || 0);
+    setEditCurrency(member.salaryManagement?.currency || "BDT");
+    setEditPaymentMethod(member.salaryManagement?.paymentMethod || "bank_transfer");
+    setEditBankDetails(member.salaryManagement?.bankDetails || "");
+    setEditNoticeDays(member.salaryManagement?.noticePeriodDays || 30);
+    setEditResignationStatus(member.resignationDetails?.status || "none");
+    setEditLastWorkingDay(member.resignationDetails?.lastWorkingDay || "");
+    setEditResignationReason(member.resignationDetails?.reason || "");
     setShowEditPass(false);
     setShowEditModal(true);
   };
 
   // ── Save edit ──
   const handleSaveEdit = async () => {
-    if (!editingStaff) return;
+    if (!editingStaff || saving) return;
+    setEditError("");
+    if (!editName.trim()) { setEditError("Enter the employee's full name."); return; }
+    if (editStatus === "suspended" && !editSuspensionReason.trim()) { setEditError("Add a reason before suspending this employee."); return; }
     setSaving(true);
     try {
-      await updateStaffMember(
-        editingStaff.id,
-        {
+      const calculatedGross = Number(editGrossSalary) > 0 ? Number(editGrossSalary) : (Number(editBasicSalary) || 0) + (Number(editHouseRent) || 0) + (Number(editMedical) || 0);
+      const changes: Partial<StaffMember> = {
           name: editName.trim() || editingStaff.name,
           password: editPassword,
           avatarUrl: editAvatarUrl,
           staffType: editType,
           allowedModules: editModules,
           status: editStatus,
-        },
-        {
-          email: editingStaff.email,
-          oldPassword: editingStaff.password,
-        }
-      );
-      setNotice({ type: "success", text: `Employee "${editingStaff.name}" updated successfully.` });
+          suspensionReason: editStatus === "suspended" ? editSuspensionReason.trim() : undefined,
+          suspendedBy: editStatus === "suspended" ? auth.currentUser?.uid : undefined,
+          suspendedAt: editStatus === "suspended" ? editingStaff.suspendedAt || new Date().toISOString() : undefined,
+          employmentType: editEmploymentType,
+          joiningDate: editJoiningDate,
+          probationPeriodMonths: editEmploymentType === "probation" ? Number(editProbationMonths) : undefined,
+          emergencyContact: editEmergencyName.trim()
+            ? {
+                name: editEmergencyName.trim(),
+                relationship: editEmergencyRel.trim(),
+                phone: editEmergencyPhone.trim(),
+              }
+            : undefined,
+          salaryManagement: {
+            basicSalary: Number(editBasicSalary) || 0,
+            houseRent: Number(editHouseRent) || 0,
+            medical: Number(editMedical) || 0,
+            grossSalary: calculatedGross,
+            currency: editCurrency,
+            paymentMethod: editPaymentMethod,
+            bankDetails: editBankDetails.trim(),
+            noticePeriodDays: Number(editNoticeDays) || 30,
+          },
+          resignationDetails:
+            editResignationStatus !== "none"
+              ? {
+                  status: editResignationStatus as any,
+                  lastWorkingDay: editLastWorkingDay,
+                  reason: editResignationReason.trim(),
+                  resignedAt: editingStaff.resignationDetails?.resignedAt || new Date().toISOString(),
+                }
+              : undefined,
+        };
+      await updateStaffMember(editingStaff.id, changes, { email: editingStaff.email, oldPassword: editingStaff.password });
+      const updated = { ...editingStaff, ...changes, updatedAt: new Date().toISOString() };
+      setStaff(current => current.map(member => member.id === editingStaff.id ? updated : member));
+      setSelectedDetailStaff(current => current?.id === editingStaff.id ? updated : current);
       setShowEditModal(false);
       setEditingStaff(null);
-      await loadData();
-    } catch {
-      setNotice({ type: "error", text: "Failed to update employee." });
-    } finally {
-      setSaving(false);
-    }
+      setSuccessMessage(`${updated.name}'s profile and employment details have been saved.`);
+    } catch (error) {
+      console.error("Employee update failed:", error);
+      setEditError(error instanceof Error ? error.message : "The employee could not be saved. Please retry.");
+    } finally { setSaving(false); }
   };
 
   // ── Toggle suspend ──
   const handleToggleSuspend = async (member: StaffMember) => {
+    if (member.status === "active") { setSuspensionTarget(member); setSuspensionReason(""); setSuspensionError(""); return; }
     setActionInProgress(member.id);
     try {
-      const newStatus: StaffStatus = member.status === "active" ? "suspended" : "active";
-      await updateStaffMember(member.id, { status: newStatus });
-      setNotice({
-        type: "success",
-        text: `${member.name} has been ${newStatus === "active" ? "reactivated" : "suspended"}.`,
-      });
-      await loadData();
-    } catch {
-      setNotice({ type: "error", text: "Failed to update status." });
-    } finally {
-      setActionInProgress(null);
-    }
+      await updateStaffMember(member.id, { status: "active" });
+      setStaff(current => current.map(item => item.id === member.id ? { ...item, status: "active", suspensionReason: undefined, suspendedAt: undefined, suspendedBy: undefined } : item));
+      setSuccessMessage(`${member.name}'s account has been reactivated.`);
+    } catch (error) { setNotice({ type: "error", text: error instanceof Error ? error.message : "Failed to restore account access." }); }
+    finally { setActionInProgress(null); }
+  };
+  const confirmSuspension = async () => {
+    if (!suspensionTarget || actionInProgress) return;
+    if (!suspensionReason.trim()) { setSuspensionError("Enter a reason for suspension."); return; }
+    const target = suspensionTarget;
+    setActionInProgress(target.id);
+    try {
+      await updateStaffMember(target.id, { status: "suspended", suspensionReason: suspensionReason.trim() });
+      setStaff(current => current.map(item => item.id === target.id ? { ...item, status: "suspended", suspensionReason: suspensionReason.trim() } : item));
+      setSuspensionTarget(null);
+      setSuccessMessage(`${target.name}'s account has been suspended. The employee will be signed out.`);
+    } catch (error) { setSuspensionError(error instanceof Error ? error.message : "Could not suspend the employee. Please retry."); }
+    finally { setActionInProgress(null); }
   };
 
   // ── Delete ──
   const handleDelete = async (member: StaffMember) => {
-    if (!window.confirm(`Are you sure you want to permanently remove "${member.name}"?`))
-      return;
+    setDeleteError("");
     setActionInProgress(member.id);
     try {
       await deleteStaffMember(member.id);
-      setNotice({ type: "success", text: `"${member.name}" removed from employees.` });
+      setDeleteTarget(null);
+      setStaff(current => current.filter(item => item.id !== member.id));
+      setSuccessMessage(`${member.name} was permanently removed from employees.`);
       await loadData();
     } catch {
-      setNotice({ type: "error", text: "Failed to remove employee." });
+      setDeleteError("Could not delete this employee. Please retry.");
     } finally {
       setActionInProgress(null);
     }
@@ -906,7 +1105,7 @@ export default function ManageStaffPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#07070f] flex items-center justify-center">
-        <HelixLoader size={44} color="#38f2ff" />
+        <HelixLoader size={44} color="#2cecf7" />
       </div>
     );
   }
@@ -923,11 +1122,11 @@ export default function ManageStaffPage() {
   }) => (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400 font-mono uppercase tracking-wider">Module Access</span>
+        <span className="text-xs text-[var(--devengine-muted)] font-mono uppercase tracking-wider">Module Access</span>
         <button
           type="button"
           onClick={onToggleAll}
-          className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer"
+          className="text-[11px] font-bold text-[#2cecf7] hover:underline transition-colors cursor-pointer"
         >
           {selected.length === ALL_MODULE_KEYS.length ? "Deselect All" : "Select All"}
         </button>
@@ -937,14 +1136,21 @@ export default function ManageStaffPage() {
           const cfg = MODULE_CONFIG[key];
           const isChecked = selected.includes(key);
           return (
-            <button
+            <div
               key={key}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => onToggle(key)}
-              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all cursor-pointer ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onToggle(key);
+                }
+              }}
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all cursor-pointer select-none ${
                 isChecked
-                  ? "bg-white/[0.06] border-cyan-500/40"
-                  : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]"
+                  ? "bg-[#2cecf7]/10 border-[#2cecf7]/40 shadow-sm"
+                  : "bg-[var(--devengine-surface)] border-[var(--devengine-border)] hover:border-[#2cecf7]/30"
               }`}
             >
               <div
@@ -954,23 +1160,23 @@ export default function ManageStaffPage() {
                 <span className="material-symbols-outlined text-base">{cfg.icon}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <span className={`text-xs font-bold block ${isChecked ? "text-white" : "text-gray-300"}`}>
+                <span className={`text-xs font-bold block ${isChecked ? "text-[var(--devengine-text)]" : "text-[var(--devengine-muted)]"}`}>
                   {cfg.label}
                 </span>
-                <span className="text-[10px] text-gray-500 block truncate">{cfg.description}</span>
+                <span className="text-[10px] text-[var(--devengine-muted)] block truncate opacity-75">{cfg.description}</span>
               </div>
               <div
-                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                className={`w-5 h-5 rounded-md border flex items-center justify-center flex-shrink-0 transition-all ${
                   isChecked
-                    ? "bg-cyan-500 border-cyan-500"
-                    : "border-gray-600"
+                    ? "bg-[#2cecf7] border-[#2cecf7]"
+                    : "border-[var(--devengine-border)] bg-[var(--devengine-raised)]"
                 }`}
               >
                 {isChecked && (
-                  <span className="material-symbols-outlined text-white text-xs">check</span>
+                  <span className="material-symbols-outlined text-[#02040a] text-xs font-bold">check</span>
                 )}
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
@@ -1140,12 +1346,12 @@ export default function ManageStaffPage() {
               <span className="material-symbols-outlined text-gray-400 text-lg absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 search
               </span>
-              <input
+              <input data-admin-search
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search employees by name, email, or role…"
-                className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
+                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
               />
             </div>
 
@@ -1159,7 +1365,7 @@ export default function ManageStaffPage() {
           {/* ── Table / Empty State ── */}
           {loading ? (
             <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3 bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl p-12">
-              <HelixLoader size={44} color="#38f2ff" />
+              <HelixLoader size={44} color="#2cecf7" />
               <p className="text-xs font-mono text-gray-400 tracking-wider uppercase">Loading Employees…</p>
             </div>
           ) : filteredStaff.length === 0 ? (
@@ -1202,7 +1408,7 @@ export default function ManageStaffPage() {
                 return (
                   <div
                     key={member.id}
-                    className="relative rounded-2xl bg-[#0c0d18]/90 backdrop-blur-md border border-white/[0.08] hover:border-cyan-500/35 p-3.5 sm:p-4 flex flex-col justify-between gap-3 transition-all duration-300 shadow-lg hover:shadow-cyan-950/25 group overflow-hidden"
+                    className={`${manageStyles.card} relative group flex flex-col justify-between border overflow-hidden`}
                   >
                     {/* Ambient Glow */}
                     <div className="absolute -top-16 -right-16 w-32 h-32 rounded-full bg-cyan-500/[0.04] blur-2xl pointer-events-none group-hover:bg-cyan-500/[0.09] transition-all duration-500" />
@@ -1210,20 +1416,7 @@ export default function ManageStaffPage() {
                     {/* Card Top: Avatar, Name & Status */}
                     <div className="flex items-center justify-between gap-3 relative z-10">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {/* Compact Rounded Square Avatar with strict sizing */}
-                        <div className="w-11 h-11 min-w-[44px] max-w-[44px] h-[44px] max-h-[44px] rounded-xl overflow-hidden bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-white/10 flex items-center justify-center flex-shrink-0 shadow-inner group-hover:border-cyan-500/40 transition-colors">
-                          {member.avatarUrl ? (
-                            <img
-                              src={member.avatarUrl}
-                              alt={member.name}
-                              className="w-11 h-11 object-cover rounded-xl"
-                            />
-                          ) : (
-                            <span className="text-base font-bold bg-gradient-to-br from-cyan-300 to-blue-400 bg-clip-text text-transparent">
-                              {initial}
-                            </span>
-                          )}
-                        </div>
+                        <StaffAvatar name={member.name} url={member.avatarUrl} />
 
                         {/* Employee Name & Contact */}
                         <div className="min-w-0 flex-1">
@@ -1310,7 +1503,7 @@ export default function ManageStaffPage() {
                     </div>
 
                     {/* Card Bottom: Action Toolbar */}
-                    <div className="flex items-center justify-between gap-1.5 pt-2.5 border-t border-white/[0.06] relative z-10">
+                    <div data-employee-actions className="flex items-center justify-between gap-1.5 pt-2.5 border-t border-white/[0.06] relative z-10">
                       {/* View Details */}
                       <button
                         type="button"
@@ -1361,7 +1554,7 @@ export default function ManageStaffPage() {
                       {/* Delete */}
                       <button
                         type="button"
-                        onClick={() => handleDelete(member)}
+                        onClick={() => { setDeleteError(""); setDeleteTarget(member); }}
                         disabled={actionInProgress === member.id}
                         title="Remove Employee"
                         className="h-8 w-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50 active:scale-95"
@@ -1380,10 +1573,10 @@ export default function ManageStaffPage() {
       {/* ═══════════════════════════════════════════════════════════════════
           CREATE STAFF MODAL
       ═══════════════════════════════════════════════════════════════════ */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {mounted && showCreateModal && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto p-4 sm:p-6 pt-24 sm:pt-28 pb-12 flex justify-center items-start themed-scroll">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
             onClick={() => {
               if (!creating) {
                 setShowCreateModal(false);
@@ -1391,18 +1584,18 @@ export default function ManageStaffPage() {
               }
             }}
           />
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
+          <div className="relative w-full max-w-4xl lg:max-w-5xl rounded-3xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] text-[var(--devengine-text)] shadow-2xl p-6 sm:p-8 space-y-6 my-auto">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--devengine-border)]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-cyan-400 text-xl">person_add</span>
+                <div className="w-10 h-10 rounded-2xl bg-[#2cecf7]/10 border border-[#2cecf7]/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#2cecf7] text-xl">person_add</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold font-['Space_Grotesk'] text-white">
+                  <h2 className="text-lg font-bold font-['Space_Grotesk'] text-[var(--devengine-text)]">
                     {createdCreds ? "Account Created!" : "Create Employee Account"}
                   </h2>
-                  <p className="text-[11px] text-gray-400 font-mono">
+                  <p className="text-[11px] text-[var(--devengine-muted)] font-mono">
                     {createdCreds ? "Save and share credentials with the employee" : "Set up a new team member with custom role & permissions"}
                   </p>
                 </div>
@@ -1413,7 +1606,7 @@ export default function ManageStaffPage() {
                   setShowCreateModal(false);
                   setCreatedCreds(null);
                 }}
-                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] border border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] flex items-center justify-center transition-all cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">close</span>
               </button>
@@ -1421,13 +1614,13 @@ export default function ManageStaffPage() {
 
             {createdCreds ? (
               /* ── Credentials Card ── */
-              <div className="space-y-5">
-                <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-4">
+              <div className="max-w-xl mx-auto space-y-5 py-4">
+                <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-4">
                   <div className="flex items-center gap-3 text-emerald-400">
                     <span className="material-symbols-outlined text-xl">check_circle</span>
                     <div>
-                      <span className="text-sm font-bold block">Account for {createdCreds.name} is ready</span>
-                      <span className="text-[11px] text-gray-400 font-mono">
+                      <span className="text-sm font-bold block text-[var(--devengine-text)]">Account for {createdCreds.name} is ready</span>
+                      <span className="text-[11px] text-[var(--devengine-muted)] font-mono">
                         Password has been securely saved to the admin panel.
                       </span>
                     </div>
@@ -1435,15 +1628,15 @@ export default function ManageStaffPage() {
 
                   {/* Email */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Login Email</span>
+                    <span className="text-[10px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider">Login Email</span>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.1] text-sm text-white font-mono">
+                      <code className="flex-1 px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-sm text-[var(--devengine-text)] font-mono">
                         {createdCreds.email}
                       </code>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(createdCreds.email, "cred-email")}
-                        className="w-9 h-9 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 text-gray-400 hover:text-cyan-300 border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                        className="w-9 h-9 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-[var(--devengine-muted)] hover:text-[#2cecf7] border border-[var(--devengine-border)] hover:border-[#2cecf7]/50 flex items-center justify-center transition-all cursor-pointer active:scale-90"
                       >
                         <span className="material-symbols-outlined text-sm">
                           {copiedId === "cred-email" ? "check" : "content_copy"}
@@ -1454,15 +1647,15 @@ export default function ManageStaffPage() {
 
                   {/* Password */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Password</span>
+                    <span className="text-[10px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider">Password</span>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.1] text-sm text-cyan-300 font-mono tracking-widest">
+                      <code className="flex-1 px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-sm text-[#2cecf7] font-mono tracking-widest">
                         {createdCreds.password}
                       </code>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(createdCreds.password, "cred-pass")}
-                        className="w-9 h-9 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 text-gray-400 hover:text-cyan-300 border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                        className="w-9 h-9 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-[var(--devengine-muted)] hover:text-[#2cecf7] border border-[var(--devengine-border)] hover:border-[#2cecf7]/50 flex items-center justify-center transition-all cursor-pointer active:scale-90"
                       >
                         <span className="material-symbols-outlined text-sm">
                           {copiedId === "cred-pass" ? "check" : "content_copy"}
@@ -1473,9 +1666,9 @@ export default function ManageStaffPage() {
 
                   {/* Login URL */}
                   <div className="space-y-1.5">
-                    <span className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Employee Portal URL</span>
+                    <span className="text-[10px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider">Employee Portal URL</span>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 px-3 py-2 rounded-xl bg-black/40 border border-white/[0.1] text-xs text-cyan-300 font-mono truncate">
+                      <code className="flex-1 px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[#2cecf7] font-mono truncate">
                         {typeof window !== "undefined" ? `${window.location.origin}/employee` : "/employee"}
                       </code>
                       <button
@@ -1486,7 +1679,7 @@ export default function ManageStaffPage() {
                             "cred-url"
                           )
                         }
-                        className="w-9 h-9 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 text-gray-400 hover:text-cyan-300 border border-white/[0.08] hover:border-cyan-500/30 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                        className="w-9 h-9 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-[var(--devengine-muted)] hover:text-[#2cecf7] border border-[var(--devengine-border)] hover:border-[#2cecf7]/50 flex items-center justify-center transition-all cursor-pointer active:scale-90"
                       >
                         <span className="material-symbols-outlined text-sm">
                           {copiedId === "cred-url" ? "check" : "content_copy"}
@@ -1496,9 +1689,9 @@ export default function ManageStaffPage() {
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex items-start gap-2.5">
-                  <span className="material-symbols-outlined text-cyan-400 text-base mt-0.5 shrink-0">info</span>
-                  <p className="text-[11px] text-cyan-200 leading-relaxed font-mono">
+                <div className="p-3 rounded-xl bg-[#2cecf7]/10 border border-[#2cecf7]/30 flex items-start gap-2.5">
+                  <span className="material-symbols-outlined text-[#2cecf7] text-base mt-0.5 shrink-0">info</span>
+                  <p className="text-[11px] text-[var(--devengine-text)] leading-relaxed font-mono">
                     As an admin, you can always review, copy or update this password directly from the Staff Management table anytime.
                   </p>
                 </div>
@@ -1509,650 +1702,1049 @@ export default function ManageStaffPage() {
                     setShowCreateModal(false);
                     setCreatedCreds(null);
                   }}
-                  className="w-full h-12 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer active:scale-[0.98]"
-                  style={{
-                    background: "linear-gradient(135deg, #06b6d4, #0ea5e9)",
-                    boxShadow: "0 0 20px rgba(6,182,212,0.25)",
-                  }}
+                  className="w-full h-12 rounded-2xl text-sm font-bold text-[#02040a] bg-[#2cecf7] hover:bg-[#53f2fb] shadow-[0_0_20px_rgba(44,236,247,0.35)] transition-all cursor-pointer active:scale-[0.98]"
                 >
                   Done
                 </button>
               </div>
             ) : (
-              /* ── Create Form ── */
-              <div className="space-y-5">
-                {/* Full Name */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider">Full Name</label>
-                  <input
-                    type="text"
-                    value={createName}
-                    onChange={(e) => setCreateName(e.target.value)}
-                    placeholder="e.g. John Smith"
-                    className="w-full h-11 bg-black/40 border border-white/[0.1] rounded-xl px-4 text-sm text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
-                  />
-                </div>
-
-                {/* Avatar / Profile Image */}
-                <AvatarInput
-                  avatarUrl={createAvatarUrl}
-                  onChange={setCreateAvatarUrl}
-                  staffName={createName}
-                />
-
-                {/* Login Email */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      Login Email
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">
-                        AUTO
-                      </span>
-                    </span>
-                  </label>
-                  <input
-                    type="email"
-                    value={createEmail}
-                    onChange={(e) => setCreateEmail(e.target.value)}
-                    className="w-full h-11 bg-black/30 border border-white/[0.08] rounded-xl px-4 text-sm text-gray-200 font-mono focus:outline-none focus:border-cyan-400"
-                    placeholder="Enter name above to auto-generate"
-                  />
-                  <p className="text-[10px] text-gray-500 font-mono">
-                    Auto-generated from first name, or you can customize it manually.
-                  </p>
-                </div>
-
-                {/* Password (Visible & Editable for Admin) */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                      Password
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
-                        ADMIN VISIBLE
-                      </span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowCreatePass(!showCreatePass)}
-                      className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-xs">
-                        {showCreatePass ? "visibility_off" : "visibility"}
-                      </span>
-                      {showCreatePass ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type={showCreatePass ? "text" : "password"}
-                      value={createPassword}
-                      onChange={(e) => setCreatePassword(e.target.value)}
-                      placeholder="Enter or generate password"
-                      className="flex-1 h-11 bg-black/40 border border-white/[0.1] rounded-xl px-4 text-sm text-white font-mono tracking-widest focus:outline-none focus:border-cyan-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setCreatePassword(generateStaffPassword())}
-                      title="Regenerate random password"
-                      className="w-11 h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-400 hover:text-white border border-white/[0.08] flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                    >
-                      <span className="material-symbols-outlined text-base">refresh</span>
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-gray-500 font-mono">
-                    You can edit, update, or view this password anytime as Admin.
-                  </p>
-                </div>
-
-                {/* Searchable Role Selector with Add Role Option */}
-                <RoleSelector
-                  roles={roles}
-                  selectedRoleKey={createType}
-                  onSelectRole={setCreateType}
-                  onAddNewRole={handleAddNewRoleInline}
-                />
-
-                {/* Module Access */}
-                <ModuleGrid
-                  selected={createModules}
-                  onToggle={(key) => toggleModule(createModules, key, setCreateModules)}
-                  onToggleAll={() => toggleAllModules(createModules, setCreateModules)}
-                />
-
-                {/* Shift Hours & Rostered Off-Days */}
-                <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-3">
-                  <div className="flex items-center gap-2 text-cyan-400">
-                    <span className="material-symbols-outlined text-[16px]">schedule</span>
-                    <span className="text-[11px] font-mono uppercase tracking-wider font-bold">
-                      Workplace Shift & Schedule
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] text-gray-400 font-mono block mb-1">Shift Start</label>
+              /* ── Create Form (2-Column Responsive Layout) ── */
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  {/* Left Column: Personal Info & Credentials */}
+                  <div className="space-y-5">
+                    {/* Full Name */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider block">Full Name</label>
                       <input
-                        type="time"
-                        value={shiftStart}
-                        onChange={(e) => setShiftStart(e.target.value)}
-                        className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                        type="text"
+                        value={createName}
+                        onChange={(e) => setCreateName(e.target.value)}
+                        placeholder="e.g. John Smith"
+                        className="w-full h-11 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-[var(--devengine-text)] placeholder:text-[var(--devengine-muted)] font-mono focus:outline-none transition-colors"
                       />
                     </div>
-                    <div>
-                      <label className="text-[10px] text-gray-400 font-mono block mb-1">Shift End</label>
+
+                    {/* Avatar / Profile Image */}
+                    <AvatarInput
+                      avatarUrl={createAvatarUrl}
+                      onChange={setCreateAvatarUrl}
+                      staffName={createName}
+                    />
+
+                    {/* Login Email */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          Login Email
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#2cecf7]/10 text-[#2cecf7] border border-[#2cecf7]/30 font-bold">
+                            AUTO
+                          </span>
+                        </span>
+                      </label>
                       <input
-                        type="time"
-                        value={shiftEnd}
-                        onChange={(e) => setShiftEnd(e.target.value)}
-                        className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-cyan-400"
+                        type="email"
+                        value={createEmail}
+                        onChange={(e) => setCreateEmail(e.target.value)}
+                        className="w-full h-11 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-[var(--devengine-text)] placeholder:text-[var(--devengine-muted)] font-mono focus:outline-none transition-colors"
+                        placeholder="Enter name above to auto-generate"
                       />
+                      <p className="text-[10px] text-[var(--devengine-muted)] font-mono">
+                        Auto-generated from first name, or you can customize it manually.
+                      </p>
+                    </div>
+
+                    {/* Password (Visible & Editable for Admin) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider flex items-center gap-1.5">
+                          Password
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                            ADMIN VISIBLE
+                          </span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowCreatePass(!showCreatePass)}
+                          className="text-[11px] text-[#2cecf7] hover:underline font-mono flex items-center gap-1 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-xs">
+                            {showCreatePass ? "visibility_off" : "visibility"}
+                          </span>
+                          {showCreatePass ? "Hide" : "Show"}
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type={showCreatePass ? "text" : "password"}
+                          value={createPassword}
+                          onChange={(e) => setCreatePassword(e.target.value)}
+                          placeholder="Enter or generate password"
+                          className="flex-1 h-11 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-[var(--devengine-text)] font-mono tracking-widest focus:outline-none transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setCreatePassword(generateStaffPassword())}
+                          title="Regenerate random password"
+                          className="w-11 h-11 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] border border-[var(--devengine-border)] hover:border-[#2cecf7]/50 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                        >
+                          <span className="material-symbols-outlined text-base">refresh</span>
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-[var(--devengine-muted)] font-mono">
+                        You can edit, update, or view this password anytime as Admin.
+                      </p>
+                    </div>
+
+                    {/* Shift Hours & Rostered Off-Days */}
+                    <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
+                      <div className="flex items-center gap-2 text-[#2cecf7]">
+                        <span className="material-symbols-outlined text-[16px]">schedule</span>
+                        <span className="text-[11px] font-mono uppercase tracking-wider font-bold">
+                          Workplace Shift & Schedule
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">Shift Start</label>
+                          <input
+                            type="time"
+                            value={shiftStart}
+                            onChange={(e) => setShiftStart(e.target.value)}
+                            className="w-full h-10 bg-[var(--devengine-surface)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">Shift End</label>
+                          <input
+                            type="time"
+                            value={shiftEnd}
+                            onChange={(e) => setShiftEnd(e.target.value)}
+                            className="w-full h-10 bg-[var(--devengine-surface)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none transition-colors"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                          Assigned Off-Days (Rostered)
+                        </label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => {
+                            const selected = offDaysChoice.includes(day);
+                            return (
+                              <button
+                                key={day}
+                                type="button"
+                                onClick={() => {
+                                  setOffDaysChoice((prev) =>
+                                    selected ? prev.filter((d) => d !== day) : [...prev, day]
+                                  );
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono border transition-all ${
+                                  selected
+                                    ? "bg-[#2cecf7] text-[#02040a] font-bold border-[#2cecf7]"
+                                    : "bg-[var(--devengine-surface)] border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)]"
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-[10px] text-gray-400 font-mono block mb-1">
-                      Assigned Off-Days (Rostered)
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => {
-                        const selected = offDaysChoice.includes(day);
-                        return (
-                          <button
-                            key={day}
-                            type="button"
-                            onClick={() => {
-                              setOffDaysChoice((prev) =>
-                                selected ? prev.filter((d) => d !== day) : [...prev, day]
-                              );
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-mono border transition-all ${
-                              selected
-                                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                                : "bg-black/30 border-white/[0.08] text-gray-400 hover:text-white"
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        );
-                      })}
+                  {/* Right Column: Role & Permissions */}
+                  <div className="space-y-5">
+                    {/* Searchable Role Selector with Add Role Option */}
+                    <RoleSelector
+                      roles={roles}
+                      selectedRoleKey={createType}
+                      onSelectRole={setCreateType}
+                      onAddNewRole={handleAddNewRoleInline}
+                    />
+
+                    {/* Module Access */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
+                      <ModuleGrid
+                        selected={createModules}
+                        onToggle={(key) => toggleModule(createModules, key, setCreateModules)}
+                        onToggleAll={() => toggleAllModules(createModules, setCreateModules)}
+                      />
                     </div>
                   </div>
                 </div>
 
-                {/* Auto-Generate Employment Agreement Option */}
-                <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/20 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-purple-300">
-                      <span className="material-symbols-outlined text-[18px]">gavel</span>
-                      <span className="text-[11px] font-mono uppercase tracking-wider font-bold">
-                        Attach Official Employment Agreement
-                      </span>
+                {/* Full-width Section: Official Employment Agreement & Comprehensive HR File */}
+                <div className="p-5 rounded-3xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--devengine-border)]">
+                    <div className="flex items-center gap-2.5 text-[#2cecf7]">
+                      <div className="w-8 h-8 rounded-xl bg-[#2cecf7]/10 border border-[#2cecf7]/30 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-lg">gavel</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-mono uppercase tracking-wider font-bold text-[var(--devengine-text)]">
+                          Official Employment Agreement & Comprehensive HR Management
+                        </span>
+                        <p className="text-[10px] text-[var(--devengine-muted)] font-mono">
+                          Auto-generate binding legal contract, set probation / permanent tenure, salary structure & emergency file
+                        </p>
+                      </div>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={createWithAgreement}
-                      onChange={(e) => setCreateWithAgreement(e.target.checked)}
-                      className="w-4 h-4 accent-purple-500 cursor-pointer"
-                    />
+                    <label className="flex items-center gap-2 cursor-pointer self-start sm:self-auto">
+                      <span className="text-[11px] font-mono text-[var(--devengine-muted)]">Attach Agreement</span>
+                      <input
+                        type="checkbox"
+                        checked={createWithAgreement}
+                        onChange={(e) => setCreateWithAgreement(e.target.checked)}
+                        className="w-4 h-4 accent-[#2cecf7] cursor-pointer"
+                      />
+                    </label>
                   </div>
 
                   {createWithAgreement && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                      <div>
-                        <label className="text-[10px] text-gray-400 font-mono block mb-1">
-                          Salary / Retainer
-                        </label>
-                        <input
-                          type="number"
-                          value={agreementSalary}
-                          onChange={(e) => setAgreementSalary(Number(e.target.value))}
-                          className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-400 font-mono block mb-1">Currency</label>
-                        <select
-                          value={agreementCurrency}
-                          onChange={(e) => setAgreementCurrency(e.target.value)}
-                          className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
-                        >
-                          <option value="BDT">BDT (৳)</option>
-                          <option value="USD">USD ($)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-400 font-mono block mb-1">Contract Model</label>
-                        <select
-                          value={agreementTypeChoice}
-                          onChange={(e) => setAgreementTypeChoice(e.target.value as AgreementType)}
-                          className="w-full h-9 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white font-mono focus:outline-none focus:border-purple-400"
-                        >
-                          <option value="retainer">Monthly Retainer</option>
-                          <option value="hourly">Hourly Rate</option>
-                          <option value="fixed_completion">Fixed Completion</option>
-                        </select>
+                    <div className="space-y-5 pt-1">
+                      {/* 3-Column Responsive HR Management Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Column 1: Employment Tenure & Probation */}
+                        <div className="p-4 rounded-2xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                            <span className="material-symbols-outlined text-base">badge</span>
+                            <span>Tenure & Status</span>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                              Employment Type *
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={createEmploymentType}
+                                onChange={(e) => setCreateEmploymentType(e.target.value as EmploymentType)}
+                                className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                              >
+                                <option value="probation">Probation Period</option>
+                                <option value="permanent">Permanent Employee</option>
+                                <option value="contract">Contractual</option>
+                                <option value="intern">Internship</option>
+                              </select>
+                              <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                expand_more
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                Joining Date
+                              </label>
+                              <input
+                                type="date"
+                                value={createJoiningDate}
+                                onChange={(e) => setCreateJoiningDate(e.target.value)}
+                                className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-2.5 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                Notice (Days)
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={createNoticeDays}
+                                onChange={(e) => setCreateNoticeDays(Number(e.target.value))}
+                                className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {createEmploymentType === "probation" && (
+                            <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-mono font-bold text-amber-400">
+                                  Probation Duration:
+                                </span>
+                                <div className="relative">
+                                  <select
+                                    value={createProbationMonths}
+                                    onChange={(e) => setCreateProbationMonths(Number(e.target.value))}
+                                    className="appearance-none bg-[var(--devengine-surface)] border border-amber-500/30 text-amber-300 rounded-lg px-2 py-0.5 text-[10px] font-mono focus:outline-none cursor-pointer pr-6"
+                                  >
+                                    <option value={1}>1 Month</option>
+                                    <option value={3}>3 Months</option>
+                                    <option value={6}>6 Months</option>
+                                    <option value={12}>12 Months</option>
+                                  </select>
+                                  <span className="material-symbols-outlined text-amber-400 text-xs absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    expand_more
+                                  </span>
+                                </div>
+                              </div>
+                              {calculatedProbationEndDate && (
+                                <div className="text-[9px] text-[var(--devengine-muted)] font-mono">
+                                  Probation End Target:{" "}
+                                  <span className="text-amber-400 font-bold">{calculatedProbationEndDate}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Column 2: Salary Structure & Management */}
+                        <div className="p-4 rounded-2xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                              <span className="material-symbols-outlined text-base">payments</span>
+                              <span>Salary Management</span>
+                            </div>
+                            <span className="text-[10px] font-mono font-bold text-emerald-400">
+                              Gross: {grossCalculatedSalary.toLocaleString()} {agreementCurrency}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                Basic Salary
+                              </label>
+                              <input
+                                type="number"
+                                value={createBasicSalary}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setCreateBasicSalary(val);
+                                  setAgreementSalary(val + createHouseRent + createMedical);
+                                }}
+                                className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                Currency
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={agreementCurrency}
+                                  onChange={(e) => setAgreementCurrency(e.target.value)}
+                                  className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                                >
+                                  <option value="BDT">BDT (৳)</option>
+                                  <option value="USD">USD ($)</option>
+                                </select>
+                                <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  expand_more
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                House Rent
+                              </label>
+                              <input
+                                type="number"
+                                value={createHouseRent}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setCreateHouseRent(val);
+                                  setAgreementSalary(createBasicSalary + val + createMedical);
+                                }}
+                                className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                Medical / Allowance
+                              </label>
+                              <input
+                                type="number"
+                                value={createMedical}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setCreateMedical(val);
+                                  setAgreementSalary(createBasicSalary + createHouseRent + val);
+                                }}
+                                className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                Payment Method
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={createPaymentMethod}
+                                  onChange={(e) => setCreatePaymentMethod(e.target.value)}
+                                  className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-2.5 pr-7 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                                >
+                                  <option value="bank_transfer">Bank Transfer</option>
+                                  <option value="bkash">bKash</option>
+                                  <option value="nagad">Nagad</option>
+                                  <option value="cash">Cash</option>
+                                  <option value="wire">Wire</option>
+                                </select>
+                                <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  expand_more
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                                Contract Model
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={agreementTypeChoice}
+                                  onChange={(e) => setAgreementTypeChoice(e.target.value as AgreementType)}
+                                  className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-2.5 pr-7 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                                >
+                                  <option value="retainer">Monthly Retainer</option>
+                                  <option value="hourly">Hourly Rate</option>
+                                  <option value="fixed_completion">Fixed Completion</option>
+                                </select>
+                                <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                                  expand_more
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                              Bank / MFS Account Details
+                            </label>
+                            <input
+                              type="text"
+                              value={createBankDetails}
+                              onChange={(e) => setCreateBankDetails(e.target.value)}
+                              placeholder="e.g. City Bank Acc #1234567 or bKash 017xxxxxxxx"
+                              className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Column 3: Emergency Contact (HR Record) */}
+                        <div className="p-4 rounded-2xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-3">
+                          <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                            <span className="material-symbols-outlined text-base">emergency</span>
+                            <span>Emergency Contact</span>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                              Contact Person Name
+                            </label>
+                            <input
+                              type="text"
+                              value={createEmergencyName}
+                              onChange={(e) => setCreateEmergencyName(e.target.value)}
+                              placeholder="e.g. Sarah Smith"
+                              className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                              Relationship
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={createEmergencyRel}
+                                onChange={(e) => setCreateEmergencyRel(e.target.value)}
+                                className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                              >
+                                <option value="Spouse">Spouse</option>
+                                <option value="Parent">Parent (Father / Mother)</option>
+                                <option value="Sibling">Sibling (Brother / Sister)</option>
+                                <option value="Guardian">Guardian</option>
+                                <option value="Relative / Friend">Relative / Friend</option>
+                              </select>
+                              <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                                expand_more
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                              Emergency Phone Number
+                            </label>
+                            <input
+                              type="tel"
+                              value={createEmergencyPhone}
+                              onChange={(e) => setCreateEmergencyPhone(e.target.value)}
+                              placeholder="e.g. +880 1712 345678"
+                              className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Create Button */}
-                <button
-                  type="button"
-                  onClick={handleCreate}
-                  disabled={creating || !createName.trim() || !createPassword.trim() || createModules.length === 0}
-                  className="w-full h-12 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{
-                    background: creating ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #06b6d4, #0ea5e9)",
-                    boxShadow: creating ? "none" : "0 0 20px rgba(6,182,212,0.25)",
-                  }}
-                >
-                  {creating ? (
-                    <>
-                      <HelixLoader size={18} color="#38f2ff" />
-                      <span className="text-gray-300">Creating Account…</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-base">person_add</span>
-                      Create Employee Account
-                    </>
-                  )}
-                </button>
+                {/* Modal Footer Actions */}
+                <div className="pt-4 border-t border-[var(--devengine-border)] flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setCreatedCreds(null);
+                    }}
+                    className="px-5 py-2.5 rounded-xl border border-[var(--devengine-border)] bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-xs font-mono text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreate}
+                    disabled={creating || !createName.trim() || !createPassword.trim() || createModules.length === 0}
+                    className="px-6 py-2.5 rounded-xl text-xs font-bold text-[#02040a] bg-[#2cecf7] hover:bg-[#53f2fb] shadow-[0_0_20px_rgba(44,236,247,0.35)] transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {creating ? (
+                      <>
+                        <HelixLoader size={16} color="#02040a" />
+                        <span>Creating Account…</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-symbols-outlined text-base">person_add</span>
+                        Create Employee Account
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           EDIT STAFF MODAL
       ═══════════════════════════════════════════════════════════════════ */}
-      {showEditModal && editingStaff && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {mounted && showEditModal && editingStaff && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto p-4 sm:p-6 pt-24 sm:pt-28 pb-12 flex justify-center items-start themed-scroll">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
             onClick={() => {
               if (!saving) setShowEditModal(false);
             }}
           />
-          <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
+          <div role="dialog" aria-modal="true" aria-label="Edit employee" className="relative w-full max-w-4xl lg:max-w-5xl rounded-3xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] text-[var(--devengine-text)] shadow-2xl p-6 sm:p-8 space-y-6 my-auto">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--devengine-border)]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-violet-400 text-xl">edit</span>
+                <div className="w-10 h-10 rounded-2xl bg-[#2cecf7]/10 border border-[#2cecf7]/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#2cecf7] text-xl">edit</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold font-['Space_Grotesk'] text-white">Edit Employee</h2>
-                  <p className="text-[11px] text-gray-400 font-mono">{editingStaff.email}</p>
+                  <h2 className="text-lg font-bold font-['Space_Grotesk'] text-[var(--devengine-text)]">Edit Employee</h2>
+                  <p className="text-[11px] text-[var(--devengine-muted)] font-mono">{editingStaff.email}</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowEditModal(false)}
-                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-400 hover:text-white flex items-center justify-center transition-all cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-base">close</span>
-              </button>
-            </div>
-
-            <div className="space-y-5">
-              {/* Full Name */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider">Full Name</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full h-11 bg-black/40 border border-white/[0.1] rounded-xl px-4 text-sm text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
-                />
-              </div>
-
-              {/* Avatar / Profile Image */}
-              <AvatarInput
-                avatarUrl={editAvatarUrl}
-                onChange={setEditAvatarUrl}
-                staffName={editName}
-              />
-
-              {/* Password (Admin Can View and Edit) */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider flex items-center gap-1.5">
-                    Password
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
-                      ADMIN EDITABLE
-                    </span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowEditPass(!showEditPass)}
-                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-xs">
-                      {showEditPass ? "visibility_off" : "visibility"}
-                    </span>
-                    {showEditPass ? "Hide" : "Show Password"}
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type={showEditPass ? "text" : "password"}
-                    value={editPassword}
-                    onChange={(e) => setEditPassword(e.target.value)}
-                    placeholder="Enter new password"
-                    className="flex-1 h-11 bg-black/40 border border-white/[0.1] rounded-xl px-4 text-sm text-white font-mono tracking-widest focus:outline-none focus:border-cyan-400"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setEditPassword(generateStaffPassword())}
-                    title="Generate new password"
-                    className="w-11 h-11 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-400 hover:text-white border border-white/[0.08] flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                  >
-                    <span className="material-symbols-outlined text-base">refresh</span>
-                  </button>
-                  {editPassword && (
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard(editPassword, "edit-pass-copy")}
-                      title="Copy password"
-                      className="w-11 h-11 rounded-xl bg-white/[0.04] hover:bg-cyan-500/15 text-gray-400 hover:text-cyan-300 border border-white/[0.08] flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                    >
-                      <span className="material-symbols-outlined text-base">
-                        {copiedId === "edit-pass-copy" ? "check" : "content_copy"}
-                      </span>
-                    </button>
-                  )}
-                </div>
-                <p className="text-[10px] text-gray-500 font-mono">
-                  Changing the password updates both Firestore and the employee&apos;s login credentials.
-                </p>
-              </div>
-
-              {/* Searchable Role Selector with Add Role Option */}
-              <RoleSelector
-                roles={roles}
-                selectedRoleKey={editType}
-                onSelectRole={setEditType}
-                onAddNewRole={handleAddNewRoleInline}
-              />
-
-              {/* Status */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider">Account Status</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditStatus("active")}
-                    className={`flex-1 h-11 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
-                      editStatus === "active"
-                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
-                        : "bg-white/[0.02] border-white/[0.08] text-gray-400 hover:bg-white/[0.04]"
-                    }`}
-                  >
-                    Active
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditStatus("suspended")}
-                    className={`flex-1 h-11 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
-                      editStatus === "suspended"
-                        ? "bg-rose-500/10 border-rose-500/40 text-rose-400"
-                        : "bg-white/[0.02] border-white/[0.08] text-gray-400 hover:bg-white/[0.04]"
-                    }`}
-                  >
-                    Suspended
-                  </button>
-                </div>
-              </div>
-
-              {/* Module Access */}
-              <ModuleGrid
-                selected={editModules}
-                onToggle={(key) => toggleModule(editModules, key, setEditModules)}
-                onToggleAll={() => toggleAllModules(editModules, setEditModules)}
-              />
-
-              {/* Save Button */}
-              <button
-                type="button"
-                onClick={handleSaveEdit}
                 disabled={saving}
-                className="w-full h-12 rounded-2xl text-sm font-bold text-white transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{
-                  background: saving ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg, #06b6d4, #0ea5e9)",
-                  boxShadow: saving ? "none" : "0 0 20px rgba(6,182,212,0.25)",
-                }}
-              >
-                {saving ? (
-                  <>
-                    <HelixLoader size={18} color="#38f2ff" />
-                    <span className="text-gray-300">Saving…</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-base">save</span>
-                    Save Changes
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          ASSIGN TASK MODAL
-      ═══════════════════════════════════════════════════════════════════ */}
-      {showAssignTaskModal && taskAssigneeStaff && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => !assigningTask && setShowAssignTaskModal(false)}
-          />
-          <div className="relative w-full max-w-lg rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-cyan-400 text-xl">assignment</span>
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-white">Assign Task / Deliverable</h2>
-                  <p className="text-xs text-cyan-400 font-mono">Assignee: {taskAssigneeStaff.name}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAssignTaskModal(false)}
-                className="w-8 h-8 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] text-gray-400 hover:text-white flex items-center justify-center"
+                onClick={() => setShowEditModal(false)}
+                className="w-8 h-8 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] border border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] flex items-center justify-center transition-all cursor-pointer"
               >
                 <span className="material-symbols-outlined text-base">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleAssignTaskSubmit} className="space-y-4">
-              <div>
-                <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
-                  Task Title (Required)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={taskForm.title}
-                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-                  placeholder="e.g. Build Payment Gateway Webhooks Integration"
-                  className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
-                  Task Description & Requirements
-                </label>
-                <textarea
-                  rows={3}
-                  value={taskForm.description}
-                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
-                  placeholder="Specify task deliverables, expectations, API docs..."
-                  className="w-full bg-black/40 border border-white/[0.1] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-cyan-400 resize-none font-mono"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
-                    Priority
-                  </label>
-                  <select
-                    value={taskForm.priority}
-                    onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
-                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  >
-                    <option value="urgent">Urgent</option>
-                    <option value="high">High</option>
-                    <option value="normal">Normal</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[11px] text-gray-400 font-mono uppercase tracking-wider block mb-1">
-                    Category
-                  </label>
-                  <input
-                    type="text"
-                    value={taskForm.category}
-                    onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}
-                    placeholder="e.g. Frontend, Backend, QA"
-                    className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl px-3 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Start & End Schedule Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-white/[0.02] border border-white/5">
-                {/* Starting Schedule */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 text-cyan-400 text-xs font-semibold">
-                    <span className="material-symbols-outlined text-[15px]">schedule</span>
-                    <span>Starting Schedule (Unlocked At)</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
-                        Start Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={taskForm.startDate}
-                        onChange={(e) => setTaskForm({ ...taskForm, startDate: e.target.value })}
-                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
-                        Start Time
-                      </label>
-                      <input
-                        type="time"
-                        value={taskForm.startTime}
-                        onChange={(e) => setTaskForm({ ...taskForm, startTime: e.target.value })}
-                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-gray-500 font-mono">
-                    Employee will see a countdown timer until this moment.
-                  </p>
-                </div>
-
-                {/* Deadline Schedule */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 text-pink-400 text-xs font-semibold">
-                    <span className="material-symbols-outlined text-[15px]">event_busy</span>
-                    <span>Deadline & End Target</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
-                        End Date *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={taskForm.dueDate}
-                        onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
-                        End Time
-                      </label>
-                      <input
-                        type="time"
-                        value={taskForm.dueTime}
-                        onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
-                        className="w-full h-9 bg-black/60 border border-white/[0.1] rounded-xl px-2 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between pt-0.5">
-                    <span className="text-[10px] text-gray-400 font-mono">Est. Hours:</span>
+            {/* 2-Column Responsive Layout */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* Left Column: Info, Password & Status */}
+                <div className="space-y-5">
+                  {/* Full Name */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider block">Full Name</label>
                     <input
-                      type="number"
-                      step="0.5"
-                      min="1"
-                      value={taskForm.estimatedHours}
-                      onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
-                      className="w-20 h-7 bg-black/60 border border-white/[0.1] rounded-lg px-2 text-xs text-cyan-300 text-right focus:outline-none focus:border-cyan-400 font-mono font-bold"
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full h-11 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-[var(--devengine-text)] placeholder:text-[var(--devengine-muted)] font-mono focus:outline-none transition-colors"
+                    />
+                  </div>
+
+                  {/* Avatar / Profile Image */}
+                  <AvatarInput
+                    avatarUrl={editAvatarUrl}
+                    onChange={setEditAvatarUrl}
+                    staffName={editName}
+                  />
+
+                  {/* Password (Admin Can View and Edit) */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider flex items-center gap-1.5">
+                        Password
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">
+                          ADMIN EDITABLE
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPass(!showEditPass)}
+                        className="text-[11px] text-[#2cecf7] hover:underline font-mono flex items-center gap-1 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-xs">
+                          {showEditPass ? "visibility_off" : "visibility"}
+                        </span>
+                        {showEditPass ? "Hide" : "Show Password"}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type={showEditPass ? "text" : "password"}
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        className="flex-1 h-11 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-4 text-sm text-[var(--devengine-text)] font-mono tracking-widest focus:outline-none transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEditPassword(generateStaffPassword())}
+                        title="Generate new password"
+                        className="w-11 h-11 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] border border-[var(--devengine-border)] hover:border-[#2cecf7]/50 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                      >
+                        <span className="material-symbols-outlined text-base">refresh</span>
+                      </button>
+                      {editPassword && (
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(editPassword, "edit-pass-copy")}
+                          title="Copy password"
+                          className="w-11 h-11 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-[var(--devengine-muted)] hover:text-[#2cecf7] border border-[var(--devengine-border)] hover:border-[#2cecf7]/50 flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                        >
+                          <span className="material-symbols-outlined text-base">
+                            {copiedId === "edit-pass-copy" ? "check" : "content_copy"}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-[var(--devengine-muted)] font-mono">
+                      Changing the password updates both Firestore and the employee&apos;s login credentials.
+                    </p>
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] text-[var(--devengine-muted)] font-mono uppercase tracking-wider block">Account Status</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditStatus("active")}
+                        className={`flex-1 h-11 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                          editStatus === "active"
+                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                            : "bg-[var(--devengine-raised)] border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)]"
+                        }`}
+                      >
+                        Active
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditStatus("suspended")}
+                        className={`flex-1 h-11 rounded-xl border text-sm font-bold transition-all cursor-pointer ${
+                          editStatus === "suspended"
+                            ? "bg-rose-500/15 border-rose-500/40 text-rose-400"
+                            : "bg-[var(--devengine-raised)] border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)]"
+                        }`}
+                      >
+                        Suspended
+                      </button>
+                    </div>
+                    {editStatus === "suspended" && <label className={manageStyles.field}>Reason for suspension *<textarea className="bg-transparent" maxLength={1000} value={editSuspensionReason} onChange={event => setEditSuspensionReason(event.target.value)} placeholder="Explain why access is suspended" /><small>This reason is shown to the employee when access is suspended.</small></label>}
+                  </div>
+                </div>
+
+                {/* Right Column: Role & Permissions */}
+                <div className="space-y-5">
+                  {/* Searchable Role Selector with Add Role Option */}
+                  <RoleSelector
+                    roles={roles}
+                    selectedRoleKey={editType}
+                    onSelectRole={setEditType}
+                    onAddNewRole={handleAddNewRoleInline}
+                  />
+
+                  {/* Module Access */}
+                  <div className="p-4 sm:p-5 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
+                    <ModuleGrid
+                      selected={editModules}
+                      onToggle={(key) => toggleModule(editModules, key, setEditModules)}
+                      onToggleAll={() => toggleAllModules(editModules, setEditModules)}
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="pt-2">
-                <AttachmentPicker
-                  label="Task Attachments & Spec Files (optional)"
-                  hint="Attach design files, specifications, guidelines, or assets (max 5 files, up to 10 MB each)"
-                  storageFolder="admin-tasks"
-                  value={taskForm.adminAttachments || []}
-                  onChange={(files) => setTaskForm({ ...taskForm, adminAttachments: files })}
-                />
+              {/* Full-width Section: HR Profile, Tenure, Salary & Resignation Management */}
+              <div className="p-5 rounded-3xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[var(--devengine-border)]">
+                  <div className="flex items-center gap-2.5 text-[#2cecf7]">
+                    <div className="w-8 h-8 rounded-xl bg-[#2cecf7]/10 border border-[#2cecf7]/30 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-mono uppercase tracking-wider font-bold text-[var(--devengine-text)]">
+                        HR Management File & Employment Record
+                      </span>
+                      <p className="text-[10px] text-[var(--devengine-muted)] font-mono">
+                        Update tenure classification, salary management, emergency contact, or record resignation status
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/admin/manage-certificates?issue=${encodeURIComponent(editingStaff?.id || "")}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--devengine-surface)] hover:bg-[#2cecf7]/10 border border-[var(--devengine-border)] hover:border-[#2cecf7]/40 text-xs font-mono text-[#2cecf7] transition-all"
+                  >
+                    <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                    <span>Issue Certificate →</span>
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Column 1: Tenure, Probation & Resignation */}
+                  <div className="p-4 rounded-2xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                      <span className="material-symbols-outlined text-base">badge</span>
+                      <span>Tenure & Separation</span>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                        Employment Type
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={editEmploymentType}
+                          onChange={(e) => setEditEmploymentType(e.target.value as EmploymentType)}
+                          className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                        >
+                          <option value="probation">Probation Period</option>
+                          <option value="permanent">Permanent Employee</option>
+                          <option value="contract">Contractual</option>
+                          <option value="intern">Internship</option>
+                        </select>
+                        <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                          Joining Date
+                        </label>
+                        <input
+                          type="date"
+                          value={editJoiningDate}
+                          onChange={(e) => setEditJoiningDate(e.target.value)}
+                          className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-2.5 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                          Notice (Days)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editNoticeDays}
+                          onChange={(e) => setEditNoticeDays(Number(e.target.value))}
+                          className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-[var(--devengine-border)] space-y-2">
+                      <label className="text-[10px] text-[var(--devengine-muted)] font-mono block">
+                        Resignation & Separation Status
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={editResignationStatus}
+                          onChange={(e) => setEditResignationStatus(e.target.value as any)}
+                          className="w-full h-9 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                        >
+                          <option value="none">Active / Not Resigned</option>
+                          <option value="pending">Resignation Pending Review</option>
+                          <option value="approved">Resignation Approved (Notice Active)</option>
+                          <option value="completed">Relieved & Clearance Completed</option>
+                        </select>
+                        <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+
+                      {editResignationStatus !== "none" && (
+                        <div className="space-y-2 pt-1">
+                          <div>
+                            <label className="text-[9px] text-[var(--devengine-muted)] font-mono block mb-0.5">
+                              Last Working Day / Relieving Date
+                            </label>
+                            <input
+                              type="date"
+                              value={editLastWorkingDay}
+                              onChange={(e) => setEditLastWorkingDay(e.target.value)}
+                              className="w-full h-9 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-2.5 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[9px] text-[var(--devengine-muted)] font-mono block mb-0.5">
+                              Resignation Reason
+                            </label>
+                            <input
+                              type="text"
+                              value={editResignationReason}
+                              onChange={(e) => setEditResignationReason(e.target.value)}
+                              placeholder="e.g. Higher studies, Personal reasons..."
+                              className="w-full h-9 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-2.5 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Column 2: Salary Structure & Management */}
+                  <div className="p-4 rounded-2xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                        <span className="material-symbols-outlined text-base">payments</span>
+                        <span>Salary Management</span>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-emerald-400">
+                        Gross: {(Number(editBasicSalary) + Number(editHouseRent) + Number(editMedical)).toLocaleString()} {editCurrency}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                          Basic Salary
+                        </label>
+                        <input
+                          type="number"
+                          value={editBasicSalary}
+                          onChange={(e) => setEditBasicSalary(Number(e.target.value))}
+                          className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                          Currency
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={editCurrency}
+                            onChange={(e) => setEditCurrency(e.target.value)}
+                            className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                          >
+                            <option value="BDT">BDT (৳)</option>
+                            <option value="USD">USD ($)</option>
+                          </select>
+                          <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                            expand_more
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                          House Rent
+                        </label>
+                        <input
+                          type="number"
+                          value={editHouseRent}
+                          onChange={(e) => setEditHouseRent(Number(e.target.value))}
+                          className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                          Medical Allowance
+                        </label>
+                        <input
+                          type="number"
+                          value={editMedical}
+                          onChange={(e) => setEditMedical(Number(e.target.value))}
+                          className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                        Payment Method
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={editPaymentMethod}
+                          onChange={(e) => setEditPaymentMethod(e.target.value)}
+                          className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                        >
+                          <option value="bank_transfer">Bank Transfer</option>
+                          <option value="bkash">bKash</option>
+                          <option value="nagad">Nagad</option>
+                          <option value="cash">Cash</option>
+                          <option value="wire">Wire</option>
+                        </select>
+                        <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                        Bank / MFS Account Details
+                      </label>
+                      <input
+                        type="text"
+                        value={editBankDetails}
+                        onChange={(e) => setEditBankDetails(e.target.value)}
+                        placeholder="e.g. City Bank Acc #1234567 or bKash 017xxxxxxxx"
+                        className="w-full h-9 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Column 3: Emergency Contact File */}
+                  <div className="p-4 rounded-2xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-3">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                      <span className="material-symbols-outlined text-base">emergency</span>
+                      <span>Emergency Contact</span>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                        Contact Person Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editEmergencyName}
+                        onChange={(e) => setEditEmergencyName(e.target.value)}
+                        placeholder="e.g. Sarah Smith"
+                        className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                        Relationship
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={editEmergencyRel}
+                          onChange={(e) => setEditEmergencyRel(e.target.value)}
+                          className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
+                        >
+                          <option value="Spouse">Spouse</option>
+                          <option value="Parent">Parent (Father / Mother)</option>
+                          <option value="Sibling">Sibling (Brother / Sister)</option>
+                          <option value="Guardian">Guardian</option>
+                          <option value="Relative / Friend">Relative / Friend</option>
+                        </select>
+                        <span className="material-symbols-outlined text-[var(--devengine-muted)] text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-[var(--devengine-muted)] font-mono block mb-1">
+                        Emergency Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        value={editEmergencyPhone}
+                        onChange={(e) => setEditEmergencyPhone(e.target.value)}
+                        placeholder="e.g. +880 1712 345678"
+                        className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex gap-2 pt-2">
+              {editError && <div role="alert" className={manageStyles.inlineError}>{editError}</div>}
+              {/* Bottom Actions Bar */}
+              <div className="pt-4 border-t border-[var(--devengine-border)] flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowAssignTaskModal(false)}
-                  className="flex-1 h-11 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-gray-400 hover:text-white"
+                  disabled={saving}
+                onClick={() => setShowEditModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-[var(--devengine-border)] bg-[var(--devengine-raised)] hover:bg-[var(--devengine-soft)] text-xs font-mono text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
-                  disabled={assigningTask || !taskForm.title.trim()}
-                  className="flex-1 h-11 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-xs font-mono font-bold text-white transition-all shadow-lg shadow-cyan-600/20 disabled:opacity-50"
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={saving}
+                  className="px-6 py-2.5 rounded-xl text-xs font-bold text-[#02040a] bg-[#2cecf7] hover:bg-[#53f2fb] shadow-[0_0_20px_rgba(44,236,247,0.35)] transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {assigningTask ? "Assigning..." : "Assign Task"}
+                  {saving ? (
+                    <>
+                      <HelixLoader size={16} color="#02040a" />
+                      <span>Saving…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-base">save</span>
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          ASSIGN TASK MODAL
+      ═══════════════════════════════════════════════════════════════════ */}
+      {mounted && showAssignTaskModal && taskAssigneeStaff && <TaskAssignmentSheet
+        employee={taskAssigneeStaff}
+        value={taskForm}
+        onChange={setTaskForm}
+        onSubmit={handleAssignTaskSubmit}
+        busy={assigningTask}
+        onClose={() => setShowAssignTaskModal(false)}
+      />}
 
       {/* ═══════════════════════════════════════════════════════════════════
           VIEW EMPLOYEE TASKS & PROGRESS MODAL
       ═══════════════════════════════════════════════════════════════════ */}
-      {showTasksModal && tasksStaff && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {mounted && showTasksModal && tasksStaff && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto p-4 sm:p-6 pt-24 sm:pt-28 pb-12 flex justify-center items-start themed-scroll">
           <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity"
             onClick={() => setShowTasksModal(false)}
           />
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.08] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll">
+          <div className="relative w-full max-w-3xl rounded-3xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] text-[var(--devengine-text)] shadow-2xl p-6 sm:p-8 space-y-6 themed-scroll my-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center">
@@ -2331,25 +2923,26 @@ export default function ManageStaffPage() {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
           EMPLOYEE EXECUTIVE DETAILS MODAL (VIEW DETAILS)
       ═══════════════════════════════════════════════════════════════════ */}
-      {selectedDetailStaff && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+      {mounted && selectedDetailStaff && createPortal(
+        <div className="fixed inset-0 z-[9999] overflow-y-auto p-4 sm:p-6 pt-24 sm:pt-28 pb-12 flex justify-center items-start themed-scroll">
           <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
             onClick={() => setSelectedDetailStaff(null)}
           />
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0c16] border border-white/[0.1] shadow-2xl space-y-6 themed-scroll">
+          <div className="relative w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] text-[var(--devengine-text)] shadow-2xl themed-scroll my-auto">
             {/* Header Banner */}
-            <div className="relative p-6 sm:p-7 bg-gradient-to-br from-cyan-600/20 via-[#0c0c16] to-purple-600/15 border-b border-white/[0.08]">
+            <div className="relative p-6 sm:p-7 bg-gradient-to-br from-cyan-600/15 via-[var(--devengine-surface)] to-purple-600/10 border-b border-[var(--devengine-border)]">
               <button
                 type="button"
                 onClick={() => setSelectedDetailStaff(null)}
-                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[var(--devengine-raised)] hover:bg-[var(--devengine-hover)] text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] flex items-center justify-center transition cursor-pointer"
               >
                 ✕
               </button>
@@ -2370,9 +2963,9 @@ export default function ManageStaffPage() {
                     )}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20">
-                        Employee Dossier
+                        Employee HR Dossier
                       </span>
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
@@ -2388,13 +2981,18 @@ export default function ManageStaffPage() {
                         />
                         {selectedDetailStaff.status === "active" ? "Active" : "Suspended"}
                       </span>
+                      {(selectedDetailStaff.resignationDetails?.status === "resigned" || selectedDetailStaff.resignation?.status === "resigned") && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                          Resigned
+                        </span>
+                      )}
                     </div>
 
-                    <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
+                    <h2 className="text-xl sm:text-2xl font-bold text-[var(--devengine-text)] mt-1">
                       {selectedDetailStaff.name}
                     </h2>
-                    <p className="text-xs font-mono text-gray-400 mt-0.5">
-                      Joined on {new Date(selectedDetailStaff.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                    <p className="text-xs font-mono text-[var(--devengine-muted)] mt-0.5">
+                      Joined on {selectedDetailStaff.joiningDate ? selectedDetailStaff.joiningDate : new Date(selectedDetailStaff.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
                     </p>
                   </div>
                 </div>
@@ -2415,11 +3013,11 @@ export default function ManageStaffPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 sm:p-7 space-y-6 pt-0">
+            <div className="p-6 sm:p-7 space-y-5">
               {/* 1. Admin Credentials & System Identity */}
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3">
+              <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-cyan-400 text-sm">key</span>
                     <span>Admin Security Credentials</span>
                   </span>
@@ -2430,14 +3028,14 @@ export default function ManageStaffPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
                   {/* Email */}
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Login Email</span>
+                  <div className="p-3 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-1">
+                    <span className="text-[10px] text-[var(--devengine-muted)] uppercase tracking-wider block">Login Email</span>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-white truncate">{selectedDetailStaff.email}</span>
+                      <span className="text-[var(--devengine-text)] truncate">{selectedDetailStaff.email}</span>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(selectedDetailStaff.email, `det-email-${selectedDetailStaff.id}`)}
-                        className="text-gray-400 hover:text-cyan-300 p-1 rounded transition"
+                        className="text-[var(--devengine-muted)] hover:text-cyan-400 p-1 rounded transition"
                         title="Copy email"
                       >
                         <span className="material-symbols-outlined text-sm">
@@ -2448,10 +3046,10 @@ export default function ManageStaffPage() {
                   </div>
 
                   {/* Password */}
-                  <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Password</span>
+                  <div className="p-3 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] space-y-1">
+                    <span className="text-[10px] text-[var(--devengine-muted)] uppercase tracking-wider block">Password</span>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-cyan-300 select-all font-mono font-bold">
+                      <span className="text-cyan-400 select-all font-mono font-bold">
                         {revealedPasswords[selectedDetailStaff.id]
                           ? (selectedDetailStaff.password || "Not recorded")
                           : "••••••••••••"}
@@ -2460,7 +3058,7 @@ export default function ManageStaffPage() {
                         <button
                           type="button"
                           onClick={() => togglePasswordReveal(selectedDetailStaff.id)}
-                          className="text-gray-400 hover:text-white p-1 rounded transition"
+                          className="text-[var(--devengine-muted)] hover:text-[var(--devengine-text)] p-1 rounded transition"
                           title="Toggle visibility"
                         >
                           <span className="material-symbols-outlined text-sm">
@@ -2471,7 +3069,7 @@ export default function ManageStaffPage() {
                           <button
                             type="button"
                             onClick={() => copyToClipboard(selectedDetailStaff.password || "", `det-pwd-${selectedDetailStaff.id}`)}
-                            className="text-gray-400 hover:text-cyan-300 p-1 rounded transition"
+                            className="text-[var(--devengine-muted)] hover:text-cyan-400 p-1 rounded transition"
                             title="Copy password"
                           >
                             <span className="material-symbols-outlined text-sm">
@@ -2485,26 +3083,186 @@ export default function ManageStaffPage() {
                 </div>
               </div>
 
-              {/* 2. Shift Schedule & Official Agreement */}
+              {/* 2. HR Tenure & Status */}
+              <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-cyan-400 text-sm">badge</span>
+                    <span>HR Employment & Tenure Details</span>
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase font-semibold">
+                    {selectedDetailStaff.employmentType || "permanent"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">Employment Type</span>
+                    <span className="text-[var(--devengine-text)] font-semibold capitalize mt-0.5 block">
+                      {selectedDetailStaff.employmentType || "Permanent"}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">Joining Date</span>
+                    <span className="text-[var(--devengine-text)] font-semibold mt-0.5 block">
+                      {selectedDetailStaff.joiningDate || "Not recorded"}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">Probation Status</span>
+                    <span className="text-[var(--devengine-text)] font-semibold mt-0.5 block">
+                      {selectedDetailStaff.employmentType === "probation"
+                        ? `${selectedDetailStaff.probationPeriodMonths || 3} mo (Ends: ${selectedDetailStaff.probationEndDate || "Pending"})`
+                        : "Completed / N/A"}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">Notice Period</span>
+                    <span className="text-[var(--devengine-text)] font-semibold mt-0.5 block">
+                      {selectedDetailStaff.salaryManagement?.noticePeriodDays || 30} Days
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Salary & Compensation Management */}
+              <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-emerald-400 text-sm">payments</span>
+                    <span>Salary Structure & Payout Method</span>
+                  </span>
+                  <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                    Gross: {selectedDetailStaff.salaryManagement?.currency || "BDT"} {(selectedDetailStaff.salaryManagement?.grossSalary || selectedDetailStaff.salaryManagement?.basicSalary || 0).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">Basic Salary</span>
+                    <span className="text-[var(--devengine-text)] font-semibold mt-0.5 block">
+                      {selectedDetailStaff.salaryManagement?.currency || "BDT"} {(selectedDetailStaff.salaryManagement?.basicSalary || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">House & Medical</span>
+                    <span className="text-[var(--devengine-text)] font-semibold mt-0.5 block">
+                      +{( (selectedDetailStaff.salaryManagement?.houseRent || 0) + (selectedDetailStaff.salaryManagement?.medical || 0) ).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">Payout Mode</span>
+                    <span className="text-[var(--devengine-text)] font-semibold mt-0.5 block capitalize">
+                      {selectedDetailStaff.salaryManagement?.paymentMethod || "Bank Transfer"}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)]">
+                    <span className="text-[10px] text-[var(--devengine-muted)] block">Account / MFS</span>
+                    <span className="text-[var(--devengine-text)] font-semibold mt-0.5 block truncate" title={selectedDetailStaff.salaryManagement?.bankDetails || "Not configured"}>
+                      {selectedDetailStaff.salaryManagement?.bankDetails || "Not configured"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Emergency Contact & Resignation Record */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Emergency Contact */}
+                <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-2.5">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-rose-400 text-sm">emergency</span>
+                    <span>Emergency Contact</span>
+                  </span>
+                  <div className="space-y-1.5 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--devengine-muted)]">Contact Name:</span>
+                      <span className="text-[var(--devengine-text)] font-semibold">
+                        {selectedDetailStaff.emergencyContact?.name || "Not provided"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--devengine-muted)]">Relationship:</span>
+                      <span className="text-[var(--devengine-text)] font-semibold">
+                        {selectedDetailStaff.emergencyContact?.relationship || "N/A"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--devengine-muted)]">Emergency Phone:</span>
+                      <span className="text-cyan-400 font-semibold">
+                        {selectedDetailStaff.emergencyContact?.phone || "N/A"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resignation & Offboarding Status */}
+                <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-2.5">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-amber-400 text-sm">output</span>
+                    <span>Resignation / Relieving Status</span>
+                  </span>
+                  <div className="space-y-1.5 text-xs font-mono">
+                    {(() => {
+                      const res = selectedDetailStaff.resignationDetails || selectedDetailStaff.resignation;
+                      const isResigned = res?.status === "resigned";
+                      return (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[var(--devengine-muted)]">Status:</span>
+                            <span className={`font-semibold ${isResigned ? "text-amber-400" : "text-emerald-400"}`}>
+                              {isResigned ? "Resigned / Offboarding" : "Active In Service"}
+                            </span>
+                          </div>
+                          {isResigned ? (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[var(--devengine-muted)]">Last Working Day:</span>
+                                <span className="text-[var(--devengine-text)] font-semibold">
+                                  {res?.lastWorkingDay || "TBD"}
+                                </span>
+                              </div>
+                              <div className="pt-1">
+                                <Link
+                                  href={`/admin/manage-certificates?search=${encodeURIComponent(selectedDetailStaff.email)}`}
+                                  className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 hover:underline"
+                                >
+                                  <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                                  <span>Issue Experience / Relieving Certificate →</span>
+                                </Link>
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-[11px] text-[var(--devengine-muted)] italic pt-1">
+                              Employee is currently in good standing. No resignation on record.
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Shift Schedule & Official Agreement */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Working Timetable */}
-                <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-2.5">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-2.5">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-purple-400 text-sm">schedule</span>
                     <span>Shift Timetable & Roster</span>
                   </span>
                   <div className="space-y-2 text-xs font-mono">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Shift Timings:</span>
-                      <span className="text-white font-semibold">
+                      <span className="text-[var(--devengine-muted)]">Shift Timings:</span>
+                      <span className="text-[var(--devengine-text)] font-semibold">
                         {selectedDetailStaff.shiftHours
                           ? `${selectedDetailStaff.shiftHours.start} - ${selectedDetailStaff.shiftHours.end}`
                           : "09:00 AM - 06:00 PM"}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Off-Days:</span>
-                      <span className="text-cyan-300 font-semibold">
+                      <span className="text-[var(--devengine-muted)]">Off-Days:</span>
+                      <span className="text-cyan-400 font-semibold">
                         {(selectedDetailStaff.assignedOffDays || ["Friday", "Saturday"]).join(", ")}
                       </span>
                     </div>
@@ -2512,14 +3270,14 @@ export default function ManageStaffPage() {
                 </div>
 
                 {/* Employment Agreement */}
-                <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-2.5">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-2.5">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-emerald-400 text-sm">verified_user</span>
                     <span>Official Agreement</span>
                   </span>
                   <div className="space-y-2 text-xs font-mono">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Status:</span>
+                      <span className="text-[var(--devengine-muted)]">Status:</span>
                       <span className="text-emerald-400 font-semibold">
                         {selectedDetailStaff.agreementId ? "Active Agreement Attached" : "Standard Retainer"}
                       </span>
@@ -2537,10 +3295,10 @@ export default function ManageStaffPage() {
                 </div>
               </div>
 
-              {/* 3. System Module Permissions */}
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3">
+              {/* 6. System Module Permissions */}
+              <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-cyan-400 text-sm">lock_open</span>
                     <span>Authorized Modules ({selectedDetailStaff.allowedModules.length})</span>
                   </span>
@@ -2552,7 +3310,7 @@ export default function ManageStaffPage() {
                     return (
                       <span
                         key={key}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono bg-white/[0.04] border border-white/[0.08]"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-mono bg-[var(--devengine-surface)] border border-[var(--devengine-border)]"
                         style={{ color: cfg.color }}
                       >
                         <span className="material-symbols-outlined text-sm">{cfg.icon}</span>
@@ -2561,15 +3319,15 @@ export default function ManageStaffPage() {
                     );
                   })}
                   {selectedDetailStaff.allowedModules.length === 0 && (
-                    <span className="text-xs text-gray-500 italic">No module permissions assigned.</span>
+                    <span className="text-xs text-[var(--devengine-muted)] italic">No module permissions assigned.</span>
                   )}
                 </div>
               </div>
 
-              {/* 4. Active Tasks Preview */}
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.08] space-y-3">
+              {/* 7. Active Tasks Preview */}
+              <div className="p-4 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-[var(--devengine-text)] uppercase tracking-wider font-mono flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-purple-400 text-sm">task_alt</span>
                     <span>Assigned Tasks & Sprints</span>
                   </span>
@@ -2587,11 +3345,11 @@ export default function ManageStaffPage() {
                 </div>
 
                 {loadingDetailTasks ? (
-                  <div className="py-4 text-center text-xs text-gray-400 font-mono">
+                  <div className="py-4 text-center text-xs text-[var(--devengine-muted)] font-mono">
                     Loading task status...
                   </div>
                 ) : detailStaffTasks.length === 0 ? (
-                  <div className="py-3 text-xs text-gray-500 font-mono italic">
+                  <div className="py-3 text-xs text-[var(--devengine-muted)] font-mono italic">
                     No active tasks assigned to this employee.
                   </div>
                 ) : (
@@ -2599,16 +3357,16 @@ export default function ManageStaffPage() {
                     {detailStaffTasks.slice(0, 3).map((t) => (
                       <div
                         key={t.id}
-                        className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between gap-3 text-xs font-mono"
+                        className="p-3 rounded-xl bg-[var(--devengine-surface)] border border-[var(--devengine-border)] flex items-center justify-between gap-3 text-xs font-mono"
                       >
                         <div className="min-w-0">
-                          <p className="text-white font-semibold truncate">{t.title}</p>
-                          <p className="text-[10px] text-gray-400 mt-0.5">
+                          <p className="text-[var(--devengine-text)] font-semibold truncate">{t.title}</p>
+                          <p className="text-[10px] text-[var(--devengine-muted)] mt-0.5">
                             Due: {t.dueDate} • Priority: <span className="uppercase text-purple-400">{t.priority}</span>
                           </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-white/[0.05] text-cyan-300">
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                             {t.progressPercent}%
                           </span>
                           <span className="capitalize px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20">
@@ -2622,8 +3380,8 @@ export default function ManageStaffPage() {
               </div>
 
               {/* Quick Actions Footer */}
-              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08]">
-                <div className="flex items-center gap-2">
+              <div className="pt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--devengine-border)]">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -2631,30 +3389,52 @@ export default function ManageStaffPage() {
                       setSelectedDetailStaff(null);
                       openEditModal(member);
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] text-xs font-mono font-semibold text-white transition cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-[var(--devengine-raised)] hover:bg-[var(--devengine-hover)] border border-[var(--devengine-border)] text-xs font-mono font-semibold text-[var(--devengine-text)] transition cursor-pointer"
                   >
-                    Edit Profile
+                    Edit Profile & HR
                   </button>
+                  <Link
+                    href={`/admin/manage-certificates?search=${encodeURIComponent(selectedDetailStaff.email)}`}
+                    className="px-3.5 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-xs font-mono font-semibold text-cyan-400 transition inline-flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                    <span>Issue Certificate</span>
+                  </Link>
                   <Link
                     href={`/admin/manage-attendance`}
                     className="px-3.5 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/30 text-xs font-mono font-semibold text-violet-300 transition"
                   >
-                    View Attendance
+                    Attendance
                   </Link>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setSelectedDetailStaff(null)}
-                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:opacity-90 text-slate-950 font-bold text-xs font-mono transition cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-[#2cecf7] hover:bg-[#53f2fb] text-[#02040a] font-bold text-xs font-mono transition cursor-pointer shadow-[0_0_20px_rgba(44,236,247,0.35)]"
                 >
                   Close Dossier
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+      {suspensionTarget && <EmployeeDialog title={`Suspend ${suspensionTarget.name}?`} description="The employee will lose workspace access and be signed out. Their records will be preserved." icon="block" onClose={() => !actionInProgress && setSuspensionTarget(null)}>
+        <form onSubmit={event => { event.preventDefault(); void confirmSuspension(); }}>
+          <label className={manageStyles.field}>Reason for suspension *<textarea className="bg-transparent" required maxLength={1000} value={suspensionReason} onChange={event => setSuspensionReason(event.target.value)} placeholder="Explain why access is suspended" /><small>The employee will see this reason.</small></label>
+          {suspensionError && <div role="alert" className={manageStyles.inlineError}>{suspensionError}</div>}
+          <div className={manageStyles.dialogActions}><button className={manageStyles.button} type="button" disabled={!!actionInProgress} onClick={() => setSuspensionTarget(null)}>Cancel</button><button className={manageStyles.primary} type="submit" disabled={!!actionInProgress}>{actionInProgress ? "Suspending…" : "Suspend employee"}</button></div>
+        </form>
+      </EmployeeDialog>}
+      {deleteTarget && <EmployeeDialog title="Permanently delete employee?" description="This action cannot be undone." icon="person_remove" onClose={() => { if (!actionInProgress) setDeleteTarget(null); }}>
+        <div className={manageStyles.success}><StaffAvatar name={deleteTarget.name} url={deleteTarget.avatarUrl} /><div><strong>{deleteTarget.name}</strong><p>{deleteTarget.email}</p></div></div>
+        <p style={{ color: "var(--devengine-muted)", lineHeight: 1.8, marginTop: 20 }}>This permanently removes the employee account record. Choose Cancel to keep this employee.</p>
+        {deleteError && <p role="alert" style={{ color: "#ed7084" }}>{deleteError}</p>}
+        <div className={manageStyles.dialogActions}><button disabled={!!actionInProgress} onClick={() => setDeleteTarget(null)}>Cancel</button><button disabled={!!actionInProgress} onClick={() => handleDelete(deleteTarget)} style={{ border: "1px solid #ed7084", color: "var(--devengine-text)" }}>{actionInProgress ? "Deleting…" : "Delete permanently"}</button></div>
+      </EmployeeDialog>}
+      {successMessage && <EmployeeDialog title="Saved successfully" icon="task_alt" onClose={() => setSuccessMessage("")}><div className={manageStyles.success}><EmployeeIcon>check_circle</EmployeeIcon><p>{successMessage}</p></div><div className={manageStyles.dialogActions}><button className={manageStyles.primary} onClick={() => setSuccessMessage("")}>Done</button></div></EmployeeDialog>}
     </AdminLayout>
   );
 }

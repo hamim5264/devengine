@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import React, { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
@@ -339,7 +340,7 @@ export default function AgreementsIndexPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#07070d] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#38f2ff" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-mono text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Authorization…
         </p>
@@ -385,9 +386,7 @@ export default function AgreementsIndexPage() {
                 </div>
               </div>
 
-              <p className="text-sm text-gray-400 mt-2 max-w-3xl">
-                Draft, execute, preview, and archive official multi-page A4 project agreements across profit participation, hourly, milestone, fixed-fee, and retainer engagements.
-              </p>
+              <p className="text-sm text-gray-400 mt-2 max-w-3xl">Create, review, sign, and archive project agreements.</p>
             </div>
 
             {/* Header CTA */}
@@ -514,12 +513,12 @@ export default function AgreementsIndexPage() {
               <span className="material-symbols-outlined text-gray-400 text-lg absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                 search
               </span>
-              <input
+              <input data-admin-search
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search ID, project, or developer…"
-                className="w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
+                className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.1] rounded-xl pl-10 pr-4 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-gray-500"
               />
             </div>
 
@@ -527,7 +526,7 @@ export default function AgreementsIndexPage() {
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               {/* Type Filter */}
               <div className="relative">
-                <select
+                <AdminSelect
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
                   aria-label="Filter by agreement type"
@@ -540,7 +539,7 @@ export default function AgreementsIndexPage() {
                   <option value="fixed_completion">Fixed Completion</option>
                   <option value="hybrid">Hybrid</option>
                   <option value="retainer">Monthly Retainer</option>
-                </select>
+                </AdminSelect>
                 <span className="material-symbols-outlined text-gray-400 text-sm absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                   expand_more
                 </span>
@@ -548,7 +547,7 @@ export default function AgreementsIndexPage() {
 
               {/* Status Filter */}
               <div className="relative">
-                <select
+                <AdminSelect
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
                   aria-label="Filter by agreement status"
@@ -563,7 +562,7 @@ export default function AgreementsIndexPage() {
                   <option value="active">Active</option>
                   <option value="completed">Completed</option>
                   <option value="terminated">Terminated</option>
-                </select>
+                </AdminSelect>
                 <span className="material-symbols-outlined text-gray-400 text-sm absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                   expand_more
                 </span>
@@ -571,7 +570,7 @@ export default function AgreementsIndexPage() {
 
               {/* Sort By */}
               <div className="relative">
-                <select
+                <AdminSelect
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   aria-label="Sort agreements"
@@ -580,7 +579,7 @@ export default function AgreementsIndexPage() {
                   <option value="newest">Sort: Newest First</option>
                   <option value="oldest">Sort: Oldest First</option>
                   <option value="updated">Sort: Recently Updated</option>
-                </select>
+                </AdminSelect>
                 <span className="material-symbols-outlined text-gray-400 text-sm absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
                   expand_more
                 </span>
@@ -591,7 +590,7 @@ export default function AgreementsIndexPage() {
           {/* Agreements Table / Empty State */}
           {loading ? (
             <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3 bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl p-12">
-              <HelixLoader size={44} color="#38f2ff" />
+              <HelixLoader size={44} color="#2cecf7" />
               <p className="text-xs font-mono text-gray-400 tracking-wider uppercase">Loading Agreements…</p>
             </div>
           ) : filteredAgreements.length === 0 ? (

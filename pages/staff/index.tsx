@@ -1,3 +1,4 @@
+import { announceStaffSuspension, clearStaffSuspensionNotice, enforceStaffSuspension, getStaffSuspensionNotice } from "@/lib/services/staffSuspension";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
@@ -31,6 +32,10 @@ export default function StaffLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  useEffect(() => {
+    const notice = getStaffSuspensionNotice();
+    if (notice) setError("Your account is suspended. Please contact administration. Reason: " + notice.reason);
+  }, []);
 
   // Email format validation: requires proper RFC email format (e.g. user@domain.com or user@gmail.com)
   const isEmailFormatValid = (val: string) => {
@@ -47,7 +52,14 @@ export default function StaffLoginPage() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const staff = await getStaffByUid(user.uid);
+        if (staff?.status === "suspended") {
+          setCheckingAuth(false);
+          setError("Your account is suspended. Please contact administration. Reason: " + (staff.suspensionReason || "Account access was suspended."));
+          await enforceStaffSuspension(staff);
+          return;
+        }
         if (staff && staff.status === "active") {
+          clearStaffSuspensionNotice();
           router.replace("/staff/dashboard");
           return;
         }
@@ -77,12 +89,13 @@ export default function StaffLoginPage() {
       }
 
       if (staff.status === "suspended") {
-        await signOut(auth);
-        setError("Your employee account has been suspended. Please contact your administrator.");
+        await enforceStaffSuspension(staff);
+        setError("Your account is suspended. Please contact administration. Reason: " + (staff.suspensionReason || "Account access was suspended."));
         setLoading(false);
         return;
       }
 
+      clearStaffSuspensionNotice();
       // Store staff session info
       localStorage.setItem("isStaff", "1");
       localStorage.setItem("staffUid", user.uid);
@@ -90,7 +103,12 @@ export default function StaffLoginPage() {
 
       router.push("/staff/dashboard");
     } catch (err: any) {
-      if (
+      if (err.code === "auth/user-disabled") {
+        const previous = getStaffSuspensionNotice();
+        const reason = previous?.email?.toLowerCase() === email.trim().toLowerCase() ? previous.reason : "Your employee account has been suspended.";
+        announceStaffSuspension({ email: email.trim(), reason });
+        setError("Your account is suspended. Please contact administration. " + reason);
+      } else if (
         err.code === "auth/user-not-found" ||
         err.code === "auth/invalid-credential"
       ) {
@@ -288,7 +306,7 @@ export default function StaffLoginPage() {
             {/* Error Banner */}
             <AnimatePresence>
               {error && (
-                <motion.div
+                <motion.div role="alert"
                   initial={{ opacity: 0, height: 0, y: -6 }}
                   animate={{ opacity: 1, height: "auto", y: 0 }}
                   exit={{ opacity: 0, height: 0 }}

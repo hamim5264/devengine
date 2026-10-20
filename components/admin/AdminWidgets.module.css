@@ -1,0 +1,34 @@
+.stat { position:relative; padding:24px; border:1px solid var(--devengine-border); border-radius:22px; background:var(--devengine-surface); color:var(--devengine-text); box-shadow:var(--devengine-surface-shadow); min-width:0; transition:border-color .2s,box-shadow .2s; }
+.stat:hover { border-color:#2cecf766; }
+.statTop { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.statTop>span { font-size:14px; line-height:1.5; color:var(--devengine-muted); font-weight:500; }
+.statIcon { display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--devengine-border); border-radius:13px; background:var(--devengine-soft); color:#2cecf7; flex:none; }
+.value { display:flex; align-items:baseline; flex-wrap:wrap; gap:10px; margin-top:17px; }
+.value strong { font-size:clamp(28px,3vw,36px); font-weight:600; line-height:1.2; letter-spacing:-.045em; font-variant-numeric:tabular-nums; color:var(--devengine-text); overflow-wrap:anywhere; }
+.value span { font-size:12px; color:var(--devengine-muted); }
+.stat>p { margin:10px 0 0; font-size:14px; line-height:1.65; color:var(--devengine-muted); }
+.badge { display:inline-flex; align-items:center; gap:7px; padding:5px 10px; border:1px solid var(--devengine-border); border-radius:8px; background:var(--devengine-raised); font-size:12px; font-weight:550; line-height:1.45; color:var(--devengine-text); white-space:nowrap; }
+.badge::before { content:""; width:5px; height:5px; flex:none; border-radius:50%; background:#2cecf7; }
+.badge[data-tone=warning]::before { background:#d49a2c; }.badge[data-tone=danger]::before { background:#ed7084; }.badge[data-tone=muted]::before { background:#8a9ab2; }
+.nav { display:flex; align-items:center; gap:7px; max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:thin; border-bottom:1px solid var(--devengine-border); padding:0 0 13px; margin-bottom:26px; }
+.nav a { flex:none; display:flex; align-items:center; min-height:42px; padding:9px 14px; border:1px solid transparent; border-radius:12px; color:var(--devengine-muted); font-size:14px; white-space:nowrap; transition:background .18s,color .18s; }
+.nav a:hover { background:var(--devengine-raised); color:var(--devengine-text); }
+.nav a[aria-current=page] { border-color:#2cecf7; background:#2cecf7; color:#02040a; font-weight:600; }
+.nav a:focus-visible { outline:2px solid #2cecf7; outline-offset:-3px; }
+@media(prefers-reduced-motion:no-preference) { .stat { animation:statAppear .35s ease; } }
+@keyframes statAppear { from { opacity:0; } to { opacity:1; } }
+@media(prefers-reduced-motion:reduce) { .stat,.nav a { transition:none; animation:none; } }
+.confirmationRecord { display:grid; gap:6px; padding:18px; border:1px solid var(--devengine-border); border-radius:15px; background:var(--devengine-raised); }
+.confirmationRecord>span { color:var(--devengine-muted); font-size:12px; }
+.confirmationRecord strong { color:var(--devengine-text); font-size:17px; font-weight:600; overflow-wrap:anywhere; }
+.confirmationRecord p { color:var(--devengine-muted); font-size:14px; line-height:1.7; overflow-wrap:anywhere; margin:0; }
+.warning { display:flex; align-items:flex-start; gap:10px; margin:18px 0; padding:14px; border:1px solid #f06d8040; border-radius:13px; color:var(--devengine-text); background:var(--devengine-surface); font-size:14px; line-height:1.7; }
+.warning>span:first-child { color:#f06d80; margin-top:3px; }
+.dialogActions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:24px; }
+.button,.primaryButton,.dangerButton { display:inline-flex; justify-content:center; align-items:center; gap:8px; min-height:45px; padding:11px 17px; border:1px solid var(--devengine-border); border-radius:12px; font:inherit; font-size:14px; font-weight:550; cursor:pointer; background:var(--devengine-raised); color:var(--devengine-text); transition:background .2s,border-color .2s; }
+.primaryButton { color:#02040a; background:#2cecf7; border-color:#2cecf7; }
+.dangerButton { color:var(--devengine-text); border-color:#f06d8070; background:var(--devengine-surface); }
+.dangerButton:hover { background:#f06d800b; }
+.button:disabled,.primaryButton:disabled,.dangerButton:disabled { opacity:.5; cursor:not-allowed; }
+.primaryButton>span { color:#02040a!important; }
+@media(max-width:480px) { .dialogActions>button { flex:1; } }

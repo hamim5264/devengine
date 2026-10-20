@@ -785,7 +785,7 @@ export default function AddProjectPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. CraftyBay - Multi-Vendor E-Commerce"
+                  placeholder="e.g. CraftyBay E-commerce"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl px-4 text-sm text-white placeholder-gray-500 font-sans transition outline-none"
@@ -799,7 +799,7 @@ export default function AddProjectPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Flutter 3 shopping suite with clean architecture & Riverpod"
+                  placeholder="Short project summary"
                   value={subtitle}
                   onChange={(e) => setSubtitle(e.target.value)}
                   className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl px-4 text-sm text-white placeholder-gray-500 font-sans transition outline-none"
@@ -869,7 +869,7 @@ export default function AddProjectPage() {
                   <div className="relative flex-1">
                     <input
                       type="url"
-                      placeholder="https://images.unsplash.com/... or image link"
+                      placeholder="Image URL"
                       value={imageUrlInput}
                       onChange={(e) => setImageUrlInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -1050,7 +1050,7 @@ export default function AddProjectPage() {
 
 
           {/* SECTION 2: MULTI-CURRENCY PRICING MATRIX */}
-          <div className="bg-gradient-to-br from-teal-500/[0.03] to-transparent border border-teal-500/20 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
+          <div data-pricing-matrix className="bg-gradient-to-br from-teal-500/[0.03] to-transparent border border-teal-500/20 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/[0.06]">
               <div>
                 <div className="flex items-center gap-2">
@@ -1163,7 +1163,7 @@ export default function AddProjectPage() {
                 Project Overview / Description <span className="text-teal-400">*</span>
               </label>
               <textarea
-                placeholder="Detailed overview and key features of the project..."
+                placeholder="Project overview and key features"
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 className="w-full h-36 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl p-4 text-xs sm:text-sm text-white placeholder-gray-500 font-sans leading-relaxed outline-none transition resize-y"
@@ -1173,10 +1173,11 @@ export default function AddProjectPage() {
 
             <div>
               <label className="block text-xs font-semibold text-gray-300 mb-1.5">
-                Installation Instructions / Terminal Commands <span className="text-teal-400">*</span>
+                Installation commands <span className="text-teal-400">*</span>
               </label>
               <textarea
-                placeholder={`# 1. Clone repo\ngit clone https://github.com/org/project.git\n\n# 2. Install & run\nnpm install\nnpm run dev`}
+                data-admin-code
+                placeholder="Setup commands"
                 value={installation}
                 onChange={(e) => setInstallation(e.target.value)}
                 className="w-full h-28 bg-black/60 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/80 focus:ring-1 focus:ring-teal-400/20 rounded-xl p-4 font-mono text-xs text-teal-300 placeholder-gray-600 leading-relaxed outline-none transition resize-y"
@@ -1190,7 +1191,7 @@ export default function AddProjectPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g. Flutter 3.24, Riverpod, Firebase, REST API, SQLite"
+                placeholder="e.g. Flutter, Firebase, REST API"
                 value={tools}
                 onChange={(e) => setTools(e.target.value)}
                 className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 focus:bg-black/60 focus:ring-1 focus:ring-teal-400/20 rounded-xl px-4 text-sm text-white placeholder-gray-500 font-sans outline-none transition"
@@ -1203,9 +1204,7 @@ export default function AddProjectPage() {
           <div className="bg-gradient-to-br from-rose-500/[0.03] to-transparent border border-rose-500/20 rounded-2xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center text-xs font-bold">
-                  ▶
-                </span>
+                <span className="w-6 h-6 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center text-xs font-bold"><span className="material-symbols-outlined" aria-hidden="true">play_circle</span></span>
                 <h3 className="text-sm font-bold text-white">
                   YouTube Live Demo Video URL
                 </h3>
@@ -1229,9 +1228,7 @@ export default function AddProjectPage() {
           {/* SECTION 5: SNAPSHOT SPECS METADATA */}
           <div className="bg-gradient-to-br from-cyan-500/[0.03] to-transparent border border-cyan-500/20 rounded-2xl p-5 space-y-3.5 shadow-xl">
             <div className="flex items-center gap-2 pb-1 border-b border-white/[0.06]">
-              <span className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 flex items-center justify-center text-xs font-bold">
-                ⚡
-              </span>
+              <span className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 flex items-center justify-center text-xs font-bold"><span className="material-symbols-outlined" aria-hidden="true">dashboard_customize</span></span>
               <h3 className="text-sm font-bold text-white">
                 Project Snapshot Metadata
               </h3>
@@ -1303,9 +1300,7 @@ export default function AddProjectPage() {
           {/* SECTION 6: ARCHITECTURE STORY */}
           <div className="bg-gradient-to-br from-purple-500/[0.03] to-transparent border border-purple-500/20 rounded-2xl p-5 space-y-4 shadow-xl">
             <div className="flex items-center gap-2 pb-2 border-b border-white/[0.06]">
-              <span className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center text-xs font-bold">
-                📖
-              </span>
+              <span className="w-6 h-6 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center text-xs font-bold"><span className="material-symbols-outlined" aria-hidden="true">account_tree</span></span>
               <h3 className="text-sm font-bold text-white">
                 Understanding The Architecture & Story
               </h3>
@@ -1349,7 +1344,7 @@ export default function AddProjectPage() {
                   onChange={(e) =>
                     setStory({ ...story, solution: e.target.value })
                   }
-                  placeholder="How the codebase solves the bottleneck cleanly..."
+                  placeholder="How the solution works"
                   className="w-full h-24 bg-black/40 border border-white/[0.08] focus:border-purple-400/70 rounded-xl p-3 text-xs text-white placeholder-gray-500 leading-relaxed outline-none transition resize-y"
                 />
               </div>
@@ -1363,7 +1358,7 @@ export default function AddProjectPage() {
                   onChange={(e) =>
                     setStory({ ...story, value: e.target.value })
                   }
-                  placeholder="Measurable ROI and scale for engineering teams..."
+                  placeholder="Results and measurable impact"
                   className="w-full h-24 bg-black/40 border border-white/[0.08] focus:border-purple-400/70 rounded-xl p-3 text-xs text-white placeholder-gray-500 leading-relaxed outline-none transition resize-y"
                 />
               </div>
@@ -1397,7 +1392,7 @@ export default function AddProjectPage() {
               <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-emerald-500/25 rounded-xl">
                 <input
                   type="text"
-                  placeholder="Paste or type comma-separated items: e.g. Clean Code, 100+ Screens, Riverpod"
+                  placeholder="Features, separated by commas"
                   value={bulkIncludedInput}
                   onChange={(e) => setBulkIncludedInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1476,7 +1471,7 @@ export default function AddProjectPage() {
               <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-amber-500/25 rounded-xl">
                 <input
                   type="text"
-                  placeholder="Paste or type comma-separated items: e.g. Domain, Hosting, Custom API"
+                  placeholder="Extras, separated by commas"
                   value={bulkNotIncludedInput}
                   onChange={(e) => setBulkNotIncludedInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1584,7 +1579,7 @@ export default function AddProjectPage() {
                       type="text"
                       value={faq.question}
                       onChange={(e) => handleFaqChange(idx, "question", e.target.value)}
-                      placeholder="e.g. Do you offer post-purchase deployment support?"
+                      placeholder="e.g. Is deployment support included?"
                       className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-lg px-3 text-xs sm:text-sm font-medium text-white placeholder-gray-500 outline-none transition"
                     />
                   </div>
@@ -1606,7 +1601,7 @@ export default function AddProjectPage() {
           </div>
 
           {/* SECTION 9: 3-TIER PRICING PLANS MANAGEMENT (With BDT Auto-Conversion & Comma Input) */}
-          <div className="bg-gradient-to-br from-cyan-500/[0.03] to-transparent border border-cyan-500/30 rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
+          <div data-pricing-plans className="bg-gradient-to-br from-cyan-500/[0.03] to-transparent border border-cyan-500/30 rounded-2xl p-5 sm:p-6 space-y-5 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
               <div>
                 <div className="flex items-center gap-2">
@@ -1634,12 +1629,12 @@ export default function AddProjectPage() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-5">
+            <div className="pricing-tier-grid grid gap-5">
               {pricingPlans.map((tier, tIdx) => {
                 const isPopular = !!tier.isPopular;
                 return (
                   <div
-                    key={tier.id || tIdx}
+                    data-popular={isPopular} key={tier.id || tIdx}
                     className={`rounded-2xl p-4 sm:p-5 border flex flex-col justify-between space-y-4 transition ${
                       isPopular
                         ? "bg-cyan-950/20 border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.12)]"
@@ -1693,7 +1688,7 @@ export default function AddProjectPage() {
                       </div>
 
                       {/* Pricing Specs (BDT, USD, Period) */}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="pricing-values grid grid-cols-3 gap-2">
                         <div>
                           <label className="block text-[10px] font-medium text-gray-400 mb-1 truncate">
                             BDT (৳)
@@ -1849,16 +1844,16 @@ export default function AddProjectPage() {
               <div className="relative">
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <input
+                    <input data-admin-search
                       type="text"
-                      placeholder="Search categories or type new to create instant..."
+                      placeholder="Find or add a category"
                       value={categorySearch}
                       onChange={(e) => {
                         setCategorySearch(e.target.value);
                         setCategoryDropdownOpen(true);
                       }}
                       onFocus={() => setCategoryDropdownOpen(true)}
-                      className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-4 text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition"
+                      className="transparent-input bg-transparent w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-4 text-xs sm:text-sm text-white placeholder-gray-500 outline-none transition"
                     />
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[17px]">
                       search
@@ -1954,9 +1949,9 @@ export default function AddProjectPage() {
               {/* Tag Search + Inline Create */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <input
+                  <input data-admin-search
                     type="text"
-                    placeholder="Search existing tags or type to create new..."
+                    placeholder="Find or add a tag"
                     value={tagSearch}
                     onChange={(e) => setTagSearch(e.target.value)}
                     onKeyDown={(e) => {
@@ -1965,7 +1960,7 @@ export default function AddProjectPage() {
                         handleCreateTag(tagSearch);
                       }
                     }}
-                    className="w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-4 text-xs text-white placeholder-gray-500 outline-none transition"
+                    className="transparent-input bg-transparent w-full h-10 bg-black/40 border border-white/[0.08] focus:border-teal-400/70 rounded-xl pl-9 pr-4 text-xs text-white placeholder-gray-500 outline-none transition"
                   />
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">
                     search

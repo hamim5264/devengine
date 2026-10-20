@@ -1,3 +1,4 @@
+import AdminOverlay from "@/components/admin/AdminOverlay";
 import React, { useState, useEffect } from "react";
 import { AgreementRecord } from "@/types/agreement";
 import { buildAgreementClauses, AgreementClauseSection } from "@/lib/agreements/agreementClauses";
@@ -54,7 +55,7 @@ export default function AgreementPreviewModal({
   const isDark = viewMode === "dark";
 
   return (
-    <div className="fixed inset-0 z-[999] flex flex-col bg-black/90 backdrop-blur-md overflow-hidden animate-fadeIn">
+    <AdminOverlay onClose={onClose} label="Agreement preview" data-agreement-preview="true" data-document-mode={viewMode} className="fixed inset-0 z-[999] flex flex-col bg-black/90 backdrop-blur-md overflow-hidden animate-fadeIn">
       {/* Pinned Responsive Header Bar */}
       <div className="bg-[#0c0c16]/98 border-b border-white/[0.1] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 z-50 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
@@ -71,7 +72,7 @@ export default function AgreementPreviewModal({
               </span>
             </div>
             <p className="text-[11px] text-gray-400 font-mono truncate hidden md:block">
-              Exact publication representation matching the official multi-page A4 PDF output
+              Preview the official document.
             </p>
           </div>
         </div>
@@ -164,6 +165,7 @@ export default function AgreementPreviewModal({
       {/* Document Viewport */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-[#04060a] flex justify-center">
         <div
+          data-admin-document
           className={`w-full max-w-4xl rounded-2xl shadow-2xl p-6 sm:p-12 space-y-8 transition-all ${
             isDark
               ? "bg-[#0b101d] border border-white/[0.08] text-slate-200"
@@ -472,6 +474,6 @@ export default function AgreementPreviewModal({
           </div>
         </div>
       </div>
-    </div>
+    </AdminOverlay>
   );
 }

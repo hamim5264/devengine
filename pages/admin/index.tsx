@@ -29,8 +29,8 @@ export default function AdminIndexPage() {
         <title>DevEngine Admin - Authenticating...</title>
       </Head>
       <div className="min-h-screen bg-[#02040A] text-white flex flex-col items-center justify-center">
-        <HelixLoader size={50} color="#3EF3FF" />
-        <p className="mt-4 font-jetbrains text-xs text-[#3EF3FF] uppercase tracking-widest">
+        <HelixLoader size={50} color="#2cecf7" />
+        <p className="mt-4 font-jetbrains text-xs text-[#2cecf7] uppercase tracking-widest">
           Authenticating Secure Link...
         </p>
       </div>

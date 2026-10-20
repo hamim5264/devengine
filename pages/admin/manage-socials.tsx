@@ -222,7 +222,7 @@ export default function ManageSocialsPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#02040A] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#3EF3FF" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-jetbrains text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Authorization…
         </p>
@@ -246,21 +246,19 @@ export default function ManageSocialsPage() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/admin/dashboard"
-                  className="text-gray-400 hover:text-[#3EF3FF] font-jetbrains text-xs tracking-wider transition-colors"
+                  className="text-gray-400 hover:text-[#2cecf7] font-jetbrains text-xs tracking-wider transition-colors"
                 >
                   ← DASHBOARD
                 </Link>
                 <span className="text-gray-600">/</span>
-                <span className="text-[#3EF3FF] font-jetbrains text-xs tracking-widest uppercase font-semibold">
+                <span className="text-[#2cecf7] font-jetbrains text-xs tracking-widest uppercase font-semibold">
                   FOOTER SYSTEM & CHANNELS
                 </span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-1">
                 Follow Us & Social Channels CMS
               </h1>
-              <p className="text-gray-400 text-sm mt-1">
-                Manage social channels displayed in the &quot;FOLLOW US&quot; footer column. Add, edit, reorder, or toggle links.
-              </p>
+              <p className="text-gray-400 text-sm mt-1">Manage and arrange public social links.</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -268,7 +266,7 @@ export default function ManageSocialsPage() {
                 type="button"
                 onClick={handleSeedDefaults}
                 disabled={seeding}
-                className="px-4 py-2.5 rounded-xl border border-[#3EF3FF]/30 text-[#3EF3FF] hover:bg-[#3EF3FF]/10 text-xs font-jetbrains font-semibold tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                className="px-4 py-2.5 rounded-xl border border-[#2cecf7]/30 text-[#2cecf7] hover:bg-[#2cecf7]/10 text-xs font-jetbrains font-semibold tracking-wider transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
                 title="Seeds GitHub, LinkedIn, Facebook, and YouTube"
               >
                 <span className="material-symbols-outlined text-[16px]">sync</span>
@@ -278,7 +276,7 @@ export default function ManageSocialsPage() {
               <button
                 type="button"
                 onClick={openAddModal}
-                className="px-5 py-2.5 rounded-xl bg-[#3EF3FF] hover:bg-[#78F5FF] text-black text-xs font-jetbrains font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#3EF3FF]/20 flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#2cecf7] hover:bg-[#78F5FF] text-black text-xs font-jetbrains font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2cecf7]/20 flex items-center gap-2 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 <span>ADD SOCIAL CHANNEL</span>
@@ -288,7 +286,7 @@ export default function ManageSocialsPage() {
 
           {/* Flash Notice */}
           {notice && (
-            <div className="bg-[#3EF3FF]/10 border border-[#3EF3FF]/30 text-[#3EF3FF] px-4 py-3 rounded-2xl flex items-center gap-3 text-sm font-jetbrains">
+            <div className="bg-[#2cecf7]/10 border border-[#2cecf7]/30 text-[#2cecf7] px-4 py-3 rounded-2xl flex items-center gap-3 text-sm font-jetbrains">
               <span className="material-symbols-outlined text-[20px]">verified</span>
               <span>{notice}</span>
             </div>
@@ -301,7 +299,7 @@ export default function ManageSocialsPage() {
                 <span className="text-xs font-jetbrains text-gray-400 uppercase tracking-wider">
                   Total Channels
                 </span>
-                <span className="material-symbols-outlined text-[#3EF3FF] text-[20px]">
+                <span className="material-symbols-outlined text-[#2cecf7] text-[20px]">
                   share
                 </span>
               </div>
@@ -357,7 +355,7 @@ export default function ManageSocialsPage() {
               <Link
                 href="/home"
                 target="_blank"
-                className="text-xs font-jetbrains text-[#3EF3FF] hover:underline flex items-center gap-1.5"
+                className="text-xs font-jetbrains text-[#2cecf7] hover:underline flex items-center gap-1.5"
               >
                 <span>Preview Landing Footer</span>
                 <span className="material-symbols-outlined text-[14px]">open_in_new</span>
@@ -366,7 +364,7 @@ export default function ManageSocialsPage() {
 
             {loading ? (
               <div className="py-20 flex flex-col items-center justify-center text-gray-400">
-                <HelixLoader size={40} color="#3EF3FF" />
+                <HelixLoader size={40} color="#2cecf7" />
                 <p className="mt-4 font-jetbrains text-xs">Loading social channels…</p>
               </div>
             ) : links.length === 0 ? (
@@ -378,7 +376,7 @@ export default function ManageSocialsPage() {
                 <button
                   type="button"
                   onClick={handleSeedDefaults}
-                  className="px-4 py-2 rounded-xl bg-[#3EF3FF] text-black text-xs font-jetbrains font-bold uppercase tracking-wider"
+                  className="px-4 py-2 rounded-xl bg-[#2cecf7] text-black text-xs font-jetbrains font-bold uppercase tracking-wider"
                 >
                   Sync Default 4 Socials
                 </button>
@@ -397,7 +395,7 @@ export default function ManageSocialsPage() {
                       </span>
 
                       {/* Icon avatar */}
-                      <div className="w-12 h-12 rounded-2xl bg-[#080E1A] border border-white/10 flex items-center justify-center text-[#3EF3FF] shrink-0 shadow-inner">
+                      <div className="w-12 h-12 rounded-2xl bg-[#080E1A] border border-white/10 flex items-center justify-center text-[#2cecf7] shrink-0 shadow-inner">
                         <span className="material-symbols-outlined text-[24px]">
                           {link.icon || "share"}
                         </span>
@@ -457,7 +455,7 @@ export default function ManageSocialsPage() {
                       <button
                         type="button"
                         onClick={() => openEditModal(link)}
-                        className="px-4 py-2 rounded-xl bg-[#3EF3FF]/10 hover:bg-[#3EF3FF]/20 text-[#3EF3FF] border border-[#3EF3FF]/30 text-xs font-jetbrains font-bold uppercase tracking-wider transition-all cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-[#2cecf7]/10 hover:bg-[#2cecf7]/20 text-[#2cecf7] border border-[#2cecf7]/30 text-xs font-jetbrains font-bold uppercase tracking-wider transition-all cursor-pointer"
                       >
                         EDIT
                       </button>
@@ -510,7 +508,7 @@ export default function ManageSocialsPage() {
                     key={preset.name}
                     type="button"
                     onClick={() => handleSelectSuggestedPlatform(preset)}
-                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-[#3EF3FF]/10 hover:border-[#3EF3FF]/40 border border-white/10 text-xs font-jetbrains text-gray-300 hover:text-[#3EF3FF] transition-all cursor-pointer flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-[#2cecf7]/10 hover:border-[#2cecf7]/40 border border-white/10 text-xs font-jetbrains text-gray-300 hover:text-[#2cecf7] transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[14px]">
                       {preset.icon}
@@ -535,7 +533,7 @@ export default function ManageSocialsPage() {
                     onChange={(e) =>
                       setForm({ ...form, platform: e.target.value })
                     }
-                    className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#3EF3FF]"
+                    className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
 
@@ -550,7 +548,7 @@ export default function ManageSocialsPage() {
                     onChange={(e) =>
                       setForm({ ...form, order: Number(e.target.value) })
                     }
-                    className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#3EF3FF]"
+                    className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
               </div>
@@ -567,7 +565,7 @@ export default function ManageSocialsPage() {
                   onChange={(e) =>
                     setForm({ ...form, url: e.target.value })
                   }
-                  className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#3EF3FF] font-mono text-xs"
+                  className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#2cecf7] font-mono text-xs"
                 />
               </div>
 
@@ -584,9 +582,9 @@ export default function ManageSocialsPage() {
                       onChange={(e) =>
                         setForm({ ...form, icon: e.target.value })
                       }
-                      className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#3EF3FF]"
+                      className="w-full bg-[#030712] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#2cecf7]"
                     />
-                    <div className="w-11 h-11 rounded-xl bg-[#030712] border border-white/10 flex items-center justify-center text-[#3EF3FF] shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-[#030712] border border-white/10 flex items-center justify-center text-[#2cecf7] shrink-0">
                       <span className="material-symbols-outlined text-[22px]">
                         {form.icon || "share"}
                       </span>
@@ -606,7 +604,7 @@ export default function ManageSocialsPage() {
                       onChange={(e) =>
                         setForm({ ...form, isActive: e.target.checked })
                       }
-                      className="w-4 h-4 rounded bg-[#02040A] border-white/20 text-[#3EF3FF] focus:ring-0 cursor-pointer"
+                      className="w-4 h-4 rounded bg-[#02040A] border-white/20 text-[#2cecf7] focus:ring-0 cursor-pointer"
                     />
                     <label
                       htmlFor="socialActiveCheck"
@@ -629,7 +627,7 @@ export default function ManageSocialsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2.5 rounded-xl bg-[#3EF3FF] hover:bg-[#78F5FF] text-black font-jetbrains text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-md shadow-[#3EF3FF]/20"
+                  className="px-6 py-2.5 rounded-xl bg-[#2cecf7] hover:bg-[#78F5FF] text-black font-jetbrains text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-md shadow-[#2cecf7]/20"
                 >
                   {saving ? "SAVING…" : "SAVE SOCIAL CHANNEL"}
                 </button>

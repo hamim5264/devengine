@@ -1,3 +1,4 @@
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 import Head from "next/head";
 import { useEffect, useState, useCallback } from "react";
@@ -339,9 +340,7 @@ export default function ManageAttendancePage() {
                 Employee Attendance & Shifts
               </h1>
             </div>
-            <p className="text-xs sm:text-sm text-neutral-400 mt-1">
-              Real-time daily presence roster, annual heatmaps, break tracking, and approval queues
-            </p>
+            <p className="text-xs sm:text-sm text-neutral-400 mt-1">Review attendance, breaks, and missed punches.</p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -453,7 +452,7 @@ export default function ManageAttendancePage() {
           {activeTab === "roster" && (
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="text-xs text-neutral-400">Date:</span>
-              <input
+              <AdminDateInput
                 type="date"
                 value={selectedDate}
                 onChange={(e) => handleDateChange(e.target.value)}
@@ -568,7 +567,7 @@ export default function ManageAttendancePage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-neutral-900/60 border border-white/10 backdrop-blur-sm">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-semibold text-neutral-300">Select Employee:</span>
-                <select
+                <AdminSelect
                   value={selectedStaffForHeatmap}
                   onChange={(e) => setSelectedStaffForHeatmap(e.target.value)}
                   className="px-3 py-1.5 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-purple-500"
@@ -578,7 +577,7 @@ export default function ManageAttendancePage() {
                       {s.name} ({s.email}) — {s.staffType}
                     </option>
                   ))}
-                </select>
+                </AdminSelect>
               </div>
 
               {currentHeatmapStaff && (
@@ -917,7 +916,7 @@ export default function ManageAttendancePage() {
               <form onSubmit={handleManualSubmit} className="space-y-3">
                 <div>
                   <label className="text-xs font-medium text-neutral-300 block mb-1">Select Employee</label>
-                  <select
+                  <AdminSelect
                     required
                     value={manualForm.staffId}
                     onChange={(e) => setManualForm({ ...manualForm, staffId: e.target.value })}
@@ -929,12 +928,12 @@ export default function ManageAttendancePage() {
                         {s.name} ({s.email})
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-neutral-300 block mb-1">Date</label>
-                  <input
+                  <AdminDateInput
                     type="date"
                     required
                     value={manualForm.date}
@@ -969,7 +968,7 @@ export default function ManageAttendancePage() {
 
                 <div>
                   <label className="text-xs font-medium text-neutral-300 block mb-1">Status</label>
-                  <select
+                  <AdminSelect
                     value={manualForm.status}
                     onChange={(e) => setManualForm({ ...manualForm, status: e.target.value as AttendanceStatus })}
                     className="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-purple-500"
@@ -980,7 +979,7 @@ export default function ManageAttendancePage() {
                     <option value="remote">Remote / WFH</option>
                     <option value="on_leave">On Leave</option>
                     <option value="absent">Absent</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>

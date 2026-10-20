@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/templates.tsx
 // ─────────────────────────────────────────────────────────────
@@ -174,9 +175,7 @@ export default function TemplatesAndClausesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Templates & Standard Clause Library</h1>
-            <p className="text-sm text-slate-400">
-              Maintain legally vetted standard clauses, liability waivers, IP provisions, and contract blueprints.
-            </p>
+            <p className="text-sm text-slate-400">Manage reusable contract templates and clauses.</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -317,7 +316,7 @@ export default function TemplatesAndClausesPage() {
 
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Template Type</label>
-                  <select
+                  <AdminSelect
                     value={templateForm.templateType}
                     onChange={(e) => setTemplateForm({ ...templateForm, templateType: e.target.value as CCTemplateType })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -328,7 +327,7 @@ export default function TemplatesAndClausesPage() {
                     <option value="sow">Statement of Work</option>
                     <option value="quotation">Quotation / Proposal</option>
                     <option value="change_order">Change Order</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
@@ -389,7 +388,7 @@ export default function TemplatesAndClausesPage() {
               <form onSubmit={handleSaveClause} className="mt-4 space-y-4 text-xs">
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Clause Category</label>
-                  <select
+                  <AdminSelect
                     value={clauseForm.category}
                     onChange={(e) => setClauseForm({ ...clauseForm, category: e.target.value as CCClauseCategory })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -401,7 +400,7 @@ export default function TemplatesAndClausesPage() {
                     <option value="warranties">Warranties & Support</option>
                     <option value="dispute_resolution">Dispute Resolution</option>
                     <option value="termination">Termination</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>

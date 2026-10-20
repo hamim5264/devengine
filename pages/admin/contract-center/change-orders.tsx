@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/change-orders.tsx
 // ─────────────────────────────────────────────────────────────
@@ -143,9 +144,7 @@ export default function ChangeOrdersPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Change Orders & Scope Adjustments</h1>
-            <p className="text-sm text-slate-400">
-              Formally manage additions, cost variance, and schedule impacts for existing contracts without disputes.
-            </p>
+            <p className="text-sm text-slate-400">Manage scope, price, and schedule changes.</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -165,12 +164,12 @@ export default function ChangeOrdersPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
               placeholder="Search change orders by number, title, client..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -187,7 +186,7 @@ export default function ChangeOrdersPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -198,7 +197,7 @@ export default function ChangeOrdersPage() {
                   {label}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -269,7 +268,7 @@ export default function ChangeOrdersPage() {
               <form onSubmit={handleSave} className="mt-4 space-y-4 text-xs">
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Target Agreement *</label>
-                  <select
+                  <AdminSelect
                     required
                     value={formData.serviceAgreementId}
                     onChange={(e) => setFormData({ ...formData, serviceAgreementId: e.target.value })}
@@ -281,7 +280,7 @@ export default function ChangeOrdersPage() {
                         {a.agreementNumber} — {a.title} ({a.clientName})
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>

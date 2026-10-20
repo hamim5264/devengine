@@ -1,3 +1,4 @@
+import { updateStaffMember } from "@/lib/services/staffService";
 import { collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, runTransaction, setDoc, updateDoc, where, writeBatch, type DocumentData, type Query, type FirestoreError } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { Department, StudioPerson, StudioConversation, StudioMessage, StudioMessageAttachment, ChatBackground } from '@/types/communication';
@@ -28,7 +29,7 @@ export async function prepareStudioDirectory() {
   }
   const staffIds = new Set(staff.docs.map(d => d.id));
   people.docs.forEach(p => { if (p.data().role === 'employee' && !staffIds.has(p.id) && p.data().status !== 'suspended') changes.push({ id: p.id, data: { status: 'suspended', chatSuspended: true } }); });
-  if (!directory.has(current.uid)) changes.push({ id: current.uid, data: { uid: current.uid, name: 'DevEngine Admin', avatarUrl: current.photoURL || '', role: 'admin', status: 'active', departmentIds: [], chatSuspended: false } });
+  if (!directory.has(current.uid)) changes.push({ id: current.uid, data: { uid: current.uid, name: current.displayName || 'DevEngine Admin', avatarUrl: current.photoURL || '', role: 'admin', status: 'active', departmentIds: [], chatSuspended: false } });
   for (let i = 0; i < changes.length; i += 400) {
     const batch = writeBatch(db); changes.slice(i, i + 400).forEach(c => batch.set(doc(db, C.people, c.id), c.data, { merge: true })); await batch.commit();
   }
@@ -68,10 +69,13 @@ export async function removeDepartment(department: Department) {
     profiles.forEach(p => { if (p.exists()) tx.update(p.ref, { departmentIds: (p.data().departmentIds || []).filter((v: string) => v !== department.id) }); });
   });
 }
-export async function setEmployeeAccess(uid: string, action: 'chat' | 'account', suspended: boolean) {
+export async function setEmployeeAccess(uid: string, action: 'chat' | 'account', suspended: boolean, reason?: string) {
+  if (action === 'account') {
+    await updateStaffMember(uid, { status: suspended ? 'suspended' : 'active', suspensionReason: suspended ? reason?.trim() : undefined });
+    return;
+  }
   const batch = writeBatch(db);
-  if (action === 'account') batch.update(doc(db, 'staff_members', uid), { status: suspended ? 'suspended' : 'active', updatedAt: nowISO() });
-  batch.update(doc(db, C.people, uid), action === 'chat' ? { chatSuspended: suspended } : { status: suspended ? 'suspended' : 'active' });
+  batch.update(doc(db, C.people, uid), { chatSuspended: suspended });
   await batch.commit();
 }
 export function canDirectMessage(me: StudioPerson | undefined, person: StudioPerson) {

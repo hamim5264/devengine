@@ -1,3 +1,4 @@
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/milestones.tsx
 // ─────────────────────────────────────────────────────────────
@@ -157,9 +158,7 @@ export default function MilestonesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Delivery Milestones & Acceptance</h1>
-            <p className="text-sm text-slate-400">
-              Track project deliverables against contract schedules, verification criteria, and stage sign-offs.
-            </p>
+            <p className="text-sm text-slate-400">Track deliverables, approvals, and schedules.</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -179,12 +178,12 @@ export default function MilestonesPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
               placeholder="Search milestones by title, project..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -201,7 +200,7 @@ export default function MilestonesPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -212,7 +211,7 @@ export default function MilestonesPage() {
               <option value="submitted">Submitted</option>
               <option value="accepted">Accepted</option>
               <option value="rejected">Rejected</option>
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -310,7 +309,7 @@ export default function MilestonesPage() {
               <form onSubmit={handleSave} className="mt-4 space-y-4 text-xs">
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Target Project *</label>
-                  <select
+                  <AdminSelect
                     required
                     value={formData.projectId}
                     onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
@@ -322,7 +321,7 @@ export default function MilestonesPage() {
                         {p.title} ({p.projectNumber})
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
@@ -330,7 +329,7 @@ export default function MilestonesPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Milestone 2: Staging QA & Payment Gateway Integration"
+                    placeholder="e.g. Staging QA and payment integration"
                     value={formData.phaseName}
                     onChange={(e) => setFormData({ ...formData, phaseName: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -339,7 +338,7 @@ export default function MilestonesPage() {
 
                 <div>
                   <label className="block font-medium text-slate-300 mb-1">Target Planned Date</label>
-                  <input
+                  <AdminDateInput
                     type="date"
                     value={formData.plannedDate}
                     onChange={(e) => setFormData({ ...formData, plannedDate: e.target.value })}

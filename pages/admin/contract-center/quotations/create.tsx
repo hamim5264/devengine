@@ -1,3 +1,4 @@
+import { AdminSelect, AdminDateInput } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/quotations/create.tsx
 // ─────────────────────────────────────────────────────────────
@@ -334,9 +335,7 @@ export default function QuotationCreatePage() {
             <h1 className="text-2xl font-bold tracking-tight text-white mt-1">
               {editId ? "Edit Quotation Proposal" : "Commercial Quotation Builder"}
             </h1>
-            <p className="text-sm text-slate-400">
-              Compose itemized line deliverables, calculate tax & discounts, and define payment milestones.
-            </p>
+            <p className="text-sm text-slate-400">Build a quotation with line items and milestones.</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -375,7 +374,7 @@ export default function QuotationCreatePage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Enterprise E-Commerce Engine & Mobile App Development"
+                  placeholder="e.g. E-commerce web and mobile app"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
@@ -385,7 +384,7 @@ export default function QuotationCreatePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Client Entity *</label>
-                  <select
+                  <AdminSelect
                     value={selectedClientId}
                     onChange={(e) => setSelectedClientId(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-pink-500"
@@ -396,12 +395,12 @@ export default function QuotationCreatePage() {
                         {c.legalName} ({c.clientNumber})
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Linked Project (Optional)</label>
-                  <select
+                  <AdminSelect
                     value={selectedProjectId}
                     onChange={(e) => setSelectedProjectId(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-pink-500"
@@ -412,12 +411,12 @@ export default function QuotationCreatePage() {
                         {p.title} ({p.projectNumber})
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Commercial Model</label>
-                  <select
+                  <AdminSelect
                     value={commercialModel}
                     onChange={(e) => setCommercialModel(e.target.value as CCCommercialModel)}
                     className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-pink-500"
@@ -428,12 +427,12 @@ export default function QuotationCreatePage() {
                     <option value="hourly">Hourly Billing</option>
                     <option value="monthly_retainer">Monthly Retainer</option>
                     <option value="time_and_materials">Time & Materials</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">Currency</label>
-                  <select
+                  <AdminSelect
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value as CCCurrency)}
                     className="w-full px-3 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-pink-500"
@@ -443,13 +442,13 @@ export default function QuotationCreatePage() {
                     <option value="EUR">EUR (€)</option>
                     <option value="GBP">GBP (£)</option>
                     <option value="AED">AED</option>
-                  </select>
+                  </AdminSelect>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Valid Until Date</label>
-                <input
+                <AdminDateInput
                   type="date"
                   value={validUntilDate}
                   onChange={(e) => setValidUntilDate(e.target.value)}
@@ -461,7 +460,7 @@ export default function QuotationCreatePage() {
                 <label className="block text-xs font-medium text-slate-300 mb-1">Executive Summary / Scope</label>
                 <textarea
                   rows={3}
-                  placeholder="High-level overview of project deliverables, methodology, and target outcomes..."
+                  placeholder="Scope, approach, and expected outcomes"
                   value={executiveSummary}
                   onChange={(e) => setExecutiveSummary(e.target.value)}
                   className="w-full px-3.5 py-2 bg-slate-800/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"

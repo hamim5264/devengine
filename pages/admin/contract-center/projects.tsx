@@ -1,3 +1,4 @@
+import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
 // pages/admin/contract-center/projects.tsx
 // ─────────────────────────────────────────────────────────────
@@ -182,9 +183,7 @@ export default function ContractCenterProjectsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Client Projects & Engagements</h1>
-            <p className="text-sm text-slate-400">
-              Track contract-bound client software engagements, scope definitions, and commercial models.
-            </p>
+            <p className="text-sm text-slate-400">Manage client projects, scope, and commercial terms.</p>
           </div>
           <button
             onClick={openAddModal}
@@ -204,12 +203,12 @@ export default function ContractCenterProjectsPage() {
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <input
+            <input data-admin-search
               type="text"
-              placeholder="Search projects by title, project ID, client name..."
+              placeholder="Find a project or client"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
+              className="transparent-input bg-transparent w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500"
             />
             <svg
               className="absolute left-3 top-2.5 text-slate-500"
@@ -226,7 +225,7 @@ export default function ContractCenterProjectsPage() {
           </div>
 
           <div className="flex gap-2">
-            <select
+            <AdminSelect
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -239,9 +238,9 @@ export default function ContractCenterProjectsPage() {
               <option value="on_hold">On Hold</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
-            </select>
+            </AdminSelect>
 
-            <select
+            <AdminSelect
               value={modelFilter}
               onChange={(e) => setModelFilter(e.target.value)}
               className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-pink-500"
@@ -252,7 +251,7 @@ export default function ContractCenterProjectsPage() {
               <option value="hourly">Hourly Billing</option>
               <option value="monthly_retainer">Monthly Retainer</option>
               <option value="time_and_materials">Time & Materials</option>
-            </select>
+            </AdminSelect>
           </div>
         </div>
 
@@ -347,7 +346,7 @@ export default function ContractCenterProjectsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Associated Client *</label>
-                    <select
+                    <AdminSelect
                       required
                       value={formData.clientId}
                       onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
@@ -359,12 +358,12 @@ export default function ContractCenterProjectsPage() {
                           {c.legalName} ({c.clientNumber})
                         </option>
                       ))}
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Commercial Model</label>
-                    <select
+                    <AdminSelect
                       value={formData.commercialModel}
                       onChange={(e) => setFormData({ ...formData, commercialModel: e.target.value as CCCommercialModel })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -374,7 +373,7 @@ export default function ContractCenterProjectsPage() {
                       <option value="hourly">Hourly Billing</option>
                       <option value="monthly_retainer">Monthly Retainer</option>
                       <option value="time_and_materials">Time & Materials</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
@@ -390,7 +389,7 @@ export default function ContractCenterProjectsPage() {
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Currency</label>
-                    <select
+                    <AdminSelect
                       value={formData.currency}
                       onChange={(e) => setFormData({ ...formData, currency: e.target.value as CCCurrency })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -399,7 +398,7 @@ export default function ContractCenterProjectsPage() {
                       <option value="BDT">BDT (৳)</option>
                       <option value="EUR">EUR (€)</option>
                       <option value="GBP">GBP (£)</option>
-                    </select>
+                    </AdminSelect>
                   </div>
 
                   <div>
@@ -414,7 +413,7 @@ export default function ContractCenterProjectsPage() {
 
                   <div>
                     <label className="block font-medium text-slate-300 mb-1">Status</label>
-                    <select
+                    <AdminSelect
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as CCProjectStatus })}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
@@ -426,7 +425,7 @@ export default function ContractCenterProjectsPage() {
                       <option value="on_hold">On Hold</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
-                    </select>
+                    </AdminSelect>
                   </div>
                 </div>
 
@@ -434,7 +433,7 @@ export default function ContractCenterProjectsPage() {
                   <label className="block font-medium text-slate-300 mb-1">Scope & Description</label>
                   <textarea
                     rows={3}
-                    placeholder="Key deliverables, tech stack, architectural requirements..."
+                    placeholder="Deliverables and technical requirements"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"

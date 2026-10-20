@@ -61,7 +61,7 @@ export default function EditAgreementPage() {
   if (!authReady || !isAdmin) {
     return (
       <div className="min-h-screen bg-[#07070d] flex flex-col items-center justify-center text-white">
-        <HelixLoader size={48} color="#38f2ff" />
+        <HelixLoader size={48} color="#2cecf7" />
         <p className="mt-4 font-mono text-xs text-gray-400 tracking-widest uppercase">
           Verifying Admin Authorization…
         </p>
@@ -129,7 +129,7 @@ export default function EditAgreementPage() {
 
           {loading ? (
             <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3">
-              <HelixLoader size={44} color="#38f2ff" />
+              <HelixLoader size={44} color="#2cecf7" />
               <p className="text-xs font-mono text-gray-400 uppercase tracking-wider">
                 Loading Agreement Data…
               </p>

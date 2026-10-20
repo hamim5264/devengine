@@ -172,7 +172,7 @@ export default function ManageLicensePage() {
   if (!authReady || loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <HelixLoader size={50} color="#38f2ff" />
+        <HelixLoader size={50} color="#2cecf7" />
       </div>
     );
   }
@@ -205,14 +205,12 @@ export default function ManageLicensePage() {
                 ← Admin Dashboard
               </Link>
               <span className="text-gray-600">/</span>
-              <span className="text-xs font-mono text-[#38f2ff] font-bold">License CMS</span>
+              <span className="text-xs font-mono text-[#2cecf7] font-bold">License CMS</span>
             </div>
             <h1 className="text-3xl font-space font-bold text-white tracking-tight">
               Manage Commercial License Agreement
             </h1>
-            <p className="text-sm text-gray-400 mt-1">
-              Configure production deployment rights, anti-redistribution terms, source code access, and IP clauses.
-            </p>
+            <p className="text-sm text-gray-400 mt-1">Manage licensing, source access, and ownership terms.</p>
           </div>
 
           <div className="flex items-center gap-3">
@@ -236,7 +234,7 @@ export default function ManageLicensePage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-5 py-2.5 rounded-xl bg-[#38f2ff] hover:bg-[#78f5ff] text-[#030712] font-space font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(56,242,255,0.4)] disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-[#2cecf7] hover:bg-[#78f5ff] text-[#030712] font-space font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(56,242,255,0.4)] disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? (
                 <>
@@ -277,7 +275,7 @@ export default function ManageLicensePage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-3.5 py-2 rounded-xl text-xs font-mono font-semibold transition flex items-center gap-2 ${
                 activeTab === tab.id
-                  ? "bg-[#38f2ff] text-[#030712] shadow-[0_0_15px_rgba(56,242,255,0.3)]"
+                  ? "bg-[#2cecf7] text-[#030712] shadow-[0_0_15px_rgba(56,242,255,0.3)]"
                   : "bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/5"
               }`}
             >
@@ -310,7 +308,7 @@ export default function ManageLicensePage() {
                         header: { ...prev.header, badgeText: e.target.value },
                       }))
                     }
-                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#38f2ff]"
+                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
 
@@ -327,7 +325,7 @@ export default function ManageLicensePage() {
                         header: { ...prev.header, version: e.target.value },
                       }))
                     }
-                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#38f2ff]"
+                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
 
@@ -344,7 +342,7 @@ export default function ManageLicensePage() {
                         header: { ...prev.header, statusText: e.target.value },
                       }))
                     }
-                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#38f2ff]"
+                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
 
@@ -361,7 +359,7 @@ export default function ManageLicensePage() {
                         header: { ...prev.header, lastUpdated: e.target.value },
                       }))
                     }
-                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#38f2ff]"
+                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
               </div>
@@ -379,7 +377,7 @@ export default function ManageLicensePage() {
                       header: { ...prev.header, title: e.target.value },
                     }))
                   }
-                  className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-base text-white font-space font-bold focus:outline-none focus:border-[#38f2ff]"
+                  className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-base text-white font-space font-bold focus:outline-none focus:border-[#2cecf7]"
                 />
               </div>
 
@@ -396,7 +394,7 @@ export default function ManageLicensePage() {
                       header: { ...prev.header, subtitle: e.target.value },
                     }))
                   }
-                  className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#38f2ff] resize-none"
+                  className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#2cecf7] resize-none"
                 />
               </div>
             </div>
@@ -409,7 +407,7 @@ export default function ManageLicensePage() {
                 <h2 className="text-xl font-space font-bold text-white">
                   Section {config[activeTab].number}: {config[activeTab].title}
                 </h2>
-                <span className="font-mono text-xs text-[#38f2ff]">
+                <span className="font-mono text-xs text-[#2cecf7]">
                   ID: #{config[activeTab].id}
                 </span>
               </div>
@@ -423,7 +421,7 @@ export default function ManageLicensePage() {
                     type="text"
                     value={config[activeTab].number}
                     onChange={(e) => updateSection(activeTab, "number", e.target.value)}
-                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-[#38f2ff]"
+                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-mono focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
 
@@ -435,7 +433,7 @@ export default function ManageLicensePage() {
                     type="text"
                     value={config[activeTab].title}
                     onChange={(e) => updateSection(activeTab, "title", e.target.value)}
-                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-space font-bold focus:outline-none focus:border-[#38f2ff]"
+                    className="w-full bg-[#050b14] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white font-space font-bold focus:outline-none focus:border-[#2cecf7]"
                   />
                 </div>
               </div>
@@ -449,7 +447,7 @@ export default function ManageLicensePage() {
                   <button
                     type="button"
                     onClick={() => addParagraph(activeTab)}
-                    className="text-xs font-mono text-[#38f2ff] hover:underline flex items-center gap-1"
+                    className="text-xs font-mono text-[#2cecf7] hover:underline flex items-center gap-1"
                   >
                     + Add Paragraph
                   </button>
@@ -462,7 +460,7 @@ export default function ManageLicensePage() {
                       value={para}
                       onChange={(e) => updateParagraph(activeTab, pIdx, e.target.value)}
                       placeholder={`Paragraph ${pIdx + 1}...`}
-                      className="w-full bg-[#050b14] border border-white/10 rounded-xl p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-[#38f2ff] resize-none"
+                      className="w-full bg-[#050b14] border border-white/10 rounded-xl p-3 text-xs text-white leading-relaxed focus:outline-none focus:border-[#2cecf7] resize-none"
                     />
                     <button
                       type="button"
@@ -485,7 +483,7 @@ export default function ManageLicensePage() {
                   <button
                     type="button"
                     onClick={() => addBullet(activeTab)}
-                    className="text-xs font-mono text-[#38f2ff] hover:underline flex items-center gap-1"
+                    className="text-xs font-mono text-[#2cecf7] hover:underline flex items-center gap-1"
                   >
                     + Add Bullet Item
                   </button>
@@ -493,13 +491,13 @@ export default function ManageLicensePage() {
 
                 {(config[activeTab].bullets || []).map((bullet, bIdx) => (
                   <div key={bIdx} className="flex items-center gap-2.5">
-                    <span className="text-[#38f2ff] text-xs font-mono">•</span>
+                    <span className="text-[#2cecf7] text-xs font-mono">•</span>
                     <input
                       type="text"
                       value={bullet}
                       onChange={(e) => updateBullet(activeTab, bIdx, e.target.value)}
                       placeholder={`Bullet item ${bIdx + 1}...`}
-                      className="w-full bg-[#050b14] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#38f2ff]"
+                      className="w-full bg-[#050b14] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#2cecf7]"
                     />
                     <button
                       type="button"

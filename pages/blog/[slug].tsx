@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { GetServerSideProps } from "next";
 import HelixLoader from "@/components/HelixLoader";
 import { type BlogPost, BLOG_CATEGORY_CONFIG } from "@/types/blog";
 import { getBlogBySlug, getPublishedBlogs, INITIAL_BLOGS, recordBlogRead } from "@/lib/services/blogService";
@@ -12,12 +13,12 @@ import EditorialFeed from "@/components/features/EditorialFeed";
 import base from "@/components/features/Features.module.css";
 import styles from "@/components/features/Community.module.css";
 
-export default function BlogDetailPage() {
+export default function BlogDetailPage({ initialPost }: { initialPost?: BlogPost | null }) {
   const router = useRouter();
-  const slug = typeof router.query.slug === "string" ? router.query.slug : undefined;
-  const [post, setPost] = useState<BlogPost | null>(null);
+  const slug = typeof router.query.slug === "string" ? router.query.slug : initialPost?.slug;
+  const [post, setPost] = useState<BlogPost | null>(initialPost || null);
   const [related, setRelated] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialPost);
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [autoScroll, setAutoScroll] = useState(false);
@@ -74,8 +75,85 @@ export default function BlogDetailPage() {
   const published = post?.publishedAt ? new Date(post.publishedAt) : null;
   const validDate = published && Number.isFinite(published.getTime()) ? published : null;
 
-  return <FeaturePage><div className={styles.quiet}>
-    <Head><title>{post ? `${post.title} | DevEngine Chronicles` : loading ? "DevEngine Chronicles" : "Story unavailable | DevEngine Chronicles"}</title><meta name="description" content={post?.excerpt || "Ideas, engineering insights, and stories from the DevEngine studio."} />{post?.coverImage && <meta property="og:image" content={post.coverImage} />}{post && <meta property="og:title" content={post.title} />}{post && <meta property="og:description" content={post.excerpt} />}{post && <meta property="og:type" content="article" />}</Head>
+  const canonicalUrl = post ? `https://www.devenginehq.com/blog/${post.slug}` : "https://www.devenginehq.com/blog";
+  const ogImage = post?.coverImage || "https://www.devenginehq.com/dev_url_logo.png";
+  const articleSchema = post
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "description": post.excerpt,
+        "image": post.coverImage ? [post.coverImage] : ["https://www.devenginehq.com/dev_url_logo.png"],
+        "datePublished": post.publishedAt || post.createdAt,
+        "dateModified": post.updatedAt || post.publishedAt || post.createdAt,
+        "author": {
+          "@type": "Person",
+          "name": post.author?.name || "MD. ABDUL HAMIM LEON",
+          "jobTitle": post.author?.role || "Founder & Lead Architect",
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "DevEngine Systems Inc.",
+          "url": "https://www.devenginehq.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.devenginehq.com/dev_url_logo.png",
+          },
+        },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": canonicalUrl,
+        },
+      }
+    : null;
+
+  return (
+    <FeaturePage>
+      <div className={styles.quiet}>
+        <Head>
+          <title>
+            {post
+              ? `${post.title} | DevEngine Chronicles`
+              : loading
+              ? "DevEngine Chronicles"
+              : "Story unavailable | DevEngine Chronicles"}
+          </title>
+          <meta
+            name="description"
+            content={post?.excerpt || "Ideas, engineering insights, and stories from the DevEngine studio."}
+          />
+          <link rel="canonical" href={canonicalUrl} />
+
+          {/* OpenGraph / Facebook / LinkedIn */}
+          <meta property="og:site_name" content="DevEngine Chronicles" />
+          <meta property="og:title" content={post?.title || "DevEngine Chronicles"} />
+          <meta
+            property="og:description"
+            content={post?.excerpt || "Ideas, engineering insights, and stories from the DevEngine studio."}
+          />
+          <meta property="og:type" content="article" />
+          <meta property="og:url" content={canonicalUrl} />
+          <meta property="og:image" content={ogImage} />
+          {validDate && <meta property="article:published_time" content={validDate.toISOString()} />}
+          {post?.author?.name && <meta property="article:author" content={post.author.name} />}
+
+          {/* Twitter Cards */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={post?.title || "DevEngine Chronicles"} />
+          <meta
+            name="twitter:description"
+            content={post?.excerpt || "Ideas, engineering insights, and stories from the DevEngine studio."}
+          />
+          <meta name="twitter:image" content={ogImage} />
+
+          {/* JSON-LD Article Schema */}
+          {articleSchema && (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+            />
+          )}
+        </Head>
     {loading ? <div className={base.loading} role="status"><HelixLoader size={48} color="#2cecf7" /><p className={base.small}>Opening your story…</p></div> : !post ? <section className={`${base.section} ${styles.hero}`}><div className={base.inner}><div className={`${base.card} ${base.empty}`}><div className={base.emptyIcon}><Icon name="menu_book" /></div><h1 className={styles.sectionHeading}>This story isn’t available.</h1><p className={styles.sectionDescription} style={{ marginInline: "auto" }}>It may have moved or is no longer published. Explore the Chronicles for more stories from the studio.</p><div className={base.actions}><Link className={base.button} href="/blog"><Icon name="west" />Back to all stories</Link></div></div></div></section> : <section className={`${base.section} ${styles.hero}`}><div className={base.inner}><article className={styles.article}>
       <div className={styles.articleNav}><Link className={base.secondaryButton} href="/blog"><Icon name="west" />All Chronicles</Link><div className={styles.articleNavActions}><button type="button" className={`${styles.navAutoScrollBtn} ${autoScroll ? styles.navAutoScrollActive : ""}`} onClick={() => setAutoScroll((prev) => !prev)} title={autoScroll ? "Pause auto scroll" : "Auto scroll reading mode (18s per section)"} aria-pressed={autoScroll}><span className="material-symbols-outlined" style={{ fontSize: 18, lineHeight: 1 }}>{autoScroll ? "pause_circle" : "motion_photos_on"}</span><span>Auto Scroll</span><span className={styles.navToggleTrack} aria-hidden="true"><span className={styles.navToggleThumb} /></span></button><button type="button" className={base.secondaryButton} onClick={copyLink}><Icon name={copied ? "check" : "share"} />{copied ? "Link copied" : "Share story"}</button></div></div>
       <span role="status" className={styles.srOnly}>{copied ? "Story link copied to clipboard." : ""}</span>
@@ -95,7 +173,32 @@ export default function BlogDetailPage() {
         onToggleAutoScroll={() => setAutoScroll((prev) => !prev)}
       />
       <footer className={styles.articleEnd}>{post.tags?.length > 0 && <><h2 className={styles.srOnly}>Story topics</h2><div className={styles.tags}>{post.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div></>}<div className={styles.authorBanner}><Author author={post.author} /><Link className={base.secondaryButton} href="/blog">Explore more stories <Icon name="arrow_forward" /></Link></div></footer>
-      {related.length > 0 && <section className={styles.related} aria-labelledby="related-stories"><div className={styles.sectionHeader}><h2 id="related-stories" className={styles.sectionHeading}>Keep exploring.</h2><Link className={styles.readLink} href="/blog">All stories <Icon name="arrow_forward" /></Link></div><div className={styles.relatedGrid}>{related.map((item) => <BlogCard key={item.id} post={item} compact headingLevel="h3" />)}</div></section>}
-    </article></div></section>}
-  </div></FeaturePage>;
+        </article>
+      </div>
+    </section>}
+  </div>
+</FeaturePage>
+);
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const slug = context.params?.slug as string;
+  let initialPost: BlogPost | null = null;
+  try {
+    const candidate = await getBlogBySlug(slug);
+    if (candidate && candidate.isPublished) {
+      initialPost = candidate;
+    } else {
+      const fallback = INITIAL_BLOGS.find((item) => item.slug === slug && item.isPublished);
+      if (fallback) initialPost = { ...fallback, id: `seed-${fallback.slug}` };
+    }
+  } catch (err) {
+    console.error("Error in blog getServerSideProps:", err);
+  }
+
+  return {
+    props: {
+      initialPost: initialPost ? JSON.parse(JSON.stringify(initialPost)) : null,
+    },
+  };
+};

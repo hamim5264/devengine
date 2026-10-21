@@ -1,0 +1,52 @@
+# ========================================================
+# DevEngine Robots Exclusion Protocol (robots.txt)
+# Official Website: https://www.devenginehq.com
+# ========================================================
+
+User-agent: *
+Allow: /
+Allow: /home
+Allow: /about
+Allow: /projects
+Allow: /projects/*
+Allow: /blog
+Allow: /blog/*
+Allow: /services
+Allow: /pricing
+Allow: /contact
+Allow: /career
+Allow: /reviews
+Allow: /apps/*
+Allow: /app-lab/*
+Allow: /docs
+Allow: /documentation
+Allow: /security
+Allow: /security-protocol
+Allow: /terms
+Allow: /privacy
+Allow: /privacy-policy
+Allow: /refund-policy
+Allow: /commercial-license
+
+# Disallow Private Dashboards, Portals & API endpoints
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /staff/
+Disallow: /staff/*
+Disallow: /employee/
+Disallow: /employee/*
+Disallow: /contract/
+Disallow: /contract/*
+Disallow: /project-overview/
+Disallow: /project-overview/*
+Disallow: /api/
+Disallow: /api/*
+Disallow: /checkout
+Disallow: /payment-cancel
+Disallow: /payment-fail
+Disallow: /payment-success
+Disallow: /reset-password
+
+# Dynamic Sitemaps
+Sitemap: https://www.devenginehq.com/sitemap.xml
+Sitemap: https://thedevengine.vercel.app/sitemap.xml

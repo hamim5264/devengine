@@ -119,7 +119,21 @@ export default function DocumentPage({ title, subtitle, badge, metadata = [], se
   const contents = <nav className={styles.contentsNav} aria-label="Document sections">{visible.map((section, index) => <a key={section.id} href={`#${encodeURIComponent(section.id)}`} onClick={(event) => navigate(event, section.id)} aria-current={active === section.id ? "location" : undefined}><span>{section.number || String(index + 1).padStart(2, "0")}</span><span>{section.title}</span></a>)}</nav>;
 
   return <div className={styles.page}>
-    <Head><title>{title} | DevEngine</title><meta name="description" content={subtitle} /></Head>
+    <Head>
+      <title>{title} | DevEngine</title>
+      <meta name="description" content={subtitle} />
+      <link rel="canonical" href={`https://www.devenginehq.com${router.asPath.split("#")[0].split("?")[0]}`} />
+      <meta property="og:site_name" content="DevEngine" />
+      <meta property="og:title" content={`${title} | DevEngine`} />
+      <meta property="og:description" content={subtitle} />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content={`https://www.devenginehq.com${router.asPath.split("#")[0].split("?")[0]}`} />
+      <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={`${title} | DevEngine`} />
+      <meta name="twitter:description" content={subtitle} />
+      <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+    </Head>
     <div ref={progress} className={styles.progress} aria-hidden="true" />
     <a className={styles.skipLink} href="#document-content">Skip to document</a>
     <header className={styles.documentHeader}><div className={styles.headerInner}><Link href="/home" aria-label="DevEngine home" className={styles.logo}><Image src={theme === "light" ? "/assets/DevEngine-logo-on-light1.png" : "/assets/DevEngine-logo-on-dark2.png"} alt="DevEngine" width={2400} height={600} priority /></Link><div className={styles.headerActions}><HeaderControls /><Link href="/home" className={styles.secondaryButton}><DocumentIcon name="west" /><span>Home</span></Link></div></div></header>

@@ -32,7 +32,34 @@ export default function AboutPage() {
 
   return (
     <FeaturePage>
-      <Head><title>About DevEngine | People, Purpose & Engineering</title><meta name="description" content={`Meet ${founder.name} and the DevEngine team. Discover the people and engineering principles behind our mobile, web, and AI experiences.`} /></Head>
+      <Head>
+        <title>About DevEngine | People, Purpose & Engineering</title>
+        <meta
+          name="description"
+          content={`Meet ${founder.name} and the DevEngine team. Discover the people and engineering principles behind our mobile, web, and AI experiences.`}
+        />
+        <link rel="canonical" href="https://www.devenginehq.com/about" />
+
+        {/* OpenGraph */}
+        <meta property="og:site_name" content="DevEngine" />
+        <meta property="og:title" content="About DevEngine | People, Purpose & Engineering" />
+        <meta
+          property="og:description"
+          content={`Meet ${founder.name} and the DevEngine team. Discover the people and engineering principles behind our mobile, web, and AI experiences.`}
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.devenginehq.com/about" />
+        <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+        {/* Twitter Cards */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="About DevEngine | People, Purpose & Engineering" />
+        <meta
+          name="twitter:description"
+          content={`Meet ${founder.name} and the DevEngine team. Discover the people and engineering principles behind our mobile, web, and AI experiences.`}
+        />
+        <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+      </Head>
       <section className={`${styles.section} ${styles.hero}`}><div className={styles.inner}><div className={styles.split}>
         <div><Reveal><span className={styles.eyebrow}>The people behind DevEngine</span></Reveal><AnimatedTitle text={title} accent={accent} /><Reveal delay={0.15}><p className={styles.body}>An independent software studio bringing ambitious ideas to life through thoughtful design and purposeful engineering.</p><div className={styles.founderDetails}><h2 className={styles.cardTitle}>{founder.name}</h2><p className={styles.small}>{founder.title}</p><p className={styles.body}>{founder.bio}</p><p className={styles.small}>{founder.education}</p><p className={styles.small}>{founder.location}</p><a className={styles.secondaryButton} href="https://neonecy.com/" target="_blank" rel="noopener noreferrer" style={{ marginTop: ".8rem" }}>Lead Mobile Developer at NEONECY <Icon name="north_east" /></a></div><div className={styles.actions}><a className={styles.button} href={portfolio} target="_blank" rel="noopener noreferrer">Explore founder’s portfolio <Icon name="arrow_outward" /></a><a className={styles.secondaryButton} href="#studio-architecture">Our approach <Icon name="south" /></a></div></Reveal></div>
         <DepthStage><figure className={styles.portraitWrap}><div className={styles.portrait}><PreviewImage src={founder.avatarUrl || "/assets/CEO.png"} alt={founder.name} priority /><figcaption className={styles.portraitCaption}><strong>Ideas need people.</strong><span className={styles.small}>Founder & lead architect</span><div className={styles.tags}>{(founder.techBadges || []).map((badge) => <span key={badge} className={styles.tag}>{badge}</span>)}</div></figcaption></div></figure></DepthStage>

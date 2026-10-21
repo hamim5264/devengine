@@ -232,6 +232,27 @@ export default function CareerPage() {
           content="Explore high-impact career opportunities at DevEngine. We are seeking elite software architects, systems engineers, and spatial UI/UX designers."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="canonical" href="https://www.devenginehq.com/career" />
+
+        {/* OpenGraph */}
+        <meta property="og:site_name" content="DevEngine" />
+        <meta property="og:title" content="Careers & Engineering Vanguard | DevEngine Extreme" />
+        <meta
+          property="og:description"
+          content="Explore high-impact career opportunities at DevEngine. We are seeking elite software architects, systems engineers, and spatial UI/UX designers."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.devenginehq.com/career" />
+        <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+        {/* Twitter Cards */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Careers & Engineering Vanguard | DevEngine Extreme" />
+        <meta
+          name="twitter:description"
+          content="Explore high-impact career opportunities at DevEngine. We are seeking elite software architects, systems engineers, and spatial UI/UX designers."
+        />
+        <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
       </Head>
 
       <div className="min-h-screen bg-[var(--devengine-page)] text-[var(--devengine-text)] relative overflow-x-hidden transition-colors duration-300">

@@ -29,7 +29,34 @@ export default function BlogIndexPage() {
   }), [posts, search, category]);
   const clearFilters = () => { setSearch(""); setCategory("ALL"); };
   return <FeaturePage><div className={styles.quiet}>
-    <Head><title>DevEngine Chronicles | Ideas, Engineering & Studio Stories</title><meta name="description" content="Stories from inside DevEngine: engineering insights, lessons learned, milestones, and the people behind the products." /></Head>
+    <Head>
+      <title>DevEngine Chronicles | Ideas, Engineering & Studio Stories</title>
+      <meta
+        name="description"
+        content="Stories from inside DevEngine: engineering insights, lessons learned, milestones, and the people behind the products."
+      />
+      <link rel="canonical" href="https://www.devenginehq.com/blog" />
+
+      {/* OpenGraph */}
+      <meta property="og:site_name" content="DevEngine Chronicles" />
+      <meta property="og:title" content="DevEngine Chronicles | Ideas, Engineering & Studio Stories" />
+      <meta
+        property="og:description"
+        content="Stories from inside DevEngine: engineering insights, lessons learned, milestones, and the people behind the products."
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://www.devenginehq.com/blog" />
+      <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+      {/* Twitter Cards */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="DevEngine Chronicles | Ideas, Engineering & Studio Stories" />
+      <meta
+        name="twitter:description"
+        content="Stories from inside DevEngine: engineering insights, lessons learned, milestones, and the people behind the products."
+      />
+      <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+    </Head>
     <section className={`${base.section} ${styles.hero}`}><div className={base.inner}><SoftReveal><div className={styles.heroCopy}><span className={styles.heroLabel}>DevEngine Chronicles / Inside the studio</span><h1 className={styles.title}>Behind the work.<br /><span className={styles.highlight}>Stories worth sharing.</span></h1><p className={styles.intro}>The ideas, breakthroughs, and lessons behind our software. Notes from the people building DevEngine, one thoughtful experience at a time.</p></div></SoftReveal></div></section>
     <section className={base.section} style={{ paddingTop: "1rem" }} aria-label="Browse stories"><div className={base.inner}>
       <div className={styles.sectionHeader}><h2 className={styles.sectionHeading}>The latest from DevEngine.</h2><SearchField id="blog-search" value={search} onChange={setSearch} label="Search stories" placeholder="Search stories, topics, or technology…" /></div>

@@ -344,6 +344,27 @@ export default function ArchivePage() {
           content={config.hero.subtitle || "The Pinnacle of Digital Craftsmanship."}
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="canonical" href="https://www.devenginehq.com/projects" />
+
+        {/* OpenGraph */}
+        <meta property="og:site_name" content="DevEngine" />
+        <meta property="og:title" content="THE DEVENGINE ARCHIVE - High-Fidelity Engineering Catalog" />
+        <meta
+          property="og:description"
+          content={config.hero.subtitle || "The Pinnacle of Digital Craftsmanship."}
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.devenginehq.com/projects" />
+        <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+        {/* Twitter Cards */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="THE DEVENGINE ARCHIVE - High-Fidelity Engineering Catalog" />
+        <meta
+          name="twitter:description"
+          content={config.hero.subtitle || "The Pinnacle of Digital Craftsmanship."}
+        />
+        <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
       </Head>
 
       {/* Shared Cinematic Landing Navbar */}

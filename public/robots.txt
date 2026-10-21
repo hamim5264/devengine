@@ -49,4 +49,3 @@ Disallow: /reset-password
 
 # Dynamic Sitemaps
 Sitemap: https://www.devenginehq.com/sitemap.xml
-Sitemap: https://thedevengine.vercel.app/sitemap.xml

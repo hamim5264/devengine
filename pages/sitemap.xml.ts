@@ -2,10 +2,8 @@ import { GetServerSideProps } from "next";
 import { getPublishedBlogs, INITIAL_BLOGS } from "@/lib/services/blogService";
 import { getAllAppPolicies } from "@/lib/services/appLegalService";
 
-export const getServerSideProps: GetServerSideProps = async ({ res, req }) => {
-  const host = req.headers.host || "www.devenginehq.com";
-  const protocol = req.headers["x-forwarded-proto"] || "https";
-  const baseUrl = `${protocol}://${host}`;
+export const getServerSideProps: GetServerSideProps = async ({ res }) => {
+  const baseUrl = "https://www.devenginehq.com";
 
   const staticPages = [
     { loc: "/", changefreq: "daily", priority: 1.0 },
@@ -20,7 +18,6 @@ export const getServerSideProps: GetServerSideProps = async ({ res, req }) => {
     { loc: "/reviews", changefreq: "weekly", priority: 0.7 },
     { loc: "/documentation-and-api-access", changefreq: "monthly", priority: 0.6 },
     { loc: "/terms", changefreq: "yearly", priority: 0.5 },
-    { loc: "/privacy", changefreq: "yearly", priority: 0.5 },
     { loc: "/privacy-policy", changefreq: "yearly", priority: 0.5 },
     { loc: "/refund-policy", changefreq: "yearly", priority: 0.5 },
     { loc: "/commercial-license", changefreq: "yearly", priority: 0.5 },
@@ -76,7 +73,7 @@ ${policies
   .join("\n")}
 </urlset>`;
 
-  res.setHeader("Content-Type", "text/xml");
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
   res.write(sitemapXml);
   res.end();

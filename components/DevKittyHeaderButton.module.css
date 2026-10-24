@@ -18,16 +18,10 @@
 .close svg { width: 16px; height: 16px; }
 .close:hover { border-color: var(--devengine-accent); }
 .body { padding-block: 16px; display: grid; gap: 14px; }
-.welcome { padding: 13px; border: 1px solid var(--devengine-border); border-left: 3px solid var(--devengine-accent); border-radius: 14px; background: var(--devengine-raised); color: var(--devengine-text); font-size: 14px; font-weight: 600; line-height: 1.6; }
-.description { color: var(--devengine-muted); font-size: 14px; line-height: 1.8; }
-.description strong { color: var(--devengine-text); font-weight: 650; }
-.features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.feature { display: flex; align-items: flex-start; gap: 7px; min-width: 0; padding: 10px; border: 1px solid var(--devengine-border); border-radius: 12px; background: var(--devengine-raised); color: var(--devengine-text); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
-.featureIcon { flex-shrink: 0; }
-.progressLabel { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px 10px; font-size: 10px; color: var(--devengine-muted); margin-bottom: 7px; }
-.progressLabel strong { color: var(--devengine-text); font-weight: 650; }
-.progressTrack { height: 6px; overflow: hidden; border-radius: 99px; background: var(--devengine-track); }
-.progressTrack span { display: block; width: 96.8%; height: 100%; border-radius: inherit; background: var(--devengine-accent); }
+.comingSoonCard { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 12px 6px 4px; gap: 14px; }
+.speechBubble { position: relative; width: 100%; padding: 14px 16px; border-radius: 14px; background: var(--devengine-raised); border: 1px solid var(--devengine-border); border-left: 3px solid #2cecf7; box-shadow: 0 4px 20px rgba(44, 236, 247, 0.08); }
+.comingSoonText { color: var(--devengine-text); font-size: 15px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.4; margin: 0; }
+.subtext { color: var(--devengine-muted); font-size: 12px; line-height: 1.6; margin: 0; max-width: 290px; }
 .footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 14px; border-top: 1px solid var(--devengine-border); }
 .release { color: var(--devengine-muted); font-size: 10px; line-height: 1.6; }
 .release strong { color: var(--devengine-text); }

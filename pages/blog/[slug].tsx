@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
 import HelixLoader from "@/components/HelixLoader";
-import { type BlogPost, BLOG_CATEGORY_CONFIG } from "@/types/blog";
+import { type BlogPost, BLOG_CATEGORY_CONFIG, getBlogCategoryDetails } from "@/types/blog";
 import {
   getBlogBySlug,
   getPublishedBlogs,
@@ -104,7 +104,7 @@ export default function BlogDetailPage({ initialPost }: { initialPost?: BlogPost
       copyTimer.current = setTimeout(() => setCopied(false), 3000);
     } catch { setCopied(false); setShareUrl(url); }
   };
-  const category = post ? BLOG_CATEGORY_CONFIG[post.category] || BLOG_CATEGORY_CONFIG.ENGINEERING : null;
+  const category = post ? getBlogCategoryDetails(post.category) : null;
   const published = post?.publishedAt ? new Date(post.publishedAt) : null;
   const validDate = published && Number.isFinite(published.getTime()) ? published : null;
 

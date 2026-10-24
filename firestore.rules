@@ -566,6 +566,11 @@ service cloud.firestore {
       allow write: if canUseModules(['content_cms']);
     }
 
+    match /blog_categories/{catId} {
+      allow read: if true;
+      allow write: if canUseModules(['content_cms']);
+    }
+
     /* =========================
        TEAM & ABOUT STUDIO
     ========================== */

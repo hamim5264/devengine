@@ -1,20 +1,16 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { AnimationItem } from "lottie-web";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { auth } from "@/lib/firebase";
+import { useTheme } from "@/context/ThemeContext";
+import DevKittyAnimatedIcon from "@/components/common/DevKittyAnimatedIcon";
 import styles from "./DevKittyHeaderButton.module.css";
-
-const FEATURES = [
-  { icon: "⚡", label: "Instant Project Scoping" },
-  { icon: "💬", label: "24/7 Tech Advisory" },
-  { icon: "🛠️", label: "Live System Diagnostics" },
-  { icon: "🚀", label: "App Build Tracking" },
-];
 
 export default function DevKittyHeaderButton() {
   const router = useRouter();
   const dialogId = useId();
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const rootRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,7 +105,12 @@ export default function DevKittyHeaderButton() {
     {isOpen && <dialog ref={dialogRef} id={dialogId} className={styles.dialog} aria-labelledby={`${dialogId}-title`} onCancel={(event) => { event.preventDefault(); closeDialog(); }} onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}>
         <div className={styles.dialogHeader}>
           <div className={styles.brand}>
-            <span className={styles.brandIcon} aria-hidden="true">🐱</span>
+            <DevKittyAnimatedIcon
+              size={38}
+              active={true}
+              isLight={isLight}
+              className="!rounded-full border border-[#2cecf7]/60 shadow-[0_0_12px_rgba(44,236,247,0.3)]"
+            />
             <div>
               <h2 className={styles.title} id={`${dialogId}-title`}>DevKitty AI <span className={styles.brandDot} aria-hidden="true" /></h2>
               <p className={styles.subtitle}>Future DevEngine ChatBot</p>
@@ -121,21 +122,27 @@ export default function DevKittyHeaderButton() {
         </div>
 
         <div className={styles.body}>
-          <p className={styles.welcome}>&ldquo;Heyyy, kitty I&apos;m coming soon!&rdquo; 🐾✨</p>
-          <p className={styles.description}>I am <strong>DevKitty</strong>, the upcoming autonomous AI intelligence engineered for the DevEngine ecosystem. I will soon be your dedicated copilot for:</p>
-          <div className={styles.features}>
-            {FEATURES.map((feature) => <div key={feature.label} className={styles.feature}><span className={styles.featureIcon} aria-hidden="true">{feature.icon}</span><span>{feature.label}</span></div>)}
-          </div>
-          <div>
-            <div className={styles.progressLabel}><span>Neural Training Progress</span><strong>96.8% READY</strong></div>
-            <div className={styles.progressTrack} role="progressbar" aria-label="Neural training progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={96.8}><span /></div>
+          <div className={styles.comingSoonCard}>
+            <DevKittyAnimatedIcon
+              size={84}
+              active={true}
+              isLight={isLight}
+              className="!rounded-2xl border border-[#2cecf7]/40 shadow-xl shadow-[#2cecf7]/20"
+            />
+            <div className={styles.speechBubble}>
+              <p className={styles.comingSoonText}>
+                &ldquo;heyy buddy, im coming soon..&rdquo; 🐾✨
+              </p>
+            </div>
+            <p className={styles.subtext}>
+              DevKitty is getting trained as your autonomous AI copilot for the DevEngine ecosystem.
+            </p>
           </div>
         </div>
 
         <div className={styles.footer}>
-          <span className={styles.release}>Target Release: <strong>Q4 2026</strong></span>
+          <span className={styles.release}>Status: <strong className="text-[#2cecf7]">Under Development</strong></span>
           <div className={styles.actions}>
-            <Link href="/services" onClick={() => setIsOpen(false)} className={styles.secondaryButton}>Services</Link>
             <button type="button" onClick={closeDialog} className={styles.primaryButton}>Got It ✨</button>
           </div>
         </div>

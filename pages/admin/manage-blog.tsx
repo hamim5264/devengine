@@ -9,7 +9,15 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { auth } from "@/lib/firebase";
 import HelixLoader from "@/components/HelixLoader";
-import { BlogPost, BlogCategory, GridSpanType, BLOG_CATEGORY_CONFIG } from "@/types/blog";
+import {
+  BlogPost,
+  BlogCategory,
+  GridSpanType,
+  BLOG_CATEGORY_CONFIG,
+  getBlogCategoryDetails,
+  GRID_SPAN_CONFIG,
+  BlogCategoryItem,
+} from "@/types/blog";
 import {
   getAllBlogs,
   createBlog,
@@ -23,23 +31,29 @@ import {
   uploadAuthorAvatar,
   type BlogAuthorProfile,
 } from "@/lib/services/authorService";
+import {
+  getCustomBlogCategories,
+  saveCustomBlogCategory,
+  deleteCustomBlogCategory,
+  getAllBlogCategories,
+  CATEGORY_COLOR_PRESETS,
+  DEFAULT_BLOG_CATEGORIES,
+} from "@/lib/services/blogCategoryService";
 
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
-const CATEGORIES: { id: BlogCategory; label: string }[] = [
-  { id: "SUCCESS_STORY", label: "Success Story" },
-  { id: "ACHIEVEMENT", label: "Milestone & Achievement" },
-  { id: "FAILURE_LESSON", label: "Failure & Hard Lessons" },
-  { id: "ENGINEERING", label: "Engineering Deep Dive" },
-  { id: "STUDIO_CULTURE", label: "Studio Philosophy" },
-];
-
-const GRID_SPANS: { id: GridSpanType; label: string }[] = [
-  { id: "normal", label: "Standard (1 Column)" },
-  { id: "wide", label: "Wide (2 Columns)" },
-  { id: "tall", label: "Tall (2 Rows Vertical)" },
-  { id: "hero", label: "Hero Banner (Full 3 Columns)" },
+const GRID_SPANS: { id: GridSpanType; label: string; tag: string; icon: string }[] = [
+  { id: "normal", label: "Standard (1 Col × 1 Row)", tag: "1×1", icon: "crop_portrait" },
+  { id: "wide", label: "Wide Showcase (2 Cols × 1 Row)", tag: "2×1", icon: "view_column" },
+  { id: "tall", label: "Tall Feature (1 Col × 2 Rows)", tag: "1×2", icon: "view_stream" },
+  { id: "hero", label: "Hero Banner (Full 3 Columns)", tag: "3×1 Full", icon: "web_stories" },
+  { id: "split", label: "Horizontal Split (2 Cols 50/50)", tag: "2×1 Split", icon: "vertical_split" },
+  { id: "quad", label: "Magazine Quad (2 Cols × 2 Rows)", tag: "2×2 Quad", icon: "grid_view" },
+  { id: "spotlight", label: "Spotlight Accent (1 Col Glow)", tag: "1×1 Accent", icon: "flare" },
+  { id: "compact", label: "Compact Dispatch (1 Col Mini)", tag: "1×1 Mini", icon: "view_list" },
+  { id: "overlay", label: "Cinematic Overlay (2 Cols Full-Bleed)", tag: "2×1 Overlay", icon: "wallpaper" },
+  { id: "strip", label: "Panorama Ribbon (Full 3 Cols Slim)", tag: "3×1 Ribbon", icon: "view_day" },
 ];
 
 const EMPTY_FORM: Omit<BlogPost, "id" | "createdAt" | "updatedAt"> = {
@@ -84,6 +98,18 @@ export default function ManageBlogPage() {
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
+  // Dynamic Custom Categories State
+  const [customCategories, setCustomCategories] = useState<BlogCategoryItem[]>([]);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatId, setNewCatId] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("terminal");
+  const [newCatColor, setNewCatColor] = useState("cyan");
+  const [savingCategory, setSavingCategory] = useState(false);
+
+  // Expanded Grid Visualizer / Guide Modal State
+  const [gridModalOpen, setGridModalOpen] = useState(false);
+
   // Saved authors state for autocomplete and management
   const [savedAuthors, setSavedAuthors] = useState<BlogAuthorProfile[]>([]);
   const [authorDropdownOpen, setAuthorDropdownOpen] = useState(false);
@@ -105,20 +131,109 @@ export default function ManageBlogPage() {
     return () => unsub();
   }, [router]);
 
-  // Load posts and saved authors
+  // Load posts, saved authors, and custom categories
   const loadPosts = async () => {
     setLoading(true);
     try {
-      const [data, authors] = await Promise.all([
+      const [data, authors, customs] = await Promise.all([
         getAllBlogs(),
         getSavedAuthors(),
+        getCustomBlogCategories(),
       ]);
       setPosts(data);
       setSavedAuthors(authors);
+      setCustomCategories(customs);
     } catch (err) {
       console.error("Failed to load blog posts:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Derive merged categories (defaults + customs + any distinct in posts)
+  const allCategories = React.useMemo(() => {
+    return getAllBlogCategories(customCategories, posts);
+  }, [customCategories, posts]);
+
+  // Handle saving new or edited custom category
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatLabel.trim()) return;
+    setSavingCategory(true);
+    try {
+      const cleanLabel = newCatLabel.trim();
+      const derivedId = newCatId.trim()
+        ? newCatId.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "_")
+        : cleanLabel
+            .toUpperCase()
+            .replace(/[^A-Z0-9\s]/g, "")
+            .replace(/\s+/g, "_");
+
+      const item: BlogCategoryItem = {
+        id: derivedId,
+        label: cleanLabel,
+        icon: newCatIcon || "label",
+        colorTheme: newCatColor,
+        isCustom: true,
+        createdAt: new Date().toISOString(),
+      };
+
+      await saveCustomBlogCategory(item);
+      setCustomCategories((prev) => {
+        const idx = prev.findIndex((c) => c.id === derivedId);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = item;
+          return next;
+        }
+        return [...prev, item];
+      });
+
+      // Auto-assign new category to active blog form
+      setForm((prev) => ({
+        ...prev,
+        category: derivedId,
+      }));
+
+      setNewCatLabel("");
+      setNewCatId("");
+      setNewCatIcon("terminal");
+      setNewCatColor("cyan");
+      setCategoryModalOpen(false);
+    } catch (err: any) {
+      console.error("Failed to save custom category:", err);
+      alert(`Failed to save category: ${err?.message || "Check console"}`);
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  // Handle deleting custom category
+  const handleDeleteCategory = async (catId: string, catLabel: string) => {
+    const inUseCount = posts.filter(
+      (p) => String(p.category).toLowerCase() === catId.toLowerCase()
+    ).length;
+    if (inUseCount > 0) {
+      if (
+        !confirm(
+          `Category "${catLabel}" is currently assigned to ${inUseCount} post(s). Delete from custom categories list?`
+        )
+      ) {
+        return;
+      }
+    } else {
+      if (!confirm(`Delete custom category "${catLabel}"?`)) return;
+    }
+
+    try {
+      await deleteCustomBlogCategory(catId);
+      setCustomCategories((prev) => prev.filter((c) => c.id !== catId));
+      if (form.category === catId) {
+        setForm((prev) => ({ ...prev, category: "SUCCESS_STORY" }));
+      }
+    } catch (err) {
+      console.error("Failed to delete category:", err);
+      alert("Failed to delete category.");
     }
   };
 
@@ -347,7 +462,8 @@ export default function ManageBlogPage() {
       (statusFilter === "DRAFT" && !post.isPublished);
 
     const matchesCategory =
-      categoryFilter === "ALL" || post.category === categoryFilter;
+      categoryFilter === "ALL" ||
+      post.category?.toLowerCase() === categoryFilter.toLowerCase();
 
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
@@ -434,6 +550,16 @@ export default function ManageBlogPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </Link>
+
+            <button
+              type="button"
+              onClick={() => setCategoryModalOpen(true)}
+              className="px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-[#2cecf7]/10 hover:bg-[#2cecf7]/20 text-[#2cecf7] border border-[#2cecf7]/30 hover:border-[#2cecf7] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shadow-[#2cecf7]/10"
+              title="Add or manage blog categories"
+            >
+              <span className="material-symbols-outlined text-[15px]">category</span>
+              <span>+ Add Category</span>
+            </button>
 
             <button
               type="button"
@@ -525,10 +651,10 @@ export default function ManageBlogPage() {
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="h-10 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 text-gray-300 text-xs rounded-xl px-3.5 pr-8 appearance-none cursor-pointer outline-none transition"
               >
-                <option value="ALL" className="bg-[#0c0c16] text-white">All Categories</option>
-                {CATEGORIES.map((c) => (
+                <option value="ALL" className="bg-[#0c0c16] text-white">All Categories ({posts.length})</option>
+                {allCategories.map((c) => (
                   <option key={c.id} value={c.id} className="bg-[#0c0c16] text-white">
-                    {c.label}
+                    {c.label} {c.isCustom ? "★" : ""}
                   </option>
                 ))}
               </AdminSelect>
@@ -579,8 +705,8 @@ export default function ManageBlogPage() {
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] text-xs font-sans">
                   {filteredPosts.map((post, idx) => {
-                    const catConfig =
-                      BLOG_CATEGORY_CONFIG[post.category] || BLOG_CATEGORY_CONFIG.ENGINEERING;
+                    const catConfig = getBlogCategoryDetails(post.category, customCategories);
+                    const spanInfo = GRID_SPAN_CONFIG[post.gridSpan] || GRID_SPAN_CONFIG.normal;
                     const orderNum = typeof post.order === "number" ? post.order : idx + 1;
 
                     return (
@@ -616,7 +742,7 @@ export default function ManageBlogPage() {
                         {/* Category */}
                         <td className="py-4 px-5">
                           <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold border ${catConfig.badgeBg} ${catConfig.badgeText} ${catConfig.badgeBorder}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold border ${catConfig.badgeBg} ${catConfig.badgeText} ${catConfig.badgeBorder}`}
                           >
                             <span className="material-symbols-outlined text-xs">
                               {catConfig.icon}
@@ -626,9 +752,11 @@ export default function ManageBlogPage() {
                         </td>
 
                         {/* Grid Span */}
-                        <td className="py-4 px-5 font-mono text-[11px] text-gray-300 uppercase">
-                          <span className="px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06]">
-                            {post.gridSpan} {post.featured && "★"}
+                        <td className="py-4 px-5 font-mono text-[11px]">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[11px] font-mono ${spanInfo.badgeColor}`}>
+                            <span className="material-symbols-outlined text-[13px]">{spanInfo.icon}</span>
+                            <span>{spanInfo.tag}</span>
+                            {post.featured && <span className="text-amber-400 font-bold">★</span>}
                           </span>
                         </td>
 
@@ -793,7 +921,7 @@ export default function ManageBlogPage() {
                 />
               </div>
 
-              {/* Category, Grid Span, Read Time & Order */}
+              {/* Category, Grid Style, Display Order & Read Time */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
@@ -803,16 +931,23 @@ export default function ManageBlogPage() {
                   <div className="relative">
                     <AdminSelect
                       value={form.category}
-                      onChange={(e) =>
-                        setForm({ ...form, category: e.target.value as BlogCategory })
-                      }
+                      onChange={(e) => {
+                        if (e.target.value === "__ADD_NEW__") {
+                          setCategoryModalOpen(true);
+                        } else {
+                          setForm({ ...form, category: e.target.value as BlogCategory });
+                        }
+                      }}
                       className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 pr-8 text-xs text-white appearance-none cursor-pointer outline-none transition"
                     >
-                      {CATEGORIES.map((c) => (
+                      {allCategories.map((c) => (
                         <option key={c.id} value={c.id} className="bg-[#0c0c16] text-white">
-                          {c.label}
+                          {c.label} {c.isCustom ? "(Custom)" : ""}
                         </option>
                       ))}
+                      <option value="__ADD_NEW__" className="bg-[#0c0c16] text-[#2cecf7] font-bold">
+                        + Add New Category...
+                      </option>
                     </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -824,22 +959,29 @@ export default function ManageBlogPage() {
 
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
-                    <span>Grid Presentation</span>
+                    <span>Grid Style</span>
                     <span className="text-[10px] text-teal-400 font-mono">*Required</span>
                   </label>
                   <div className="relative">
                     <AdminSelect
                       value={form.gridSpan}
-                      onChange={(e) =>
-                        setForm({ ...form, gridSpan: e.target.value as GridSpanType })
-                      }
+                      onChange={(e) => {
+                        if (e.target.value === "__OPEN_GUIDE__") {
+                          setGridModalOpen(true);
+                        } else {
+                          setForm({ ...form, gridSpan: e.target.value as GridSpanType });
+                        }
+                      }}
                       className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 pr-8 text-xs text-white appearance-none cursor-pointer outline-none transition"
                     >
                       {GRID_SPANS.map((g) => (
                         <option key={g.id} value={g.id} className="bg-[#0c0c16] text-white">
-                          {g.label}
+                          {g.label} [{g.tag}]
                         </option>
                       ))}
+                      <option value="__OPEN_GUIDE__" className="bg-[#0c0c16] text-[#2cecf7] font-bold">
+                        ⊞ Expanded Visual Guide (10 Styles)...
+                      </option>
                     </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -847,6 +989,15 @@ export default function ManageBlogPage() {
                       </svg>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setGridModalOpen(true)}
+                    className="mt-1.5 text-[11px] font-medium text-[#2cecf7] hover:text-[#53f2fb] hover:underline flex items-center gap-1 cursor-pointer transition"
+                    title="Open visual matrix with previews for all 10 layout styles"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">grid_view</span>
+                    <span>Expanded view of styles ↗</span>
+                  </button>
                 </div>
 
                 <div>
@@ -867,8 +1018,9 @@ export default function ManageBlogPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1.5">
-                    Read Time
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
+                    <span>Read Time</span>
+                    <span className="text-[10px] text-gray-500 font-mono">e.g. 5 min</span>
                   </label>
                   <input
                     type="text"
@@ -1266,6 +1418,508 @@ export default function ManageBlogPage() {
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white font-bold text-xs shadow-lg transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {saving ? "Moving..." : "Move to Bin"}
+              </button>
+            </div>
+          </div>
+        </AdminOverlay>
+      )}
+
+      {/* ══════════════════════════════════════════════════════
+          CATEGORY STUDIO & MANAGEMENT MODAL
+      ══════════════════════════════════════════════════════ */}
+      {categoryModalOpen && (
+        <AdminOverlay
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fade-in"
+          onClose={() => setCategoryModalOpen(false)}
+          label="Manage blog categories"
+        >
+          <div className="bg-[#0c0c16] border border-white/[0.12] rounded-3xl max-w-2xl w-full shadow-2xl relative max-h-[90vh] text-white flex flex-col overflow-hidden">
+            {/* Pinned Header */}
+            <div className="flex justify-between items-start px-6 sm:px-8 py-5 border-b border-white/[0.08] bg-[#0c0c16] shrink-0">
+              <div>
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#2cecf7]/10 border border-[#2cecf7]/20 text-[#2cecf7] text-[10px] font-mono uppercase tracking-wider mb-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2cecf7] animate-pulse" />
+                  <span>Category Studio</span>
+                </div>
+                <h3 className="font-bold text-xl sm:text-2xl text-white tracking-tight">
+                  Add &amp; Manage Categories
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Create dynamic publication categories with custom icons and aesthetic badges.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(false)}
+                className="w-9 h-9 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer shadow-sm"
+                aria-label="Close dialog"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="overflow-y-auto px-6 sm:px-8 py-6 space-y-6 flex-1 custom-scrollbar">
+              {/* Add New Category Form */}
+              <form onSubmit={handleSaveCategory} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
+                      <span>Category Name / Title</span>
+                      <span className="text-[10px] text-teal-400 font-mono">*Required</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatLabel}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewCatLabel(val);
+                        if (!newCatId || newCatId === newCatLabel.toUpperCase().replace(/[^A-Z0-9\s]/g, "").replace(/\s+/g, "_")) {
+                          setNewCatId(
+                            val
+                              .toUpperCase()
+                              .replace(/[^A-Z0-9\s]/g, "")
+                              .replace(/\s+/g, "_")
+                          );
+                        }
+                      }}
+                      placeholder="e.g. Cloud & DevOps"
+                      className="w-full h-11 bg-black/50 border border-white/[0.08] focus:border-[#2cecf7]/50 rounded-xl px-3.5 text-xs text-white placeholder-gray-500 outline-none transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
+                      <span>Unique Identifier (Key)</span>
+                      <span className="text-[10px] text-gray-400 font-mono">Auto-generated</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatId}
+                      onChange={(e) => setNewCatId(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "_"))}
+                      placeholder="e.g. CLOUD_DEVOPS"
+                      className="w-full h-11 bg-black/50 border border-white/[0.08] focus:border-[#2cecf7]/50 rounded-xl px-3.5 text-xs text-white font-mono placeholder-gray-500 outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Icon Selection */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5">
+                    Select Badge Icon
+                  </label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {[
+                      { icon: "terminal", label: "Code" },
+                      { icon: "smart_toy", label: "AI / Bot" },
+                      { icon: "neurology", label: "Brain" },
+                      { icon: "cloud", label: "Cloud" },
+                      { icon: "security", label: "Security" },
+                      { icon: "database", label: "Database" },
+                      { icon: "rocket_launch", label: "Launch" },
+                      { icon: "palette", label: "Design" },
+                      { icon: "bolt", label: "Performance" },
+                      { icon: "hub", label: "Network" },
+                      { icon: "science", label: "Research" },
+                      { icon: "psychology", label: "Philosophy" },
+                      { icon: "trending_up", label: "Growth" },
+                      { icon: "military_tech", label: "Milestone" },
+                    ].map((item) => {
+                      const isSelected = newCatIcon === item.icon;
+                      return (
+                        <button
+                          key={item.icon}
+                          type="button"
+                          onClick={() => setNewCatIcon(item.icon)}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 border transition cursor-pointer ${
+                            isSelected
+                              ? "bg-[#2cecf7]/20 border-[#2cecf7] text-[#2cecf7] font-bold shadow-sm"
+                              : "bg-white/[0.03] border-white/[0.08] text-gray-300 hover:border-white/20 hover:text-white"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[14px]">{item.icon}</span>
+                          <span>{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    value={newCatIcon}
+                    onChange={(e) => setNewCatIcon(e.target.value.trim().toLowerCase())}
+                    placeholder="Or type custom Material Symbol icon name (e.g. layers, lan, speed)"
+                    className="w-full h-9 bg-black/40 border border-white/[0.06] focus:border-[#2cecf7]/40 rounded-lg px-3 text-[11px] font-mono text-gray-300 placeholder-gray-600 outline-none transition"
+                  />
+                </div>
+
+                {/* Color Palette */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5">
+                    Accent Color Theme
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {Object.entries(CATEGORY_COLOR_PRESETS).map(([key, preset]) => {
+                      const isSelected = newCatColor === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setNewCatColor(key)}
+                          className={`p-2.5 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
+                            isSelected
+                              ? "border-[#2cecf7] bg-[#2cecf7]/10 shadow-[0_0_12px_rgba(44,236,247,0.25)]"
+                              : "border-white/[0.08] bg-white/[0.02] hover:border-white/20"
+                          }`}
+                        >
+                          <span
+                            className="w-4 h-4 rounded-full shrink-0 shadow-sm"
+                            style={{ backgroundColor: preset.colorCode }}
+                          />
+                          <span className={`text-[11px] truncate ${isSelected ? "text-white font-bold" : "text-gray-300"}`}>
+                            {preset.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Live Badge Preview */}
+                <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 block mb-1">
+                      Live Badge Preview
+                    </span>
+                    {(() => {
+                      const preset = CATEGORY_COLOR_PRESETS[newCatColor] || CATEGORY_COLOR_PRESETS.cyan;
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase border ${preset.bg} ${preset.text} ${preset.border} shadow-sm`}
+                        >
+                          <span className="material-symbols-outlined text-sm">{newCatIcon || "label"}</span>
+                          <span>{newCatLabel.trim() || "New Category"}</span>
+                        </span>
+                      );
+                    })()}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={savingCategory || !newCatLabel.trim()}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 text-black font-bold text-xs shadow-lg shadow-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 shrink-0"
+                  >
+                    {savingCategory && (
+                      <span className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    )}
+                    <span>{savingCategory ? "Saving..." : "+ Save Category"}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Custom Categories List */}
+              <div className="pt-4 border-t border-white/[0.08] space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-gray-300 flex items-center gap-2">
+                    <span>Saved Custom Categories</span>
+                    <span className="px-2 py-0.2 rounded-full bg-white/10 text-[10px] font-mono text-white">
+                      {customCategories.length}
+                    </span>
+                  </h4>
+                  <span className="text-[10px] text-gray-400 font-mono">
+                    Synced with Firestore
+                  </span>
+                </div>
+
+                {customCategories.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic py-2">
+                    No custom categories saved yet. Use the form above to add your first custom category!
+                  </p>
+                ) : (
+                  <div className="divide-y divide-white/[0.04] bg-black/40 rounded-2xl border border-white/[0.08] overflow-hidden">
+                    {customCategories.map((cat) => {
+                      const count = posts.filter(
+                        (p) => String(p.category).toLowerCase() === cat.id.toLowerCase()
+                      ).length;
+                      const catConfig = getBlogCategoryDetails(cat.id, customCategories);
+
+                      return (
+                        <div
+                          key={cat.id}
+                          className="p-3 sm:px-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold border shrink-0 ${catConfig.badgeBg} ${catConfig.badgeText} ${catConfig.badgeBorder}`}
+                            >
+                              <span className="material-symbols-outlined text-xs">{catConfig.icon}</span>
+                              <span>{catConfig.label}</span>
+                            </span>
+                            <span className="text-[11px] font-mono text-gray-400 truncate hidden sm:inline">
+                              ID: {cat.id}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-[11px] font-mono text-gray-400">
+                              {count} {count === 1 ? "post" : "posts"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCategory(cat.id, cat.label)}
+                              className="p-1.5 rounded-lg hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 transition cursor-pointer"
+                              title="Delete category"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pinned Footer */}
+            <div className="px-6 sm:px-8 py-3.5 border-t border-white/[0.08] bg-[#0c0c16]/95 backdrop-blur-md flex items-center justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setCategoryModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-semibold text-gray-200 hover:text-white border border-white/[0.08] transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </AdminOverlay>
+      )}
+
+      {/* ══════════════════════════════════════════════════════
+          EXPANDED GRID PRESENTATION VISUAL GUIDE (10 STYLES)
+      ══════════════════════════════════════════════════════ */}
+      {gridModalOpen && (
+        <AdminOverlay
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fade-in"
+          onClose={() => setGridModalOpen(false)}
+          label="Expanded grid styles visualizer"
+        >
+          <div className="bg-[#0c0c16] border border-white/[0.14] rounded-3xl max-w-5xl w-full shadow-2xl relative max-h-[92vh] text-white flex flex-col overflow-hidden">
+            {/* Pinned Header */}
+            <div className="flex justify-between items-start px-6 sm:px-8 py-5 border-b border-white/[0.08] bg-[#0c0c16] shrink-0">
+              <div>
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#2cecf7]/10 border border-[#2cecf7]/20 text-[#2cecf7] text-[10px] font-mono uppercase tracking-wider mb-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2cecf7] animate-pulse" />
+                  <span>Visual Layout Architecture</span>
+                </div>
+                <h3 className="font-bold text-xl sm:text-2xl text-white tracking-tight flex items-center gap-3">
+                  <span>Grid Presentation Styles</span>
+                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-[#2cecf7] border border-[#2cecf7]/30">
+                    10 Architectural Styles
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-1 max-w-2xl">
+                  Choose how your publication is framed within the 3-column responsive matrix. Real-time blueprint wireframe matrices and card anatomy previews.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGridModalOpen(false)}
+                className="w-9 h-9 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer shadow-sm"
+                aria-label="Close dialog"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable Grid Gallery */}
+            <div className="overflow-y-auto p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 custom-scrollbar">
+              {Object.values(GRID_SPAN_CONFIG).map((info) => {
+                const isSelected = form.gridSpan === info.id;
+
+                return (
+                  <div
+                    key={info.id}
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, gridSpan: info.id }));
+                      setGridModalOpen(false);
+                    }}
+                    className={`rounded-2xl p-5 border transition-all cursor-pointer flex flex-col justify-between gap-4 group ${
+                      isSelected
+                        ? "bg-[#2cecf7]/[0.08] border-[#2cecf7] shadow-[0_0_28px_rgba(44,236,247,0.25)] ring-1 ring-[#2cecf7]/50"
+                        : "bg-white/[0.02] border-white/[0.08] hover:border-[#2cecf7]/40 hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    {/* Top Row: Title + Tag */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center border shrink-0 transition ${
+                            isSelected
+                              ? "bg-[#2cecf7] text-black border-[#2cecf7]"
+                              : "bg-white/[0.05] text-[#2cecf7] border-white/[0.1] group-hover:border-[#2cecf7]/40"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">
+                            {info.icon}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-bold text-sm text-white group-hover:text-[#2cecf7] transition flex items-center gap-2">
+                            <span>{info.label}</span>
+                            {isSelected && (
+                              <span className="text-[10px] font-mono font-bold text-[#2cecf7] bg-[#2cecf7]/15 px-2 py-0.2 rounded-full border border-[#2cecf7]/30">
+                                ACTIVE
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] font-mono text-gray-400 mt-0.5">
+                            {info.cols} Column{info.cols > 1 ? "s" : ""} × {info.rows} Row{info.rows > 1 ? "s" : ""}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border shrink-0 ${info.badgeColor}`}>
+                        {info.tag}
+                      </span>
+                    </div>
+
+                    {/* Middle: 3x3 Wireframe Matrix + Layout Mockup */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-black/60 border border-white/[0.06]">
+                      {/* Left: 3x3 Blueprint Matrix */}
+                      <div>
+                        <span className="text-[9px] font-mono uppercase text-gray-400 block mb-1.5 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[11px]">grid_4x4</span>
+                          <span>Matrix Blueprint (3 Cols)</span>
+                        </span>
+                        <div className="grid grid-cols-3 gap-1 p-1.5 bg-[#070b14] rounded-lg border border-white/10 w-full h-20">
+                          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((cellIdx) => {
+                            const isOccupied = info.wireframe.cells.includes(cellIdx);
+                            return (
+                              <div
+                                key={cellIdx}
+                                className={`rounded-sm transition-all flex items-center justify-center ${
+                                  isOccupied
+                                    ? "bg-[#2cecf7]/40 border border-[#2cecf7] shadow-[0_0_8px_rgba(44,236,247,0.5)] text-[10px] font-mono text-[#2cecf7] font-bold"
+                                    : "bg-white/[0.03] border border-white/[0.04]"
+                                }`}
+                              >
+                                {isOccupied && "★"}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Right: Card Anatomy Skeleton */}
+                      <div>
+                        <span className="text-[9px] font-mono uppercase text-gray-400 block mb-1.5 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[11px]">web</span>
+                          <span>Card Anatomy</span>
+                        </span>
+                        <div className="p-2 bg-[#070b14] rounded-lg border border-white/10 h-20 flex flex-col justify-between overflow-hidden">
+                          {info.id === "hero" || info.id === "split" ? (
+                            <div className="flex gap-2 h-full items-center">
+                              <div className="w-1/2 h-full bg-[#2cecf7]/20 border border-[#2cecf7]/40 rounded flex items-center justify-center text-[9px] font-mono text-[#2cecf7]">
+                                Visual
+                              </div>
+                              <div className="w-1/2 space-y-1">
+                                <div className="h-2 w-3/4 bg-white/30 rounded" />
+                                <div className="h-1.5 w-full bg-white/15 rounded" />
+                                <div className="h-1.5 w-2/3 bg-white/15 rounded" />
+                              </div>
+                            </div>
+                          ) : info.id === "overlay" ? (
+                            <div className="relative h-full w-full bg-[#2cecf7]/15 border border-[#2cecf7]/30 rounded flex flex-col justify-end p-1.5 space-y-1">
+                              <div className="h-2 w-3/4 bg-white rounded shadow-sm" />
+                              <div className="h-1.5 w-1/2 bg-[#2cecf7] rounded" />
+                            </div>
+                          ) : info.id === "strip" ? (
+                            <div className="flex gap-2 h-full items-center">
+                              <div className="w-12 h-full bg-[#2cecf7]/20 border border-[#2cecf7]/40 rounded shrink-0 flex items-center justify-center text-[8px] font-mono text-[#2cecf7]">
+                                Visual
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <div className="h-2 w-3/4 bg-white/30 rounded" />
+                                <div className="h-1.5 w-full bg-white/15 rounded" />
+                              </div>
+                              <div className="w-6 h-4 bg-[#2cecf7]/30 rounded shrink-0" />
+                            </div>
+                          ) : info.id === "compact" ? (
+                            <div className="flex gap-2 h-full items-center">
+                              <div className="w-8 h-full bg-[#2cecf7]/20 border border-[#2cecf7]/40 rounded shrink-0" />
+                              <div className="flex-1 space-y-1">
+                                <div className="h-2 w-4/5 bg-white/30 rounded" />
+                                <div className="h-1.5 w-1/2 bg-white/15 rounded" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5 h-full flex flex-col justify-between">
+                              <div className="h-8 w-full bg-[#2cecf7]/20 border border-[#2cecf7]/30 rounded flex items-center justify-center text-[8px] font-mono text-[#2cecf7]">
+                                Cover Image
+                              </div>
+                              <div className="space-y-1">
+                                <div className="h-2 w-3/4 bg-white/30 rounded" />
+                                <div className="h-1.5 w-full bg-white/15 rounded" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom: Description & Recommendation */}
+                    <div className="space-y-1">
+                      <p className="text-xs text-gray-300 leading-relaxed">
+                        {info.description}
+                      </p>
+                      <p className="text-[11px] text-teal-300/90 font-sans">
+                        <strong className="text-white">Best for:</strong> {info.recommended}
+                      </p>
+                    </div>
+
+                    {/* Action Button */}
+                    <button
+                      type="button"
+                      className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? "bg-[#2cecf7] text-black shadow-md shadow-[#2cecf7]/20"
+                          : "bg-white/[0.05] hover:bg-[#2cecf7]/20 text-gray-200 hover:text-white border border-white/[0.08] hover:border-[#2cecf7]/40"
+                      }`}
+                    >
+                      {isSelected ? (
+                        <>
+                          <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                          <span>Selected Active Style</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-[15px]">select_check</span>
+                          <span>Apply This Style</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pinned Footer */}
+            <div className="px-6 sm:px-8 py-3.5 border-t border-white/[0.08] bg-[#0c0c16]/95 backdrop-blur-md flex items-center justify-between shrink-0">
+              <span className="text-xs text-gray-400 font-mono">
+                Active Selection: <strong className="text-[#2cecf7]">{GRID_SPAN_CONFIG[form.gridSpan]?.label || form.gridSpan}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => setGridModalOpen(false)}
+                className="px-5 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-xs font-semibold text-gray-200 hover:text-white border border-white/[0.08] transition cursor-pointer"
+              >
+                Close Visual Guide
               </button>
             </div>
           </div>

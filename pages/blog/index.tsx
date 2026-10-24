@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
+import { GetServerSideProps } from "next";
 import HelixLoader from "@/components/HelixLoader";
 import type { BlogPost, BlogCategory } from "@/types/blog";
 import { getPublishedBlogs, INITIAL_BLOGS } from "@/lib/services/blogService";
@@ -12,17 +13,18 @@ const CATEGORIES: { key: BlogCategory | "ALL"; label: string }[] = [
   { key: "ALL", label: "All stories" }, { key: "SUCCESS_STORY", label: "Success stories" }, { key: "ACHIEVEMENT", label: "Achievements" }, { key: "FAILURE_LESSON", label: "Lessons learned" }, { key: "ENGINEERING", label: "Engineering" }, { key: "STUDIO_CULTURE", label: "Studio culture" },
 ];
 
-export default function BlogIndexPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function BlogIndexPage({ initialPosts = [] }: { initialPosts?: BlogPost[] }) {
+  const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
+  const [loading, setLoading] = useState(initialPosts.length === 0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<BlogCategory | "ALL">("ALL");
   useEffect(() => {
+    if (initialPosts.length > 0) return;
     let mounted = true;
     const fallback = () => INITIAL_BLOGS.filter((post) => post.isPublished).map((post) => ({ ...post, id: `seed-${post.slug}` }));
     getPublishedBlogs().then((list) => { if (mounted) setPosts(list.length ? list : fallback()); }).catch((error) => { console.error("Failed to load blog posts:", error); if (mounted) setPosts(fallback()); }).finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, []);
+  }, [initialPosts.length]);
   const filtered = useMemo(() => posts.filter((post) => {
     const query = search.trim().toLowerCase();
     return (category === "ALL" || post.category === category) && (!query || [post.title, post.subtitle, post.excerpt, ...(post.tags || [])].some((value) => value?.toLowerCase().includes(query)));
@@ -66,3 +68,31 @@ export default function BlogIndexPage() {
     </div></section>
   </div></FeaturePage>;
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  let initialPosts: BlogPost[] = [];
+  try {
+    const list = await getPublishedBlogs();
+    if (list && list.length > 0) {
+      initialPosts = list;
+    } else {
+      initialPosts = INITIAL_BLOGS.filter((post) => post.isPublished).map((post) => ({
+        ...post,
+        id: `seed-${post.slug}`,
+      })) as BlogPost[];
+    }
+  } catch (err) {
+    console.error("Error in blog index getServerSideProps:", err);
+    initialPosts = INITIAL_BLOGS.filter((post) => post.isPublished).map((post) => ({
+      ...post,
+      id: `seed-${post.slug}`,
+    })) as BlogPost[];
+  }
+
+  return {
+    props: {
+      initialPosts: JSON.parse(JSON.stringify(initialPosts)),
+    },
+  };
+};
+

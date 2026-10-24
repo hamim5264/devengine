@@ -44,13 +44,49 @@ export default function Contact() {
     }
   };
 
+  const contactSchema = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "Contact DevEngine",
+    "url": "https://www.devenginehq.com/contact",
+    "description": "Reach out to Abdul Hamim and the DevEngine team to discuss custom software development, mobile apps, web platforms, or technical consultations.",
+  };
+
   return (
     <>
       <Head>
-        <title>Contact DevEngine | Get in Touch with Hamim</title>
+        <title>Start a Project | Contact DevEngine Engineering Studio</title>
         <meta
           name="description"
-          content="Connect directly with DevEngine and founder Abdul Hamim for custom software, high-performance systems, and digital ecosystems."
+          content="Reach out to Abdul Hamim and the DevEngine team to discuss custom software development, mobile apps, web platforms, or technical consultations."
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="canonical" href="https://www.devenginehq.com/contact" />
+
+        {/* OpenGraph */}
+        <meta property="og:site_name" content="DevEngine" />
+        <meta property="og:title" content="Start a Project | Contact DevEngine Engineering Studio" />
+        <meta
+          property="og:description"
+          content="Reach out to Abdul Hamim and the DevEngine team to discuss custom software development, mobile apps, web platforms, or technical consultations."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://www.devenginehq.com/contact" />
+        <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+        {/* Twitter Cards */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Start a Project | Contact DevEngine Engineering Studio" />
+        <meta
+          name="twitter:description"
+          content="Reach out to Abdul Hamim and the DevEngine team to discuss custom software development, mobile apps, web platforms, or technical consultations."
+        />
+        <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+        {/* JSON-LD Structured Data Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(contactSchema) }}
         />
       </Head>
 

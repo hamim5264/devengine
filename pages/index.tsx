@@ -22,6 +22,7 @@ export default function IndexPage() {
           content="DevEngine - Engineering the digital future. System initialization sequence."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="canonical" href="https://www.devenginehq.com/home" />
       </Head>
 
       <main className="w-full h-[100svh] overflow-hidden">

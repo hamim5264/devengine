@@ -5,7 +5,13 @@ import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
 import HelixLoader from "@/components/HelixLoader";
 import { type BlogPost, BLOG_CATEGORY_CONFIG } from "@/types/blog";
-import { getBlogBySlug, getPublishedBlogs, INITIAL_BLOGS, recordBlogRead } from "@/lib/services/blogService";
+import {
+  getBlogBySlug,
+  getPublishedBlogs,
+  INITIAL_BLOGS,
+  recordBlogRead,
+  enrichBlogWithContextualLinks,
+} from "@/lib/services/blogService";
 import { FeaturePage, Icon } from "@/components/features/FeatureExperience";
 import { Author, BlogCard, CommunityImage, SoftReveal } from "@/components/features/CommunityExperience";
 import ArticleContent from "@/components/features/ArticleContent";
@@ -28,6 +34,28 @@ export default function BlogDetailPage({ initialPost }: { initialPost?: BlogPost
     if (!router.isReady) return;
     if (!slug) { setPost(null); setLoading(false); return; }
     let mounted = true;
+
+    // When server-rendered initialPost is provided for this slug, keep it and fetch related/analytics in the background
+    if (initialPost && initialPost.slug === slug) {
+      if (!initialPost.id.startsWith("seed-")) {
+        recordBlogRead(initialPost.id, initialPost.slug, initialPost.title).then((recorded) => {
+          if (recorded && mounted) {
+            setPost((prev) =>
+              prev ? { ...prev, readsCount: (prev.readsCount ?? prev.views ?? 0) + 1 } : prev
+            );
+          }
+        });
+      }
+      getPublishedBlogs().then((all) => {
+        if (!mounted) return;
+        const available = all.length ? all : INITIAL_BLOGS.filter((item) => item.isPublished).map((item) => ({ ...item, id: `seed-${item.slug}` }));
+        const others = available.filter((item) => item.slug !== initialPost.slug);
+        const relevant = [...others.filter((item) => item.category === initialPost.category), ...others.filter((item) => item.category !== initialPost.category)].slice(0, 3);
+        setRelated(relevant);
+      }).catch(() => {});
+      return () => { mounted = false; };
+    }
+
     setLoading(true); setPost(null); setRelated([]); setCopied(false); setShareUrl("");
     async function load() {
       try {
@@ -35,7 +63,12 @@ export default function BlogDetailPage({ initialPost }: { initialPost?: BlogPost
         let found = candidate?.isPublished ? candidate : null;
         if (!candidate) {
           const fallback = INITIAL_BLOGS.find((item) => item.slug === slug && item.isPublished);
-          if (fallback) found = { ...fallback, id: `seed-${fallback.slug}` };
+          if (fallback) {
+            found = enrichBlogWithContextualLinks({
+              ...fallback,
+              id: `seed-${fallback.slug}`,
+            } as BlogPost);
+          }
         }
         if (!mounted) return;
         setPost(found);
@@ -60,7 +93,7 @@ export default function BlogDetailPage({ initialPost }: { initialPost?: BlogPost
     }
     load();
     return () => { mounted = false; };
-  }, [slug, router.isReady]);
+  }, [slug, router.isReady, initialPost]);
   useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
   const copyLink = async () => {
     const url = window.location.href;
@@ -190,15 +223,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       initialPost = candidate;
     } else {
       const fallback = INITIAL_BLOGS.find((item) => item.slug === slug && item.isPublished);
-      if (fallback) initialPost = { ...fallback, id: `seed-${fallback.slug}` };
+      if (fallback) {
+        initialPost = enrichBlogWithContextualLinks({
+          ...fallback,
+          id: `seed-${fallback.slug}`,
+        } as BlogPost);
+      }
     }
   } catch (err) {
     console.error("Error in blog getServerSideProps:", err);
   }
 
+  if (!initialPost) {
+    return {
+      notFound: true,
+    };
+  }
+
   return {
     props: {
-      initialPost: initialPost ? JSON.parse(JSON.stringify(initialPost)) : null,
+      initialPost: JSON.parse(JSON.stringify(initialPost)),
     },
   };
 };

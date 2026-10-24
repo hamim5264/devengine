@@ -136,24 +136,72 @@ export default function ServicesPage() {
     }
   };
 
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "Custom Software Engineering Services",
+    "provider": {
+      "@type": "Organization",
+      "name": "DevEngine Systems Inc.",
+      "url": "https://www.devenginehq.com",
+    },
+    "serviceType": "Software Development",
+    "description": "Full-stack web application development, cross-platform mobile apps, cloud infrastructure, and custom software engineering.",
+    "areaServed": "Worldwide",
+  };
+
+  const headElement = (
+    <Head>
+      <title>Engineering Services & Technical Capabilities | DevEngine</title>
+      <meta
+        name="description"
+        content="Explore DevEngine's software engineering capabilities: full-stack web platforms, cross-platform mobile apps, cloud systems, and tailored AI integrations."
+      />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="canonical" href="https://www.devenginehq.com/services" />
+
+      {/* OpenGraph */}
+      <meta property="og:site_name" content="DevEngine" />
+      <meta property="og:title" content="Engineering Services & Technical Capabilities | DevEngine" />
+      <meta
+        property="og:description"
+        content="Explore DevEngine's software engineering capabilities: full-stack web platforms, cross-platform mobile apps, cloud systems, and tailored AI integrations."
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://www.devenginehq.com/services" />
+      <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+      {/* Twitter Cards */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="Engineering Services & Technical Capabilities | DevEngine" />
+      <meta
+        name="twitter:description"
+        content="Explore DevEngine's software engineering capabilities: full-stack web platforms, cross-platform mobile apps, cloud systems, and tailored AI integrations."
+      />
+      <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+      {/* JSON-LD Structured Data Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
+      />
+    </Head>
+  );
+
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[var(--devengine-page)] z-50 flex items-center justify-center">
-        <HelixLoader size={80} color="#2cecf7" text="LOADING SERVICES..." />
-      </div>
+      <>
+        {headElement}
+        <div className="fixed inset-0 bg-[var(--devengine-page)] z-50 flex items-center justify-center">
+          <HelixLoader size={80} color="#2cecf7" text="LOADING SERVICES..." />
+        </div>
+      </>
     );
   }
 
   return (
     <>
-      <Head>
-        <title>Engineering Services & Technical Solutions | DevEngine</title>
-        <meta
-          name="description"
-          content="Explore DevEngine's full-stack web architectures, mobile app engineering, bespoke AI integrations, and cloud infrastructure solutions."
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
+      {headElement}
 
       <div className="min-h-screen bg-[var(--devengine-page)] text-[var(--devengine-text)] relative overflow-x-hidden transition-colors duration-300">
         {/* Ambient Cyber Light Canvas (Light & Dark Compatible) */}

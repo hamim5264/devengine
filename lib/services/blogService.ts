@@ -294,6 +294,50 @@ export function sortBlogList(list: BlogPost[]): BlogPost[] {
 }
 
 /**
+ * Natural contextual internal links connecting published Chronicles to commercial & service pages.
+ * Carefully curated to preserve the author's authentic voice without making unverified claims.
+ */
+export const CHRONICLE_CONTEXTUAL_LINKS: Record<string, string> = {
+  "from-one-developer-to-a-software-company-why-i-started-devengine":
+    "If you'd like to learn more about the team and philosophy behind our work, read about our [engineering principles and story on our about page](/about).",
+  "building-from-zero-the-story-behind-devengine":
+    "You can see the products and systems that came out of these experiments in the [DevEngine project archive](/projects).",
+  "why-most-software-projects-fail-before-the-code-is-finished":
+    "If you are preparing a new project and want to review our approach to architecture and delivery, explore our [software engineering services](/services).",
+  "from-idea-to-production-how-we-turn-software-concepts-into-real-products":
+    "Have a product concept you are planning to build? [Contact our studio](/contact) to discuss the technical requirements and architecture.",
+  "the-developer-behind-the-product-lessons-from-building-breaking-and-starting-again":
+    "We explored similar production pitfalls in our article on [why software projects fail before code is finished](/blog/why-most-software-projects-fail-before-the-code-is-finished).",
+  "shipping-is-harder-than-coding-what-nobody-tells-you-about-building-software":
+    "For teams looking to establish robust cloud pipelines and deployment workflows, see our [cloud infrastructure solutions](/services).",
+  "why-we-build-from-the-ground-up-instead-of-following-every-trend":
+    "To understand how we structure source code ownership and licensing for long-term independence, review our [software licensing models](/pricing).",
+  "flutter-firebase-cloud-and-beyond-the-stack-behind-our-modern-products":
+    "If you're evaluating a cross-platform mobile build, learn more about our [mobile engineering capabilities](/services).",
+  "designing-software-that-people-actually-want-to-use":
+    "See how we balance interaction design and engineering in our [recent product case studies](/projects).",
+  "what-comes-next-building-devengine-for-the-long-run":
+    "If you are looking for an engineering partner for your next build, [start a conversation with us](/contact).",
+};
+
+export function enrichBlogWithContextualLinks(post: BlogPost): BlogPost {
+  if (!post || !post.slug) return post;
+  const linkText = CHRONICLE_CONTEXTUAL_LINKS[post.slug];
+  if (!linkText) return post;
+
+  const currentContent = post.content || "";
+  // Check if link is already present to prevent duplication
+  if (currentContent.includes(linkText) || currentContent.includes(linkText.slice(0, 30))) {
+    return post;
+  }
+
+  return {
+    ...post,
+    content: `${currentContent.trim()}\n\n---\n\n${linkText}`,
+  };
+}
+
+/**
  * Fetch all published blogs for public view
  */
 export async function getPublishedBlogs(): Promise<BlogPost[]> {
@@ -316,7 +360,7 @@ export async function getPublishedBlogs(): Promise<BlogPost[]> {
     }
 
     const list: BlogPost[] = Array.from(uniqueMap.values());
-    return sortBlogList(list);
+    return sortBlogList(list.map(enrichBlogWithContextualLinks));
   } catch (err) {
     console.error("Error fetching published blogs:", err);
     return [];
@@ -357,12 +401,14 @@ export async function getBlogBySlug(slug: string): Promise<BlogPost | null> {
       const docRef = doc(db, COLLECTION_NAME, slug);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...(docSnap.data() as any) };
+        const post = { id: docSnap.id, ...(docSnap.data() as any) } as BlogPost;
+        return enrichBlogWithContextualLinks(post);
       }
       return null;
     }
     const docFound = snap.docs[0];
-    return { id: docFound.id, ...(docFound.data() as any) };
+    const post = { id: docFound.id, ...(docFound.data() as any) } as BlogPost;
+    return enrichBlogWithContextualLinks(post);
   } catch (err) {
     console.error("Error fetching blog by slug:", err);
     return null;

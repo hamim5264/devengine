@@ -66,17 +66,6 @@ export default function HomePage() {
     return () => { clearTimeout(timer); window.removeEventListener("hashchange", scrollToSection); };
   }, [loading]);
 
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <HelixLoader size={54} color="#2cecf7" />
-        <p>
-          Loading Cinematic Ecosystem...
-        </p>
-      </div>
-    );
-  }
-
   const schemaOrgData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -113,45 +102,61 @@ export default function HomePage() {
     ],
   };
 
+  const headElement = (
+    <Head>
+      <title>DevEngine Studio - Cinematic Engineering & Enterprise Software</title>
+      <meta
+        name="description"
+        content="We engineer high-fidelity, performant digital ecosystems for visionary companies. From AI integration to enterprise scale."
+      />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="canonical" href="https://www.devenginehq.com/home" />
+
+      {/* OpenGraph / Facebook / LinkedIn */}
+      <meta property="og:site_name" content="DevEngine" />
+      <meta property="og:title" content="DevEngine Studio - Cinematic Engineering & Enterprise Software" />
+      <meta
+        property="og:description"
+        content="We engineer high-fidelity, performant digital ecosystems for visionary companies. From AI integration to enterprise scale."
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://www.devenginehq.com/home" />
+      <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+      <meta property="og:image:width" content="1254" />
+      <meta property="og:image:height" content="1254" />
+
+      {/* Twitter Cards */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="DevEngine Studio - Cinematic Engineering & Enterprise Software" />
+      <meta
+        name="twitter:description"
+        content="We engineer high-fidelity, performant digital ecosystems for visionary companies. From AI integration to enterprise scale."
+      />
+      <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+      {/* JSON-LD Structured Data Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrgData) }}
+      />
+    </Head>
+  );
+
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        {headElement}
+        <HelixLoader size={54} color="#2cecf7" />
+        <p>
+          Loading Cinematic Ecosystem...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
-      <Head>
-        <title>DevEngine Studio - Cinematic Engineering & Enterprise Software</title>
-        <meta
-          name="description"
-          content="We engineer high-fidelity, performant digital ecosystems for visionary companies. From AI integration to enterprise scale."
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="canonical" href="https://www.devenginehq.com/home" />
-
-        {/* OpenGraph / Facebook / LinkedIn */}
-        <meta property="og:site_name" content="DevEngine" />
-        <meta property="og:title" content="DevEngine Studio - Cinematic Engineering & Enterprise Software" />
-        <meta
-          property="og:description"
-          content="We engineer high-fidelity, performant digital ecosystems for visionary companies. From AI integration to enterprise scale."
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.devenginehq.com/home" />
-        <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
-        <meta property="og:image:width" content="1254" />
-        <meta property="og:image:height" content="1254" />
-
-        {/* Twitter Cards */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="DevEngine Studio - Cinematic Engineering & Enterprise Software" />
-        <meta
-          name="twitter:description"
-          content="We engineer high-fidelity, performant digital ecosystems for visionary companies. From AI integration to enterprise scale."
-        />
-        <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
-
-        {/* JSON-LD Structured Data Schema */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrgData) }}
-        />
-      </Head>
+      {headElement}
 
       <div className={styles.page}>
         {/* Navigation Bar (No login/signup buttons, Build Together CTA) */}

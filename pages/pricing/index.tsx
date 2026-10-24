@@ -99,9 +99,42 @@ export default function GeneralPricingPage() {
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
   };
 
+  const headElement = (
+    <Head>
+      <title>Software Pricing & Licensing Models | DevEngine</title>
+      <meta
+        name="description"
+        content="Review DevEngine's software licensing options: individual module licenses, complete studio source code ownership, and dedicated development sprints."
+      />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="canonical" href="https://www.devenginehq.com/pricing" />
+
+      {/* OpenGraph */}
+      <meta property="og:site_name" content="DevEngine" />
+      <meta property="og:title" content="Software Pricing & Licensing Models | DevEngine" />
+      <meta
+        property="og:description"
+        content="Review DevEngine's software licensing options: individual module licenses, complete studio source code ownership, and dedicated development sprints."
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://www.devenginehq.com/pricing" />
+      <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+      {/* Twitter Cards */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="Software Pricing & Licensing Models | DevEngine" />
+      <meta
+        name="twitter:description"
+        content="Review DevEngine's software licensing options: individual module licenses, complete studio source code ownership, and dedicated development sprints."
+      />
+      <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+    </Head>
+  );
+
   if (loading) {
     return (
       <div className={styles.pricingPageRoot}>
+        {headElement}
         <LandingNavbar />
         <main className="min-h-screen pt-44 pb-32 flex flex-col items-center justify-center text-center">
           <HelixLoader size={54} color="#2cecf7" />
@@ -116,14 +149,7 @@ export default function GeneralPricingPage() {
 
   return (
     <div className={styles.pricingPageRoot}>
-      <Head>
-        <title>Pricing & Licensing Models | DevEngine</title>
-        <meta
-          name="description"
-          content="Fair, transparent software licensing models designed for extraordinary engineering. Individual modules, studio licenses, and custom enterprise architectures."
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
+      {headElement}
 
       {/* Atmospheric Ambient Canvas */}
       <div className={styles.ambientCanvas} aria-hidden="true">

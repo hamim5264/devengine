@@ -327,9 +327,42 @@ export default function ArchivePage() {
     return filteredProjects.slice(0, 5);
   }, [filteredProjects]);
 
+  const headElement = (
+    <Head>
+      <title>DevEngine Archive — Software Engineering Case Studies & Systems</title>
+      <meta
+        name="description"
+        content={config.hero.subtitle || "A catalog of software systems, web platforms, and mobile applications engineered by DevEngine. Review our technical architectures and production builds."}
+      />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="canonical" href="https://www.devenginehq.com/projects" />
+
+      {/* OpenGraph */}
+      <meta property="og:site_name" content="DevEngine" />
+      <meta property="og:title" content="DevEngine Archive — Software Engineering Case Studies & Systems" />
+      <meta
+        property="og:description"
+        content={config.hero.subtitle || "A catalog of software systems, web platforms, and mobile applications engineered by DevEngine. Review our technical architectures and production builds."}
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://www.devenginehq.com/projects" />
+      <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+
+      {/* Twitter Cards */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="DevEngine Archive — Software Engineering Case Studies & Systems" />
+      <meta
+        name="twitter:description"
+        content={config.hero.subtitle || "A catalog of software systems, web platforms, and mobile applications engineered by DevEngine. Review our technical architectures and production builds."}
+      />
+      <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
+    </Head>
+  );
+
   if (loading) {
     return (
       <div className="fixed inset-0 bg-[var(--devengine-page)] z-50 flex items-center justify-center">
+        {headElement}
         <HelixLoader size={80} text="LOADING ARCHIVE..." />
       </div>
     );
@@ -337,35 +370,7 @@ export default function ArchivePage() {
 
   return (
     <>
-      <Head>
-        <title>THE DEVENGINE ARCHIVE - High-Fidelity Engineering Catalog</title>
-        <meta
-          name="description"
-          content={config.hero.subtitle || "The Pinnacle of Digital Craftsmanship."}
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="canonical" href="https://www.devenginehq.com/projects" />
-
-        {/* OpenGraph */}
-        <meta property="og:site_name" content="DevEngine" />
-        <meta property="og:title" content="THE DEVENGINE ARCHIVE - High-Fidelity Engineering Catalog" />
-        <meta
-          property="og:description"
-          content={config.hero.subtitle || "The Pinnacle of Digital Craftsmanship."}
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.devenginehq.com/projects" />
-        <meta property="og:image" content="https://www.devenginehq.com/dev_url_logo.png" />
-
-        {/* Twitter Cards */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="THE DEVENGINE ARCHIVE - High-Fidelity Engineering Catalog" />
-        <meta
-          name="twitter:description"
-          content={config.hero.subtitle || "The Pinnacle of Digital Craftsmanship."}
-        />
-        <meta name="twitter:image" content="https://www.devenginehq.com/dev_url_logo.png" />
-      </Head>
+      {headElement}
 
       {/* Shared Cinematic Landing Navbar */}
       <LandingNavbar />

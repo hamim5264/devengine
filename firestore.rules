@@ -52,6 +52,14 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // DevKitty is served only through callable functions, which verify roles on every request.
+    // Provider keys, rate-limit state, knowledge audiences and settings cannot be read or forged by clients.
+    match /devkitty_private/{id} { allow read, write: if false; }
+    match /devkitty_settings/{id} { allow read, write: if false; }
+    match /devkitty_knowledge/{id} { allow read, write: if false; }
+    match /devkitty_limits/{id} { allow read, write: if false; }
+    match /devkitty_usage/{id} { allow read, write: if false; }
+
     /* =========================
        STUDIO COMMUNICATION — private, active-company access only
     ========================== */

@@ -1,3 +1,4 @@
+import DevKittyProvider from "@/components/devkitty/DevKittyProvider";
 import EmployeeSessionGuard from "@/components/staff/EmployeeSessionGuard";
 import { CommunicationProvider } from "@/components/communication/CommunicationProvider";
 import React, { useEffect, useState } from "react";
@@ -68,6 +69,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider>
+      <DevKittyProvider>
       <HeaderControlsProvider>
       <CommunicationProvider>
       <EmployeeSessionGuard />
@@ -126,6 +128,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <CookieConsent />
       </CommunicationProvider>
       </HeaderControlsProvider>
+      </DevKittyProvider>
     </ThemeProvider>
   );
 }

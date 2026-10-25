@@ -229,6 +229,7 @@ const NAV_GROUPS: NavGroup[] = [
     color: "#2cecf7",
     icon: <IconSettings />,
     items: [
+      { label: "DevKitty AI", href: "/admin/manage-devkitty", badge: "new" },
       { label: "Theme & Fonts", href: "/admin/manage-theme-settings", badge: "new" },
       { label: "Invoice & PDF Settings", href: "/admin/manage-pdf-settings" },
       { label: "Maintenance Mode", href: "/admin/manage-maintenance" },

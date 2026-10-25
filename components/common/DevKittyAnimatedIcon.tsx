@@ -22,8 +22,16 @@ export default function DevKittyAnimatedIcon({
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<AnimationItem | null>(null);
   const [ready, setReady] = useState(false);
-  const activeRef = useRef(active);
-  activeRef.current = active;
+  const [motionAllowed, setMotionAllowed] = useState(false);
+  const animate = active && motionAllowed;
+  const activeRef = useRef(animate);
+  activeRef.current = animate;
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setMotionAllowed(!media.matches && !document.hidden);
+    update(); media.addEventListener("change", update); document.addEventListener("visibilitychange", update);
+    return () => { media.removeEventListener("change", update); document.removeEventListener("visibilitychange", update); };
+  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -73,12 +81,12 @@ export default function DevKittyAnimatedIcon({
     const player = animationRef.current;
     if (!player || !ready) return;
 
-    if (active) {
+    if (animate) {
       player.play();
     } else {
       player.goToAndStop(Math.min(12, Math.max(0, player.totalFrames - 1)), true);
     }
-  }, [active, ready]);
+  }, [animate, ready]);
 
   const activeThemeClass = isLight
     ? active
@@ -104,7 +112,7 @@ export default function DevKittyAnimatedIcon({
     >
       {!ready && (
         <span className={styles.kittyFallback} aria-hidden="true" style={{ fontSize: `${Math.round(size * 0.5)}px` }}>
-          🐱
+          <svg width="75%" height="75%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 11 1-7 5 3h4l5-3 1 7v5c0 4-16 4-16 0z" /><path d="M8 12h.01M16 12h.01m-5 3 1 1 1-1" /></svg>
         </span>
       )}
       <div

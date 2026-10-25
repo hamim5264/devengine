@@ -158,3 +158,6 @@ exports.messageRemoved = onDocumentDeleted({ ...config, document: 'studio_conver
   const pending = quotes.docs.map(quote => writer.update(quote.ref, { replyText: 'Message removed by administration', replyName: '' }).catch(error => { if (error.code !== 5) throw error; }));
   await Promise.all([writer.close(), Promise.all(pending)]);
 });
+
+// DevKitty is isolated from notification triggers and uses server-verified roles.
+Object.assign(exports, require('./devkitty'));

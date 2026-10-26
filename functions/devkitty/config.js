@@ -1,10 +1,12 @@
 const { HttpsError } = require('firebase-functions/v2/https');
 const { getAuth } = require('firebase-admin/auth');
+const { FREE_ROUTER, DEFAULT_PAID_MODEL, routingSettings } = require('./pricing');
 const ADMIN_EMAIL = 'hamim.leon@gmail.com';
 const DEFAULTS = {
   enabled: true, publicEnabled: true, employeeEnabled: true, adminEnabled: true,
   maintenanceMessage: 'I’m currently undergoing maintenance, bunny. I’ll be back shortly. Thank you for your patience.',
-  model: 'google/gemini-2.5-flash', temperature: 0.35, maxOutputTokens: 1200,
+  billingMode: 'free', freeModel: FREE_ROUTER, paidModel: DEFAULT_PAID_MODEL,
+  model: FREE_ROUTER, temperature: 0.35, maxOutputTokens: 1200,
   dailyMessageLimit: 1000, messagesPerMinute: 8, visitorDailyLimit: 60,
   webSearchEnabled: true, employeeDataEnabled: true, adminDataEnabled: true,
   autoEmployeeGreeting: true, requireZeroRetention: false,
@@ -31,8 +33,7 @@ function validateSettings(input = {}) {
     if (!Number.isFinite(value) || value < low || value > high) throw new HttpsError('invalid-argument', `Invalid setting: ${key}.`);
     result[key] = key === 'temperature' ? value : Math.floor(value);
   }
-  if (!/^[a-z0-9._-]+\/[a-z0-9._:/-]+$/i.test(result.model) || result.model.length > 160) throw new HttpsError('invalid-argument', 'Choose a valid model ID.');
-  return result;
+  return routingSettings(input, result);
 }
 async function readSettings(db) {
   const snapshot = await settingsRef(db).get();

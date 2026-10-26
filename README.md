@@ -79,6 +79,7 @@ DevKitty is the animated, role-aware AI companion used across the public website
 - **Administrator:** studio guidance, role-specific behavior, curated knowledge, model selection, greetings, and service administration.
 - **General questions:** helpful answers outside DevEngine, with an invitation to return to studio topics. Current-information lookup uses provider web search when enabled; unsupported current facts must not be invented.
 - **Master switch:** saves immediately. While disabled, questions receive the configured maintenance reply without an AI provider call.
+- **Free and paid modes:** separate model selections, free-only by default using `openrouter/free`. Paid models and paid web lookup are blocked in free mode; no paid fallback is configured. Save settings to explicitly enable paid mode. Provider quotas still apply; infrastructure charges are separate.
 - **Usage details:** actual provider key spending/allowance and a 30-day model breakdown of calls, tokens, and reported costs. Account balance is shown only when provider permissions expose it. Historical per-model activity before tracking began is not fabricated.
 
 DevKitty uses retrieval from allowed Firestore records and a configurable OpenRouter-hosted model. It does **not** fine-tune a custom model. Its tools are read-only: it guides users rather than approving requests, changing accounts, submitting work, or making purchases.

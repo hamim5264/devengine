@@ -17,6 +17,7 @@ async function providerDetails(apiKey) {
     keyUsage:number(key?.usage),dailyUsage:number(key?.usage_daily),weeklyUsage:number(key?.usage_weekly),monthlyUsage:number(key?.usage_monthly),
     keyLimit:number(key?.limit),keyRemaining:number(key?.limit_remaining),limitReset:typeof key?.limit_reset==='string'?key.limit_reset:null,
     totalCredits,totalUsage,accountBalance:totalCredits!==null&&totalUsage!==null?totalCredits-totalUsage:null,
+    isFreeTier:typeof key?.is_free_tier==='boolean'?key.is_free_tier:null,expiresAt:typeof key?.expires_at==='string'?key.expires_at:null,
   };
 }
 async function usageDetails(db) {
@@ -26,9 +27,11 @@ async function usageDetails(db) {
   const models=new Map();
   for(const day of days.docs) for(const item of Object.values(day.data().models || {})) {
     if(typeof item.model!=='string') continue;
-    const aggregate=models.get(item.model) || {model:item.model,calls:0,inputTokens:0,outputTokens:0,reportedCost:0,costSamples:0};
+    const billingMode=['free','paid'].includes(item.billingMode)?item.billingMode:'legacy';
+    const id=`${billingMode}:${item.model}`;
+    const aggregate=models.get(id) || {model:item.model,billingMode,calls:0,inputTokens:0,outputTokens:0,reportedCost:0,costSamples:0};
     for(const field of ['calls','inputTokens','outputTokens','reportedCost','costSamples']) aggregate[field]+=number(item[field]) || 0;
-    models.set(item.model,aggregate);
+    models.set(id,aggregate);
   }
   return {since,models:[...models.values()].sort((a,b)=>b.calls-a.calls)};
 }

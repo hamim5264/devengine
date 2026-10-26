@@ -28,7 +28,7 @@ exports.devkittyChat=onCall(OPTIONS,async request=>{
   try {
     const question=messages.filter(item=>item.role==='user').slice(-2).map(item=>item.content).join('\n');
     const context=await collectContext(db(),actor,settings,question);
-    const result=await answer({apiKey,settings,actor,context,messages,recordUsage:(usage,model)=>recordUsage(usageRef,usage,model)});
+    const result=await answer({apiKey,settings,actor,context,messages,recordUsage:(usage,model)=>recordUsage(usageRef,usage,model,settings.billingMode)});
     await usageRef.set({successful:FieldValue.increment(1)},{merge:true});
     return {...result,role:actor.role,groundedAt:new Date().toISOString()};
   } catch(error) {

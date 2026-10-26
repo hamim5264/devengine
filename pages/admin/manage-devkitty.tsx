@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import AdminLayout from "@/components/AdminLayout";
-import { AdminSelect } from "@/components/admin/AdminFormControls";
 import { EmployeeDialog, EmployeeIcon } from "@/components/staff/EmployeeUI";
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
-import { readDevKittyAdmin, devKittyAdminAction, getDevKittyModels, devKittyError } from "@/lib/devkitty/client";
-import type { DevKittyAdminState, DevKittySettings, DevKittyKnowledge, DevKittyModel, DevKittyRole } from "@/types/devkitty";
+import { readDevKittyAdmin, devKittyAdminAction, devKittyError } from "@/lib/devkitty/client";
+import type { DevKittyAdminState, DevKittySettings, DevKittyKnowledge, DevKittyRole } from "@/types/devkitty";
 import s from "@/components/admin/AdminWorkspace.module.css";
 import k from "@/components/devkitty/DevKittyAdmin.module.css";
 import DevKittyUsage from "@/components/devkitty/DevKittyUsage";
+import DevKittyModelSettings from "@/components/devkitty/DevKittyModelSettings";
 const ROLES: { key: DevKittyRole; label: string; description: string }[] = [
   { key: "visitor", label: "Visitors & clients", description: "Published content, services, projects and public page links." },
   { key: "employee", label: "Employees", description: "Their own workspace, tasks, requests and daily updates." },
@@ -22,16 +22,11 @@ export default function ManageDevKitty() {
   const [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
   const [switching, setSwitching] = useState(false);
   const [apiKey, setApiKey] = useState(""), [showKey, setShowKey] = useState(false), [removeKey, setRemoveKey] = useState(false);
-  const [models, setModels] = useState<DevKittyModel[]>([]), [modelSearch, setModelSearch] = useState(""), [modelsLoading, setModelsLoading] = useState(false), [modelError, setModelError] = useState("");
   const [knowledge, setKnowledge] = useState<DevKittyKnowledge | null>(null), [knowledgeError, setKnowledgeError] = useState(""), [deleting, setDeleting] = useState<DevKittyKnowledge | null>(null);
   async function load() { const result = await readDevKittyAdmin(); setData(result); setSettings(result.settings); }
   useEffect(() => onAdminPageAccess(router, async () => {
     try { await load(); } catch (error) { setError(devKittyError(error)); } finally { setLoading(false); }
   }), [router]);
-  async function loadModels() {
-    setModelsLoading(true); setModelError("");
-    try { setModels(await getDevKittyModels()); } catch (error) { setModelError(devKittyError(error)); } finally { setModelsLoading(false); }
-  }
   function update<Key extends keyof DevKittySettings>(key: Key, value: DevKittySettings[Key]) { setSettings(current => current ? { ...current, [key]: value } : current); setNotice(""); }
   async function toggleService(enabled: boolean) {
     if (switching || saving) return;
@@ -61,8 +56,6 @@ export default function ManageDevKitty() {
     try { await devKittyAdminAction({ action: "deleteKnowledge", id: deleting.id }); setDeleting(null); const result = await readDevKittyAdmin(); setData(result); setNotice("Knowledge note deleted."); }
     catch (error) { setKnowledgeError(devKittyError(error)); } finally { setSaving(false); }
   }
-  const selectedModel = models.find(model => model.id === settings?.model);
-  const visibleModels = models.filter(model => `${model.name} ${model.id}`.toLowerCase().includes(modelSearch.toLowerCase())).slice(0, 150);
   return <AdminLayout title="DevKitty Control Center | DevEngine"><div className={s.page}>
     <div className={s.header}><div><p className={s.eyebrow}>DevKitty / Admin control</p><h1>A thoughtful companion. Your rules.</h1><p>Connect the AI, shape its personality and control what each role can access.</p></div><button type="submit" form="devkitty-settings" className={s.primary} disabled={saving || !settings}>{saving ? "Saving…" : "Save settings"}</button></div>
     {error && <div className={s.notice} data-error role="alert">{error}{!settings && <button className={s.button} onClick={async () => { setLoading(true); setError(""); try { await load(); } catch (error) { setError(devKittyError(error)); } finally { setLoading(false); } }}>Reconnect</button>}</div>}
@@ -73,9 +66,9 @@ export default function ManageDevKitty() {
         <fieldset disabled={saving} className={k.fieldset}>
           <section className={`${s.panel} ${k.service}`} data-online={data.settings.enabled}><div className={k.sectionHeader}><div><p className={s.eyebrow}>Service control</p><h2>{data.settings.enabled ? "DevKitty is online" : "DevKitty is under maintenance"}</h2><p>Applies to everyone immediately. While off, replies use your maintenance message without AI charges.</p></div><div className={k.toggleRow}><span>{switching ? "Updating…" : data.settings.enabled ? "Online" : "Maintenance"}</span><Switch label="DevKitty master service switch" value={data.settings.enabled} disabled={switching || saving} onChange={toggleService} /></div></div><label className={s.field}>Maintenance reply<textarea maxLength={600} rows={3} value={settings.maintenanceMessage || "I’m currently undergoing maintenance, bunny. I’ll be back shortly. Thank you for your patience."} onChange={event => update("maintenanceMessage", event.target.value)} /><small>Save settings to update this message. The master switch saves instantly.</small></label></section>
           <section className={s.panel}><div className={k.sectionHeader}><div><h2>Connection & model</h2><p>Your API key is saved through the server and never returned to the browser.</p></div></div><div className={s.grid}>
-            <label className={`${s.field} ${s.full}`}>OpenRouter API key<div className={k.keyInput}><input type={showKey ? "text" : "password"} value={apiKey} placeholder={data.configured ? "Leave blank to keep the saved key" : "Paste your new OpenRouter key"} autoComplete="new-password" spellCheck={false} onChange={event => { setApiKey(event.target.value); setRemoveKey(false); }} /><button type="button" className={s.button} onClick={() => setShowKey(value => !value)} aria-label={showKey ? "Hide API key" : "Show API key"}><EmployeeIcon>{showKey ? "visibility_off" : "visibility"}</EmployeeIcon></button></div><small>Use a new key with a credit limit. The previously shared key should be revoked.</small></label>
+            <label className={`${s.field} ${s.full}`}>OpenRouter API key<div className={k.keyInput}><input type={showKey ? "text" : "password"} value={apiKey} placeholder={data.configured ? "Leave blank to keep the saved key" : "Paste your new OpenRouter key"} autoComplete="new-password" spellCheck={false} onChange={event => { setApiKey(event.target.value); setRemoveKey(false); }} /><button type="button" className={s.button} onClick={() => setShowKey(value => !value)} aria-label={showKey ? "Hide API key" : "Show API key"}><EmployeeIcon>{showKey ? "visibility_off" : "visibility"}</EmployeeIcon></button></div><small>Your saved key works with both free and paid models. Free mode blocks paid inference.</small></label>
             {data.configured && <label className={k.checkbox}><input type="checkbox" checked={removeKey} onChange={event => { setRemoveKey(event.target.checked); if (event.target.checked) setApiKey(""); }} />Remove the saved key when I save</label>}
-            <div className={`${s.field} ${s.full}`}><div className={k.sectionHeader}><label htmlFor="kitty-model">AI model</label><button className={s.button} type="button" disabled={modelsLoading} onClick={loadModels}>{modelsLoading ? "Loading models…" : "Load live model catalog"}</button></div>{!!models.length && <input type="search" placeholder="Find a model" value={modelSearch} onChange={event => setModelSearch(event.target.value)} aria-label="Search models" />}<AdminSelect id="kitty-model" value={settings.model} onChange={event => update("model", event.target.value)}>{!visibleModels.some(model => model.id === settings.model) && <option value={settings.model}>{settings.model}</option>}{visibleModels.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</AdminSelect><small>{selectedModel ? `$${selectedModel.inputPricePerMillion.toFixed(3)} input / $${selectedModel.outputPricePerMillion.toFixed(3)} output per million tokens. Web lookup is billed separately.` : "Default: Gemini 2.5 Flash. Load the catalog to see available models and current pricing."}</small>{modelError && <p role="alert">{modelError}</p>}</div>
+            <DevKittyModelSettings settings={settings} onChange={patch => { setSettings(current => current ? { ...current, ...patch } : current); setNotice(""); }} />
           </div></section>
           <section className={s.panel}><h2>Behaviour & voice</h2><p>DevKitty always uses “bunny”. Facts come from live records and your knowledge notes.</p><label className={s.field}>General instructions<textarea maxLength={4000} value={settings.instructions} onChange={event => update("instructions", event.target.value)} placeholder="Tone, style and how DevKitty should help" /></label></section>
           <div className={k.roleGrid}>{ROLES.map(role => {
@@ -88,9 +81,9 @@ export default function ManageDevKitty() {
             ["autoEmployeeGreeting", "Welcome employees automatically", "Greet each employee once per sign-in when they reach their dashboard."],
             ["employeeDataEnabled", "Use the employee’s own records", "Their assignments, work updates, attendance and requests. No other employee’s private records."],
             ["adminDataEnabled", "Use admin workspace records", "Read relevant studio summaries for the verified administrator."],
-            ["webSearchEnabled", "Allow current-information lookup", "Weather, recent facts and general web questions, using OpenRouter credits."],
+            ["webSearchEnabled", "Allow paid web lookup", "Only available in paid mode. Free mode blocks this setting on the server."],
             ["requireZeroRetention", "Require zero-retention providers", "Only compatible providers will be used. Provider data collection is denied in all modes."],
-          ].map(([key, title, description]) => <div className={k.option} key={key}><div><strong>{title}</strong><p>{description}</p></div><Switch label={title} value={settings[key as keyof DevKittySettings] as boolean} onChange={value => update(key as "autoEmployeeGreeting", value)} /></div>)}</div></section>
+          ].map(([key, title, description]) => <div className={k.option} key={key}><div><strong>{title}</strong><p>{description}</p></div><Switch label={title} value={key === "webSearchEnabled" && settings.billingMode !== "paid" ? false : settings[key as keyof DevKittySettings] as boolean} disabled={key === "webSearchEnabled" && settings.billingMode !== "paid"} onChange={value => update(key as "autoEmployeeGreeting", value)} /></div>)}</div></section>
           <section className={s.panel}><h2>Usage & response limits</h2><p>Caps apply on the server. They cannot be bypassed by changing the browser interface.</p><div className={s.grid}>
             {[
               ["dailyMessageLimit", "Daily messages across the studio", 1, 100000, 1], ["messagesPerMinute", "Messages per minute per visitor", 1, 30, 1],
@@ -99,7 +92,7 @@ export default function ManageDevKitty() {
           </div></section>
         </fieldset>
       </form>
-      <DevKittyUsage revision={`${data.keyHint}:${notice}`} />
+      <DevKittyUsage revision={`${data.keyHint}:${notice}`} settings={data.settings} />
       <section className={s.panel}><div className={k.sectionHeader}><div><h2>Curated knowledge</h2><p>Add verified FAQs and company guidance. Choose exactly who may receive each note.</p></div><button type="button" className={s.primary} onClick={() => { setKnowledgeError(""); setKnowledge({ title: "", content: "", audiences: ["visitor"], keywords: "", url: "", enabled: true }); }}><EmployeeIcon>add</EmployeeIcon>Add knowledge</button></div>
         {data.knowledge.length ? <div className={k.knowledgeList}>{data.knowledge.map(item => <article className={k.knowledge} key={item.id}><div><strong>{item.title}</strong><p>{item.audiences.map(role => ROLES.find(item => item.key === role)?.label).join(" · ")}{!item.enabled && " · Paused"}</p></div><div className={s.actions}><button className={s.button} type="button" onClick={() => { setKnowledgeError(""); setKnowledge(structuredClone(item)); }}>Edit</button><button className={s.danger} type="button" onClick={() => { setKnowledgeError(""); setDeleting(item); }}>Delete</button></div></article>)}</div> : <p>No curated notes yet. DevKitty can still retrieve published studio content.</p>}
       </section>

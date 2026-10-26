@@ -21,10 +21,10 @@ async function reserveRequest(db,request,actor,settings) {
   });
   return usageRef;
 }
-async function recordUsage(ref,usage,model) {
+async function recordUsage(ref,usage,model,billingMode) {
   const finite=value=>Number.isFinite(Number(value))?Math.max(0,Number(value)):0;
   const counters={inputTokens:FieldValue.increment(finite(usage.prompt_tokens)),outputTokens:FieldValue.increment(finite(usage.completion_tokens)),reportedCost:FieldValue.increment(finite(usage.cost)),costSamples:FieldValue.increment(usage.cost!=null&&Number.isFinite(Number(usage.cost))?1:0)};
-  const id=createHash('sha256').update(model).digest('hex');
-  await ref.set({...counters,models:{[id]:{model,calls:FieldValue.increment(1),...counters}}},{merge:true});
+  const id=createHash('sha256').update(`${billingMode}:${model}`).digest('hex');
+  await ref.set({...counters,models:{[id]:{model,billingMode,calls:FieldValue.increment(1),...counters}}},{merge:true});
 }
 module.exports={reserveRequest,recordUsage,dayKey};

@@ -6,8 +6,20 @@ DevKitty is a role-aware, read-only AI assistant. It uses live Firestore retriev
 
 1. Revoke the OpenRouter key previously posted in chat. Create a replacement key in OpenRouter and give it a credit limit.
 2. Open **Admin → System → DevKitty AI**. Paste the replacement key and save. The server validates it with OpenRouter before saving it.
-3. Keep the default Gemini 2.5 Flash or load the live model catalog. The catalog shows current input/output prices; web search has separate provider charges.
+3. Keep the default **Free only** mode with `openrouter/free`, or load the live catalog and select a specific zero-priced `:free` variant. A separate paid model can be configured for later; it is never used unless **Paid models** is explicitly selected and saved.
 4. Set greetings, role instructions, audience access, curated knowledge and usage limits. Save settings.
+
+## Free and paid routing
+
+Free-only mode is the default, including existing settings that predate the mode selector. The previous paid model is preserved as the paid configuration, but the effective chat model becomes `openrouter/free` until paid mode is explicitly saved. The existing Firebase callable architecture and protected admin key storage are unchanged; no new Next.js API route or Vercel AI key is needed.
+
+Free mode accepts only `openrouter/free` or exact model IDs ending in `:free`. The server selects the active model from the saved mode, applies zero prompt/completion price ceilings, and blocks tool/web plugins and routing overrides. It sends no paid-model fallback list. If a free model is unavailable, rate-limited, or incompatible with the existing privacy requirements, the request fails with an honest retry message. It does not retry on a paid model or silently relax data-collection/retention settings.
+
+Paid web search is disabled in free mode even if the web setting was previously enabled. Live weather/news requests must explain that current lookup is unavailable. Existing DevEngine records remain available through normal role-scoped retrieval. Free models have provider quotas and changing availability; free mode does not promise unlimited or identical-quality responses.
+
+The catalog separates zero-priced free models from paid tool-capable models and preserves both selections. Mode/model changes take effect after **Save settings**. The usage panel shows the saved active mode and actual served model; new activity is grouped by free/paid mode. Older records without a mode are labelled earlier activity. Previous spending is retained. Account tier, purchased credits, account/key spending and remaining budget are shown only when supplied by the provider; unavailable figures are never fabricated.
+
+Free AI inference does not eliminate Firebase, hosting, database, or other infrastructure charges. The credits view distinguishes these concerns and links to the provider's own activity page. No sample AI call or cost-verification request is run automatically.
 
 The master service switch saves immediately and applies to all roles. While disabled (or when a role is paused), chat remains available and the server returns the configured maintenance reply without retrieving private context, calling a model, or consuming AI credits. New questions always check the current server setting. Save settings to change the maintenance wording.
 
@@ -22,6 +34,7 @@ Keys are stored in `devkitty_private/provider`, accessible only through the serv
 - `functions/devkitty/config.js`: owner authentication, current-account/suspension checks, settings validation and greetings.
 - `functions/devkitty/navigation.js`: authorized destinations and topic matching, including granted employee module links.
 - `functions/devkitty/context.js`: allowlisted field projections and live, role-scoped retrieval. It never serializes full employee documents. Bank details, passwords and emergency contacts are excluded.
+- `functions/devkitty/pricing.js`: free/paid routing policy, legacy free-default migration, and strict free-model identifiers.
 - `functions/devkitty/provider.js`: OpenRouter adapter, tool loop, independent public web lookup, provider error mapping and source handling.
 - `functions/devkitty/limits.js`: transactional request limits and aggregate usage counters. No questions, answers, or raw IP addresses are stored in these records.
 - `functions/devkitty/reporting.js`: owner-only provider credit metadata and 30-day model aggregates.
@@ -61,6 +74,7 @@ The callable endpoints use `us-central1`, Node 22, at most three instances, and 
 ## Research sources
 
 - [Firebase callable authentication and CORS](https://firebase.google.com/docs/functions/callable)
+- [OpenRouter free router](https://openrouter.ai/docs/guides/routing/routers/free-router)
 - [OpenRouter tool calling](https://openrouter.ai/docs/guides/features/tool-calling)
 - [OpenRouter web search and citations](https://openrouter.ai/docs/guides/features/plugins/web-search)
 - [OpenRouter provider privacy controls](https://openrouter.ai/docs/guides/routing/provider-selection)

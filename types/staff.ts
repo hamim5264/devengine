@@ -65,6 +65,7 @@ export interface StaffMember {
   staffType: StaffType;
   allowedModules: string[]; // Array of MODULE_KEY values
   allowedSubModules?: Record<string, string[]>; // Optional granular sub-module permissions: { moduleKey: ["/admin/page1", ...] }
+  apposAccess?: import('./appos').AppOSAccess;
   status: StaffStatus;
   suspensionReason?: string;
   suspendedAt?: string;
@@ -237,6 +238,7 @@ export function getRoleBadgeColor(
 
 /** Module keys matching the admin drawer groups */
 export const MODULE_KEYS = {
+  appos: "appos",
   overview: "overview",
   commerce: "commerce",
   contract_center: "contract_center",
@@ -252,6 +254,7 @@ export type ModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];
 
 /** Module display config */
 export const MODULE_CONFIG: Record<string, { label: string; icon: string; color: string; description: string }> = {
+  appos: { label: "DevEngine AppOS", icon: "apps", color: "#2cecf7", description: "Application workspaces and scoped permissions" },
   overview: {
     label: "Overview",
     icon: "dashboard",

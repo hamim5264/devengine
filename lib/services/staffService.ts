@@ -84,6 +84,7 @@ export async function createStaffAccount(data: {
   staffType: StaffType;
   allowedModules: string[];
   allowedSubModules?: Record<string, string[]>;
+  apposAccess?: StaffMember["apposAccess"];
   avatarUrl?: string;
   assignedOffDays?: string[];
   shiftHours?: { start: string; end: string; name?: string };
@@ -121,6 +122,7 @@ export async function createStaffAccount(data: {
     staffType: data.staffType,
     allowedModules: data.allowedModules,
     allowedSubModules: data.allowedSubModules || {},
+    apposAccess: data.apposAccess || { registry: [], apps: {} },
     status: "active",
     assignedOffDays: data.assignedOffDays || ["Friday", "Saturday"],
     shiftHours: data.shiftHours || { start: "09:00", end: "18:00", name: "Standard Shift" },

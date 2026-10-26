@@ -10,6 +10,8 @@ import HelixLoader from '@/components/HelixLoader';
 import CustomSelectField from '@/components/staff/CustomSelectField';
 import { archiveConversation, archiveMessage, canDirectMessage, communicationCollections as C, deleteStudioConversation, deleteStudioMessage, markChatRead, openDirectMessage, reactToMessage, sendStudioMessage, setChatBackground, setTyping, watchMessages, watchStudio } from '@/lib/services/communicationService';
 import { formatFileSize, getFileMaterialIcon, MAX_FILE_SIZE_BYTES, uploadFileToStorage } from '@/lib/services/fileUploadService';
+import { getStaffByUid, getStaffById } from '@/lib/services/staffService';
+import type { StaffMember } from '@/types/staff';
 import type { ChatBackground, StudioConversation, StudioMessage, StudioMessageAttachment, StudioPerson } from '@/types/communication';
 import ImageLightboxModal from '@/components/common/ImageLightboxModal';
 import s from './Communication.module.css';
@@ -89,6 +91,23 @@ export default function Messaging({ onError }: { onError: (e: string) => void })
   const [archivedMessages, setArchivedMessages] = useState<string[]>([]); const [showArchivedMessages, setShowArchivedMessages] = useState(false);
   const [draft, setDraft] = useState(''); const [reply, setReply] = useState<StudioMessage | null>(null); const [sending, setSending] = useState(false); const [busy, setBusy] = useState(false);
   const [confirmation, setConfirmation] = useState<{ title: string; text: string; run: () => Promise<unknown> } | null>(null);
+  const [viewingProfile, setViewingProfile] = useState<StudioPerson | null>(null);
+  const [profileStaff, setProfileStaff] = useState<StaffMember | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+
+  const openEmployeeProfile = async (targetPerson: StudioPerson) => {
+    setViewingProfile(targetPerson);
+    setLoadingProfile(true);
+    try {
+      const data = (await getStaffByUid(targetPerson.uid)) || (await getStaffById(targetPerson.id));
+      setProfileStaff(data);
+    } catch (err) {
+      console.error('Failed to load employee profile:', err);
+      setProfileStaff(null);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
 
   // File attachments, lightbox and emoji picker
   const [composerAttachments, setComposerAttachments] = useState<StudioMessageAttachment[]>([]);
@@ -262,7 +281,7 @@ export default function Messaging({ onError }: { onError: (e: string) => void })
   if (state.me?.chatSuspended) return <EmployeeEmpty icon="speaker_notes_off" title="Messaging is paused." description="Your administrator has paused your chat access. Other workspace features remain available." />;
   return <><div className={s.messaging} data-chat-open={!!chatId || undefined}>
     <div className={s.chatSidebar}><div className={s.chatSidebarHeading}><div><p className={s.eyebrow}>YOUR CONVERSATIONS</p><h2>A little closer.</h2></div><button className={s.iconButton} title="New message" aria-label="Start a new conversation" disabled={!state.me} onClick={() => setNewChat(true)}><EmployeeIcon>edit_square</EmployeeIcon></button></div><EmployeeSearch value={search} onChange={setSearch} label="Search conversations" placeholder="Find a conversation…" /><div className={s.segment}><button aria-pressed={!showArchived} onClick={() => setShowArchived(false)}>Inbox</button><button aria-pressed={showArchived} onClick={() => setShowArchived(true)}>Archived</button></div><div className={s.chatList}>{visibleChats.map(chat => { const other = state.people.find(p => chat.participantIds.includes(p.uid) && p.uid !== state.uid); const unread = chat.lastSenderId !== state.uid && !!chat.lastMessageAt && chat.lastMessageAt > (state.chatStates[chat.id]?.lastReadAt || ''); return <button key={chat.id} className={s.chatListItem} data-selected={chat.id === chatId || undefined} onClick={() => chooseChat(chat.id)}><Avatar name={titleFor(chat)} url={chat.kind === 'department' ? chat.avatarUrl : other?.avatarUrl} /><span><strong>{titleFor(chat)}</strong><small>{chat.lastMessage || (chat.kind === 'department' ? 'Your department channel' : 'Say hello and start a conversation.')}</small>{chat.lastMessageAt && <time>{formatDate(chat.lastMessageAt)}</time>}</span>{unread && <span className={s.unreadDot} aria-label="Unread conversation" />}</button>; })}{!visibleChats.length && <div className={s.listEmpty}><EmployeeIcon>{showArchived ? 'inventory_2' : 'forum'}</EmployeeIcon><p>{showArchived ? 'Archived conversations live here.' : 'Start a conversation with admin or a teammate.'}</p>{!showArchived && <button className={s.button} onClick={() => setNewChat(true)}>New message</button>}</div>}</div><Link className={s.sidebarFooter} href={`${base}/departments`}><EmployeeIcon>hub</EmployeeIcon>{state.admin ? 'Manage departments & groups' : 'Explore your departments'}<span>↗</span></Link></div>
-    <div className={s.chatMain}>{selected ? <><div className={s.chatTopbar}><button className={`${s.iconButton} ${s.mobileBack}`} onClick={() => void router.push(`${base}/messages`, undefined, { shallow: true, scroll: false })} aria-label="Back to conversations"><EmployeeIcon>arrow_back</EmployeeIcon></button><Avatar name={titleFor(selected)} url={selected.kind === 'department' ? selected.avatarUrl : person?.avatarUrl} /><div className={s.chatIdentity}><h2>{titleFor(selected)}</h2><p>{selected.kind === 'department' ? selected.description || `${selected.participantIds.length} people · Department chat` : person?.role === 'admin' ? 'DevEngine administration' : 'Private conversation'}</p></div><button className={s.iconButton} aria-label="Conversation settings" title="Conversation settings" onClick={() => setSettings(true)}><EmployeeIcon>settings</EmployeeIcon></button></div>
+    <div className={s.chatMain}>{selected ? <><div className={s.chatTopbar}><button className={`${s.iconButton} ${s.mobileBack}`} onClick={() => void router.push(`${base}/messages`, undefined, { shallow: true, scroll: false })} aria-label="Back to conversations"><EmployeeIcon>arrow_back</EmployeeIcon></button><Avatar name={titleFor(selected)} url={selected.kind === 'department' ? selected.avatarUrl : person?.avatarUrl} /><div className={s.chatIdentity}><h2>{titleFor(selected)}</h2><p>{selected.kind === 'department' ? selected.description || `${selected.participantIds.length} people · Department chat` : person?.role === 'admin' ? 'DevEngine administration' : 'Private conversation'}</p></div><div className={s.chatTopbarActions}>{state.admin && person && <button type="button" className={s.viewProfileBtn} onClick={() => void openEmployeeProfile(person)} title={`View ${person.name}'s profile`} aria-label={`View ${person.name}'s profile`}><EmployeeIcon>badge</EmployeeIcon><span className={s.viewProfileText}>View profile</span></button>}<button className={s.iconButton} aria-label="Conversation settings" title="Conversation settings" onClick={() => setSettings(true)}><EmployeeIcon>settings</EmployeeIcon></button></div></div>
       <div className={s.messageArea} data-background={state.background} ref={scrollRef} onScroll={e => { const el = e.currentTarget; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100; }}>
         <div className={s.messageCanvas}>{messages.length >= messageLimit && <button className={s.loadMore} disabled={loading} onClick={() => { oldHeight.current = scrollRef.current?.scrollHeight || 0; setMessageLimit(count => count + 60); }}>{loading ? 'Loading…' : 'Load earlier messages'}</button>}{!messages.length && <div className={s.conversationStart}><EmployeeIcon>forum</EmployeeIcon><h3>{loading ? 'Opening conversation…' : 'Good work starts with a hello.'}</h3><p>Reply, react, and keep your team in the loop.</p></div>}
           {messages.filter(m => showArchivedMessages || !archivedMessages.includes(m.id)).map((message, index, list) => {
@@ -417,6 +436,106 @@ export default function Messaging({ onError }: { onError: (e: string) => void })
     </EmployeeDialog>
   )}
   {confirmation && <EmployeeDialog title={confirmation.title} description={confirmation.text} icon="delete" onClose={() => !busy && setConfirmation(null)}><div className={s.cardActions}><button className={s.button} disabled={busy} onClick={() => setConfirmation(null)}>Cancel</button><button className={s.primary} disabled={busy} onClick={() => void run(async () => { await confirmation.run(); setConfirmation(null); })}>{busy ? 'Deleting…' : 'Delete'}</button></div></EmployeeDialog>}
+  {viewingProfile && (
+    <EmployeeDialog
+      title={`${viewingProfile.name}'s Profile`}
+      icon="badge"
+      onClose={() => { setViewingProfile(null); setProfileStaff(null); }}
+    >
+      <div className={s.profileModal}>
+        {loadingProfile ? (
+          <div className={s.profileLoading}>
+            <HelixLoader />
+          </div>
+        ) : (
+          <>
+            <div className={s.profileHeaderCard}>
+              <Avatar name={viewingProfile.name} url={profileStaff?.avatarUrl || viewingProfile.avatarUrl} />
+              <div className={s.profileHeaderInfo}>
+                <h3>{profileStaff?.name || viewingProfile.name}</h3>
+                <p className={s.profileEmail}>{profileStaff?.email || 'Employee account'}</p>
+                <div className={s.profileBadges}>
+                  <span className={s.badgeRole}>
+                    <EmployeeIcon>badge</EmployeeIcon>
+                    {profileStaff?.designation || profileStaff?.staffType || viewingProfile.role}
+                  </span>
+                  <span
+                    className={s.badgeStatus}
+                    data-status={profileStaff?.status || viewingProfile.status || 'active'}
+                  >
+                    {(profileStaff?.status || viewingProfile.status || 'active').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className={s.profileGrid}>
+              <div className={s.profileItem}>
+                <span className={s.profileLabel}>Employment Type</span>
+                <span className={s.profileValue}>{profileStaff?.employmentType ? (profileStaff.employmentType.charAt(0).toUpperCase() + profileStaff.employmentType.slice(1)) : 'Permanent'}</span>
+              </div>
+              <div className={s.profileItem}>
+                <span className={s.profileLabel}>Joining Date</span>
+                <span className={s.profileValue}>{profileStaff?.joiningDate || 'Recorded on file'}</span>
+              </div>
+              <div className={s.profileItem}>
+                <span className={s.profileLabel}>Shift Schedule</span>
+                <span className={s.profileValue}>
+                  {typeof profileStaff?.shiftHours === 'object' && profileStaff.shiftHours !== null
+                    ? `${profileStaff.shiftHours.name ? profileStaff.shiftHours.name + ' · ' : ''}${profileStaff.shiftHours.start || ''} - ${profileStaff.shiftHours.end || ''}`
+                    : typeof profileStaff?.shiftHours === 'string' && profileStaff.shiftHours
+                    ? profileStaff.shiftHours
+                    : 'Standard Studio Hours'}
+                </span>
+              </div>
+              <div className={s.profileItem}>
+                <span className={s.profileLabel}>Assigned Off-Days</span>
+                <span className={s.profileValue}>{profileStaff?.assignedOffDays?.join(', ') || 'Friday, Saturday'}</span>
+              </div>
+              {profileStaff?.phone && (
+                <div className={s.profileItem}>
+                  <span className={s.profileLabel}>Phone</span>
+                  <span className={s.profileValue}>{profileStaff.phone}</span>
+                </div>
+              )}
+              {profileStaff?.emergencyContact?.name && (
+                <div className={s.profileItem}>
+                  <span className={s.profileLabel}>Emergency Contact</span>
+                  <span className={s.profileValue}>{profileStaff.emergencyContact.name} ({profileStaff.emergencyContact.relationship || 'Contact'}) · {profileStaff.emergencyContact.phone}</span>
+                </div>
+              )}
+              <div className={s.profileItem} style={{ gridColumn: '1 / -1' }}>
+                <span className={s.profileLabel}>Allowed Studio Modules</span>
+                <div className={s.profileModuleTags}>
+                  {(profileStaff?.allowedModules?.length ? profileStaff.allowedModules : ['overview', 'messages']).map(mod => (
+                    <span key={mod} className={s.profileModuleTag}>{mod}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className={s.cardActions} style={{ marginTop: 20 }}>
+              <Link
+                href={`/admin/manage-staff?employeeId=${profileStaff?.id || viewingProfile.id || viewingProfile.uid}`}
+                className={s.primary}
+                onClick={() => { setViewingProfile(null); setProfileStaff(null); }}
+              >
+                <EmployeeIcon>open_in_new</EmployeeIcon>
+                Open in Employee Management
+              </Link>
+              <button
+                type="button"
+                className={s.button}
+                onClick={() => { setViewingProfile(null); setProfileStaff(null); }}
+              >
+                Close
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </EmployeeDialog>
+  )}
   <ImageLightboxModal
     src={lightboxImage?.url || null}
     name={lightboxImage?.name}

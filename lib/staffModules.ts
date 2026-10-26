@@ -12,6 +12,7 @@ const item = (label: string, page: string) => ({ label, href: `/admin/${page}` }
 
 /** Employee destinations and page authorization share this registry. */
 export const STUDIO_MODULES: StudioModule[] = [
+  { key: "appos", label: "DevEngine AppOS", icon: "apps", description: "Your assigned application workspaces", items: [item("Application Registry", "appos")] },
   { key: "overview", label: "Overview", icon: "dashboard", description: "Studio dashboard and activity", items: [item("Studio Dashboard", "dashboard")] },
   { key: "commerce", label: "Commerce", icon: "shopping_bag", description: "Orders, payments, and currencies", items: [item("Orders & Payments", "manage-orders"), item("Invoice PDF Settings", "manage-pdf-settings"), item("Currencies", "manage-currencies")] },
   { key: "contract_center", label: "Contract Center", icon: "description", description: "Clients, agreements, and delivery", items: [item("Overview", "contract-center"), ...["clients", "projects", "quotations", "ndas", "agreements", "sow", "change-orders", "signatures", "milestones", "templates", "payments", "audit", "settings"].map((page) => item(({ ndas: "NDAs", sow: "Statements of Work", "change-orders": "Change Orders", audit: "Audit Trail" } as Record<string, string>)[page] || page[0].toUpperCase() + page.slice(1), `contract-center/${page}`))] },
@@ -32,7 +33,7 @@ export function hasStudioSubModule(staff: StaffMember | null, moduleKey: string,
   // If no granular sub-module map exists for this module, grant all sub-items (backward compatible)
   const subs = staff?.allowedSubModules?.[moduleKey];
   if (subs === undefined) return true;
-  return subs.includes(href);
+  return subs.includes(moduleKey === "appos" && href.startsWith("/admin/appos/") ? "/admin/appos" : href);
 }
 
 /** Return only the sub-items a staff member may access within a module. */
@@ -47,6 +48,7 @@ export function getFilteredModuleItems(staff: StaffMember | null, moduleKey: str
 /** An empty result is admin-only. Never infer permission for unknown pages. */
 export function modulesForAdminRoute(path: string): string[] {
   const pathname = path.split(/[?#]/)[0].replace(/\/$/, "");
+  if (pathname === "/admin/appos" || pathname.startsWith("/admin/appos/")) return ["appos"];
   if (["/admin/manage-devkitty", "/admin/profile", "/admin/project-briefs", "/admin/manage-staff", "/admin/manage-staff-roles", "/admin/manage-certificates", "/admin/manage-theme-settings"].includes(pathname)) return [];
   if (pathname.startsWith("/admin/contract-center")) return ["contract_center"];
   if (pathname.startsWith("/admin/agreements/") || pathname.startsWith("/admin/edit-project/")) return ["projects"];

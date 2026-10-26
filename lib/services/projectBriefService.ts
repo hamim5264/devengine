@@ -4,7 +4,7 @@ import { getPdfBrandingSettings } from "@/lib/services/pdfSettingsService";
 export type CostPeriod = "one_time" | "monthly" | "yearly";
 export interface BriefCost { id: string; title: string; quantity: number; amount: number; period: CostPeriod; }
 export interface ProjectBrief {
-  id: string; title: string; client: string; clientEmail: string; overview: string; objectives: string; technology: string;
+  id: string; title: string; client: string; clientEmail: string; clientPhone?: string; overview: string; objectives: string; technology: string;
   deliveryPlan: string; timeline: string; deliverables: string; assumptions: string; paymentTerms: string;
   currency: string; shareToken?: string; status: "draft" | "ready"; costs: BriefCost[]; createdAt: string; updatedAt: string; createdBy: string;
 }
@@ -29,7 +29,7 @@ export async function getProjectBriefPublisher(profile?: { name: string; title: 
 function sharedDocument(brief: ProjectBrief): ProjectBriefDocument {
   // Publish only the proposal content, never owner IDs or internal access tokens.
   return {
-    title: brief.title, client: brief.client, clientEmail: brief.clientEmail, overview: brief.overview,
+    title: brief.title, client: brief.client, clientEmail: brief.clientEmail || "", clientPhone: brief.clientPhone || "", overview: brief.overview,
     objectives: brief.objectives, technology: brief.technology, deliveryPlan: brief.deliveryPlan, timeline: brief.timeline,
     deliverables: brief.deliverables, assumptions: brief.assumptions, paymentTerms: brief.paymentTerms,
     currency: brief.currency, status: brief.status, costs: brief.costs, createdAt: brief.createdAt, updatedAt: brief.updatedAt,
@@ -47,7 +47,7 @@ export function briefMoney(value: number, currency: string) {
 }
 export function blankBrief(): ProjectBrief {
   const date = new Date().toISOString();
-  return { id: "", title: "", client: "", clientEmail: "", overview: "", objectives: "", technology: "", deliveryPlan: "", timeline: "", deliverables: "", assumptions: "", paymentTerms: "", currency: "BDT", status: "draft", costs: ["Discovery & planning", "UI / UX design", "Development", "Server & infrastructure", "Deployment"].map((title, index) => ({ id: crypto.randomUUID(), title, quantity: 1, amount: 0, period: index === 3 ? "monthly" : "one_time" })), createdAt: date, updatedAt: date, createdBy: "" };
+  return { id: "", title: "", client: "", clientEmail: "", clientPhone: "", overview: "", objectives: "", technology: "", deliveryPlan: "", timeline: "", deliverables: "", assumptions: "", paymentTerms: "", currency: "BDT", status: "draft", costs: ["Discovery & planning", "UI / UX design", "Development", "Server & infrastructure", "Deployment"].map((title, index) => ({ id: crypto.randomUUID(), title, quantity: 1, amount: 0, period: index === 3 ? "monthly" : "one_time" })), createdAt: date, updatedAt: date, createdBy: "" };
 }
 function requireAdmin() {
   const user = auth.currentUser;
@@ -62,6 +62,8 @@ export async function getProjectBriefs() {
 export async function saveProjectBrief(input: ProjectBrief): Promise<ProjectBrief> {
   const user = requireAdmin();
   if (!input.title.trim() || !input.client.trim()) throw new Error("Enter a project title and client name.");
+  const clientEmail = (input.clientEmail || "").trim(), clientPhone = (input.clientPhone || "").trim();
+  if (clientEmail && !/^n\/a$/i.test(clientEmail) && !/^[^\s@]+@[^\s@]+$/.test(clientEmail)) throw new Error("Enter a client email, N/A, or leave it blank.");
   if (!/^[A-Z]{3}$/.test(input.currency)) throw new Error("Choose a valid currency.");
   if (input.costs.length > 60) throw new Error("Use up to 60 budget items.");
   const costs = input.costs.map(item => {
@@ -77,7 +79,7 @@ export async function saveProjectBrief(input: ProjectBrief): Promise<ProjectBrie
     const existing = await transaction.get(ref);
     const { shareToken: ignoredInputToken, ...fields } = input;
     const token = existing.data()?.shareToken as string | undefined;
-    const result: ProjectBrief = { ...fields, id: ref.id, title: input.title.trim(), client: input.client.trim(), costs,
+    const result: ProjectBrief = { ...fields, id: ref.id, title: input.title.trim(), client: input.client.trim(), clientEmail, clientPhone, costs,
       createdAt: existing.data()?.createdAt || now, updatedAt: now, createdBy: user.uid, ...(token ? { shareToken: token } : {}) };
     transaction.set(ref, result);
     if (token) transaction.set(doc(db, SHARES, token), { brief: sharedDocument(result), publisher, enabled: true, updatedAt: now });

@@ -99,6 +99,7 @@ function IconContract({ size = 16 }: { size?: number }) {
 }
 
 const NAV_GROUPS: NavGroup[] = [
+  { label: "DevEngine AppOS", moduleKey: "appos", color: "#2cecf7", icon: <IconGrid />, items: [{ label: "Application Registry", href: "/admin/appos", badge: "new" }] },
   {
     label: "Overview",
     moduleKey: "overview",
@@ -238,7 +239,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-interface AdminLayoutProps { children: React.ReactNode; title?: string; }
+interface AdminLayoutProps { children: React.ReactNode; title?: string; backHref?: string; }
 
 const SCROLL_STORAGE_KEY = "admin_nav_scroll";
 const EXPANDED_STORAGE_KEY = "admin_nav_expanded";
@@ -247,7 +248,7 @@ function routeIsWithin(path: string, href: string) {
   return path === href || path.startsWith(`${href}/`);
 }
 
-export default function AdminLayout({ children, title = "Admin Panel | DevEngine" }: AdminLayoutProps) {
+export default function AdminLayout({ children, title = "Admin Panel | DevEngine", backHref }: AdminLayoutProps) {
   const router = useRouter();
   const profile = useAdminProfile();
   const { theme } = useTheme();
@@ -265,6 +266,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
   const path = router.asPath.split(/[?#]/)[0];
   const activeItem = useMemo(() => {
     const items = NAV_GROUPS.flatMap(group => group.items);
+    if (path.startsWith("/admin/appos/")) return items.find(item => item.href === "/admin/appos");
     if (path.startsWith("/admin/app-lab/")) return items.find(item => item.href === "/admin/app-lab/manage");
     return items.sort((a, b) => b.href.length - a.href.length).find(item => routeIsWithin(path, item.href));
   }, [path]);
@@ -398,7 +400,25 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
           <main id="admin-main" className={styles.pageBody} tabIndex={-1}>
             <div className={styles.content}>
               {path !== "/admin/dashboard" && path !== "/admin" && <nav className={styles.backRow} aria-label="Page navigation">
-                <button type="button" disabled={routing} onClick={() => { if (window.history.length > 1) router.back(); else void router.replace("/admin/dashboard"); }}><span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>Back</button>
+                <button
+                  type="button"
+                  disabled={routing}
+                  onClick={() => {
+                    if (backHref) {
+                      void router.push(backHref);
+                    } else if (path === "/admin/appos") {
+                      void router.push("/admin/dashboard");
+                    } else if (path.startsWith("/admin/appos/")) {
+                      void router.push("/admin/appos");
+                    } else if (window.history.length > 1) {
+                      router.back();
+                    } else {
+                      void router.replace("/admin/dashboard");
+                    }
+                  }}
+                >
+                  <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>Back
+                </button>
                 <span className={styles.backDivider} aria-hidden="true" />
                 <Link href="/admin/dashboard">Dashboard</Link>
                 <span className={styles.backSection}>{activeItem?.label || activeGroup?.label || "Studio workspace"}</span>

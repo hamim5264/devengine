@@ -574,3 +574,200 @@ button.personRow:hover { background:var(--devengine-soft); border-color:#2cecf7;
   margin-top: 1px;
 }
 
+/* Topbar actions and View Employee Profile */
+.chatTopbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.viewProfileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(44, 236, 247, 0.4);
+  background: rgba(44, 236, 247, 0.08);
+  color: #2cecf7;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.viewProfileBtn:hover {
+  background: rgba(44, 236, 247, 0.18);
+  border-color: #2cecf7;
+  box-shadow: 0 0 12px rgba(44, 236, 247, 0.25);
+  transform: translateY(-1px);
+}
+
+.viewProfileBtn :global(.material-symbols-outlined) {
+  font-size: 17px;
+}
+
+@media (max-width: 600px) {
+  .viewProfileText {
+    display: none;
+  }
+  .viewProfileBtn {
+    padding: 7px;
+    border-radius: 10px;
+  }
+}
+
+/* Employee profile modal in chat */
+.profileModal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.profileLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.profileHeaderCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--devengine-raised);
+  border: 1px solid var(--devengine-border);
+}
+
+.profileHeaderInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profileHeaderInfo h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--devengine-text);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileEmail {
+  font-size: 12.5px;
+  color: var(--devengine-muted);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileBadges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.badgeRole {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: rgba(44, 236, 247, 0.12);
+  color: #2cecf7;
+  border: 1px solid rgba(44, 236, 247, 0.3);
+}
+
+.badgeRole :global(.material-symbols-outlined) {
+  font-size: 13px;
+}
+
+.badgeStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badgeStatus[data-status="suspended"] {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .profileGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profileItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--devengine-soft);
+  border: 1px solid var(--devengine-border);
+}
+
+.profileLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--devengine-muted);
+}
+
+.profileValue {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--devengine-text);
+  overflow-wrap: anywhere;
+}
+
+.profileModuleTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.profileModuleTag {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  background: var(--devengine-raised);
+  border: 1px solid var(--devengine-border);
+  color: var(--devengine-text);
+}
+

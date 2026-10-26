@@ -142,7 +142,7 @@ export async function generateProjectBriefPdf(brief: ProjectBriefDocument, publi
   paragraph(brief.title, 23, "bold");
   const date = new Date(brief.updatedAt);
   const updated = Number.isNaN(date.getTime()) ? "Not specified" : date.toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric" });
-  table(["Prepared for", "Document details"], [[`${brief.client}${brief.clientEmail ? `\n${brief.clientEmail}` : ""}`, `${brief.status === "ready" ? "Prepared overview" : "Draft for discussion"}\nUpdated ${updated}\nCurrency: ${brief.currency}`]], [99, 75]);
+  table(["Prepared for", "Document details"], [[[brief.client, brief.clientEmail ? `Email: ${brief.clientEmail}` : "", brief.clientPhone ? `Phone: ${brief.clientPhone}` : ""].filter(Boolean).join("\n"), `${brief.status === "ready" ? "Prepared overview" : "Draft for discussion"}\nUpdated ${updated}\nCurrency: ${brief.currency}`]], [99, 75]);
   section("Project overview", brief.overview); section("Goals & success criteria", brief.objectives);
   section("Technology & architecture", brief.technology); section("Delivery plan", brief.deliveryPlan);
   section("Timeline", brief.timeline); section("Deliverables", brief.deliverables);

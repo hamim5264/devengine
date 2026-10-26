@@ -161,3 +161,4 @@ exports.messageRemoved = onDocumentDeleted({ ...config, document: 'studio_conver
 
 // DevKitty is isolated from notification triggers and uses server-verified roles.
 Object.assign(exports, require('./devkitty'));
+Object.assign(exports, require('./appos'));

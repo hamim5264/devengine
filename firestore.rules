@@ -32,7 +32,8 @@ service cloud.firestore {
         (name in ['projects', 'tags', 'categories', 'lab_categories', 'agreements'] && canUseModules(['projects'])) ||
         (name in ['blogs', 'reviews', 'lab_projects', 'lab_categories', 'appLab', 'team_members', 'job_circulars', 'job_applications', 'services', 'service_inquiries'] && canUseModules(['content_cms'])) ||
         (name in ['footer_socials', 'network_hubs'] && canUseModules(['social_network'])) ||
-        (name in ['app_policies', 'app_data_deletion_requests'] && canUseModules(['legal']));
+        (name in ['app_policies', 'app_data_deletion_requests'] && canUseModules(['legal'])) ||
+        (name in ['appos_apps'] && (isAdmin() || canUseModules(['appos'])));
     }
 
     // Recovery is limited to the exact archived document, never arbitrary writes.
@@ -59,6 +60,16 @@ service cloud.firestore {
     match /devkitty_knowledge/{id} { allow read, write: if false; }
     match /devkitty_limits/{id} { allow read, write: if false; }
     match /devkitty_usage/{id} { allow read, write: if false; }
+
+    // AppOS operations are authorized per application and feature by apposManage.
+    // Client access to appos_apps is restricted to Recycle Bin restores; credentials & subcollections remain private.
+    match /appos_apps/{appId} {
+      allow create, update: if canRestoreArchived('appos_apps', appId);
+    }
+    match /appos_apps/{appId}/{document=**} { allow read, write: if false; }
+    match /appos_private/{id} { allow read, write: if false; }
+    match /appos_slugs/{id} { allow read, write: if false; }
+    match /appos_policy_links/{id} { allow read, write: if false; }
 
     /* =========================
        STUDIO COMMUNICATION — private, active-company access only

@@ -377,6 +377,7 @@ export default function ManageAppLegalPage() {
             </div>
 
             <div className="flex items-center gap-3">
+              {auth.currentUser?.email === ADMIN_EMAIL && <Link href="/admin/appos" className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--devengine-border)] text-[var(--devengine-text)]">Open AppOS ↗</Link>}
               <button
                 type="button"
                 onClick={handleOpenCreate}

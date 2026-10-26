@@ -45,3 +45,6 @@ next-env.d.ts
 # test artifacts
 sample_*.pdf
 sample_*.png
+
+# editor
+.vscode/

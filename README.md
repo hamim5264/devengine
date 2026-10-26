@@ -47,6 +47,7 @@ Message attachments are intentionally unavailable in the current messaging relea
 | Area | Capabilities |
 | --- | --- |
 | Dashboard | Studio metrics, reporting periods, orders, operational activity, and module navigation. |
+| DevEngine AppOS | Multi-app registry, isolated workspaces, managed/external data adapters, customization previews, scoped employee grants, app role templates, audit history, and native Legal & Showcase profiles. |
 | Commerce | Orders, payment review, currencies, project prices, pricing tiers, and invoice/PDF configuration. |
 | Contract Center | Clients, quotations, NDAs, agreements, statements of work, signatures, milestones, change orders, payments, templates, settings, and audit activity. |
 | Project planning | Draft project overviews, scope, proposed technology, budget items, details, PDF proposals, and client sharing. |
@@ -245,6 +246,7 @@ Nothing in this notice overrides rights that applicable law does not allow to be
 
 ## Support and related documentation
 
+- [AppOS setup, permissions, adapters, API contract, and deployment](docs/appos.md)
 - [DevKitty architecture and operations](docs/devkitty.md)
 - [Firebase events, notifications, and employee account handling](functions/README.md)
 - [Repository working preferences](AGENTS.md)

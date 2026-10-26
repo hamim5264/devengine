@@ -1,0 +1,422 @@
+{
+  "modules": [
+    {
+      "key": "users",
+      "label": "Users",
+      "icon": "group",
+      "fields": [
+        {
+          "key": "name",
+          "label": "Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "email",
+          "required": false
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "key": "content",
+      "label": "Content",
+      "icon": "article",
+      "fields": [
+        {
+          "key": "title",
+          "label": "Title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "key": "records",
+      "label": "Records",
+      "icon": "table_view",
+      "fields": [
+        {
+          "key": "title",
+          "label": "Title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "description",
+          "label": "Description",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "key": "transactions",
+      "label": "Transactions",
+      "icon": "payments",
+      "fields": [
+        {
+          "key": "reference",
+          "label": "Reference",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "amount",
+          "label": "Amount",
+          "type": "number",
+          "required": false
+        },
+        {
+          "key": "currency",
+          "label": "Currency",
+          "type": "text",
+          "required": false
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "key": "support",
+      "label": "Support",
+      "icon": "support_agent",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "Subject",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "email",
+          "required": false
+        },
+        {
+          "key": "body",
+          "label": "Message",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "key": "notifications",
+      "label": "Notices",
+      "icon": "campaign",
+      "fields": [
+        {
+          "key": "title",
+          "label": "Title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "key": "errors",
+      "label": "Error records",
+      "icon": "bug_report",
+      "fields": [
+        {
+          "key": "title",
+          "label": "Title",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "details",
+          "label": "Details",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "text",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    {
+      "key": "app.view",
+      "label": "Open workspace"
+    },
+    {
+      "key": "app.edit",
+      "label": "Edit app profile"
+    },
+    {
+      "key": "app.archive",
+      "label": "Archive / restore app"
+    },
+    {
+      "key": "settings.manage",
+      "label": "Manage workspace settings"
+    },
+    {
+      "key": "integrations.manage",
+      "label": "Manage integrations"
+    },
+    {
+      "key": "studio.manage",
+      "label": "Customize workspace"
+    },
+    {
+      "key": "access.manage",
+      "label": "Manage app assignments"
+    },
+    {
+      "key": "audit.view",
+      "label": "Read audit history"
+    },
+    {
+      "key": "legal.view",
+      "label": "Read legal documents"
+    },
+    {
+      "key": "legal.manage",
+      "label": "Manage legal documents and requests"
+    },
+    {
+      "key": "users.view",
+      "label": "Users: view"
+    },
+    {
+      "key": "users.create",
+      "label": "Users: create"
+    },
+    {
+      "key": "users.edit",
+      "label": "Users: edit"
+    },
+    {
+      "key": "users.delete",
+      "label": "Users: delete"
+    },
+    {
+      "key": "users.export",
+      "label": "Users: export"
+    },
+    {
+      "key": "users.approve",
+      "label": "Users: approve"
+    },
+    {
+      "key": "content.view",
+      "label": "Content: view"
+    },
+    {
+      "key": "content.create",
+      "label": "Content: create"
+    },
+    {
+      "key": "content.edit",
+      "label": "Content: edit"
+    },
+    {
+      "key": "content.delete",
+      "label": "Content: delete"
+    },
+    {
+      "key": "content.export",
+      "label": "Content: export"
+    },
+    {
+      "key": "content.approve",
+      "label": "Content: approve"
+    },
+    {
+      "key": "records.view",
+      "label": "Records: view"
+    },
+    {
+      "key": "records.create",
+      "label": "Records: create"
+    },
+    {
+      "key": "records.edit",
+      "label": "Records: edit"
+    },
+    {
+      "key": "records.delete",
+      "label": "Records: delete"
+    },
+    {
+      "key": "records.export",
+      "label": "Records: export"
+    },
+    {
+      "key": "records.approve",
+      "label": "Records: approve"
+    },
+    {
+      "key": "transactions.view",
+      "label": "Transactions: view"
+    },
+    {
+      "key": "transactions.create",
+      "label": "Transactions: create"
+    },
+    {
+      "key": "transactions.edit",
+      "label": "Transactions: edit"
+    },
+    {
+      "key": "transactions.delete",
+      "label": "Transactions: delete"
+    },
+    {
+      "key": "transactions.export",
+      "label": "Transactions: export"
+    },
+    {
+      "key": "transactions.approve",
+      "label": "Transactions: approve"
+    },
+    {
+      "key": "support.view",
+      "label": "Support: view"
+    },
+    {
+      "key": "support.create",
+      "label": "Support: create"
+    },
+    {
+      "key": "support.edit",
+      "label": "Support: edit"
+    },
+    {
+      "key": "support.delete",
+      "label": "Support: delete"
+    },
+    {
+      "key": "support.export",
+      "label": "Support: export"
+    },
+    {
+      "key": "support.approve",
+      "label": "Support: approve"
+    },
+    {
+      "key": "notifications.view",
+      "label": "Notices: view"
+    },
+    {
+      "key": "notifications.create",
+      "label": "Notices: create"
+    },
+    {
+      "key": "notifications.edit",
+      "label": "Notices: edit"
+    },
+    {
+      "key": "notifications.delete",
+      "label": "Notices: delete"
+    },
+    {
+      "key": "notifications.export",
+      "label": "Notices: export"
+    },
+    {
+      "key": "notifications.approve",
+      "label": "Notices: approve"
+    },
+    {
+      "key": "errors.view",
+      "label": "Error records: view"
+    },
+    {
+      "key": "errors.create",
+      "label": "Error records: create"
+    },
+    {
+      "key": "errors.edit",
+      "label": "Error records: edit"
+    },
+    {
+      "key": "errors.delete",
+      "label": "Error records: delete"
+    },
+    {
+      "key": "errors.export",
+      "label": "Error records: export"
+    },
+    {
+      "key": "errors.approve",
+      "label": "Error records: approve"
+    }
+  ],
+  "widgets": [
+    "counts",
+    "activity",
+    "health"
+  ],
+  "navigation": [
+    "overview",
+    "users",
+    "content",
+    "records",
+    "transactions",
+    "support",
+    "notifications",
+    "errors",
+    "legal",
+    "studio",
+    "settings",
+    "integrations",
+    "access",
+    "audit"
+  ]
+}

@@ -2,6 +2,16 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // Public app identity assets, writable only by their active authenticated uploader.
+    match /appos-assets/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid &&
+        (request.auth.token.email == 'hamim.leon@gmail.com' ||
+          (firestore.exists(/databases/(default)/documents/staff_members/$(request.auth.uid)) &&
+           firestore.get(/databases/(default)/documents/staff_members/$(request.auth.uid)).data.status == 'active' &&
+           firestore.get(/databases/(default)/documents/staff_members/$(request.auth.uid)).data.allowedModules.hasAny(['appos', 'all']))) &&
+        request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/(png|jpeg|webp)');
+    }
     // Universal rules for DevEngine workspace & eco-system
     match /{allPaths=**} {
       // 1. Public read so images, PDFs, deliverables, and attachments render everywhere
@@ -9,7 +19,7 @@ service firebase.storage {
 
       // 2. Allow writes with 25 MB size limit (No 30-day expiration, zero blockers)
       // Any authenticated admin/staff, or app client uploads safely under 25 MB
-      allow write: if request.resource.size < 25 * 1024 * 1024;
+      allow write: if !allPaths.matches('appos-assets/.*') && request.resource.size < 25 * 1024 * 1024;
     }
   }
 }

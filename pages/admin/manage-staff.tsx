@@ -1,3 +1,6 @@
+import AppOSPermissions from "@/components/appos/AppOSPermissions";
+import { emptyAppOSAccess } from "@/lib/appos/catalog";
+import type { AppOSAccess } from "@/types/appos";
 import TaskAssignmentSheet from "@/components/admin/TaskAssignmentSheet";
 import { EmployeeDialog, EmployeeIcon } from "@/components/staff/EmployeeUI";
 import StaffAvatar from "@/components/staff/StaffAvatar";
@@ -700,6 +703,7 @@ export default function ManageStaffPage() {
   const [createAvatarUrl, setCreateAvatarUrl] = useState("");
   const [createType, setCreateType] = useState<string>("developer");
   const [createModules, setCreateModules] = useState<string[]>([]);
+  const [createAppOS, setCreateAppOS] = useState<AppOSAccess>(emptyAppOSAccess);
   const [createSubModules, setCreateSubModules] = useState<Record<string, string[]>>({});
   const [createExpandedModules, setCreateExpandedModules] = useState<Record<string, boolean>>({});
   const [creating, setCreating] = useState(false);
@@ -789,6 +793,7 @@ export default function ManageStaffPage() {
   const [editAvatarUrl, setEditAvatarUrl] = useState("");
   const [editType, setEditType] = useState<string>("developer");
   const [editModules, setEditModules] = useState<string[]>([]);
+  const [editAppOS, setEditAppOS] = useState<AppOSAccess>(emptyAppOSAccess);
   const [editSubModules, setEditSubModules] = useState<Record<string, string[]>>({});
   const [editExpandedModules, setEditExpandedModules] = useState<Record<string, boolean>>({});
   const [editStatus, setEditStatus] = useState<StaffStatus>("active");
@@ -878,6 +883,17 @@ export default function ManageStaffPage() {
     if (authReady && isAdmin) loadData();
   }, [authReady, isAdmin, loadData]);
 
+  // ── Open staff details from query parameter (e.g. from chat view profile) ──
+  useEffect(() => {
+    const targetId = typeof router.query.employeeId === 'string' ? router.query.employeeId : '';
+    if (targetId && staff.length > 0 && !selectedDetailStaff) {
+      const match = staff.find((s) => s.id === targetId || s.uid === targetId);
+      if (match) {
+        void openEmployeeDetailsModal(match);
+      }
+    }
+  }, [router.query.employeeId, staff, selectedDetailStaff]);
+
   // ── Auto-generate email when name changes in create form ──
   useEffect(() => {
     if (createName.trim()) {
@@ -889,6 +905,7 @@ export default function ManageStaffPage() {
 
   // ── Open create modal ──
   const openCreateModal = () => {
+    setCreateAppOS(emptyAppOSAccess());
     setCreateName("");
     setCreateEmail("");
     setCreatePassword(generateStaffPassword());
@@ -1029,6 +1046,7 @@ export default function ManageStaffPage() {
         staffType: createType,
         allowedModules: createModules,
         allowedSubModules: createSubModules,
+        apposAccess: createAppOS,
         assignedOffDays: offDaysChoice,
         shiftHours: { start: shiftStart, end: shiftEnd, name: "Standard Shift" },
         agreementId,
@@ -1163,6 +1181,7 @@ export default function ManageStaffPage() {
   // ── Open edit modal ──
   const openEditModal = (member: StaffMember) => {
     setEditingStaff(member);
+    setEditAppOS(structuredClone(member.apposAccess || emptyAppOSAccess()));
     setEditName(member.name);
     setEditPassword(member.password || "");
     setEditAvatarUrl(member.avatarUrl || "");
@@ -1221,6 +1240,7 @@ export default function ManageStaffPage() {
           staffType: editType,
           allowedModules: editModules,
           allowedSubModules: editSubModules,
+          apposAccess: editAppOS,
           status: editStatus,
           suspensionReason: editStatus === "suspended" ? editSuspensionReason.trim() : undefined,
           suspendedBy: editStatus === "suspended" ? auth.currentUser?.uid : undefined,
@@ -2189,6 +2209,7 @@ export default function ManageStaffPage() {
                         onToggleAllSubModules={(moduleKey) => handleToggleAllSubModulesForModule(createModules, setCreateModules, createSubModules, setCreateSubModules, moduleKey)}
                         onToggleAll={() => handleToggleAllGlobal(createModules, setCreateModules, setCreateSubModules)}
                       />
+                      {(createModules.includes("appos") || createModules.includes("all")) && <AppOSPermissions value={createAppOS} onChange={setCreateAppOS} />}
                     </div>
                   </div>
                 </div>
@@ -2709,6 +2730,7 @@ export default function ManageStaffPage() {
                       onToggleAllSubModules={(moduleKey) => handleToggleAllSubModulesForModule(editModules, setEditModules, editSubModules, setEditSubModules, moduleKey)}
                       onToggleAll={() => handleToggleAllGlobal(editModules, setEditModules, setEditSubModules)}
                     />
+                      {(editModules.includes("appos") || editModules.includes("all")) && <AppOSPermissions value={editAppOS} onChange={setEditAppOS} />}
                   </div>
                 </div>
               </div>

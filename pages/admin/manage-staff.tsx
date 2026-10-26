@@ -16,6 +16,7 @@ import AdminLayout from "@/components/AdminLayout";
 import HelixLoader from "@/components/HelixLoader";
 import {
   getStaffMembers,
+  subscribeStaffMembers,
   createStaffAccount,
   updateStaffMember,
   deleteStaffMember,
@@ -37,6 +38,7 @@ import {
   MODULE_CONFIG,
   getRoleLabel,
   getRoleBadgeColor,
+  calculateStaffCompleteness,
 } from "@/types/staff";
 import { STUDIO_MODULES } from "@/lib/staffModules";
 import {
@@ -727,12 +729,12 @@ export default function ManageStaffPage() {
   const [createBasicSalary, setCreateBasicSalary] = useState<number>(35000);
   const [createHouseRent, setCreateHouseRent] = useState<number>(10000);
   const [createMedical, setCreateMedical] = useState<number>(5000);
-  const [createPaymentMethod, setCreatePaymentMethod] = useState<string>("bank_transfer");
+  const [createPaymentMethod, setCreatePaymentMethod] = useState<string>("");
   const [createBankDetails, setCreateBankDetails] = useState<string>("");
 
   // Emergency Contact
   const [createEmergencyName, setCreateEmergencyName] = useState<string>("");
-  const [createEmergencyRel, setCreateEmergencyRel] = useState<string>("Spouse");
+  const [createEmergencyRel, setCreateEmergencyRel] = useState<string>("");
   const [createEmergencyPhone, setCreateEmergencyPhone] = useState<string>("");
 
   // Calculated values for creation
@@ -862,9 +864,8 @@ export default function ManageStaffPage() {
     return () => unsub();
   }, [router]);
 
-  // ── Load staff and roles ──
+  // ── Load staff and roles with live real-time subscription ──
   const loadData = useCallback(async () => {
-    setLoading(true);
     try {
       const [staffData, rolesData] = await Promise.all([
         getStaffMembers(),
@@ -880,8 +881,25 @@ export default function ManageStaffPage() {
   }, []);
 
   useEffect(() => {
-    if (authReady && isAdmin) loadData();
-  }, [authReady, isAdmin, loadData]);
+    if (!authReady || !isAdmin) return;
+    setLoading(true);
+    getStaffRoles().then(setRoles).catch(console.error);
+
+    // Live subscription: admin gets instant real-time updates when an employee updates profile
+    const unsubscribe = subscribeStaffMembers((liveStaff) => {
+      setStaff(liveStaff);
+      setLoading(false);
+      setSelectedDetailStaff((prev) => {
+        if (!prev) return null;
+        const fresh = liveStaff.find((s) => s.id === prev.id || s.uid === prev.uid);
+        return fresh || prev;
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [authReady, isAdmin]);
 
   // ── Open staff details from query parameter (e.g. from chat view profile) ──
   useEffect(() => {
@@ -928,6 +946,11 @@ export default function ManageStaffPage() {
     });
     setCreateSubModules(subMap);
     setCreateExpandedModules({});
+    setCreatePaymentMethod("");
+    setCreateBankDetails("");
+    setCreateEmergencyName("");
+    setCreateEmergencyRel("");
+    setCreateEmergencyPhone("");
     setCreatedCreds(null);
     setShowCreatePass(true);
     setShowCreateModal(true);
@@ -1760,21 +1783,43 @@ export default function ManageStaffPage() {
                         </div>
                       </div>
 
-                      {/* Status Badge */}
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider border font-medium shrink-0 ${
-                          member.status === "active"
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-sm shadow-emerald-500/10"
-                            : "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                        }`}
-                      >
+                      {/* Status Badges: Active & Profile Completeness */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            member.status === "active" ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider border font-medium ${
+                            member.status === "active"
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-sm shadow-emerald-500/10"
+                              : "bg-rose-500/10 border-rose-500/30 text-rose-400"
                           }`}
-                        />
-                        <span>{member.status === "active" ? "Active" : "Suspended"}</span>
-                      </span>
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              member.status === "active" ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
+                            }`}
+                          />
+                          <span>{member.status === "active" ? "Active" : "Suspended"}</span>
+                        </span>
+
+                        {(() => {
+                          const completeness = calculateStaffCompleteness(member);
+                          return (
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold border ${
+                                completeness.isComplete
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                                  : "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                              }`}
+                              title={
+                                completeness.isComplete
+                                  ? "Account profile 100% complete"
+                                  : `Profile incomplete (${completeness.missingFields.join(", ")})`
+                              }
+                            >
+                              <span>{completeness.isComplete ? "✓ 100%" : `${completeness.percentage}% Setup`}</span>
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
 
                     {/* Card Middle: Role, Shift & Permissions Strip */}
@@ -2423,6 +2468,7 @@ export default function ManageStaffPage() {
                                   onChange={(e) => setCreatePaymentMethod(e.target.value)}
                                   className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-2.5 pr-7 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
                                 >
+                                  <option value="">-- Not Selected (Pending) --</option>
                                   <option value="bank_transfer">Bank Transfer</option>
                                   <option value="bkash">bKash</option>
                                   <option value="nagad">Nagad</option>
@@ -2463,7 +2509,7 @@ export default function ManageStaffPage() {
                               type="text"
                               value={createBankDetails}
                               onChange={(e) => setCreateBankDetails(e.target.value)}
-                              placeholder="e.g. City Bank Acc #1234567 or bKash 017xxxxxxxx"
+                              placeholder="e.g. City Bank Acc #1234567 or leave blank for employee"
                               className="w-full h-10 bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 text-xs text-[var(--devengine-text)] font-mono focus:outline-none"
                             />
                           </div>
@@ -2499,6 +2545,7 @@ export default function ManageStaffPage() {
                                 onChange={(e) => setCreateEmergencyRel(e.target.value)}
                                 className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
                               >
+                                <option value="">-- Not Selected (Pending) --</option>
                                 <option value="Spouse">Spouse</option>
                                 <option value="Parent">Parent (Father / Mother)</option>
                                 <option value="Sibling">Sibling (Brother / Sister)</option>
@@ -2945,6 +2992,7 @@ export default function ManageStaffPage() {
                           onChange={(e) => setEditPaymentMethod(e.target.value)}
                           className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
                         >
+                          <option value="">-- Not Selected (Pending) --</option>
                           <option value="bank_transfer">Bank Transfer</option>
                           <option value="bkash">bKash</option>
                           <option value="nagad">Nagad</option>
@@ -3001,6 +3049,7 @@ export default function ManageStaffPage() {
                           onChange={(e) => setEditEmergencyRel(e.target.value)}
                           className="w-full h-10 appearance-none bg-[var(--devengine-raised)] border border-[var(--devengine-border)] focus:border-[#2cecf7] rounded-xl px-3 pr-8 text-xs text-[var(--devengine-text)] font-mono focus:outline-none cursor-pointer"
                         >
+                          <option value="">-- Not Selected (Pending) --</option>
                           <option value="Spouse">Spouse</option>
                           <option value="Parent">Parent (Father / Mother)</option>
                           <option value="Sibling">Sibling (Brother / Sister)</option>

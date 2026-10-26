@@ -208,9 +208,9 @@ service cloud.firestore {
       // Staff can read their own record (staffId == auth uid)
       allow read: if isSignedIn() && request.auth.uid == staffId;
 
-      // Staff can update their own name, avatarUrl and updatedAt
+      // Staff can update their own name, avatarUrl, salaryManagement, emergencyContact and updatedAt
       allow update: if isStaff() && request.auth.uid == staffId &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatarUrl', 'updatedAt']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatarUrl', 'salaryManagement', 'emergencyContact', 'updatedAt']);
     }
 
     /* =========================

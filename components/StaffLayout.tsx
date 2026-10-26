@@ -8,8 +8,8 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { subscribeStudioAccess } from "@/lib/services/staffAuth";
 import { STUDIO_MODULES, hasStudioModule, getFilteredModuleItems } from "@/lib/staffModules";
-import type { StaffMember } from "@/types/staff";
-import { STAFF_TYPE_LABELS } from "@/types/staff";
+import type { StaffMember, StaffProfileCompleteness } from "@/types/staff";
+import { STAFF_TYPE_LABELS, PAYMENT_METHODS, EMERGENCY_RELATIONSHIPS, calculateStaffCompleteness } from "@/types/staff";
 import HelixLoader from "@/components/HelixLoader";
 import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
@@ -125,6 +125,12 @@ const STAFF_WORKSPACE_GROUP: NavGroup = {
   ],
 };
 
+function getPaymentMethodLabel(method?: string) {
+  if (!method) return "Not selected (Pending)";
+  const found = PAYMENT_METHODS.find((p) => p.value === method);
+  return found ? found.label : method;
+}
+
 interface StaffLayoutProps {
   children: React.ReactNode;
   title?: string;
@@ -154,13 +160,23 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   const [devKittyEnabled, setDevKittyEnabled] = useState(true);
   const [profileCopied, setProfileCopied] = useState(false);
 
-  // Profile Edit State (Name and Avatar from File / URL)
+  // Profile Completeness Calculation
+  const completeness = useMemo<StaffProfileCompleteness>(() => {
+    return calculateStaffCompleteness(staffData);
+  }, [staffData]);
+
+  // Profile Edit State (Name, Avatar, Payment Method, Bank Details, Emergency Contact)
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState("");
   const [editAvatarUrl, setEditAvatarUrl] = useState("");
   const [avatarInputMode, setAvatarInputMode] = useState<"file" | "url">("file");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
+  const [editPaymentMethod, setEditPaymentMethod] = useState("");
+  const [editBankDetails, setEditBankDetails] = useState("");
+  const [editEmergencyName, setEditEmergencyName] = useState("");
+  const [editEmergencyRel, setEditEmergencyRel] = useState("");
+  const [editEmergencyPhone, setEditEmergencyPhone] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState("");
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
@@ -189,6 +205,30 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
     });
     return () => unsub();
   }, [router]);
+
+  // Check profile completeness on load: if < 100% and not skipped this session, automatically open profile popup sheet
+  useEffect(() => {
+    if (!authReady || !staffData) return;
+    const comp = calculateStaffCompleteness(staffData);
+    if (!comp.isComplete) {
+      try {
+        const skipKey = `staff_profile_skip_${staffData.uid || staffData.id}`;
+        const hasSkipped = sessionStorage.getItem(skipKey) === "true";
+        if (!hasSkipped) {
+          setEditName(staffData.name || "");
+          setEditAvatarUrl(staffData.avatarUrl || "");
+          setAvatarPreviewUrl(staffData.avatarUrl || "");
+          setEditPaymentMethod(staffData.salaryManagement?.paymentMethod || "");
+          setEditBankDetails(staffData.salaryManagement?.bankDetails || "");
+          setEditEmergencyName(staffData.emergencyContact?.name || "");
+          setEditEmergencyRel(staffData.emergencyContact?.relationship || "");
+          setEditEmergencyPhone(staffData.emergencyContact?.phone || "");
+          setIsEditingProfile(true);
+          setShowProfileModal(true);
+        }
+      } catch {}
+    }
+  }, [authReady, staffData?.uid, staffData?.id]);
 
   // Close Command Center on route change
   useEffect(() => {
@@ -238,13 +278,29 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
     router.push("/staff");
   };
 
+  const handleSkipProfileCompletion = () => {
+    if (staffData) {
+      try {
+        const skipKey = `staff_profile_skip_${staffData.uid || staffData.id}`;
+        sessionStorage.setItem(skipKey, "true");
+      } catch {}
+    }
+    setIsEditingProfile(false);
+    setShowProfileModal(false);
+  };
+
   const handleStartEditProfile = () => {
     if (!staffData) return;
-    setEditName(staffData.name);
+    setEditName(staffData.name || "");
     setEditAvatarUrl(staffData.avatarUrl || "");
     setAvatarPreviewUrl(staffData.avatarUrl || "");
     setAvatarFile(null);
     setAvatarInputMode("file");
+    setEditPaymentMethod(staffData.salaryManagement?.paymentMethod || "");
+    setEditBankDetails(staffData.salaryManagement?.bankDetails || "");
+    setEditEmergencyName(staffData.emergencyContact?.name || "");
+    setEditEmergencyRel(staffData.emergencyContact?.relationship || "");
+    setEditEmergencyPhone(staffData.emergencyContact?.phone || "");
     setProfileSaveError("");
     setProfileSaveSuccess(false);
     setIsEditingProfile(true);
@@ -295,9 +351,23 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         finalAvatarUrl = editAvatarUrl.trim();
       }
 
+      const emergencyPayload =
+        editEmergencyName.trim() || editEmergencyRel.trim() || editEmergencyPhone.trim()
+          ? {
+              name: editEmergencyName.trim(),
+              relationship: editEmergencyRel.trim(),
+              phone: editEmergencyPhone.trim(),
+            }
+          : undefined;
+
       await updateStaffSelfProfile(staffData.uid || staffData.id, {
         name: trimmedName,
         avatarUrl: finalAvatarUrl,
+        salaryManagement: {
+          paymentMethod: editPaymentMethod,
+          bankDetails: editBankDetails.trim(),
+        },
+        emergencyContact: emergencyPayload,
       });
 
       setStaffData((prev) =>
@@ -306,9 +376,20 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
               ...prev,
               name: trimmedName,
               avatarUrl: finalAvatarUrl,
+              salaryManagement: {
+                ...(prev.salaryManagement || {}),
+                paymentMethod: editPaymentMethod,
+                bankDetails: editBankDetails.trim(),
+              },
+              emergencyContact: emergencyPayload,
             }
           : null
       );
+
+      try {
+        const skipKey = `staff_profile_skip_${staffData.uid || staffData.id}`;
+        sessionStorage.setItem(skipKey, "true");
+      } catch {}
 
       setProfileSaveSuccess(true);
       setTimeout(() => {
@@ -461,7 +542,11 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
               <button
                 type="button"
                 onClick={() => setShowProfileModal(true)}
-                title="View Profile & Preferences"
+                title={
+                  completeness.isComplete
+                    ? "Account Profile 100% Complete & Active"
+                    : `Account Profile ${completeness.percentage}% Complete (${completeness.missingItems.length} pending). Click to finish.`
+                }
                 className={`flex items-center gap-1.5 p-1 sm:pr-2.5 sm:pl-1 rounded-full border transition-all cursor-pointer group active:scale-95 flex-shrink-0 ${
                   isLight
                     ? "bg-slate-50 border-slate-200 hover:bg-slate-100 hover:border-cyan-300"
@@ -483,10 +568,23 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                 <span className={`hidden 2xl:inline-block text-xs font-semibold truncate max-w-[70px] ${isLight ? "text-slate-900" : "text-white"}`}>
                   {staffData?.name?.split(" ")[0] || "Staff"}
                 </span>
-                <span className="relative flex h-2 w-2 flex-shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
-                </span>
+                {completeness.isComplete ? (
+                  <span className="relative flex h-2 w-2 flex-shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_#10b981]"></span>
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold leading-none shrink-0 border"
+                    style={{
+                      backgroundColor: "rgba(245, 158, 11, 0.15)",
+                      borderColor: "rgba(245, 158, 11, 0.4)",
+                      color: "#f59e0b",
+                    }}
+                  >
+                    {completeness.percentage}%
+                  </span>
+                )}
               </button>
 
               <CommunicationHeader />
@@ -853,10 +951,21 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-mono uppercase tracking-wider text-[#2cecf7] bg-[#2cecf7]/10 px-2.5 py-0.5 rounded-full border border-[#2cecf7]/25">
                           Employee Account Profile
                         </span>
+                        {completeness.isComplete ? (
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            100% Complete
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                            {completeness.percentage}% Complete
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <h3 className={`text-xl font-bold truncate ${isLight ? "text-slate-900" : "text-white"}`}>{staffData.name}</h3>
@@ -1074,6 +1183,151 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                     </p>
                   </div>
 
+                  {/* Payment Method & Bank Details Section */}
+                  <div className={`p-4 rounded-2xl border space-y-3 ${
+                    isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
+                  }`}>
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                      <span className="material-symbols-outlined text-base">payments</span>
+                      <span>Salary Disbursement Details</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block">
+                        Payment Method
+                      </label>
+                      <div className="relative">
+                        <select
+                          value={editPaymentMethod}
+                          onChange={(e) => {
+                            setEditPaymentMethod(e.target.value);
+                            setProfileSaveError("");
+                          }}
+                          className={`w-full h-10 px-3.5 pr-8 rounded-xl border text-xs font-mono outline-none transition appearance-none cursor-pointer ${
+                            isLight
+                              ? "bg-white border-slate-300 focus:border-[#2cecf7] text-slate-900"
+                              : "bg-[#080e1a] border-white/15 focus:border-[#2cecf7] text-white"
+                          }`}
+                        >
+                          <option value="">-- Not Selected (Pending) --</option>
+                          <option value="bank_transfer">Bank Transfer</option>
+                          <option value="bkash">bKash</option>
+                          <option value="nagad">Nagad</option>
+                          <option value="cash">Cash</option>
+                          <option value="wire">Wire Transfer</option>
+                        </select>
+                        <span className="material-symbols-outlined text-gray-400 text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          expand_more
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block">
+                        Bank / MFS Account Details
+                      </label>
+                      <input
+                        type="text"
+                        value={editBankDetails}
+                        onChange={(e) => {
+                          setEditBankDetails(e.target.value);
+                          setProfileSaveError("");
+                        }}
+                        placeholder="e.g. City Bank Acc #1234567 or bKash 017xxxxxxxx"
+                        className={`w-full h-10 px-3.5 rounded-xl border text-xs font-mono outline-none transition ${
+                          isLight
+                            ? "bg-white border-slate-300 focus:border-[#2cecf7] text-slate-900"
+                            : "bg-[#080e1a] border-white/15 focus:border-[#2cecf7] text-white"
+                        }`}
+                      />
+                      <span className="text-[10px] text-gray-400 block font-mono">
+                        Bank name, branch, account number or mobile financial service wallet
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Emergency Contact Section */}
+                  <div className={`p-4 rounded-2xl border space-y-3 ${
+                    isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
+                  }`}>
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                      <span className="material-symbols-outlined text-base">emergency</span>
+                      <span>Emergency Contact Record</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block">
+                        Contact Person Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editEmergencyName}
+                        onChange={(e) => {
+                          setEditEmergencyName(e.target.value);
+                          setProfileSaveError("");
+                        }}
+                        placeholder="e.g. Sarah Smith"
+                        className={`w-full h-10 px-3.5 rounded-xl border text-xs font-mono outline-none transition ${
+                          isLight
+                            ? "bg-white border-slate-300 focus:border-[#2cecf7] text-slate-900"
+                            : "bg-[#080e1a] border-white/15 focus:border-[#2cecf7] text-white"
+                        }`}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block">
+                          Relationship
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={editEmergencyRel}
+                            onChange={(e) => {
+                              setEditEmergencyRel(e.target.value);
+                              setProfileSaveError("");
+                            }}
+                            className={`w-full h-10 px-3.5 pr-8 rounded-xl border text-xs font-mono outline-none transition appearance-none cursor-pointer ${
+                              isLight
+                                ? "bg-white border-slate-300 focus:border-[#2cecf7] text-slate-900"
+                                : "bg-[#080e1a] border-white/15 focus:border-[#2cecf7] text-white"
+                            }`}
+                          >
+                            <option value="">-- Not Selected (Pending) --</option>
+                            <option value="Spouse">Spouse</option>
+                            <option value="Parent">Parent (Father / Mother)</option>
+                            <option value="Sibling">Sibling (Brother / Sister)</option>
+                            <option value="Guardian">Guardian</option>
+                            <option value="Relative / Friend">Relative / Friend</option>
+                          </select>
+                          <span className="material-symbols-outlined text-gray-400 text-base absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                            expand_more
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-gray-400 font-mono uppercase tracking-wider block">
+                          Emergency Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={editEmergencyPhone}
+                          onChange={(e) => {
+                            setEditEmergencyPhone(e.target.value);
+                            setProfileSaveError("");
+                          }}
+                          placeholder="e.g. +880 1712 345678"
+                          className={`w-full h-10 px-3.5 rounded-xl border text-xs font-mono outline-none transition ${
+                            isLight
+                              ? "bg-white border-slate-300 focus:border-[#2cecf7] text-slate-900"
+                              : "bg-[#080e1a] border-white/15 focus:border-[#2cecf7] text-white"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Alerts */}
                   {profileSaveError && (
                     <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-300 text-xs flex items-center gap-2">
@@ -1097,7 +1351,50 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                   )}
                 </div>
               ) : (
-                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto themed-scroll">
+                <div className="p-5 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto themed-scroll">
+                  {/* Account Profile Completeness Card (if < 100%) */}
+                  {!completeness.isComplete ? (
+                    <div className={`p-4 rounded-2xl border space-y-2.5 ${
+                      isLight ? "bg-amber-50/70 border-amber-200" : "bg-amber-500/10 border-amber-500/25"
+                    }`}>
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="font-bold flex items-center gap-1.5 text-amber-400">
+                          <span className="material-symbols-outlined text-base">pending_actions</span>
+                          Account Profile {completeness.percentage}% Completed
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleStartEditProfile}
+                          className="text-[11px] font-bold text-[#2cecf7] hover:underline cursor-pointer"
+                        >
+                          Complete Now →
+                        </button>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-black/20 dark:bg-white/10 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${completeness.percentage}%`,
+                            background: "linear-gradient(90deg, #f59e0b, #2cecf7)",
+                          }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-[var(--devengine-muted)] font-mono">
+                        Pending details: <span className="text-amber-400 font-semibold">{completeness.missingItems.join(", ")}</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className={`p-3.5 rounded-2xl border flex items-center gap-2.5 ${
+                      isLight ? "bg-emerald-50/60 border-emerald-200" : "bg-emerald-500/10 border-emerald-500/25"
+                    }`}>
+                      <span className="material-symbols-outlined text-emerald-400 text-lg">verified</span>
+                      <div className="flex-1 min-w-0 text-xs font-mono">
+                        <span className="font-bold text-emerald-400 block">Account 100% Completed</span>
+                        <span className="text-[10px] text-[var(--devengine-muted)]">All personal, banking, and emergency details are on file.</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Employee Details Grid */}
                   <div className="grid grid-cols-2 gap-3 text-xs font-mono">
                     <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
@@ -1109,9 +1406,9 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
 
                     <div className={`p-3.5 rounded-2xl border space-y-1 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
                       <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Account Status</span>
-                      <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        Active Member
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-400">
+                        <span className={`w-1.5 h-1.5 rounded-full ${completeness.isComplete ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                        {completeness.isComplete ? "Active Member (100%)" : `Active (${completeness.percentage}%)`}
                       </span>
                     </div>
 
@@ -1130,6 +1427,84 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                     </div>
                   </div>
 
+                  {/* Salary & Disbursement Card */}
+                  <div className={`p-4 rounded-2xl border space-y-2.5 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                        <span className="material-symbols-outlined text-base">payments</span>
+                        <span>Salary & Disbursement</span>
+                      </div>
+                      {(!staffData.salaryManagement?.paymentMethod || !staffData.salaryManagement?.bankDetails) && (
+                        <button
+                          type="button"
+                          onClick={handleStartEditProfile}
+                          className="text-[11px] font-mono text-[#2cecf7] hover:underline cursor-pointer"
+                        >
+                          + Add Details
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-mono pt-1">
+                      <div className="p-2.5 rounded-xl bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
+                        <span className="text-[10px] text-gray-400 block uppercase">Payment Method</span>
+                        <span className="font-semibold text-[var(--devengine-text)] mt-0.5 block">
+                          {staffData.salaryManagement?.paymentMethod ? (
+                            getPaymentMethodLabel(staffData.salaryManagement.paymentMethod)
+                          ) : (
+                            <span className="text-amber-400">Not selected (Pending)</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
+                        <span className="text-[10px] text-gray-400 block uppercase">Bank / MFS Account</span>
+                        <span className="font-semibold text-[var(--devengine-text)] truncate mt-0.5 block">
+                          {staffData.salaryManagement?.bankDetails || (
+                            <span className="text-amber-400">Not set (Pending)</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Emergency Contact Card */}
+                  <div className={`p-4 rounded-2xl border space-y-2.5 ${isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/5"}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#2cecf7]">
+                        <span className="material-symbols-outlined text-base">emergency</span>
+                        <span>Emergency Contact Record</span>
+                      </div>
+                      {(!staffData.emergencyContact?.name || !staffData.emergencyContact?.phone) && (
+                        <button
+                          type="button"
+                          onClick={handleStartEditProfile}
+                          className="text-[11px] font-mono text-[#2cecf7] hover:underline cursor-pointer"
+                        >
+                          + Add Contact
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-mono pt-1">
+                      <div className="p-2.5 rounded-xl bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
+                        <span className="text-[10px] text-gray-400 block uppercase">Contact Person</span>
+                        <span className="font-semibold text-[var(--devengine-text)] mt-0.5 block">
+                          {staffData.emergencyContact?.name ? (
+                            `${staffData.emergencyContact.name}${staffData.emergencyContact.relationship ? ` (${staffData.emergencyContact.relationship})` : ""}`
+                          ) : (
+                            <span className="text-amber-400">Not set (Pending)</span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-black/5 dark:bg-white/[0.02] border border-black/5 dark:border-white/5">
+                        <span className="text-[10px] text-gray-400 block uppercase">Emergency Phone</span>
+                        <span className="font-semibold text-[var(--devengine-text)] mt-0.5 block">
+                          {staffData.emergencyContact?.phone || (
+                            <span className="text-amber-400">Not set (Pending)</span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Agreement Shortcut */}
                   <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 ${
                     isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.03] border-white/5"
@@ -1137,7 +1512,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-[#2cecf7]/10 text-[#2cecf7] flex items-center justify-center shrink-0 border border-[#2cecf7]/20">
                         <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                           <polyline points="14 2 14 8 20 8"/>
                           <line x1="16" y1="13" x2="8" y2="13"/>
                           <line x1="16" y1="17" x2="8" y2="17"/>
@@ -1219,36 +1594,45 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                   <>
                     <button
                       type="button"
-                      onClick={handleCancelEditProfile}
-                      disabled={isSavingProfile}
-                      className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
-                        isLight
-                          ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
-                          : "bg-white/5 hover:bg-white/10 text-gray-300 border-white/10"
-                      }`}
+                      onClick={handleSkipProfileCompletion}
+                      className="text-xs text-[var(--devengine-muted)] hover:text-[#2cecf7] underline transition cursor-pointer px-1.5 py-1"
                     >
-                      Cancel
+                      Skip for now
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveProfile}
-                      disabled={isSavingProfile || !editName.trim()}
-                      className="px-6 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{
-                        background: "#2cecf7",
-                        color: "#02040a",
-                        boxShadow: "0 0 20px rgba(44, 236, 247, 0.35)",
-                      }}
-                    >
-                      {isSavingProfile ? (
-                        <>
-                          <span className="w-3.5 h-3.5 border-2 border-[#02040a] border-t-transparent rounded-full animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <span>Save Changes</span>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelEditProfile}
+                        disabled={isSavingProfile}
+                        className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                          isLight
+                            ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                            : "bg-white/5 hover:bg-white/10 text-gray-300 border-white/10"
+                        }`}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveProfile}
+                        disabled={isSavingProfile || !editName.trim()}
+                        className="px-6 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                          background: "#2cecf7",
+                          color: "#02040a",
+                          boxShadow: "0 0 20px rgba(44, 236, 247, 0.35)",
+                        }}
+                      >
+                        {isSavingProfile ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-[#02040a] border-t-transparent rounded-full animate-spin" />
+                            <span>Saving...</span>
+                          </>
+                        ) : (
+                          <span>Save Changes</span>
+                        )}
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -1260,6 +1644,15 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                       Sign Out
                     </button>
                     <div className="flex items-center gap-2">
+                      {!completeness.isComplete && (
+                        <button
+                          type="button"
+                          onClick={handleSkipProfileCompletion}
+                          className="text-xs text-[var(--devengine-muted)] hover:text-[#2cecf7] underline transition cursor-pointer px-1.5 py-1 mr-1"
+                        >
+                          Skip for now
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={handleStartEditProfile}
@@ -1278,7 +1671,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                       </button>
                       <button
                         type="button"
-                        onClick={() => setShowProfileModal(false)}
+                        onClick={handleSkipProfileCompletion}
                         className="px-6 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
                         style={{
                           background: "#2cecf7",

@@ -304,3 +304,86 @@ export const MODULE_CONFIG: Record<string, { label: string; icon: string; color:
     description: "Maintenance & recycle bin",
   },
 };
+
+export const PAYMENT_METHODS = [
+  { key: "bank_transfer", value: "bank_transfer", label: "Bank Transfer" },
+  { key: "bkash", value: "bkash", label: "bKash" },
+  { key: "nagad", value: "nagad", label: "Nagad" },
+  { key: "cash", value: "cash", label: "Cash" },
+  { key: "wire", value: "wire", label: "Wire / International" },
+] as const;
+
+export const EMERGENCY_RELATIONSHIPS = [
+  "Spouse",
+  "Parent (Father / Mother)",
+  "Sibling (Brother / Sister)",
+  "Guardian",
+  "Relative / Friend",
+] as const;
+
+export interface StaffProfileCompleteness {
+  percentage: number;
+  isComplete: boolean;
+  missingFields: string[];
+  missingItems: string[];
+  checks: {
+    name: boolean;
+    avatar: boolean;
+    paymentMethod: boolean;
+    bankDetails: boolean;
+    emergencyContact: boolean;
+  };
+}
+
+/** Calculate percentage of staff account profile completion (5 core items = 20% each) */
+export function calculateStaffCompleteness(staff: StaffMember | null | undefined): StaffProfileCompleteness {
+  if (!staff) {
+    const defaultMissing = ["Full Name", "Profile Picture", "Payment Method", "Bank / MFS Account Details", "Emergency Contact Info"];
+    return {
+      percentage: 0,
+      isComplete: false,
+      missingFields: defaultMissing,
+      missingItems: defaultMissing,
+      checks: { name: false, avatar: false, paymentMethod: false, bankDetails: false, emergencyContact: false },
+    };
+  }
+
+  const hasName = Boolean(staff.name && staff.name.trim().length > 0);
+  const hasAvatar = Boolean(staff.avatarUrl && staff.avatarUrl.trim().length > 0);
+  const hasPaymentMethod = Boolean(staff.salaryManagement?.paymentMethod && staff.salaryManagement.paymentMethod.trim().length > 0);
+  const hasBankDetails = Boolean(staff.salaryManagement?.bankDetails && staff.salaryManagement.bankDetails.trim().length > 0);
+  const hasEmergencyContact = Boolean(
+    staff.emergencyContact?.name &&
+    staff.emergencyContact.name.trim().length > 0 &&
+    staff.emergencyContact?.phone &&
+    staff.emergencyContact.phone.trim().length > 0
+  );
+
+  const missing: string[] = [];
+  if (!hasName) missing.push("Full Name");
+  if (!hasAvatar) missing.push("Profile Picture");
+  if (!hasPaymentMethod) missing.push("Payment Method");
+  if (!hasBankDetails) missing.push("Bank / MFS Account Details");
+  if (!hasEmergencyContact) missing.push("Emergency Contact Info");
+
+  let score = 0;
+  if (hasName) score += 20;
+  if (hasAvatar) score += 20;
+  if (hasPaymentMethod) score += 20;
+  if (hasBankDetails) score += 20;
+  if (hasEmergencyContact) score += 20;
+
+  return {
+    percentage: Math.min(100, Math.max(0, score)),
+    isComplete: score === 100,
+    missingFields: missing,
+    missingItems: missing,
+    checks: {
+      name: hasName,
+      avatar: hasAvatar,
+      paymentMethod: hasPaymentMethod,
+      bankDetails: hasBankDetails,
+      emergencyContact: hasEmergencyContact,
+    },
+  };
+}

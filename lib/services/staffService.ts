@@ -12,6 +12,7 @@ import {
   deleteField,
   query,
   orderBy,
+  onSnapshot,
 } from "firebase/firestore";
 import { initializeApp, getApps } from "firebase/app";
 import {
@@ -238,21 +239,78 @@ export async function updateStaffMember(
   }
 }
 
-/** Update own profile (name and/or avatarUrl) for logged-in staff member */
+/** Subscribe to all staff members in real-time */
+export function subscribeStaffMembers(callback: (staff: StaffMember[]) => void): () => void {
+  const colRef = collection(db, STAFF_COLLECTION);
+  const q = query(colRef, orderBy("createdAt", "desc"));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list = snap.docs.map((d) => ({ ...d.data(), id: d.id } as StaffMember));
+      callback(list);
+    },
+    (err) => {
+      console.warn("[StaffService] Failed to listen to staff members:", err);
+    }
+  );
+}
+
+/** Update own profile (name, avatarUrl, payment method, bank details, emergency contact) for logged-in staff member */
 export async function updateStaffSelfProfile(
   staffId: string,
-  data: { name: string; avatarUrl: string }
+  data: {
+    name: string;
+    avatarUrl: string;
+    paymentMethod?: string;
+    bankDetails?: string;
+    emergencyContact?: {
+      name: string;
+      relationship: string;
+      phone: string;
+    };
+  }
 ): Promise<void> {
   const now = new Date().toISOString();
   const trimmedName = data.name.trim();
   const trimmedAvatarUrl = data.avatarUrl.trim();
 
-  // 1. Update staff_members doc
-  await updateDoc(doc(db, STAFF_COLLECTION, staffId), {
+  const docRef = doc(db, STAFF_COLLECTION, staffId);
+  const snap = await getDoc(docRef);
+  const existing = snap.exists() ? (snap.data() as StaffMember) : null;
+
+  const updatePayload: Record<string, any> = {
     name: trimmedName,
     avatarUrl: trimmedAvatarUrl,
     updatedAt: now,
-  });
+  };
+
+  // Merge salaryManagement with updated paymentMethod / bankDetails
+  if (data.paymentMethod !== undefined || data.bankDetails !== undefined) {
+    const existingSalary = existing?.salaryManagement || {
+      basicSalary: 0,
+      grossSalary: 0,
+      currency: "BDT",
+      paymentMethod: "",
+      noticePeriodDays: 30,
+    };
+    updatePayload.salaryManagement = {
+      ...existingSalary,
+      paymentMethod: data.paymentMethod !== undefined ? data.paymentMethod.trim() : (existingSalary.paymentMethod || ""),
+      bankDetails: data.bankDetails !== undefined ? data.bankDetails.trim() : (existingSalary.bankDetails || ""),
+    };
+  }
+
+  // Update emergencyContact
+  if (data.emergencyContact !== undefined) {
+    updatePayload.emergencyContact = {
+      name: data.emergencyContact.name.trim(),
+      relationship: data.emergencyContact.relationship.trim(),
+      phone: data.emergencyContact.phone.trim(),
+    };
+  }
+
+  // 1. Update staff_members doc
+  await updateDoc(docRef, updatePayload);
 
   // 2. Sync to studio_people doc if it exists
   try {

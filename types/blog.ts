@@ -42,6 +42,7 @@ export interface BlogPost {
   author: BlogAuthor;
   readTime: string;
   featured: boolean;
+  pinned?: boolean;
   gridSpan: GridSpanType;
   tags: string[];
   stats?: BlogStat[];

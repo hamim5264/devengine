@@ -709,6 +709,7 @@ export default function ManageStaffPage() {
   const [createSubModules, setCreateSubModules] = useState<Record<string, string[]>>({});
   const [createExpandedModules, setCreateExpandedModules] = useState<Record<string, boolean>>({});
   const [creating, setCreating] = useState(false);
+  const createInFlight = useRef(false);
 
   // Agreement and Shift options during creation
   const [createWithAgreement, setCreateWithAgreement] = useState(true);
@@ -952,6 +953,7 @@ export default function ManageStaffPage() {
     setCreateEmergencyRel("");
     setCreateEmergencyPhone("");
     setCreatedCreds(null);
+    setNotice(null);
     setShowCreatePass(true);
     setShowCreateModal(true);
   };
@@ -972,12 +974,13 @@ export default function ManageStaffPage() {
 
   // ── Create staff ──
   const handleCreate = async () => {
+    if (createInFlight.current) return;
     if (!createName.trim()) {
       setNotice({ type: "error", text: "Please enter an employee name." });
       return;
     }
-    if (!createPassword.trim()) {
-      setNotice({ type: "error", text: "Please enter or generate a password." });
+    if (createPassword.length < 6) {
+      setNotice({ type: "error", text: "Password must contain at least 6 characters." });
       return;
     }
     if (createModules.length === 0) {
@@ -985,8 +988,45 @@ export default function ManageStaffPage() {
       return;
     }
 
+    createInFlight.current = true;
     setCreating(true);
+    setNotice(null);
     try {
+      const created = await createStaffAccount({
+        name: createName.trim(),
+        email: createEmail,
+        password: createPassword,
+        avatarUrl: createAvatarUrl,
+        staffType: createType,
+        allowedModules: createModules,
+        allowedSubModules: createSubModules,
+        apposAccess: createAppOS,
+        assignedOffDays: offDaysChoice,
+        shiftHours: { start: shiftStart, end: shiftEnd, name: "Standard Shift" },
+        agreementId: "",
+        employmentType: createEmploymentType,
+        joiningDate: createJoiningDate,
+        probationPeriodMonths: createEmploymentType === "probation" ? Number(createProbationMonths) : undefined,
+        probationEndDate: createEmploymentType === "probation" ? calculatedProbationEndDate : undefined,
+        emergencyContact: createEmergencyName.trim()
+          ? {
+              name: createEmergencyName.trim(),
+              relationship: createEmergencyRel.trim(),
+              phone: createEmergencyPhone.trim(),
+            }
+          : undefined,
+        salaryManagement: {
+          basicSalary: Number(createBasicSalary) || 0,
+          houseRent: Number(createHouseRent) || 0,
+          medical: Number(createMedical) || 0,
+          grossSalary: grossCalculatedSalary,
+          currency: agreementCurrency,
+          paymentMethod: createPaymentMethod,
+          bankDetails: createBankDetails.trim(),
+          noticePeriodDays: Number(createNoticeDays) || 30,
+        },
+      });
+
       let agreementId = "";
       if (createWithAgreement) {
         try {
@@ -1056,66 +1096,31 @@ export default function ManageStaffPage() {
             updatedBy: "hamim.leon@gmail.com",
             updatedAt: today,
           } as any);
+          await updateStaffMember(created.id, { agreementId });
+          created.agreementId = agreementId;
         } catch (agrErr) {
+          agreementId = "";
           console.warn("Failed to auto-generate agreement:", agrErr);
         }
       }
 
-      await createStaffAccount({
-        name: createName.trim(),
-        email: createEmail,
-        password: createPassword,
-        avatarUrl: createAvatarUrl,
-        staffType: createType,
-        allowedModules: createModules,
-        allowedSubModules: createSubModules,
-        apposAccess: createAppOS,
-        assignedOffDays: offDaysChoice,
-        shiftHours: { start: shiftStart, end: shiftEnd, name: "Standard Shift" },
-        agreementId,
-        employmentType: createEmploymentType,
-        joiningDate: createJoiningDate,
-        probationPeriodMonths: createEmploymentType === "probation" ? Number(createProbationMonths) : undefined,
-        probationEndDate: createEmploymentType === "probation" ? calculatedProbationEndDate : undefined,
-        emergencyContact: createEmergencyName.trim()
-          ? {
-              name: createEmergencyName.trim(),
-              relationship: createEmergencyRel.trim(),
-              phone: createEmergencyPhone.trim(),
-            }
-          : undefined,
-        salaryManagement: {
-          basicSalary: Number(createBasicSalary) || 0,
-          houseRent: Number(createHouseRent) || 0,
-          medical: Number(createMedical) || 0,
-          grossSalary: grossCalculatedSalary,
-          currency: agreementCurrency,
-          paymentMethod: createPaymentMethod,
-          bankDetails: createBankDetails.trim(),
-          noticePeriodDays: Number(createNoticeDays) || 30,
-        },
-      });
-
-      setCreatedCreds({
-        name: createName.trim(),
-        email: createEmail,
-        password: createPassword,
-        avatarUrl: createAvatarUrl,
-      });
+      setShowCreateModal(false);
+      setCreatedCreds(null);
+      setStaff(previous => [created, ...previous.filter(member => member.id !== created.id)]);
       setNotice({
         type: "success",
         text: `Employee account "${createName.trim()}" created successfully${
-          agreementId ? " with official agreement attached" : ""
+          agreementId ? " with official agreement attached" : createWithAgreement ? ". The agreement could not be attached; add it from employee details" : ""
         }!`,
       });
-      await loadData();
     } catch (err: any) {
       const msg =
         err?.code === "auth/email-already-in-use"
-          ? "This email is already registered. Try modifying the name."
+          ? "This email is already registered. Check the employee list. If an earlier failed attempt left an incomplete login, remove it from Firebase Authentication before retrying."
           : err?.message || "Failed to create employee account.";
       setNotice({ type: "error", text: msg });
     } finally {
+      createInFlight.current = false;
       setCreating(false);
     }
   };
@@ -1565,12 +1570,13 @@ export default function ManageStaffPage() {
           {/* ── Notice ── */}
           {notice && (
             <div
-              className={`p-4 rounded-2xl flex items-center justify-between text-xs sm:text-sm font-mono border backdrop-blur-xl shadow-xl transition-all ${
+              role={notice.type === "error" ? "alert" : "status"}
+              className={`${notice.type === "success" ? "fixed z-[10000] top-24 left-4 right-4 sm:left-auto sm:max-w-lg bg-[var(--devengine-surface)]" : ""} p-4 rounded-2xl flex items-center justify-between gap-4 text-sm border shadow-xl transition-all ${
                 notice.type === "error"
                   ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
                   : notice.type === "info"
                   ? "bg-blue-500/10 border-blue-500/30 text-blue-300"
-                  : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                  : "border-emerald-500/30 text-[var(--devengine-text)]"
               }`}
             >
               <div className="flex items-center gap-2.5">
@@ -1961,6 +1967,7 @@ export default function ManageStaffPage() {
               </div>
               <button
                 type="button"
+                disabled={creating}
                 onClick={() => {
                   setShowCreateModal(false);
                   setCreatedCreds(null);
@@ -1970,6 +1977,8 @@ export default function ManageStaffPage() {
                 <span className="material-symbols-outlined text-base">close</span>
               </button>
             </div>
+
+            {notice?.type === "error" && <div role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-600 dark:text-rose-300">{notice.text}</div>}
 
             {createdCreds ? (
               /* ── Credentials Card ── */
@@ -2580,6 +2589,7 @@ export default function ManageStaffPage() {
                 <div className="pt-4 border-t border-[var(--devengine-border)] flex items-center justify-end gap-3">
                   <button
                     type="button"
+                    disabled={creating}
                     onClick={() => {
                       setShowCreateModal(false);
                       setCreatedCreds(null);

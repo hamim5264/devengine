@@ -8,6 +8,22 @@
   overflow-x: clip;
 }
 
+.profileProgress { padding: 16px; border: 1px solid var(--devengine-border); border-radius: 16px; background: var(--devengine-soft); color: var(--devengine-text); font-family: var(--font-site, "Poppins"), sans-serif; }
+.profileProgress > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 15px; }
+.profileProgress > div:first-child > span { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.profileProgress p { margin: 8px 0 12px; color: var(--devengine-muted); font-size: 13px; line-height: 1.7; }
+.progressTrack { height: 7px; border-radius: 99px; background: var(--devengine-border); overflow: hidden; }
+.progressTrack > span { display: block; height: 100%; background: #2cecf7; border-radius: inherit; transition: width 250ms ease; }
+.profileProgress ul { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 13px 0 0; padding: 0; list-style: none; }
+.profileProgress li { display: flex; align-items: center; gap: 5px; color: var(--devengine-muted); font-size: 12px; }
+.profileProgress li > span { font-size: 17px; }
+.profileProgress li[data-complete="true"] { color: var(--devengine-text); }
+.profileProgress li[data-complete="true"] > span { color: #2cecf7; }
+.profileToast { position: fixed; z-index: 10001; top: 100px; right: 20px; left: 20px; margin-left: auto; max-width: 420px; display: flex; align-items: center; gap: 10px; padding: 16px; background: var(--devengine-surface); color: var(--devengine-text); border: 1px solid var(--devengine-border); border-radius: 16px; box-shadow: 0 16px 45px rgba(0,0,0,.15); font-family: var(--font-site, "Poppins"), sans-serif; font-size: 14px; }
+.profileToast > span:first-child { color: #2cecf7; }
+.profileToast button { margin-left: auto; min-width: 36px; min-height: 36px; background: transparent; border: 0; color: inherit; font-size: 23px; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .progressTrack > span { transition: none; } }
+
 .ambient {
   position: fixed;
   inset: 0;

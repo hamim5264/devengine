@@ -105,7 +105,7 @@ const NAV_GROUPS: NavGroup[] = [
     moduleKey: "overview",
     color: "#2cecf7",
     icon: <IconGrid />,
-    items: [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Project Overviews & Budgets", href: "/admin/project-briefs", badge: "new" }, { label: "My Profile", href: "/admin/profile" }],
+    items: [{ label: "Dashboard", href: "/admin/dashboard" }, { label: "Task Manager", href: "/admin/task-manager", badge: "new" }, { label: "Project Overviews & Budgets", href: "/admin/project-briefs", badge: "new" }, { label: "My Profile", href: "/admin/profile" }],
   },
   {
     label: "Commerce",

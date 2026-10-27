@@ -7,6 +7,7 @@ import type { DevKittyBootstrap, DevKittyMessage } from "@/types/devkitty";
 import DevKittyPanel from "./DevKittyPanel";
 interface DevKittyState {
   open: () => void; close: () => void; hidden: boolean; isOpen: boolean;
+  setEmployeeWelcomeReady: (uid: string, ready: boolean) => void;
   bootstrap: DevKittyBootstrap | null; loading: boolean; error: string; messages: DevKittyMessage[];
   sending: boolean; send: (text: string) => Promise<void>; retry: () => Promise<void>; reset: () => void; reload: () => Promise<void>;
 }
@@ -16,6 +17,10 @@ const greetingMessage = (data: DevKittyBootstrap): DevKittyMessage => ({ id: "gr
 export default function DevKittyProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [isOpen, setOpen] = useState(false), [hidden, setHidden] = useState(false);
+  const [employeeWelcome, setEmployeeWelcome] = useState<{ uid: string; ready: boolean } | null>(null);
+  const setEmployeeWelcomeReady = useCallback((uid: string, ready: boolean) => {
+    setEmployeeWelcome(current => current?.uid === uid && current.ready === ready ? current : { uid, ready });
+  }, []);
   const [bootstrap, setBootstrap] = useState<DevKittyBootstrap | null>(null), [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<DevKittyMessage[]>([]), [sending, setSending] = useState(false), [error, setError] = useState("");
   const bootstrapEpoch = useRef(0), requestEpoch = useRef(0), messagesRef = useRef<DevKittyMessage[]>([]), pending = useRef(false), welcomed = useRef(new Set<string>());
@@ -33,6 +38,7 @@ export default function DevKittyProvider({ children }: { children: ReactNode }) 
     const unsubscribe = onAuthStateChanged(auth, () => {
       requestEpoch.current++; bootstrapEpoch.current++; pending.current = false;
       setSending(false); setOpen(false); setMessages([]); messagesRef.current = []; setBootstrap(null);
+      setEmployeeWelcome(null);
       void reload();
     });
     return () => { unsubscribe(); bootstrapEpoch.current++; requestEpoch.current++; };
@@ -48,6 +54,8 @@ export default function DevKittyProvider({ children }: { children: ReactNode }) 
   useEffect(() => { if (hidden) setOpen(false); }, [hidden]);
   useEffect(() => {
     if (!bootstrap || bootstrap.role !== "employee" || !bootstrap.enabled || !bootstrap.autoEmployeeGreeting || hidden || !["/staff/dashboard", "/employee/dashboard"].includes(router.pathname)) return;
+    // Profile onboarding must finish or be explicitly skipped before the greeting.
+    if (!employeeWelcome?.ready || employeeWelcome.uid !== auth.currentUser?.uid) return;
     const key = `devkitty_welcome:${bootstrap.session}`;
     try { if (sessionStorage.getItem(key)) return; } catch {}
     if (welcomed.current.has(key)) return;
@@ -56,7 +64,7 @@ export default function DevKittyProvider({ children }: { children: ReactNode }) 
       setOpen(true);
     }, 850);
     return () => clearTimeout(timer);
-  }, [bootstrap, hidden, router.pathname]);
+  }, [bootstrap, hidden, router.pathname, employeeWelcome]);
   useEffect(() => { const update = () => { void reload(); }; window.addEventListener("devkitty_settings_updated", update); return () => window.removeEventListener("devkitty_settings_updated", update); }, [reload]);
   const open = () => { setOpen(true); if (!loading) void reload(); };
   const close = () => setOpen(false);
@@ -80,5 +88,5 @@ export default function DevKittyProvider({ children }: { children: ReactNode }) 
   }
   async function retry() { if (messagesRef.current.at(-1)?.role === "user") await perform(messagesRef.current); else await reload(); }
   function reset() { if (pending.current) return; setError(""); setMessages(bootstrap ? [greetingMessage(bootstrap)] : []); }
-  return <Context.Provider value={{ open, close, hidden, isOpen, bootstrap, loading, error, messages, sending, send, retry, reset, reload }}>{children}{isOpen && !hidden && <DevKittyPanel />}</Context.Provider>;
+  return <Context.Provider value={{ open, close, hidden, isOpen, setEmployeeWelcomeReady, bootstrap, loading, error, messages, sending, send, retry, reset, reload }}>{children}{isOpen && !hidden && <DevKittyPanel />}</Context.Provider>;
 }

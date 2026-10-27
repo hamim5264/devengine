@@ -1,4 +1,5 @@
 import emailjs from "@emailjs/browser";
+import { DELETION_EMAILJS_DEFAULTS } from "@/config/emailjs";
 import { uploadStorageAsset } from "@/lib/services/storageAssetService";
 import {
   collection,
@@ -150,11 +151,11 @@ export interface DeletionRequest {
  */
 export async function submitDeletionRequest(request: DeletionRequest) {
   const serviceId =
-    process.env.NEXT_PUBLIC_EMAILJS_DELETION_SERVICE_ID || "service_9hmg7pr";
+    process.env.NEXT_PUBLIC_EMAILJS_DELETION_SERVICE_ID || DELETION_EMAILJS_DEFAULTS.serviceId;
   const templateId =
     process.env.NEXT_PUBLIC_EMAILJS_DELETION_TEMPLATE_ID || "template_fiiyq06";
   const publicKey =
-    process.env.NEXT_PUBLIC_EMAILJS_DELETION_PUBLIC_KEY || "1ipf6_oqQBv5hFPv3";
+    process.env.NEXT_PUBLIC_EMAILJS_DELETION_PUBLIC_KEY || DELETION_EMAILJS_DEFAULTS.publicKey;
 
   const templateParams = {
     registered_email: request.registeredEmail.trim(),

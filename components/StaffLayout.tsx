@@ -17,6 +17,8 @@ import LandingFooter from "@/components/landing/LandingFooter";
 import styles from "@/components/staff/StaffLayout.module.css";
 import DevKittyAnimatedIcon from "@/components/common/DevKittyAnimatedIcon";
 import { uploadStaffAvatar, updateStaffSelfProfile } from "@/lib/services/staffService";
+import { useDevKitty } from "@/components/devkitty/DevKittyProvider";
+import { staffProfileSession, hasDismissedStaffProfile, dismissStaffProfile } from "@/lib/staffProfileOnboarding";
 
 // ── Nav structure matching AdminLayout, keyed by module ──
 interface NavItem {
@@ -140,6 +142,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   const router = useRouter();
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const { setEmployeeWelcomeReady } = useDevKitty();
 
   const [staffData, setStaffData] = useState<StaffMember | null>(null);
   const [authReady, setAuthReady] = useState(false);
@@ -157,6 +160,8 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   // ── Futuristic Bento Command Center & Profile Modal States ──
   const [commandCenterOpen, setCommandCenterOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileInitialized, setProfileInitialized] = useState("");
+  const initializedProfile = useRef("");
   const [devKittyEnabled, setDevKittyEnabled] = useState(true);
   const [profileCopied, setProfileCopied] = useState(false);
 
@@ -181,6 +186,18 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   const [profileSaveError, setProfileSaveError] = useState("");
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const draftCompleteness = calculateStaffCompleteness(staffData ? {
+    ...staffData,
+    name: editName,
+    avatarUrl: avatarInputMode === "url" ? editAvatarUrl : avatarPreviewUrl,
+    salaryManagement: {
+      basicSalary: 0, grossSalary: 0, currency: "BDT",
+      ...staffData.salaryManagement,
+      paymentMethod: editPaymentMethod,
+      bankDetails: editBankDetails,
+    },
+    emergencyContact: { name: editEmergencyName, relationship: editEmergencyRel, phone: editEmergencyPhone },
+  } : null);
 
   // ── Auth + Staff data ──
   useEffect(() => {
@@ -209,15 +226,18 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   // Check profile completeness on load: if < 100% and not skipped this session, automatically open profile popup sheet
   useEffect(() => {
     if (!authReady || !staffData) return;
+    const key = staffProfileSession(staffData.uid || staffData.id);
+    if (initializedProfile.current === key) return;
+    initializedProfile.current = key;
+    setProfileInitialized(key);
     const comp = calculateStaffCompleteness(staffData);
-    if (!comp.isComplete) {
-      try {
-        const skipKey = `staff_profile_skip_${staffData.uid || staffData.id}`;
-        const hasSkipped = sessionStorage.getItem(skipKey) === "true";
-        if (!hasSkipped) {
+    if (!comp.isComplete && !hasDismissedStaffProfile(key)) {
           setEditName(staffData.name || "");
           setEditAvatarUrl(staffData.avatarUrl || "");
           setAvatarPreviewUrl(staffData.avatarUrl || "");
+          setAvatarFile(null);
+          setAvatarInputMode("file");
+          setProfileSaveError("");
           setEditPaymentMethod(staffData.salaryManagement?.paymentMethod || "");
           setEditBankDetails(staffData.salaryManagement?.bankDetails || "");
           setEditEmergencyName(staffData.emergencyContact?.name || "");
@@ -225,10 +245,28 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
           setEditEmergencyPhone(staffData.emergencyContact?.phone || "");
           setIsEditingProfile(true);
           setShowProfileModal(true);
-        }
-      } catch {}
     }
-  }, [authReady, staffData?.uid, staffData?.id]);
+  }, [authReady, staffData]);
+
+  useEffect(() => {
+    if (!staffData) return;
+    const uid = staffData.uid || staffData.id;
+    setEmployeeWelcomeReady(uid, authReady && profileInitialized === staffProfileSession(uid) && !showProfileModal);
+    return () => setEmployeeWelcomeReady(uid, false);
+  }, [authReady, staffData?.uid, staffData?.id, profileInitialized, showProfileModal, setEmployeeWelcomeReady]);
+
+  useEffect(() => {
+    if (!profileSaveSuccess) return;
+    const timer = window.setTimeout(() => setProfileSaveSuccess(false), 4500);
+    return () => window.clearTimeout(timer);
+  }, [profileSaveSuccess]);
+
+  useEffect(() => {
+    if (!showProfileModal) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [showProfileModal]);
 
   // Close Command Center on route change
   useEffect(() => {
@@ -240,12 +278,12 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setCommandCenterOpen(false);
-        setShowProfileModal(false);
+        handleSkipProfileCompletion();
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, []);
+  }, [isSavingProfile, staffData?.uid, staffData?.id]);
 
   const handleToggleDevKitty = () => {
     if (!staffData) return;
@@ -279,11 +317,9 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   };
 
   const handleSkipProfileCompletion = () => {
+    if (isSavingProfile) return;
     if (staffData) {
-      try {
-        const skipKey = `staff_profile_skip_${staffData.uid || staffData.id}`;
-        sessionStorage.setItem(skipKey, "true");
-      } catch {}
+      dismissStaffProfile(staffProfileSession(staffData.uid || staffData.id));
     }
     setIsEditingProfile(false);
     setShowProfileModal(false);
@@ -331,7 +367,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
   };
 
   const handleSaveProfile = async () => {
-    if (!staffData) return;
+    if (!staffData || isSavingProfile) return;
     const trimmedName = editName.trim();
     if (!trimmedName) {
       setProfileSaveError("Please enter your display name.");
@@ -351,22 +387,17 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         finalAvatarUrl = editAvatarUrl.trim();
       }
 
-      const emergencyPayload =
-        editEmergencyName.trim() || editEmergencyRel.trim() || editEmergencyPhone.trim()
-          ? {
+      const emergencyPayload = {
               name: editEmergencyName.trim(),
               relationship: editEmergencyRel.trim(),
               phone: editEmergencyPhone.trim(),
-            }
-          : undefined;
+            };
 
       await updateStaffSelfProfile(staffData.uid || staffData.id, {
         name: trimmedName,
         avatarUrl: finalAvatarUrl,
-        salaryManagement: {
-          paymentMethod: editPaymentMethod,
-          bankDetails: editBankDetails.trim(),
-        },
+        paymentMethod: editPaymentMethod,
+        bankDetails: editBankDetails.trim(),
         emergencyContact: emergencyPayload,
       });
 
@@ -377,6 +408,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
               name: trimmedName,
               avatarUrl: finalAvatarUrl,
               salaryManagement: {
+                basicSalary: 0, grossSalary: 0, currency: "BDT",
                 ...(prev.salaryManagement || {}),
                 paymentMethod: editPaymentMethod,
                 bankDetails: editBankDetails.trim(),
@@ -386,16 +418,11 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
           : null
       );
 
-      try {
-        const skipKey = `staff_profile_skip_${staffData.uid || staffData.id}`;
-        sessionStorage.setItem(skipKey, "true");
-      } catch {}
-
+      dismissStaffProfile(staffProfileSession(staffData.uid || staffData.id));
       setProfileSaveSuccess(true);
-      setTimeout(() => {
-        setIsEditingProfile(false);
-        setProfileSaveSuccess(false);
-      }, 900);
+      setIsEditingProfile(false);
+      setShowProfileModal(false);
+      setAvatarFile(null);
     } catch (err: any) {
       console.error("Save profile error:", err);
       setProfileSaveError(err?.message || "Failed to update profile. Please try again.");
@@ -423,6 +450,8 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         html { scrollbar-gutter: stable; overflow-x: clip; }
         body { overflow-x: clip; }
       `}</style>
+
+      {profileSaveSuccess && <div className={styles.profileToast} role="status"><span className="material-symbols-outlined" aria-hidden="true">check_circle</span><span>Profile saved successfully.</span><button type="button" onClick={() => setProfileSaveSuccess(false)} aria-label="Dismiss success message">×</button></div>}
 
       <div className={`${styles.shell} flex flex-col font-sans relative selection:bg-[#2cecf7] selection:text-[#02040a] ${
         isLight ? "bg-[#f5fbff] text-slate-900" : "bg-[#02040a] text-white"
@@ -555,7 +584,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
               >
                 <div
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden flex-shrink-0 border border-[#2cecf7]/40 bg-[#2cecf7]/10 flex items-center justify-center"
-                  style={{ width: "28px", height: "28px", minWidth: "28px", minHeight: "28px" }}
+                  style={{ width: "28px", height: "28px", minWidth: "28px", minHeight: "28px", borderColor: completeness.isComplete ? "#10b981" : "#f59e0b" }}
                 >
                   {staffData?.avatarUrl ? (
                     <img src={staffData.avatarUrl} alt={staffData.name} className="w-full h-full object-cover" />
@@ -579,7 +608,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                     style={{
                       backgroundColor: "rgba(245, 158, 11, 0.15)",
                       borderColor: "rgba(245, 158, 11, 0.4)",
-                      color: "#f59e0b",
+                      color: isLight ? "#92400e" : "#fbbf24",
                     }}
                   >
                     {completeness.percentage}%
@@ -700,7 +729,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                           </span>
                         )}
                       </div>
-                      <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0a0f1d] shadow-[0_0_8px_#10b981]" />
+                      <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 ${completeness.isComplete ? "bg-emerald-500" : "bg-amber-400"} ${isLight ? "border-white" : "border-[#0a0f1d]"}`} />
                     </div>
 
                     <div className="min-w-0">
@@ -874,27 +903,25 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
         {showProfileModal && staffData && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
-            onClick={() => {
-              setShowProfileModal(false);
-              setIsEditingProfile(false);
-            }}
+            onClick={handleSkipProfileCompletion}
           >
             <div
-              className={`w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border ${
+              role="dialog"
+              aria-modal="true"
+              aria-label={isEditingProfile ? "Complete your employee profile" : "Employee profile"}
+              className={`w-full max-w-lg max-h-[calc(100dvh-1.5rem)] flex flex-col min-h-0 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border ${
                 isLight ? "bg-white text-slate-900 border-slate-200" : "bg-[#0a0f1d] text-white border-white/10"
               }`}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className={`relative p-5 sm:p-6 border-b ${
+              <div className={`relative shrink-0 p-5 sm:p-6 border-b ${
                 isLight ? "bg-gradient-to-r from-cyan-500/10 via-white to-blue-500/10 border-slate-200" : "bg-gradient-to-r from-[#2cecf7]/15 via-[#0a0f1d] to-blue-500/10 border-white/10"
               }`}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowProfileModal(false);
-                    setIsEditingProfile(false);
-                  }}
+                  onClick={handleSkipProfileCompletion}
+                  disabled={isSavingProfile}
                   className={`absolute top-4 sm:top-5 right-4 sm:right-5 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer ${
                     isLight ? "bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900" : "bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white"
                   }`}
@@ -1006,7 +1033,16 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
 
               {/* Body */}
               {isEditingProfile ? (
-                <div className="p-5 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto themed-scroll">
+                <div className="p-5 sm:p-6 space-y-4 min-h-0 flex-1 overflow-y-auto themed-scroll">
+                  <section className={styles.profileProgress} aria-label="Profile completion">
+                    <div><strong>{draftCompleteness.isComplete ? "Your details are ready" : "Complete your profile"}</strong><span>{draftCompleteness.percentage}%</span></div>
+                    <p>Add your photo, payment details and emergency contact. You can save progress or finish later.</p>
+                    <div className={styles.progressTrack} role="progressbar" aria-label="Profile details entered" aria-valuemin={0} aria-valuemax={100} aria-valuenow={draftCompleteness.percentage}><span style={{ width: `${draftCompleteness.percentage}%` }} /></div>
+                    <ul>{([
+                      ["name", "Name"], ["avatar", "Photo"], ["paymentMethod", "Payment method"],
+                      ["bankDetails", "Bank / MFS details"], ["emergencyContact", "Emergency contact"],
+                    ] as const).map(([key, label]) => <li key={key} data-complete={draftCompleteness.checks[key]}><span className="material-symbols-outlined" aria-hidden="true">{draftCompleteness.checks[key] ? "check_circle" : "radio_button_unchecked"}</span>{label}</li>)}</ul>
+                  </section>
                   {/* Profile Picture Editor Card */}
                   <div className={`p-4 rounded-2xl border space-y-3 ${
                     isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
@@ -1351,7 +1387,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                   )}
                 </div>
               ) : (
-                <div className="p-5 sm:p-6 space-y-4 max-h-[70vh] overflow-y-auto themed-scroll">
+                <div className="p-5 sm:p-6 space-y-4 min-h-0 flex-1 overflow-y-auto themed-scroll">
                   {/* Account Profile Completeness Card (if < 100%) */}
                   {!completeness.isComplete ? (
                     <div className={`p-4 rounded-2xl border space-y-2.5 ${
@@ -1525,7 +1561,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                     </div>
                     <Link
                       href="/staff/agreement"
-                      onClick={() => setShowProfileModal(false)}
+                      onClick={handleSkipProfileCompletion}
                       className="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition"
                       style={{
                         background: isLight ? "#e5f8fc" : "rgba(44, 236, 247, 0.15)",
@@ -1587,7 +1623,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
               )}
 
               {/* Footer */}
-              <div className={`p-4 border-t flex items-center justify-between gap-3 ${
+              <div className={`p-4 shrink-0 border-t flex flex-wrap items-center justify-between gap-3 ${
                 isLight ? "bg-slate-50 border-slate-200" : "bg-white/[0.02] border-white/10"
               }`}>
                 {isEditingProfile ? (
@@ -1595,6 +1631,7 @@ export default function StaffLayout({ children, title = "Employee Portal | DevEn
                     <button
                       type="button"
                       onClick={handleSkipProfileCompletion}
+                      disabled={isSavingProfile}
                       className="text-xs text-[var(--devengine-muted)] hover:text-[#2cecf7] underline transition cursor-pointer px-1.5 py-1"
                     >
                       Skip for now

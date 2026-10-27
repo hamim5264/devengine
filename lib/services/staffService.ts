@@ -18,6 +18,9 @@ import { initializeApp, getApps } from "firebase/app";
 import {
   getAuth,
   createUserWithEmailAndPassword,
+  deleteUser,
+  setPersistence,
+  inMemoryPersistence,
   signInWithEmailAndPassword,
   updatePassword,
   updateProfile,
@@ -97,18 +100,20 @@ export async function createStaffAccount(data: {
   emergencyContact?: StaffMember["emergencyContact"];
   salaryManagement?: StaffMember["salaryManagement"];
 }): Promise<StaffMember> {
+  if (!data.name.trim()) throw new Error("Enter an employee name.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) throw new Error("Enter a valid employee email.");
+  if (data.password.length < 6) throw new Error("Password must contain at least 6 characters.");
   const secondaryAuth = getSecondaryAuth();
+  // Employee provisioning must never replace or persist over the admin session.
+  await setPersistence(secondaryAuth, inMemoryPersistence);
 
   // 1. Create Firebase Auth user on secondary app
   const cred = await createUserWithEmailAndPassword(
     secondaryAuth,
-    data.email,
+    data.email.trim(),
     data.password,
   );
   const uid = cred.user.uid;
-
-  // Sign out secondary immediately
-  await firebaseSignOut(secondaryAuth);
 
   // 2. Save to Firestore (Doc ID = Auth UID)
   const id = uid;
@@ -116,8 +121,8 @@ export async function createStaffAccount(data: {
   const staffMember: StaffMember = {
     id,
     uid,
-    name: data.name,
-    email: data.email,
+    name: data.name.trim(),
+    email: data.email.trim(),
     password: data.password, // Persisted for admin visibility, edit and recovery
     avatarUrl: data.avatarUrl || "",
     staffType: data.staffType,
@@ -138,11 +143,29 @@ export async function createStaffAccount(data: {
     updatedAt: now,
   };
 
-  const batch = writeBatch(db);
-  batch.set(doc(db, STAFF_COLLECTION, id), staffMember);
-  batch.set(doc(db, "studio_people", id), { uid: id, name: staffMember.name, avatarUrl: staffMember.avatarUrl || "", role: "employee", status: "active", departmentIds: [], chatSuspended: false });
-  await batch.commit();
-  return staffMember;
+  // Optional HR fields may be absent; Firestore rejects undefined values.
+  const clean = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(item => item === undefined ? null : clean(item));
+    if (value && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype) {
+      return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined).map(([key, item]) => [key, clean(item)]));
+    }
+    return value;
+  };
+  const savedMember = clean(staffMember) as StaffMember;
+  try {
+    const batch = writeBatch(db);
+    batch.set(doc(db, STAFF_COLLECTION, id), savedMember);
+    batch.set(doc(db, "studio_people", id), { uid: id, name: staffMember.name, avatarUrl: staffMember.avatarUrl || "", role: "employee", status: "active", departmentIds: [], chatSuspended: false });
+    await batch.commit();
+    return savedMember;
+  } catch (error) {
+    // A failed profile write must not leave an unusable login occupying the email.
+    try { await deleteUser(cred.user); }
+    catch { throw new Error("The employee profile could not be saved and login cleanup failed. Remove the incomplete account from Firebase Authentication before retrying."); }
+    throw error;
+  } finally {
+    await firebaseSignOut(secondaryAuth).catch(() => {});
+  }
 }
 
 /** Fetch all staff members */
@@ -273,10 +296,12 @@ export async function updateStaffSelfProfile(
   const now = new Date().toISOString();
   const trimmedName = data.name.trim();
   const trimmedAvatarUrl = data.avatarUrl.trim();
+  if (auth.currentUser?.uid !== staffId) throw new Error("Sign in to update your profile.");
+  if (!trimmedName) throw new Error("Enter your name.");
 
   const docRef = doc(db, STAFF_COLLECTION, staffId);
   const snap = await getDoc(docRef);
-  const existing = snap.exists() ? (snap.data() as StaffMember) : null;
+  if (!snap.exists()) throw new Error("Your employee profile is unavailable. Please contact administration.");
 
   const updatePayload: Record<string, any> = {
     name: trimmedName,
@@ -284,21 +309,9 @@ export async function updateStaffSelfProfile(
     updatedAt: now,
   };
 
-  // Merge salaryManagement with updated paymentMethod / bankDetails
-  if (data.paymentMethod !== undefined || data.bankDetails !== undefined) {
-    const existingSalary = existing?.salaryManagement || {
-      basicSalary: 0,
-      grossSalary: 0,
-      currency: "BDT",
-      paymentMethod: "",
-      noticePeriodDays: 30,
-    };
-    updatePayload.salaryManagement = {
-      ...existingSalary,
-      paymentMethod: data.paymentMethod !== undefined ? data.paymentMethod.trim() : (existingSalary.paymentMethod || ""),
-      bankDetails: data.bankDetails !== undefined ? data.bankDetails.trim() : (existingSalary.bankDetails || ""),
-    };
-  }
+  // Update only employee-owned payment fields, preserving live admin salary edits.
+  if (data.paymentMethod !== undefined) updatePayload["salaryManagement.paymentMethod"] = data.paymentMethod.trim();
+  if (data.bankDetails !== undefined) updatePayload["salaryManagement.bankDetails"] = data.bankDetails.trim();
 
   // Update emergencyContact
   if (data.emergencyContact !== undefined) {

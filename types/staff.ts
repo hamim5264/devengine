@@ -356,7 +356,9 @@ export function calculateStaffCompleteness(staff: StaffMember | null | undefined
     staff.emergencyContact?.name &&
     staff.emergencyContact.name.trim().length > 0 &&
     staff.emergencyContact?.phone &&
-    staff.emergencyContact.phone.trim().length > 0
+    staff.emergencyContact.phone.trim().length > 0 &&
+    staff.emergencyContact?.relationship &&
+    staff.emergencyContact.relationship.trim().length > 0
   );
 
   const missing: string[] = [];

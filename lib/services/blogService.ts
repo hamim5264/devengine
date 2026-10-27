@@ -254,7 +254,8 @@ export function sanitizeFirestoreData<T extends Record<string, any>>(obj: T): Pa
 
 /**
  * Sorts blogs consistently:
- * 1. Respects explicit display order (order: 1, 2, ... 9, 10)
+ * 1. Pinned posts come first, preserving display order within each group.
+ * 2. Respects explicit display order (order: 1, 2, ... 9, 10)
  * 2. Unordered posts are assigned the remaining natural slots (1..8) by publication date
  * 3. Guarantees posts with order 9 and 10 stay at position 9 and 10
  */
@@ -287,6 +288,8 @@ export function sortBlogList(list: BlogPost[]): BlogPost[] {
   }
 
   return list.slice().sort((a, b) => {
+    const pinPriority = Number(b.pinned === true) - Number(a.pinned === true);
+    if (pinPriority) return pinPriority;
     const orderA = typeof a.order === "number" ? a.order : virtualMap.get(a.id) ?? 999;
     const orderB = typeof b.order === "number" ? b.order : virtualMap.get(b.id) ?? 999;
     return orderA - orderB;

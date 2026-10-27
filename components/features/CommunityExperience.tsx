@@ -109,7 +109,7 @@ export function BlogCard({ post, compact = false, headingLevel = "h2" }: { post:
             </span>
           )}
         </div>
-        {post.featured && !compact && <span className={styles.featuredLabel}>Editor’s pick</span>}
+        {post.pinned ? <span className={styles.featuredLabel}><Icon name="keep" /> Pinned</span> : post.featured && !compact && <span className={styles.featuredLabel}>Editor’s pick</span>}
         <Heading className={styles.blogTitle}>
           <Link href={`/blog/${post.slug}`}>{post.title}</Link>
         </Heading>

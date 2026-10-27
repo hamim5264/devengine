@@ -24,6 +24,7 @@ import {
   updateBlog,
   deleteBlog,
   seedInitialBlogs,
+  sortBlogList,
 } from "@/lib/services/blogService";
 import { moveToBin } from "@/lib/services/binService";
 import {
@@ -72,6 +73,7 @@ const EMPTY_FORM: Omit<BlogPost, "id" | "createdAt" | "updatedAt"> = {
   },
   readTime: "5 min read",
   featured: false,
+  pinned: false,
   gridSpan: "normal",
   tags: ["Architecture", "Engineering"],
   order: 1,
@@ -96,6 +98,9 @@ export default function ManageBlogPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [tagsInput, setTagsInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pinningId, setPinningId] = useState<string | null>(null);
+  const pinning = useRef(false);
+  const [pinNotice, setPinNotice] = useState("");
   const [seeding, setSeeding] = useState(false);
 
   // Dynamic Custom Categories State
@@ -335,6 +340,7 @@ export default function ManageBlogPage() {
       },
       readTime: post.readTime || "5 min read",
       featured: !!post.featured,
+      pinned: post.pinned === true,
       gridSpan: post.gridSpan || "normal",
       tags: post.tags || [],
       order: typeof post.order === "number" ? post.order : (index !== undefined ? index + 1 : 1),
@@ -387,6 +393,7 @@ export default function ManageBlogPage() {
         },
         readTime: form.readTime?.trim() || "5 min read",
         featured: !!form.featured,
+        pinned: form.pinned === true,
         gridSpan: form.gridSpan,
         tags: parsedTags,
         order: Number(form.order) || 1,
@@ -408,6 +415,24 @@ export default function ManageBlogPage() {
       alert(`Failed to save chronicle: ${err?.message || "Check console."}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTogglePin = async (post: BlogPost) => {
+    if (pinning.current) return;
+    pinning.current = true;
+    setPinningId(post.id);
+    setPinNotice("");
+    try {
+      const pinned = post.pinned !== true;
+      await updateBlog(post.id, { pinned });
+      setPosts(previous => sortBlogList(previous.map(item => item.id === post.id ? { ...item, pinned } : item)));
+      setPinNotice(pinned ? `“${post.title}” pinned. Published pinned posts appear first.` : `“${post.title}” unpinned.`);
+    } catch {
+      setPinNotice("Could not update the pin. Please try again.");
+    } finally {
+      pinning.current = false;
+      setPinningId(null);
     }
   };
 
@@ -668,6 +693,7 @@ export default function ManageBlogPage() {
         </div>
 
         {/* Table / List */}
+        {pinNotice && <p role="status" className="my-4 rounded-xl border border-[var(--devengine-border)] bg-[var(--devengine-surface)] p-3 text-sm text-[var(--devengine-text)]">{pinNotice}</p>}
         {loading ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh] py-20">
             <HelixLoader size={45} color="#14b8a6" />
@@ -794,6 +820,9 @@ export default function ManageBlogPage() {
                         {/* Actions */}
                         <td className="py-4 px-5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button type="button" onClick={() => void handleTogglePin(post)} disabled={pinningId !== null} aria-pressed={post.pinned === true} title={post.pinned ? "Unpin blog" : "Pin blog first"} aria-label={`${post.pinned ? "Unpin" : "Pin"} ${post.title}`} className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition disabled:opacity-50 ${post.pinned ? "border-[#2cecf7]/50 bg-[#2cecf7]/15 text-[var(--devengine-text)]" : "border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:bg-[#2cecf7]/10"}`}>
+                              <span className={`material-symbols-outlined text-[20px] text-[#2cecf7] ${pinningId === post.id ? "animate-pulse" : ""}`} aria-hidden="true">{post.pinned ? "keep" : "keep_off"}</span>
+                            </button>
                             <Link
                               href={`/blog/${post.slug}`}
                               target="_blank"
@@ -1322,6 +1351,10 @@ export default function ManageBlogPage() {
 
               {/* Checkboxes: Featured & Published */}
               <div className="flex flex-wrap items-center gap-6 pt-2">
+                <label className="flex items-center gap-2.5 cursor-pointer text-sm text-[var(--devengine-text)]">
+                  <input type="checkbox" checked={form.pinned === true} onChange={event => setForm({ ...form, pinned: event.target.checked })} className="h-4 w-4 accent-[#2cecf7]" />
+                  Pin first in public blog
+                </label>
                 <label className="flex items-center gap-2.5 cursor-pointer text-xs">
                   <input
                     type="checkbox"

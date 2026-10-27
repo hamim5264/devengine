@@ -163,6 +163,10 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
 Additional integration settings depend on the feature being used:
 
+Google Calendar's owner-only OAuth routes, exact Google Cloud form values, encrypted token storage, and server setup are documented in [Admin Calendar OAuth](docs/google-calendar-oauth.md).
+
+The new [Admin Task Manager](docs/admin-task-manager.md) extends that foundation with owner-only task planning, Calendar event sync, durable reminders, existing in-app notifications, and an EmailJS server adapter. Open `/admin/task-manager`; keyless Firebase identity, mail and scheduler configuration are documented in the guide.
+
 | Setting | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_ADMIN_EMAIL` | Frontend owner identity configuration. This does not change server-side or rules-based owner authorization. |

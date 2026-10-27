@@ -61,6 +61,14 @@ service cloud.firestore {
     match /devkitty_limits/{id} { allow read, write: if false; }
     match /devkitty_usage/{id} { allow read, write: if false; }
 
+    // Calendar OAuth is owner-only through server routes. Even admins cannot read tokens in the browser.
+    match /admin_calendar_oauth_states/{document=**} { allow read, write: if false; }
+    match /admin_calendar_oauth_limits/{document=**} { allow read, write: if false; }
+    match /admin_calendar_connections/{document=**} { allow read, write: if false; }
+    match /admin_tasks/{document=**} { allow read, write: if false; }
+    match /admin_task_jobs/{document=**} { allow read, write: if false; }
+    match /admin_task_calendar_locks/{document=**} { allow read, write: if false; }
+
     // AppOS operations are authorized per application and feature by apposManage.
     // Client access to appos_apps is restricted to Recycle Bin restores; credentials & subcollections remain private.
     match /appos_apps/{appId} {
@@ -210,7 +218,9 @@ service cloud.firestore {
 
       // Staff can update their own name, avatarUrl, salaryManagement, emergencyContact and updatedAt
       allow update: if isStaff() && request.auth.uid == staffId &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatarUrl', 'salaryManagement', 'emergencyContact', 'updatedAt']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'avatarUrl', 'salaryManagement', 'emergencyContact', 'updatedAt']) &&
+        request.resource.data.get('salaryManagement', {}) is map &&
+        request.resource.data.get('salaryManagement', {}).diff(resource.data.get('salaryManagement', {})).affectedKeys().hasOnly(['paymentMethod', 'bankDetails']);
     }
 
     /* =========================

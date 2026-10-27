@@ -1,0 +1,14 @@
+const clone=value=>value?.toMillis?value:Array.isArray(value)?value.map(clone):value && typeof value==='object'?Object.fromEntries(Object.entries(value).map(([k,v])=>[k,clone(v)])):value;
+const assign=(old,patch)=>{const value=clone(old || {});for(const [key,item]of Object.entries(patch)){const parts=key.split('.');let node=value;for(const part of parts.slice(0,-1))node=node[part] ||= {};node[parts.at(-1)]=clone(item);}return value;};
+class MemoryDB{
+  constructor(){this.values=new Map();this.requests=[];this.queue=Promise.resolve();}
+  snapshot(path){return {id:path.split('/').at(-1),ref:this.ref(path),exists:this.values.has(path),data:()=>clone(this.values.get(path))};}
+  ref(path){return {path,id:path.split('/').at(-1),get:async()=>this.snapshot(path),set:async value=>this.values.set(path,clone(value)),update:async value=>this.values.set(path,assign(this.values.get(path),value)),collection:name=>this.query(`${path}/${name}`)};}
+  collection(name){return this.query(name);}
+  query(path,filters=[],orders=[],max=Infinity,cursor=null){const db=this;return {
+    doc:id=>db.ref(`${path}/${id}`),where:(key,op,value)=>db.query(path,[...filters,[key,op,value]],orders,max,cursor),orderBy:(key,dir='asc')=>db.query(path,filters,[...orders,[typeof key==='string'?key:'__name__',dir]],max,cursor),limit:n=>db.query(path,filters,orders,n,cursor),startAfter:value=>db.query(path,filters,orders,max,value),
+    async get(){db.requests.push({path,filters,orders,max,cursor});let rows=[...db.values.keys()].filter(key=>key.startsWith(path+'/') && key.slice(path.length+1).indexOf('/')===-1).map(key=>db.snapshot(key));for(const [key,op,wanted]of filters)rows=rows.filter(row=>{const actual=row.data()[key];return op==='=='?actual===wanted:op==='in'?wanted.includes(actual):op==='>'?actual>wanted:op==='<'?actual<wanted:op==='<='?actual<=wanted:op==='!='?actual!==wanted:false;});for(const [key,dir]of [...orders].reverse())rows.sort((a,b)=>{const x=key==='__name__'?a.id:a.data()[key],y=key==='__name__'?b.id:b.data()[key];return (x<y?-1:x>y?1:0)*(dir==='desc'?-1:1);});if(cursor)rows=rows.filter(row=>row.id>cursor);return {docs:rows.slice(0,max),size:Math.min(rows.length,max)};},count(){return {get:async()=>{const result=await this.get();return {data:()=>({count:result.size})};}};},
+  };}
+  runTransaction(fn){const result=this.queue.then(async()=>{const writes=[];const answer=await fn({get:async ref=>this.snapshot(ref.path),set:(ref,value)=>writes.push(()=>this.values.set(ref.path,clone(value))),create:(ref,value)=>{if(this.values.has(ref.path))throw Error('duplicate');writes.push(()=>this.values.set(ref.path,clone(value)));},update:(ref,value)=>writes.push(()=>this.values.set(ref.path,assign(this.values.get(ref.path),value)))});writes.forEach(write=>write());return answer;});this.queue=result.catch(()=>{});return result;}
+}
+module.exports={MemoryDB};

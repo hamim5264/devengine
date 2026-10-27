@@ -49,7 +49,7 @@ export function getFilteredModuleItems(staff: StaffMember | null, moduleKey: str
 export function modulesForAdminRoute(path: string): string[] {
   const pathname = path.split(/[?#]/)[0].replace(/\/$/, "");
   if (pathname === "/admin/appos" || pathname.startsWith("/admin/appos/")) return ["appos"];
-  if (["/admin/manage-devkitty", "/admin/profile", "/admin/project-briefs", "/admin/manage-staff", "/admin/manage-staff-roles", "/admin/manage-certificates", "/admin/manage-theme-settings"].includes(pathname)) return [];
+  if (["/admin/task-manager", "/admin/manage-devkitty", "/admin/profile", "/admin/project-briefs", "/admin/manage-staff", "/admin/manage-staff-roles", "/admin/manage-certificates", "/admin/manage-theme-settings"].includes(pathname)) return [];
   if (pathname.startsWith("/admin/contract-center")) return ["contract_center"];
   if (pathname.startsWith("/admin/agreements/") || pathname.startsWith("/admin/edit-project/")) return ["projects"];
   if (pathname.startsWith("/admin/app-lab/")) return ["content_cms"];

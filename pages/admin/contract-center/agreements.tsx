@@ -76,6 +76,9 @@ export default function ServiceAgreementsPage() {
     effectiveDate: new Date().toISOString().split("T")[0],
     currency: "BDT" as CCCurrency,
     totalValue: 500000,
+    originalValue: 500000,
+    hasDiscount: false,
+    discountPercent: 10,
     ipOwnershipModel: "client_ownership" as CCIPOwnershipModel,
     scopeOfWork: "Full-Stack Custom Platform Development & Cloud Architecture as designated in the attached Project Specifications.",
     governingLaw: "Bangladesh",
@@ -121,6 +124,9 @@ export default function ServiceAgreementsPage() {
       effectiveDate: new Date().toISOString().split("T")[0],
       currency: "USD",
       totalValue: 5000,
+      originalValue: 5000,
+      hasDiscount: false,
+      discountPercent: 10,
       ipOwnershipModel: "client_ownership",
       scopeOfWork: "Full-Stack Custom Platform Development & Cloud Architecture as designated in the attached Project Specifications.",
       governingLaw: "Bangladesh",
@@ -132,11 +138,16 @@ export default function ServiceAgreementsPage() {
   const handleQuotationSelect = (quoId: string) => {
     const quo = quotations.find((q) => q.id === quoId);
     if (quo) {
+      const isQuoDiscounted = Boolean(quo.hasDiscount || (quo.totalDiscount && quo.totalDiscount > 0));
+      const pct = quo.discountPercent || (quo.subtotal > 0 && quo.totalDiscount ? Math.round((quo.totalDiscount / quo.subtotal) * 100) : 10);
       setFormData((prev) => ({
         ...prev,
         quotationId: quoId,
         clientId: quo.clientId,
         totalValue: quo.grandTotal || 0,
+        originalValue: quo.subtotal || quo.grandTotal || 0,
+        hasDiscount: isQuoDiscounted,
+        discountPercent: isQuoDiscounted ? Math.min(100, Math.max(1, pct)) : 10,
         currency: quo.currency,
         title: `Master Agreement — ${quo.title}`,
       }));
@@ -167,12 +178,17 @@ export default function ServiceAgreementsPage() {
           quotationNumber: selQuo ? selQuo.quotationNumber : undefined,
           currency: formData.currency,
           totalValue: formData.totalValue,
+          originalValue: formData.hasDiscount ? formData.originalValue : formData.totalValue,
+          hasDiscount: Boolean(formData.hasDiscount && formData.discountPercent > 0),
+          discountPercent: formData.hasDiscount ? Math.min(100, Math.max(1, Math.round(formData.discountPercent))) : 0,
           paymentSchedule: selQuo?.paymentSchedule || [],
           status: formData.status,
           clauses: {
             engagementDescription: formData.title,
             scopeOfWork: formData.scopeOfWork,
-            feesAndPayment: `Total engagement fee of ${formData.totalValue.toLocaleString()} ${formData.currency} payable via milestones.`,
+            feesAndPayment: formData.hasDiscount && formData.discountPercent > 0
+              ? `Total engagement fee of ${formData.totalValue.toLocaleString()} ${formData.currency} (inclusive of ${formData.discountPercent}% client discount from ${formData.originalValue.toLocaleString()} ${formData.currency}) payable via milestones.`
+              : `Total engagement fee of ${formData.totalValue.toLocaleString()} ${formData.currency} payable via milestones.`,
             ipOwnershipModel: formData.ipOwnershipModel,
             ipDetails: "Upon receipt of complete payment, full title and ownership transfer to the Client.",
             disputeResolution: "Amicable consultation followed by binding arbitration.",
@@ -517,10 +533,21 @@ export default function ServiceAgreementsPage() {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-slate-200">{agr.clientName || "Client"}</div>
-                    </td>
-                    <td className="py-3 px-4 font-bold text-white">
-                      {formatCCPrice(agr.totalValue || 0, agr.currency || "BDT")}
+                      <div className="font-bold text-white font-mono">
+                        {formatCCPrice(agr.totalValue || 0, agr.currency || "BDT")}
+                      </div>
+                      {agr.hasDiscount && agr.discountPercent ? (
+                        <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
+                          <span className="text-[#2cecf7] font-bold px-1.5 py-0.2 rounded bg-[#2cecf7]/10 border border-[#2cecf7]/30">
+                            {agr.discountPercent}% OFF
+                          </span>
+                          {agr.originalValue && agr.originalValue > (agr.totalValue || 0) ? (
+                            <span className="text-slate-500 line-through font-mono">
+                              {formatCCPrice(agr.originalValue, agr.currency || "BDT")}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </td>
                     <td className="py-3 px-4 text-slate-300">
                       {new Date(agr.effectiveDate).toLocaleDateString()}
@@ -716,13 +743,66 @@ export default function ServiceAgreementsPage() {
                   </div>
 
                   <div>
-                    <label className="block font-medium text-slate-300 mb-1">Contract Total Value</label>
+                    <label className="block font-medium text-slate-300 mb-1">
+                      {formData.hasDiscount ? "Standard Contract Value" : "Contract Total Value"}
+                    </label>
                     <input
                       type="number"
-                      value={formData.totalValue}
-                      onChange={(e) => setFormData({ ...formData, totalValue: Number(e.target.value) })}
+                      value={formData.hasDiscount ? formData.originalValue : formData.totalValue}
+                      onChange={(e) => {
+                        const val = Number(e.target.value) || 0;
+                        if (formData.hasDiscount) {
+                          const disc = Math.round((val * (formData.discountPercent || 0)) / 100);
+                          setFormData({ ...formData, originalValue: val, totalValue: Math.max(0, val - disc) });
+                        } else {
+                          setFormData({ ...formData, originalValue: val, totalValue: val });
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white"
                     />
+
+                    {/* Discount Toggle & Calculation */}
+                    <div className="mt-2.5 p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/60 space-y-2">
+                      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={formData.hasDiscount}
+                          onChange={(e) => {
+                            const isDisc = e.target.checked;
+                            const orig = formData.originalValue || formData.totalValue;
+                            const pct = formData.discountPercent || 10;
+                            const finalVal = isDisc ? Math.max(0, Math.round(orig - (orig * pct) / 100)) : orig;
+                            setFormData({ ...formData, hasDiscount: isDisc, originalValue: orig, totalValue: finalVal });
+                          }}
+                          className="w-4 h-4 rounded text-[#2cecf7] accent-[#2cecf7] cursor-pointer"
+                        />
+                        <span className="text-xs font-semibold text-slate-200">Apply discount (1-100%)</span>
+                      </label>
+
+                      {formData.hasDiscount && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <label className="text-[11px] text-slate-400">Discount:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            step="1"
+                            value={formData.discountPercent}
+                            onChange={(e) => {
+                              const pct = Math.min(100, Math.max(1, Number(e.target.value) || 0));
+                              const orig = formData.originalValue || formData.totalValue;
+                              const finalVal = Math.max(0, Math.round(orig - (orig * pct) / 100));
+                              setFormData({ ...formData, discountPercent: pct, totalValue: finalVal });
+                            }}
+                            className="w-16 px-2 py-1 bg-slate-900 border border-[#2cecf7] rounded text-[#2cecf7] text-center font-bold font-mono text-xs focus:outline-none"
+                          />
+                          <span className="text-[#2cecf7] font-bold text-xs">%</span>
+                          <span className="text-[11px] text-emerald-400 font-mono ml-auto">
+                            Final: {formData.totalValue.toLocaleString()} {formData.currency}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div>

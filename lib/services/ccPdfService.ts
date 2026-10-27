@@ -662,7 +662,8 @@ export async function generateQuotationPdf(
   doc.text(`${quotation.subtotal.toLocaleString()} ${quotation.currency}`, pageWidth - 18, y + 7, { align: "right" });
 
   if (quotation.totalDiscount > 0) {
-    doc.text("Discount:", totalsBoxX + 6, y + 13);
+    const discountLabel = quotation.discountPercent ? `Discount (${quotation.discountPercent}%):` : "Discount:";
+    doc.text(discountLabel, totalsBoxX + 6, y + 13);
     doc.text(`-${quotation.totalDiscount.toLocaleString()} ${quotation.currency}`, pageWidth - 18, y + 13, { align: "right" });
   }
 
@@ -967,17 +968,40 @@ export async function generateServiceAgreementPdf(
   y += 43;
 
   // Financial summary
-  doc.setFillColor(243, 244, 246);
-  doc.roundedRect(14, y, pageWidth - 28, 14, 1.5, 1.5, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(15, 23, 42);
-  doc.text("TOTAL ENGAGEMENT VALUE:", 20, y + 9);
-  doc.setFontSize(11);
-  doc.setTextColor(236, 72, 153); // pink-500
-  doc.text(`${(agreement.totalValue || 0).toLocaleString()} ${agreement.currency}`, pageWidth - 20, y + 9, { align: "right" });
+  const hasAgrDiscount = Boolean(agreement.hasDiscount && agreement.discountPercent && agreement.originalValue && agreement.originalValue > (agreement.totalValue || 0));
+  if (hasAgrDiscount) {
+    const origVal = agreement.originalValue || 0;
+    const discAmount = origVal - (agreement.totalValue || 0);
+    doc.setFillColor(243, 244, 246);
+    doc.roundedRect(14, y, pageWidth - 28, 24, 1.5, 1.5, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text("Standard Value:", 20, y + 6.5);
+    doc.text(`${origVal.toLocaleString()} ${agreement.currency}`, pageWidth - 20, y + 6.5, { align: "right" });
+    doc.text(`Special Discount (${agreement.discountPercent}%):`, 20, y + 12);
+    doc.text(`-${discAmount.toLocaleString()} ${agreement.currency}`, pageWidth - 20, y + 12, { align: "right" });
 
-  y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text("NET TOTAL ENGAGEMENT VALUE:", 20, y + 18.5);
+    doc.setFontSize(11);
+    doc.setTextColor(236, 72, 153); // pink-500
+    doc.text(`${(agreement.totalValue || 0).toLocaleString()} ${agreement.currency}`, pageWidth - 20, y + 18.5, { align: "right" });
+    y += 30;
+  } else {
+    doc.setFillColor(243, 244, 246);
+    doc.roundedRect(14, y, pageWidth - 28, 14, 1.5, 1.5, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.text("TOTAL ENGAGEMENT VALUE:", 20, y + 9);
+    doc.setFontSize(11);
+    doc.setTextColor(236, 72, 153); // pink-500
+    doc.text(`${(agreement.totalValue || 0).toLocaleString()} ${agreement.currency}`, pageWidth - 20, y + 9, { align: "right" });
+    y += 20;
+  }
 
   // Standard MSA clauses
   const msaClauses = [

@@ -21,5 +21,12 @@ export function taskError(value:unknown):string {
 export async function taskRequest<T>(path:string,body?:unknown):Promise<T>{
   const user=auth.currentUser;if(!user)throw new Error("admin_sign_in_required");
   const response=await fetch(path,{method:body===undefined?"GET":"POST",credentials:"same-origin",headers:{Authorization:`Bearer ${await user.getIdToken()}`,...(body===undefined?{}:{"Content-Type":"application/json"})},...(body===undefined?{}:{body:JSON.stringify(body)})});
-  const result=await response.json();if(!response.ok)throw new Error(result.error || "task_service_unavailable");return result;
+  let result: any = null;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error(response.ok ? "invalid_server_response" : "task_service_unavailable");
+  }
+  if(!response.ok)throw new Error(result?.error || "task_service_unavailable");
+  return result;
 }

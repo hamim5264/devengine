@@ -7,6 +7,7 @@ export interface ProjectBrief {
   id: string; title: string; client: string; clientEmail: string; clientPhone?: string; overview: string; objectives: string; technology: string;
   deliveryPlan: string; timeline: string; deliverables: string; assumptions: string; paymentTerms: string;
   currency: string; shareToken?: string; status: "draft" | "ready"; costs: BriefCost[]; createdAt: string; updatedAt: string; createdBy: string;
+  hasDiscount?: boolean; discountPercent?: number;
 }
 const COL = "admin_project_briefs";
 const SHARES = "shared_project_briefs";
@@ -33,13 +34,28 @@ function sharedDocument(brief: ProjectBrief): ProjectBriefDocument {
     objectives: brief.objectives, technology: brief.technology, deliveryPlan: brief.deliveryPlan, timeline: brief.timeline,
     deliverables: brief.deliverables, assumptions: brief.assumptions, paymentTerms: brief.paymentTerms,
     currency: brief.currency, status: brief.status, costs: brief.costs, createdAt: brief.createdAt, updatedAt: brief.updatedAt,
+    hasDiscount: Boolean(brief.hasDiscount), discountPercent: brief.discountPercent || 0,
   };
 }
 
-export function briefTotals(brief: Pick<ProjectBrief, "costs">) {
+export function briefTotals(brief: Pick<ProjectBrief, "costs"> & { hasDiscount?: boolean; discountPercent?: number }) {
   const total = (period: CostPeriod) => brief.costs.filter(item => item.period === period).reduce((sum, item) => sum + (Number.isFinite(item.quantity * item.amount) ? item.quantity * item.amount : 0), 0);
   const oneTime = total("one_time"), monthly = total("monthly"), yearly = total("yearly");
-  return { oneTime, monthly, yearly, firstYear: oneTime + monthly * 12 + yearly };
+  const subtotal = oneTime + monthly * 12 + yearly;
+  const isDiscountActive = Boolean(brief.hasDiscount && brief.discountPercent && brief.discountPercent > 0);
+  const discountPercent = isDiscountActive ? Math.min(100, Math.max(1, Math.round(brief.discountPercent || 0))) : 0;
+  const discountAmount = isDiscountActive ? (subtotal * discountPercent) / 100 : 0;
+  const firstYear = Math.max(0, subtotal - discountAmount);
+  return {
+    oneTime,
+    monthly,
+    yearly,
+    subtotal,
+    hasDiscount: isDiscountActive,
+    discountPercent,
+    discountAmount,
+    firstYear,
+  };
 }
 export function briefMoney(value: number, currency: string) {
   try { return new Intl.NumberFormat("en", { style: "currency", currency, currencyDisplay: "code", maximumFractionDigits: 2 }).format(value); }
@@ -47,7 +63,7 @@ export function briefMoney(value: number, currency: string) {
 }
 export function blankBrief(): ProjectBrief {
   const date = new Date().toISOString();
-  return { id: "", title: "", client: "", clientEmail: "", clientPhone: "", overview: "", objectives: "", technology: "", deliveryPlan: "", timeline: "", deliverables: "", assumptions: "", paymentTerms: "", currency: "BDT", status: "draft", costs: ["Discovery & planning", "UI / UX design", "Development", "Server & infrastructure", "Deployment"].map((title, index) => ({ id: crypto.randomUUID(), title, quantity: 1, amount: 0, period: index === 3 ? "monthly" : "one_time" })), createdAt: date, updatedAt: date, createdBy: "" };
+  return { id: "", title: "", client: "", clientEmail: "", clientPhone: "", overview: "", objectives: "", technology: "", deliveryPlan: "", timeline: "", deliverables: "", assumptions: "", paymentTerms: "", currency: "BDT", status: "draft", hasDiscount: false, discountPercent: 10, costs: ["Discovery & planning", "UI / UX design", "Development", "Server & infrastructure", "Deployment"].map((title, index) => ({ id: crypto.randomUUID(), title, quantity: 1, amount: 0, period: index === 3 ? "monthly" : "one_time" })), createdAt: date, updatedAt: date, createdBy: "" };
 }
 function requireAdmin() {
   const user = auth.currentUser;
@@ -79,7 +95,10 @@ export async function saveProjectBrief(input: ProjectBrief): Promise<ProjectBrie
     const existing = await transaction.get(ref);
     const { shareToken: ignoredInputToken, ...fields } = input;
     const token = existing.data()?.shareToken as string | undefined;
+    const hasDiscount = Boolean(input.hasDiscount);
+    const discountPercent = hasDiscount ? Math.min(100, Math.max(1, Math.round(Number(input.discountPercent) || 0))) : 0;
     const result: ProjectBrief = { ...fields, id: ref.id, title: input.title.trim(), client: input.client.trim(), clientEmail, clientPhone, costs,
+      hasDiscount, discountPercent,
       createdAt: existing.data()?.createdAt || now, updatedAt: now, createdBy: user.uid, ...(token ? { shareToken: token } : {}) };
     transaction.set(ref, result);
     if (token) transaction.set(doc(db, SHARES, token), { brief: sharedDocument(result), publisher, enabled: true, updatedAt: now });

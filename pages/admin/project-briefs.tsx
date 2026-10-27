@@ -21,7 +21,17 @@ const SECTIONS: { key: "overview" | "objectives" | "technology" | "deliveryPlan"
 const PERIODS = { one_time: "One-time", monthly: "Monthly", yearly: "Yearly" };
 function Totals({ brief }: { brief: ProjectBrief }) {
   const totals = briefTotals(brief);
-  return <div className={s.summary}><div><span>One-time investment</span><strong>{briefMoney(totals.oneTime, brief.currency)}</strong></div><div><span>Monthly services</span><strong>{briefMoney(totals.monthly, brief.currency)}</strong></div><div><span>Annual services</span><strong>{briefMoney(totals.yearly, brief.currency)}</strong></div><div><span>Estimated first year</span><strong>{briefMoney(totals.firstYear, brief.currency)}</strong></div><small>One-time costs + 12 months of monthly services + annual services. Confirm taxes and third-party pricing before approval.</small></div>;
+  return <div className={s.summary}>
+    <div><span>One-time investment</span><strong>{briefMoney(totals.oneTime, brief.currency)}</strong></div>
+    <div><span>Monthly services</span><strong>{briefMoney(totals.monthly, brief.currency)}</strong></div>
+    <div><span>Annual services</span><strong>{briefMoney(totals.yearly, brief.currency)}</strong></div>
+    {totals.hasDiscount && <>
+      <div><span>Subtotal estimate</span><strong>{briefMoney(totals.subtotal, brief.currency)}</strong></div>
+      <div><span>Discount applied ({totals.discountPercent}%)</span><strong style={{ color: "#2cecf7" }}>-{briefMoney(totals.discountAmount, brief.currency)}</strong></div>
+    </>}
+    <div><span>Estimated first year</span><strong style={{ color: totals.hasDiscount ? "#2cecf7" : undefined }}>{briefMoney(totals.firstYear, brief.currency)}</strong></div>
+    <small>{totals.hasDiscount ? `Includes an applied ${totals.discountPercent}% discount. ` : ""}One-time costs + 12 months of monthly services + annual services. Confirm taxes and third-party pricing before approval.</small>
+  </div>;
 }
 export default function ProjectBriefsPage() {
   const router = useRouter(); const profile = useAdminProfile();
@@ -33,7 +43,7 @@ export default function ProjectBriefsPage() {
   useEffect(() => onAdminPageAccess(router, async () => {
     try { setBriefs(await getProjectBriefs()); } catch (error) { setError(error instanceof Error ? error.message : "Could not load project briefs."); } finally { setLoading(false); }
   }), [router]);
-  function edit(brief: ProjectBrief) { setEditor({ ...structuredClone(brief), clientEmail: brief.clientEmail || "", clientPhone: brief.clientPhone || "" }); setDirty(false); setEditorError(""); setNotice(""); }
+  function edit(brief: ProjectBrief) { setEditor({ ...structuredClone(brief), clientEmail: brief.clientEmail || "", clientPhone: brief.clientPhone || "", hasDiscount: Boolean(brief.hasDiscount), discountPercent: brief.discountPercent || 10 }); setDirty(false); setEditorError(""); setNotice(""); }
   function update<K extends keyof ProjectBrief>(key: K, value: ProjectBrief[K]) { setDirty(true); setEditor(current => current ? { ...current, [key]: value } : null); }
   function cost(id: string, key: keyof BriefCost, value: string | number) { if (editor) update("costs", editor.costs.map(item => item.id === id ? { ...item, [key]: value } : item)); }
   function closeEditor() { if (busy) return; if (dirty) setDiscard(true); else setEditor(null); }
@@ -97,7 +107,10 @@ export default function ProjectBriefsPage() {
     {notice && <div role="status" className={s.notice}>{notice}</div>}{error && !remove && <div role="alert" className={s.notice} data-error>{error}</div>}
     <div className={s.stats}><div className={s.stat}><span>Project briefs</span><strong>{briefs.length}</strong></div><div className={s.stat}><span>Drafts</span><strong>{briefs.filter(item => item.status === "draft").length}</strong></div><div className={s.stat}><span>Ready to share</span><strong>{briefs.filter(item => item.status === "ready").length}</strong></div></div>
     <div className={s.header}><div><h2>Project library</h2><p>Drafts stay private until you create a client link.</p></div><label className={s.search}><span className="sr-only">Search project briefs</span><input type="search" placeholder="Search projects or clients" value={search} onChange={event => setSearch(event.target.value)} /></label></div>
-    {loading ? <p role="status">Loading project briefs…</p> : filtered.length ? <div className={s.cards}>{filtered.map(brief => <article className={`${s.panel} ${s.card}`} key={brief.id}><div className={s.cardTop}><span className={s.eyebrow}>{brief.client}</span><span className={s.tag} data-status={brief.status}>{brief.status === "ready" ? "Ready to share" : "Draft"}</span></div><h2>{brief.title}</h2><p>{brief.overview.slice(0, 180) || "Add an overview to describe the project."}</p><div className={s.total}><span>First-year estimate</span><strong>{briefMoney(briefTotals(brief).firstYear, brief.currency)}</strong></div><p>Updated {new Date(brief.updatedAt).toLocaleDateString()}</p><div className={s.actions}><button className={s.button} onClick={() => setDetail(brief)}>View details</button><button className={s.button} onClick={() => edit(brief)}>Edit</button><button className={s.button} disabled={!!exporting} onClick={() => exportPdf(brief)}><EmployeeIcon>download</EmployeeIcon>{exporting === brief.id ? "Preparing…" : "PDF"}</button><button className={s.button} disabled={!!exporting} onClick={() => openShare(brief)}><EmployeeIcon>share</EmployeeIcon>Share link</button><button className={s.danger} aria-label={`Delete ${brief.title}`} onClick={() => { setError(""); setRemove(brief); }}><EmployeeIcon>delete</EmployeeIcon></button></div></article>)}</div> : <div className={`${s.panel} ${s.empty}`}><EmployeeIcon>description</EmployeeIcon><h2>{search ? "No matching projects" : "Your next project starts here."}</h2><p>{search ? "Try a different search." : "Capture the plan, technology, deliverables and costs in one client-ready document."}</p>{!search && <button className={s.primary} onClick={() => edit(blankBrief())}>Create a project brief</button>}</div>}
+    {loading ? <p role="status">Loading project briefs…</p> : filtered.length ? <div className={s.cards}>{filtered.map(brief => {
+      const totals = briefTotals(brief);
+      return <article className={`${s.panel} ${s.card}`} key={brief.id}><div className={s.cardTop}><span className={s.eyebrow}>{brief.client}</span><span className={s.tag} data-status={brief.status}>{brief.status === "ready" ? "Ready to share" : "Draft"}</span></div><h2>{brief.title}</h2><p>{brief.overview.slice(0, 180) || "Add an overview to describe the project."}</p><div className={s.total}><span>First-year estimate</span><strong>{briefMoney(totals.firstYear, brief.currency)}</strong>{totals.hasDiscount && <span style={{ marginLeft: 8, fontSize: "11px", padding: "2px 8px", borderRadius: "999px", background: "rgba(44,236,247,0.15)", color: "#2cecf7", border: "1px solid rgba(44,236,247,0.3)", fontWeight: 700 }}>{totals.discountPercent}% OFF</span>}</div><p>Updated {new Date(brief.updatedAt).toLocaleDateString()}</p><div className={s.actions}><button className={s.button} onClick={() => setDetail(brief)}>View details</button><button className={s.button} onClick={() => edit(brief)}>Edit</button><button className={s.button} disabled={!!exporting} onClick={() => exportPdf(brief)}><EmployeeIcon>download</EmployeeIcon>{exporting === brief.id ? "Preparing…" : "PDF"}</button><button className={s.button} disabled={!!exporting} onClick={() => openShare(brief)}><EmployeeIcon>share</EmployeeIcon>Share link</button><button className={s.danger} aria-label={`Delete ${brief.title}`} onClick={() => { setError(""); setRemove(brief); }}><EmployeeIcon>delete</EmployeeIcon></button></div></article>;
+    })}</div> : <div className={`${s.panel} ${s.empty}`}><EmployeeIcon>description</EmployeeIcon><h2>{search ? "No matching projects" : "Your next project starts here."}</h2><p>{search ? "Try a different search." : "Capture the plan, technology, deliverables and costs in one client-ready document."}</p>{!search && <button className={s.primary} onClick={() => edit(blankBrief())}>Create a project brief</button>}</div>}
     {editor && <EmployeeDialog wide title={editor.id ? "Edit project brief" : "New project brief"} description="Create a plan your client can understand." icon="description" onClose={closeEditor}><form onSubmit={save} className={s.page}>
       {editorError && <div role="alert" className={s.notice} data-error>{editorError}</div>}
       <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}><div className={s.grid}>
@@ -106,7 +119,46 @@ export default function ProjectBriefsPage() {
       </div>
       <section style={{ marginTop: 32 }}><div className={s.header}><div><h2>Budget breakdown</h2><p>Separate project investment from ongoing services.</p></div><label className={s.field}>Currency<AdminSelect value={editor.currency} onChange={event => update("currency", event.target.value)}>{["BDT", "USD", "EUR", "GBP", "INR", "AUD", "CAD", "SGD", "AED", "SAR"].map(code => <option key={code} value={code}>{code}</option>)}</AdminSelect></label></div>
       <div className={s.list}>{editor.costs.map(item => <div className={s.cost} key={item.id}><label className={s.field}>Cost item<input required maxLength={160} value={item.title} placeholder="Design, server, deployment…" onChange={event => cost(item.id, "title", event.target.value)} /></label><label className={s.field}>Quantity<input required type="number" min="0.01" max="1000000" step="0.01" value={Number.isFinite(item.quantity) ? item.quantity : ""} onChange={event => cost(item.id, "quantity", event.target.value === "" ? NaN : Number(event.target.value))} /></label><label className={s.field}>Unit cost<input required type="number" min="0" max="100000000000" step="0.01" value={Number.isFinite(item.amount) ? item.amount : ""} onChange={event => cost(item.id, "amount", event.target.value === "" ? NaN : Number(event.target.value))} /></label><label className={s.field}>Billing<AdminSelect value={item.period} onChange={event => cost(item.id, "period", event.target.value)}>{Object.entries(PERIODS).map(([key, title]) => <option value={key} key={key}>{title}</option>)}</AdminSelect></label><button type="button" className={s.danger} onClick={() => update("costs", editor.costs.filter(cost => cost.id !== item.id))} aria-label={`Remove ${item.title || "cost item"}`}><EmployeeIcon>delete</EmployeeIcon></button></div>)}</div>
-      <button type="button" className={s.button} disabled={editor.costs.length >= 60} style={{ marginTop: 16 }} onClick={() => update("costs", [...editor.costs, { id: crypto.randomUUID(), title: "", quantity: 1, amount: 0, period: "one_time" }])}><EmployeeIcon>add</EmployeeIcon>Add budget item</button><Totals brief={editor} /></section>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16 }}>
+        <button type="button" className={s.button} disabled={editor.costs.length >= 60} onClick={() => update("costs", [...editor.costs, { id: crypto.randomUUID(), title: "", quantity: 1, amount: 0, period: "one_time" }])}><EmployeeIcon>add</EmployeeIcon>Add budget item</button>
+      </div>
+
+      {/* Discount Configuration Card */}
+      <div style={{ marginTop: 24, marginBottom: 16, padding: "16px 20px", borderRadius: 14, background: "var(--devengine-raised, #0e1726)", border: "1px solid var(--devengine-border, rgba(44,236,247,0.2))", display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600, fontSize: 13, color: "var(--devengine-text)" }}>
+          <input
+            type="checkbox"
+            checked={Boolean(editor.hasDiscount)}
+            onChange={e => update("hasDiscount", e.target.checked)}
+            style={{ width: 18, height: 18, accentColor: "#2cecf7", cursor: "pointer" }}
+          />
+          <span>Apply client discount</span>
+        </label>
+        {editor.hasDiscount && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: "var(--devengine-muted)" }}>Discount:</span>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              step="1"
+              required
+              value={Number.isFinite(editor.discountPercent) ? editor.discountPercent : 10}
+              onChange={e => {
+                const val = e.target.value === "" ? 0 : Number(e.target.value);
+                update("discountPercent", Math.min(100, Math.max(1, val)));
+              }}
+              style={{ width: 70, padding: "5px 8px", borderRadius: 8, border: "1px solid #2cecf7", background: "var(--devengine-surface, #02040a)", color: "#2cecf7", textAlign: "center", fontWeight: "bold", fontSize: 14 }}
+            />
+            <span style={{ fontWeight: 700, color: "#2cecf7", fontSize: 14 }}>%</span>
+            <span style={{ fontSize: 11, color: "var(--devengine-muted)", marginLeft: 6 }}>
+              (Auto-calculated below)
+            </span>
+          </div>
+        )}
+      </div>
+
+      <Totals brief={editor} /></section>
       </fieldset><div className={s.actions}><button type="button" className={s.button} disabled={busy} onClick={closeEditor}>Cancel</button><button type="submit" className={s.primary} disabled={busy}>{busy ? "Saving…" : "Save project brief"}</button></div>
     </form></EmployeeDialog>}
     {detail && <EmployeeDialog wide title={detail.title} description={`Prepared for ${detail.client}`} icon="description" onClose={() => setDetail(null)}><div className={s.detail}>{SECTIONS.filter(section => detail[section.key].trim()).map(section => <section key={section.key}><h3>{section.label}</h3><p>{detail[section.key]}</p></section>)}<section><h3>Budget breakdown · {detail.currency}</h3><div className={s.tableWrap}><table className={s.table}><thead><tr><th>Item</th><th>Quantity</th><th>Cost</th><th>Billing</th></tr></thead><tbody>{detail.costs.map(item => <tr key={item.id}><td>{item.title}</td><td>{item.quantity}</td><td>{briefMoney(item.quantity * item.amount, detail.currency)}</td><td>{PERIODS[item.period]}</td></tr>)}</tbody></table></div><Totals brief={detail} /></section><div className={s.actions}><button className={s.primary} disabled={!!exporting} onClick={() => exportPdf(detail)}>Download PDF</button><button className={s.button} disabled={!!exporting} onClick={() => openShare(detail)}>Share project link</button></div></div></EmployeeDialog>}

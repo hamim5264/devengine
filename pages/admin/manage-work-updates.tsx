@@ -931,7 +931,7 @@ export default function ManageWorkUpdatesPage() {
       ═════════════════════════════════════════════════════════════════ */}
       {showTaskModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0d18] border border-white/[0.12] p-6 sm:p-7 shadow-2xl relative space-y-5 themed-scroll">
+          <div className="w-full max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#0c0d18] border border-white/[0.12] p-5 sm:p-7 shadow-2xl relative space-y-5 themed-scroll">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
               <div className="flex items-center gap-3">
@@ -1035,15 +1035,15 @@ export default function ManageWorkUpdatesPage() {
               </div>
 
               {/* 4. Starting Date & Time and Deadline (End Date & Time) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-cyan-500/[0.03] border border-cyan-500/15">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 p-3.5 sm:p-4 rounded-2xl bg-cyan-500/[0.03] border border-cyan-500/15">
                 {/* Starting Schedule */}
-                <div className="space-y-2">
+                <div className="flex flex-col justify-between space-y-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                   <div className="flex items-center gap-1.5 text-cyan-400 text-xs font-semibold">
                     <span className="material-symbols-outlined text-[15px]">play_circle</span>
                     <span>Starting Schedule (Unlocked At)</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
+                  <div className="grid grid-cols-2 gap-2 items-start">
+                    <div className="min-w-0">
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         Start Date *
                       </label>
@@ -1052,10 +1052,10 @@ export default function ManageWorkUpdatesPage() {
                         required
                         value={taskForm.startDate}
                         onChange={(e) => setTaskForm({ ...taskForm, startDate: e.target.value })}
-                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                        className="w-full"
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         Start Time
                       </label>
@@ -1063,23 +1063,25 @@ export default function ManageWorkUpdatesPage() {
                         type="time"
                         value={taskForm.startTime}
                         onChange={(e) => setTaskForm({ ...taskForm, startTime: e.target.value })}
-                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono"
+                        className="w-full"
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-500">
-                    Employee will see a countdown timer until this moment.
-                  </p>
+                  <div className="min-h-[32px] flex items-center">
+                    <p className="text-[10px] sm:text-[11px] text-gray-500 leading-snug">
+                      Employee will see a countdown timer until this moment.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Deadline Schedule */}
-                <div className="space-y-2">
+                <div className="flex flex-col justify-between space-y-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                   <div className="flex items-center gap-1.5 text-pink-400 text-xs font-semibold">
                     <span className="material-symbols-outlined text-[15px]">event_busy</span>
                     <span>Deadline & End Target</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
+                  <div className="grid grid-cols-2 gap-2 items-start">
+                    <div className="min-w-0">
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         End Date *
                       </label>
@@ -1088,10 +1090,10 @@ export default function ManageWorkUpdatesPage() {
                         required
                         value={taskForm.dueDate}
                         onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
-                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                        className="w-full"
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="text-[10px] font-mono text-gray-400 uppercase tracking-wider block mb-1">
                         End Time
                       </label>
@@ -1099,20 +1101,34 @@ export default function ManageWorkUpdatesPage() {
                         type="time"
                         value={taskForm.dueTime}
                         onChange={(e) => setTaskForm({ ...taskForm, dueTime: e.target.value })}
-                        className="w-full h-10 bg-black/60 border border-white/[0.1] rounded-xl px-2.5 text-xs text-white focus:outline-none focus:border-pink-500 font-mono"
+                        className="w-full"
                       />
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-0.5">
-                    <span className="text-[10px] text-gray-400 font-mono">Est. Sprints Hours:</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="120"
-                      value={taskForm.estimatedHours}
-                      onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
-                      className="w-20 h-7 bg-black/60 border border-white/[0.1] rounded-lg px-2 text-xs text-cyan-300 text-right focus:outline-none focus:border-cyan-400 font-mono font-bold"
-                    />
+                  <div className="min-h-[32px] flex items-center justify-between gap-2 pt-0.5">
+                    <span className="text-[10px] sm:text-[11px] text-gray-400 font-mono whitespace-nowrap">
+                      Est. Sprints Hours:
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        value={taskForm.estimatedHours}
+                        onChange={(e) => setTaskForm({ ...taskForm, estimatedHours: Number(e.target.value) })}
+                        className="transparent-input w-16 text-xs text-center font-mono font-bold focus:outline-none focus:border-[#2cecf7]"
+                        style={{
+                          minHeight: "30px",
+                          height: "30px",
+                          padding: "0 6px",
+                          borderRadius: "8px",
+                          background: "var(--admin-control, rgba(0,0,0,0.4))",
+                          color: "var(--devengine-text, #2cecf7)",
+                          border: "1px solid var(--admin-line, rgba(255,255,255,0.15))",
+                        }}
+                      />
+                      <span className="text-[10px] sm:text-[11px] text-gray-500 font-mono">hrs</span>
+                    </div>
                   </div>
                 </div>
               </div>

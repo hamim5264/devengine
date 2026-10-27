@@ -438,7 +438,7 @@ export default function ClientDocumentReviewPage() {
                   </div>
                   {docData.totalDiscount > 0 && (
                     <div className="flex justify-between text-[var(--devengine-muted)]">
-                      <span>Discount:</span>
+                      <span>Discount {docData.discountPercent ? `(${docData.discountPercent}%)` : ""}:</span>
                       <span className="font-mono text-rose-400">
                         -{docData.totalDiscount?.toLocaleString()} {docData.currency}
                       </span>
@@ -531,11 +531,28 @@ export default function ClientDocumentReviewPage() {
                   {docData.clauses?.ipDetails || "Full intellectual property rights assign to the Client upon final payment completion."}
                 </span>
               </div>
-              <div className="p-4 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)]">
+              <div className="p-4 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] space-y-1.5">
                 <span className="font-bold text-[#2cecf7] block mb-1">Total Engagement Fee:</span>
-                <span className="font-bold text-emerald-400 font-mono text-sm sm:text-base">
-                  {(docData.totalValue || 0).toLocaleString()} {docData.currency}
-                </span>
+                {docData.hasDiscount && docData.discountPercent && docData.originalValue && docData.originalValue > (docData.totalValue || 0) ? (
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between text-[var(--devengine-muted)]">
+                      <span>Standard Value:</span>
+                      <span className="font-mono line-through">{docData.originalValue.toLocaleString()} {docData.currency}</span>
+                    </div>
+                    <div className="flex justify-between text-rose-400">
+                      <span>Special Discount ({docData.discountPercent}%):</span>
+                      <span className="font-mono">-{(docData.originalValue - (docData.totalValue || 0)).toLocaleString()} {docData.currency}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-sm text-[var(--devengine-text)] pt-1 border-t border-[var(--devengine-border)]">
+                      <span>Net Total Value:</span>
+                      <span className="text-[#2cecf7] font-mono">{(docData.totalValue || 0).toLocaleString()} {docData.currency}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="font-bold text-emerald-400 font-mono text-sm sm:text-base">
+                    {(docData.totalValue || 0).toLocaleString()} {docData.currency}
+                  </span>
+                )}
               </div>
             </div>
           </div>

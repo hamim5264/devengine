@@ -842,3 +842,41 @@ html.dark .cyber-shadow-intense {
   width: 0 !important;
   height: 0 !important;
 }
+
+/* Universal Admin Time Controls: keep hour and minute side-by-side with equal width */
+.admin-time-controls {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.admin-time-controls > div {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  max-width: calc(50% - 6px) !important;
+}
+.admin-time-controls button {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.admin-time-controls button span {
+  font-size: 13px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.admin-time-controls button svg {
+  flex-shrink: 0 !important;
+  margin-left: 2px !important;
+}
+.admin-time-controls > span {
+  font-weight: 700 !important;
+  color: var(--devengine-muted) !important;
+  flex-shrink: 0 !important;
+  padding: 0 1px !important;
+}
+

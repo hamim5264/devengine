@@ -366,6 +366,8 @@ export interface CCQuotation {
   lineItems: CCQuotationLineItem[];
   subtotal: number;
   totalDiscount: number;
+  hasDiscount?: boolean;
+  discountPercent?: number;
   totalTax: number;
   approvedExpenses: number;
   grandTotal: number;
@@ -605,6 +607,9 @@ export interface CCServiceAgreement {
   // Commercial (synced from quotation)
   currency: CCCurrency;
   totalValue?: number;
+  originalValue?: number;
+  hasDiscount?: boolean;
+  discountPercent?: number;
   paymentSchedule: CCPaymentMilestone[];
   // Template
   templateId?: string;

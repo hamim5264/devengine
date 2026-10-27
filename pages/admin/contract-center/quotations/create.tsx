@@ -59,6 +59,10 @@ export default function QuotationCreatePage() {
     "1. 50% advance deposit upon agreement execution, remaining on project delivery.\n2. Source code and intellectual property transferred upon final payment.\n3. 30-day post-launch warranty included."
   );
 
+  // Discount configuration
+  const [hasDiscount, setHasDiscount] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState<number>(10);
+
   // Line items
   const [lineItems, setLineItems] = useState<CCQuotationLineItem[]>([
     {
@@ -147,6 +151,14 @@ export default function QuotationCreatePage() {
             setValidUntilDate(existing.validUntilDate?.split("T")[0] || "");
             setExecutiveSummary(existing.scope?.executiveSummary || "");
             setTermsText(existing.terms?.additionalConditions || "");
+            if (existing.hasDiscount !== undefined) {
+              setHasDiscount(Boolean(existing.hasDiscount));
+              setDiscountPercent(existing.discountPercent || 10);
+            } else if (existing.totalDiscount && existing.totalDiscount > 0 && existing.subtotal && existing.subtotal > 0) {
+              setHasDiscount(true);
+              const calculatedPct = Math.round((existing.totalDiscount / existing.subtotal) * 100);
+              setDiscountPercent(Math.min(100, Math.max(1, calculatedPct || 10)));
+            }
             if (existing.lineItems?.length) setLineItems(existing.lineItems);
             if (existing.paymentSchedule?.length) setPaymentMilestones(existing.paymentSchedule);
           }
@@ -195,13 +207,26 @@ export default function QuotationCreatePage() {
 
   // Calculations
   const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  const lineItemDiscount = lineItems.reduce((sum, item) => sum + (item.discountAmount || 0), 0);
+  const activeDiscountPct = hasDiscount && discountPercent > 0 ? Math.min(100, Math.max(1, Math.round(discountPercent))) : 0;
+  const quoteDiscountAmount = activeDiscountPct > 0 ? Math.round(((subtotal - lineItemDiscount) * activeDiscountPct) / 100) : 0;
+  const totalDiscount = lineItemDiscount + quoteDiscountAmount;
   const totalTax = lineItems.reduce((sum, item) => {
     const discount = item.discountAmount || 0;
     const base = item.quantity * item.unitPrice - discount;
     return sum + (item.taxRate ? base * (item.taxRate / 100) : 0);
   }, 0);
-  const totalDiscount = lineItems.reduce((sum, item) => sum + (item.discountAmount || 0), 0);
   const grandTotal = Math.max(0, subtotal - totalDiscount + totalTax);
+
+  // Automatically update milestone amounts whenever grandTotal changes
+  useEffect(() => {
+    setPaymentMilestones((prev) =>
+      prev.map((m) => ({
+        ...m,
+        amount: Math.round(((m.percentage || 0) / 100) * grandTotal),
+      }))
+    );
+  }, [grandTotal]);
 
   // Sync milestone amounts when grand total changes
   const updateMilestonePercent = (index: number, pct: number) => {
@@ -266,6 +291,8 @@ export default function QuotationCreatePage() {
         lineItems,
         subtotal,
         totalDiscount,
+        hasDiscount: Boolean(hasDiscount && discountPercent > 0),
+        discountPercent: hasDiscount ? Math.min(100, Math.max(1, Math.round(discountPercent))) : 0,
         totalTax,
         grandTotal,
         approvedExpenses: 0,
@@ -559,6 +586,57 @@ export default function QuotationCreatePage() {
               </div>
             </div>
 
+            {/* Quotation Discount & Adjustment */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-[#2cecf7]">
+                    Quotation Discount
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Apply a commercial percentage discount to the entire quotation scope
+                  </p>
+                </div>
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={hasDiscount}
+                    onChange={(e) => setHasDiscount(e.target.checked)}
+                    className="w-4 h-4 rounded text-[#2cecf7] accent-[#2cecf7] cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-slate-200">
+                    Apply Discount
+                  </span>
+                </label>
+              </div>
+
+              {hasDiscount && (
+                <div className="flex flex-wrap items-center gap-4 p-3.5 rounded-xl bg-slate-800/40 border border-[#2cecf7]/30">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-slate-300 font-medium">Discount Percentage:</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="1"
+                        value={discountPercent}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? 0 : Number(e.target.value);
+                          setDiscountPercent(Math.min(100, Math.max(1, val)));
+                        }}
+                        className="w-20 px-2.5 py-1.5 bg-slate-900 border border-[#2cecf7] rounded-lg text-[#2cecf7] text-center font-bold font-mono text-sm focus:outline-none"
+                      />
+                      <span className="text-[#2cecf7] font-bold text-sm">%</span>
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-400 font-mono">
+                    Deduction: <strong className="text-rose-400 font-bold">-{quoteDiscountAmount.toLocaleString()} {currency}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* 3. Payment Milestones Schedule */}
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
               <div className="flex items-center justify-between">
@@ -663,7 +741,7 @@ export default function QuotationCreatePage() {
 
                 {totalDiscount > 0 && (
                   <div className="flex justify-between text-slate-400">
-                    <span>Discount:</span>
+                    <span>Discount {hasDiscount && discountPercent > 0 ? `(${discountPercent}%)` : ""}:</span>
                     <span className="text-rose-400 font-mono">-{totalDiscount.toLocaleString()} {currency}</span>
                   </div>
                 )}

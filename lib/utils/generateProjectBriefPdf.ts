@@ -151,11 +151,27 @@ export async function generateProjectBriefPdf(brief: ProjectBriefDocument, publi
   table(["#", "Scope / cost item", "Qty", "Unit cost", "Billing", "Estimate"], brief.costs.map((item, index) => [String(index + 1), item.title, String(item.quantity), briefMoney(item.amount, brief.currency), billing[item.period], briefMoney(item.amount * item.quantity, brief.currency)]), [9, 49, 13, 34, 25, 44]);
   const totals = briefTotals(brief);
   heading("Investment summary");
-  table(["Cost category", `Estimate (${brief.currency})`], [
-    ["One-time investment", briefMoney(totals.oneTime, brief.currency)], ["Monthly recurring services", briefMoney(totals.monthly, brief.currency)],
-    ["Annual recurring services", briefMoney(totals.yearly, brief.currency)], ["Estimated first-year investment", briefMoney(totals.firstYear, brief.currency)],
-  ], [108, 66], { highlightLast: true });
-  paragraph("First-year estimate includes one-time costs, 12 months of monthly services and annual services. Confirm third-party prices and applicable taxes before approval.", 9.5, "italic", MUTED);
+  const summaryRows: [string, string][] = [
+    ["One-time investment", briefMoney(totals.oneTime, brief.currency)],
+    ["Monthly recurring services", briefMoney(totals.monthly, brief.currency)],
+    ["Annual recurring services", briefMoney(totals.yearly, brief.currency)],
+  ];
+  if (totals.hasDiscount) {
+    summaryRows.push(["Subtotal investment", briefMoney(totals.subtotal, brief.currency)]);
+    summaryRows.push([`Special Discount (${totals.discountPercent}%)`, `-${briefMoney(totals.discountAmount, brief.currency)}`]);
+    summaryRows.push(["Estimated first-year investment", briefMoney(totals.firstYear, brief.currency)]);
+  } else {
+    summaryRows.push(["Estimated first-year investment", briefMoney(totals.firstYear, brief.currency)]);
+  }
+  table(["Cost category", `Estimate (${brief.currency})`], summaryRows, [108, 66], { highlightLast: true });
+  paragraph(
+    totals.hasDiscount
+      ? `First-year estimate includes an applied ${totals.discountPercent}% client discount, one-time costs, 12 months of monthly services and annual services. Confirm third-party prices and applicable taxes before approval.`
+      : "First-year estimate includes one-time costs, 12 months of monthly services and annual services. Confirm third-party prices and applicable taxes before approval.",
+    9.5,
+    "italic",
+    MUTED
+  );
   section("Assumptions & exclusions", brief.assumptions); section("Payment terms", brief.paymentTerms);
   section("Next steps", "Review the scope, timing and budget together before starting. This preliminary estimate is for discussion; a signed agreement confirms the final commitment.");
   const pages = pdf.getNumberOfPages();

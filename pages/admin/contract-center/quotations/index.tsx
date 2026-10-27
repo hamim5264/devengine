@@ -428,8 +428,22 @@ export default function QuotationsIndexPage() {
                         <div className="font-medium text-slate-200">{q.clientName || "Client"}</div>
                         <div className="text-[11px] text-slate-500">{q.projectTitle || "Direct Quote"}</div>
                       </td>
-                      <td className="py-3 px-4 font-bold text-white">
-                        {formatCCPrice(q.grandTotal || 0, q.currency || "BDT")}
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-white font-mono">
+                          {formatCCPrice(q.grandTotal || 0, q.currency || "BDT")}
+                        </div>
+                        {q.totalDiscount && q.totalDiscount > 0 ? (
+                          <div className="flex items-center gap-1.5 text-[10px] mt-0.5">
+                            <span className="text-[#2cecf7] font-bold px-1.5 py-0.2 rounded bg-[#2cecf7]/10 border border-[#2cecf7]/30">
+                              {q.discountPercent ? `${q.discountPercent}% OFF` : "Discounted"}
+                            </span>
+                            {q.subtotal && q.subtotal > q.grandTotal ? (
+                              <span className="text-slate-500 line-through font-mono">
+                                {formatCCPrice(q.subtotal, q.currency || "BDT")}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </td>
                       <td className="py-3 px-4 text-slate-400">
                         {new Date(q.validUntilDate).toLocaleDateString()}

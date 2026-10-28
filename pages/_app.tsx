@@ -23,7 +23,7 @@ const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
 // Paths that are always accessible during maintenance
-const BYPASS_PATHS = ["/admin", "/login", "/staff", "/maintenance", "/api", "/project-overview/"];
+const BYPASS_PATHS = ["/admin", "/login", "/staff", "/maintenance", "/api", "/project-overview/", "/project-progress/"];
 
 function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -56,7 +56,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 
   // 3. Website Visitor Analytics (Only for public-facing visitors)
   useEffect(() => {
-    if (!currentPath.startsWith("/admin") && !currentPath.startsWith("/api") && !currentPath.startsWith("/project-overview/") && currentPath !== "/login") {
+    if (!currentPath.startsWith("/admin") && !currentPath.startsWith("/api") && !currentPath.startsWith("/project-overview/") && !currentPath.startsWith("/project-progress/") && currentPath !== "/login") {
       recordPageView(router.asPath);
     }
   }, [router.asPath, currentPath]);

@@ -7,13 +7,18 @@ const { answer, validateKey, modelCatalog } = require('./provider');
 const { reserveRequest, recordUsage, dayKey } = require('./limits');
 const OPTIONS={region:'us-central1',maxInstances:3,concurrency:12,memory:'256MiB',timeoutSeconds:120,enforceAppCheck:process.env.DEVKITTY_REQUIRE_APP_CHECK==='true',cors:[/^https:\/\/([a-z0-9-]+\.)?devenginehq\.com$/, 'https://thedevengine.vercel.app', /^https:\/\/(thedevengine|devengine)(-[a-z0-9-]+)?\.vercel\.app$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/]};
 const db=()=>getFirestore();
+async function conversationActor(request){
+  const actor=await resolveActor(request,db());
+  // Public surface can only reduce privileges; authentication remains authoritative.
+  return request.data?.surface==='public'?{role:'visitor',uid:actor.uid,name:'bunny',session:`public:${actor.session}`} : actor;
+}
 async function credentials() {const snap=await privateRef(db()).get();return snap.data()?.apiKey || process.env.OPENROUTER_API_KEY || '';}
 exports.devkittyBootstrap=onCall({...OPTIONS,timeoutSeconds:30},async request=>{
-  const actor=await resolveActor(request,db()); const settings=await readSettings(db());
+  const actor=await conversationActor(request); const settings=await readSettings(db());
   return {role:actor.role,name:actor.name,uid:actor.uid,session:actor.session,enabled:roleEnabled(settings,actor.role),configured:!!(await credentials()),greeting:greeting(settings,actor),autoEmployeeGreeting:settings.autoEmployeeGreeting,maxInputLength:3000};
 });
 exports.devkittyChat=onCall(OPTIONS,async request=>{
-  const settings=await readSettings(db()),actor=await resolveActor(request,db());
+  const settings=await readSettings(db()),actor=await conversationActor(request);
   const input=request.data?.messages;
   if(!Array.isArray(input)||!input.length||input.length>16) throw new HttpsError('invalid-argument','Start a new conversation or send up to 16 recent messages.');
   const messages=input.map(message=>{
@@ -45,7 +50,9 @@ exports.devkittyAdmin=onCall(OPTIONS,async request=>{
   }
   if(action==='models') return {models:await modelCatalog()};
   if(action==='insights') {
-    const [provider,usageReport]=await Promise.all([credentials().then(providerDetails),usageDetails(db())]);
+    const [providerResult,usageResult]=await Promise.allSettled([credentials().then(providerDetails),usageDetails(db())]);
+    const provider=providerResult.status==='fulfilled'?providerResult.value:{status:'unavailable',checkedAt:new Date().toISOString()};
+    const usageReport=usageResult.status==='fulfilled'?{...usageResult.value,status:'connected'}:{since:new Date(Date.now()-29*86400000).toISOString().slice(0,10),models:[],status:'unavailable'};
     return {provider,usageReport};
   }
   if(action==='setEnabled') {

@@ -11,7 +11,7 @@ import { useRouter } from "next/router";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAdminOrStaffAuth } from "@/lib/services/staffAuth";
-import { modulesForAdminRoute } from "@/lib/staffModules";
+import { hasStudioSubModule, modulesForAdminRoute } from "@/lib/staffModules";
 import StaffLayout from "@/components/StaffLayout";
 import HelixLoader from "@/components/HelixLoader";
 import HeaderControls from "@/components/HeaderControls";
@@ -99,6 +99,8 @@ function IconContract({ size = 16 }: { size?: number }) {
 }
 
 const NAV_GROUPS: NavGroup[] = [
+  {label:"Client Delivery",moduleKey:"project_progress",color:"#2cecf7",icon:<IconFolder/>,items:[{label:"Project Progress",href:"/admin/project-progress",badge:"new"}]},
+  {label:"Dev Support",moduleKey:"support",color:"#2cecf7",icon:<IconUserCheck/>,items:[{label:"Support workspace",href:"/admin/support"},{label:"Messages",href:"/admin/messages"},{label:"Notifications",href:"/admin/notifications"},{label:"Departments",href:"/admin/departments"},{label:"Notice board",href:"/admin/notices"}]},
   { label: "DevEngine AppOS", moduleKey: "appos", color: "#2cecf7", icon: <IconGrid />, items: [{ label: "Application Registry", href: "/admin/appos", badge: "new" }] },
   {
     label: "Overview",
@@ -230,6 +232,8 @@ const NAV_GROUPS: NavGroup[] = [
     color: "#2cecf7",
     icon: <IconSettings />,
     items: [
+      {label:"Sub-admin Access",href:"/admin/manage-sub-admins"},
+      {label:"Service Usage & Costs",href:"/admin/service-usage"},
       { label: "DevKitty AI", href: "/admin/manage-devkitty", badge: "new" },
       { label: "Theme & Fonts", href: "/admin/manage-theme-settings", badge: "new" },
       { label: "Invoice & PDF Settings", href: "/admin/manage-pdf-settings" },
@@ -252,7 +256,8 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
   const router = useRouter();
   const profile = useAdminProfile();
   const { theme } = useTheme();
-  const { authReady, isAuthorized, isStaff: isStaffUser } = useAdminOrStaffAuth(modulesForAdminRoute(router.pathname));
+  const { authReady, isAuthorized, isStaff, isSubAdmin, staffData } = useAdminOrStaffAuth(modulesForAdminRoute(router.pathname));
+  const isStaffUser = isStaff && !isSubAdmin;
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -279,8 +284,9 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
   });
   const filteredGroups = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return NAV_GROUPS.map(group => ({ ...group, items: group.label.toLowerCase().includes(term) ? group.items : group.items.filter(item => item.label.toLowerCase().includes(term)) })).filter(group => group.items.length > 0);
-  }, [search]);
+    const permitted = NAV_GROUPS.map(group => ({...group,items:group.items.filter(item => !isSubAdmin || modulesForAdminRoute(item.href).some(key => hasStudioSubModule(staffData,key,item.href)))}));
+    return permitted.map(group => ({ ...group, items: group.label.toLowerCase().includes(term) ? group.items : group.items.filter(item => item.label.toLowerCase().includes(term)) })).filter(group => group.items.length > 0);
+  }, [search,isSubAdmin,staffData]);
   const saveGroups = (groups: Set<string>) => {
     setExpandedGroups(groups);
     try { sessionStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify([...groups])); } catch {}
@@ -367,8 +373,8 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
         <div className={styles.headerCapsule} data-routing={routing || undefined}>
           <div className={styles.headerIdentity}>
             <button ref={menuRef} className={styles.iconButton} aria-label={sidebarOpen ? "Close navigation" : "Open navigation"} aria-expanded={sidebarOpen} aria-controls="admin-navigation" onClick={() => setSidebarOpen(value => !value)}><span className="material-symbols-outlined" aria-hidden="true">{sidebarOpen ? "menu_open" : "menu"}</span></button>
-            <Link href="/admin/dashboard" className={styles.logo} aria-label="DevEngine admin home"><Image src={theme === "light" ? "/assets/DevEngine-logo-on-light1.png" : "/assets/DevEngine-logo-on-dark2.png"} alt="DevEngine" width={160} height={40} priority /><svg className={styles.logoMark} viewBox="0 0 32 36" fill="none" aria-hidden="true"><path d="M3 3 29 18 3 33V3Z" stroke="#2cecf7" strokeWidth="6" strokeLinejoin="round" /></svg></Link>
-            <span className={styles.adminLabel}><i />Admin</span>
+            <Link href={isSubAdmin ? "/admin/support" : "/admin/dashboard"} className={styles.logo} aria-label="DevEngine admin home"><Image src={theme === "light" ? "/assets/DevEngine-logo-on-light1.png" : "/assets/DevEngine-logo-on-dark2.png"} alt="DevEngine" width={160} height={40} priority /><svg className={styles.logoMark} viewBox="0 0 32 36" fill="none" aria-hidden="true"><path d="M3 3 29 18 3 33V3Z" stroke="#2cecf7" strokeWidth="6" strokeLinejoin="round" /></svg></Link>
+            <span className={styles.adminLabel}><i />{isSubAdmin ? "Dev Support" : "Admin"}</span>
           </div>
           <div className={styles.breadcrumb}><span>{activeGroup?.label || "Workspace"}</span><span aria-hidden="true">/</span><strong>{activeItem?.label || "Studio administration"}</strong></div>
           <div className={styles.headerActions}>
@@ -393,7 +399,7 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
           })}</nav>
           {!filteredGroups.length && <div className={styles.navEmpty}><span className="material-symbols-outlined" aria-hidden="true">search_off</span><p>No matching features.</p><button onClick={() => setSearch("")}>Clear search</button></div>}
         </div>
-        <div className={styles.drawerFooter}><Link href="/admin/profile" className={styles.account} aria-label={`View and edit ${profile.name}'s profile`} aria-current={router.pathname === "/admin/profile" ? "page" : undefined} onClick={() => setSidebarOpen(false)}><img src={profile.avatarUrl || "/assets/CEO.png"} alt="" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = "/assets/CEO.png"; }} /><div><strong>{profile.name}</strong><span>View &amp; edit profile</span></div><span className={styles.presence} aria-label="Signed in" /><svg className={styles.accountArrow} width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m10 8 4 4-4 4" /></svg></Link><div className={styles.footerActions}><a href="/" target="_blank" rel="noopener noreferrer"><span className="material-symbols-outlined" aria-hidden="true">language</span>Public view</a><button className={styles.signOut} onClick={handleSignOut}><span className="material-symbols-outlined" aria-hidden="true">logout</span>Sign out</button></div></div>
+        <div className={styles.drawerFooter}><Link href={isSubAdmin ? "/admin/support" : "/admin/profile"} className={styles.account} aria-label={isSubAdmin ? "Open Dev Support workspace" : `View and edit ${profile.name}'s profile`} aria-current={router.pathname === "/admin/profile" ? "page" : undefined} onClick={() => setSidebarOpen(false)}><img src={isSubAdmin ? staffData?.avatarUrl || "/dev_url_logo.png" : profile.avatarUrl || "/assets/CEO.png"} alt="" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = "/assets/CEO.png"; }} /><div><strong>{isSubAdmin ? staffData?.name : profile.name}</strong><span>{isSubAdmin ? "Delegated administrator" : "View & edit profile"}</span></div><span className={styles.presence} aria-label="Signed in" /><svg className={styles.accountArrow} width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m10 8 4 4-4 4" /></svg></Link><div className={styles.footerActions}><a href="/" target="_blank" rel="noopener noreferrer"><span className="material-symbols-outlined" aria-hidden="true">language</span>Public view</a><button className={styles.signOut} onClick={handleSignOut}><span className="material-symbols-outlined" aria-hidden="true">logout</span>Sign out</button></div></div>
       </aside>
       <div className={styles.workspace}>
         <div className={styles.main}>
@@ -413,14 +419,14 @@ export default function AdminLayout({ children, title = "Admin Panel | DevEngine
                     } else if (window.history.length > 1) {
                       router.back();
                     } else {
-                      void router.replace("/admin/dashboard");
+                      void router.replace(isSubAdmin ? "/admin/support" : "/admin/dashboard");
                     }
                   }}
                 >
                   <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>Back
                 </button>
                 <span className={styles.backDivider} aria-hidden="true" />
-                <Link href="/admin/dashboard">Dashboard</Link>
+                <Link href={isSubAdmin ? "/admin/support" : "/admin/dashboard"}>{isSubAdmin ? "Support workspace" : "Dashboard"}</Link>
                 <span className={styles.backSection}>{activeItem?.label || activeGroup?.label || "Studio workspace"}</span>
               </nav>}
               <div className="admin-content" data-admin-content><div data-admin-route>{children}</div></div>

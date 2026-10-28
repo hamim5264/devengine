@@ -33,7 +33,7 @@ exports.employeeDirectory = onDocumentWrittenWithAuthContext({ ...config, docume
     const current = await tx.get(db.doc(`staff_members/${event.params.uid}`));
     if (!current.exists) { tx.set(ref, { status: 'suspended', chatSuspended: true, departmentIds: [] }, { merge: true }); return; }
     const person = current.data();
-    tx.set(ref, { uid: after.id, name: person.name || 'Employee', avatarUrl: person.avatarUrl || '', role: 'employee', status: person.status || 'active', departmentIds: previous.data()?.departmentIds || [], chatSuspended: previous.data()?.chatSuspended ?? false }, { merge: true });
+    tx.set(ref, { uid: after.id, name: person.accountType === 'sub_admin' ? 'Dev Support' : person.name || 'Employee', avatarUrl: person.avatarUrl || '', role: person.accountType === 'sub_admin' ? 'support' : 'employee', status: person.status || 'active', departmentIds: previous.data()?.departmentIds || [], chatSuspended: previous.data()?.chatSuspended ?? false }, { merge: true });
   });
   // Full suspension also disables sign-in and revokes refresh tokens. Chat-only suspension never touches Auth.
   const beforeAccount = event.data.before.data() || {};
@@ -116,7 +116,7 @@ exports.notifyMessage = onDocumentCreated({ ...config, document: 'studio_convers
   const admin = await adminUid();
   const department = chat.kind === 'department' ? await db.doc(`studio_departments/${chat.departmentId}`).get() : null;
   const sender = await db.doc(`studio_people/${message.senderId}`).get();
-  const eligible = profiles.filter(p => p.exists && p.data().status === 'active' && !p.data().chatSuspended && (chat.kind === 'department' ? department?.exists && !department.data().deleted && (p.id === admin || department.data().memberIds.includes(p.id)) : p.id === admin || message.senderId === admin || sender.data()?.departmentIds?.some(id => p.data().departmentIds.includes(id))));
+  const eligible = profiles.filter(p => p.exists && p.data().status === 'active' && !p.data().chatSuspended && (chat.kind === 'department' ? department?.exists && !department.data().deleted && (p.id === admin || department.data().memberIds.includes(p.id)) : p.id === admin || p.data().role === 'support' || message.senderId === admin || sender.data()?.role === 'support' || sender.data()?.departmentIds?.some(id => p.data().departmentIds.includes(id))));
   // Older concurrent deliveries must not overwrite the latest chat preview.
   const preview = message.text ? message.text.slice(0, 160) : (message.attachments?.length ? '📎 Attachment' : '');
   await db.runTransaction(async tx => {
@@ -124,7 +124,7 @@ exports.notifyMessage = onDocumentCreated({ ...config, document: 'studio_convers
     if (current.exists && (!current.data().lastMessageAt || current.data().lastMessageAt <= message.createdAt)) tx.update(chatRef, { lastMessage: preview, lastMessageAt: message.createdAt, lastSenderId: message.senderId, lastMessageId: event.params.messageId });
   });
   const notifBody = (message.text || (message.attachments?.length ? '📎 Sent an attachment' : '')).slice(0, 180);
-  await Promise.all(eligible.map(p => notify(event.id, [p.id], { kind: 'message', title: chat.kind === 'department' ? `${message.senderName} · ${chat.title}` : message.senderName, body: notifBody, href: `${p.id === admin ? '/admin' : '/staff'}/messages?chat=${event.params.chatId}` })));
+  await Promise.all(eligible.map(p => notify(event.id, [p.id], { kind: 'message', title: chat.kind === 'department' ? `${message.senderName} · ${chat.title}` : message.senderName, body: notifBody, href: `${p.id === admin || p.data().role === 'support' ? '/admin' : '/staff'}/messages?chat=${event.params.chatId}` })));
 });
 
 exports.notifyReaction = onDocumentWrittenWithAuthContext({ ...config, document: 'studio_conversations/{chatId}/reactions/{reactionId}' }, async event => {
@@ -140,8 +140,9 @@ exports.notifyReaction = onDocumentWrittenWithAuthContext({ ...config, document:
   // Membership is evaluated again so a queued reaction cannot notify a removed member.
   if (!chat.data().participantIds.includes(recipient)) return;
   const actor = await db.doc(`studio_people/${reaction.uid}`).get();
+  const recipientProfile = await db.doc(`studio_people/${recipient}`).get();
   const admin = await adminUid();
-  await notify(event.id, [recipient], { kind: 'message', title: `${actor.data()?.name || 'A teammate'} reacted ${reaction.emoji}`, body: message.data().text.slice(0, 140), href: `${recipient === admin ? '/admin' : '/staff'}/messages?chat=${event.params.chatId}` });
+  await notify(event.id, [recipient], { kind: 'message', title: `${actor.data()?.name || 'A teammate'} reacted ${reaction.emoji}`, body: message.data().text.slice(0, 140), href: `${recipient === admin || recipientProfile.data()?.role === 'support' ? '/admin' : '/staff'}/messages?chat=${event.params.chatId}` });
 });
 
 exports.messageRemoved = onDocumentDeleted({ ...config, document: 'studio_conversations/{chatId}/messages/{messageId}' }, async event => {

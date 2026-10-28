@@ -781,6 +781,10 @@ export default function StaffDashboard() {
 
       <div className="p-3.5 sm:p-6 lg:p-8 w-full max-w-[1560px] mx-auto space-y-6 sm:space-y-8">
         <CommunicationDashboard />
+        <div style={{display:"flex",gap:16,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",padding:"18px 22px",border:"1px solid var(--devengine-border)",borderRadius:18,background:"var(--devengine-surface)",margin:"20px 0"}}>
+          <div><strong>Need a hand?</strong><p style={{margin:"6px 0 0",color:"var(--devengine-muted)",fontSize:14}}>Dev Support stays pinned in Messages. Reach your support team privately.</p></div>
+          <Link href="/staff/messages" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minHeight:44,padding:"10px 18px",borderRadius:12,background:"#2cecf7",color:"#07131b",fontSize:14,fontWeight:600}}>Message Dev Support ↗</Link>
+        </div>
         {/* ─────────────────────────────────────────────────────────────
             1. HERO EXECUTIVE BANNER & REAL-TIME CLOCK (Widened + Weekly Sprint)
         ───────────────────────────────────────────────────────────── */}

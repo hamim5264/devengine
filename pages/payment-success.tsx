@@ -94,6 +94,7 @@ export default function PaymentSuccess() {
     <>
       <Head>
         <title>Processing Payment | DevEngine</title>
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
       <Navbar />
       <main className="pt-32 min-h-screen bg-gradient-to-br from-gray-900 to-black text-white flex items-center justify-center">

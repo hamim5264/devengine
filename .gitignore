@@ -32,8 +32,11 @@ yarn-error.log*
 .pnpm-debug.log*
 firebase-debug*.log
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files (strictly ignored, never committed)
+.env
+.env.local
+.env.*
+.env*.local
 *service-account*.json
 *-adminsdk-*.json
 

@@ -98,6 +98,7 @@ export default function ResetPasswordPage() {
     <>
       <Head>
         <title>Reset Password | DevEngine</title>
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
       <Navbar />
 

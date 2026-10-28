@@ -22,7 +22,7 @@ export async function prepareStudioDirectory() {
   const changes: { id: string; data: DocumentData }[] = [];
   for (const employee of staff.docs) {
     const s = employee.data(); const old = directory.get(employee.id);
-    const data = { uid: employee.id, name: s.name || 'Employee', avatarUrl: s.avatarUrl || '', role: 'employee', status: s.status || 'active', departmentIds: old?.departmentIds || [], chatSuspended: old?.chatSuspended ?? false };
+    const data = { uid: employee.id, name: s.accountType === 'sub_admin' ? 'Dev Support' : s.name || 'Employee', avatarUrl: s.avatarUrl || '', role: s.accountType === 'sub_admin' ? 'support' : 'employee', status: s.status || 'active', departmentIds: old?.departmentIds || [], chatSuspended: old?.chatSuspended ?? false };
     if (!old || ['name', 'avatarUrl', 'status', 'role', 'departmentIds', 'chatSuspended'].some(key => old[key] !== data[key as keyof typeof data])) {
       changes.push({ id: employee.id, data });
     }
@@ -79,7 +79,7 @@ export async function setEmployeeAccess(uid: string, action: 'chat' | 'account',
   await batch.commit();
 }
 export function canDirectMessage(me: StudioPerson | undefined, person: StudioPerson) {
-  return !!me && me.uid !== person.uid && me.status === 'active' && !me.chatSuspended && !person.chatSuspended && person.status === 'active' && (me.role === 'admin' || person.role === 'admin' || me.departmentIds.some(id => person.departmentIds.includes(id)));
+  return !!me && me.uid !== person.uid && me.status === 'active' && !me.chatSuspended && !person.chatSuspended && person.status === 'active' && (me.role === 'admin' || me.role === 'support' || person.role === 'admin' || person.role === 'support' || me.departmentIds.some(id => person.departmentIds.includes(id)));
 }
 export async function openDirectMessage(me: StudioPerson, person: StudioPerson) {
   if (!canDirectMessage(me, person)) throw new Error('Direct messages are available to admin and colleagues in your departments.');

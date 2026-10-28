@@ -1,3 +1,4 @@
+import {appPolicyServerProps} from "@/lib/server/public/content";
 import { AppLegalShell, AppLegalState, AppLegalDocument, AppShowcaseContent, AppLegalIcon, appLegalStyles as s } from "@/components/app-legal/AppLegalUI";
 import HeaderControls from "@/components/HeaderControls";
 import React, { useEffect, useState } from "react";
@@ -13,12 +14,12 @@ import {
 import HelixLoader from "@/components/HelixLoader";
 import MarkdownViewer from "@/components/MarkdownViewer";
 
-export default function AppDataDeletionPage() {
+export default function AppDataDeletionPage({initialApp}: {initialApp?:AppPolicy|null}) {
   const router = useRouter();
   const { slug } = router.query;
 
-  const [app, setApp] = useState<AppPolicy | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [app, setApp] = useState<AppPolicy | null>(initialApp || null);
+  const [loading, setLoading] = useState(!initialApp);
 
   // Form states
   const [userEmail, setUserEmail] = useState("");
@@ -31,6 +32,7 @@ export default function AppDataDeletionPage() {
 
   useEffect(() => {
     if (!router.isReady || !slug) return;
+    if(initialApp?.slug === String(slug)){setApp(initialApp);setLoading(false);return;}
 
     let isMounted = true;
     async function load() {
@@ -51,7 +53,7 @@ export default function AppDataDeletionPage() {
     return () => {
       isMounted = false;
     };
-  }, [router.isReady, slug]);
+  }, [router.isReady, slug, initialApp]);
 
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,3 +114,5 @@ export default function AppDataDeletionPage() {
     <AppLegalDocument content={deletionContent} app={app} pageTitle="Data & Account Deletion Policy" />
   </AppLegalShell>;
 }
+
+export const getServerSideProps=appPolicyServerProps;

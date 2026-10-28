@@ -1,3 +1,6 @@
+import type {GetServerSideProps} from "next";
+import {publicItem} from "@/lib/server/public/content";
+import {normalizePublicProject} from "@/lib/normalizePublicProject";
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
@@ -36,12 +39,12 @@ const SECTIONS = [
   { id: "faq", label: "FAQ" },
 ];
 
-export default function ProjectDetailPage() {
+export default function ProjectDetailPage({initialProject}:{initialProject?:ProjectItem|null}) {
   const router = useRouter();
   const { slug } = router.query;
 
-  const [project, setProject] = useState<ProjectItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [project, setProject] = useState<ProjectItem | null>(initialProject||null);
+  const [loading, setLoading] = useState(!initialProject);
   const [notFound, setNotFound] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -68,6 +71,7 @@ export default function ProjectDetailPage() {
   // Fetch project by slug / doc id
   useEffect(() => {
     if (!slug) return;
+    if(initialProject && (initialProject.slug===String(slug)||initialProject.id===String(slug))){setProject(initialProject);setLoading(false);setNotFound(false);return;}
 
     (async () => {
       setLoading(true);
@@ -132,62 +136,7 @@ export default function ProjectDetailPage() {
             setNotFound(true);
             setProject(null);
           } else {
-            setProject({
-              id: snap.id,
-              slug: data.slug || snap.id,
-              title: data.title || "Untitled System",
-              subtitle: data.subtitle || "",
-              category: (data.category || "General"),
-              price: data.price ?? "0",
-              discount: data.discount,
-              pricing: Array.isArray(data.pricing) ? data.pricing : undefined,
-              tags: Array.isArray(data.tags) ? data.tags : [],
-              tools: Array.isArray(data.tools) ? data.tools : [],
-              isPublic: data.isPublic !== false,
-              images:
-                Array.isArray(data.images) && data.images.length > 0
-                  ? data.images
-                  : (data.imageUrl || data.image ? [data.imageUrl || data.image] : []),
-              imageUrl: data.imageUrl || data.image || "",
-              image: data.imageUrl || data.image || "",
-              details: data.details || "",
-              installation: data.installation || "",
-              youtubeUrl: data.youtubeUrl || DEFAULT_YOUTUBE_URL,
-              version: data.version || "2.4.0",
-              platform: data.platform || "Cross-Platform",
-              status: data.status || "Active",
-              releaseDate: data.releaseDate || "Q4 2024",
-              buildStack: data.buildStack || "",
-              availability: data.availability || "iOS, Android, Web",
-              snapshot: data.snapshot || DEFAULT_SNAPSHOT,
-              story: {
-                idea:
-                  data.story?.idea ||
-                  data.details ||
-                  "Engineered to bridge complex production requirements with fluid, modern interfaces.",
-                problem:
-                  data.story?.problem ||
-                  "Building enterprise-ready architectures from scratch requires months of boilerplate engineering and performance tuning.",
-                solution:
-                  data.story?.solution ||
-                  "A pre-architected, modular system with clean separation of concerns, secure data access, and instant cloud deployment.",
-                value:
-                  data.story?.value ||
-                  "Eliminate hundreds of development hours, save substantial engineering costs, and launch within hours.",
-              },
-              whatsIncluded:
-                Array.isArray(data.whatsIncluded) && data.whatsIncluded.length > 0
-                  ? data.whatsIncluded
-                  : DEFAULT_WHATS_INCLUDED,
-              notIncluded:
-                Array.isArray(data.notIncluded) && data.notIncluded.length > 0
-                  ? data.notIncluded
-                  : DEFAULT_NOT_INCLUDED,
-              faqs:
-                Array.isArray(data.faqs) && data.faqs.length > 0
-                  ? data.faqs
-                  : DEFAULT_FAQS,
-            });
+            setProject(normalizePublicProject(snap.id,data));
             setNotFound(false);
           }
         }
@@ -198,7 +147,7 @@ export default function ProjectDetailPage() {
         setLoading(false);
       }
     })();
-  }, [slug, isAdmin]);
+  }, [slug, isAdmin,initialProject]);
 
   // Scroll Spy & Sticky Bar Listener
   useEffect(() => {
@@ -1255,3 +1204,5 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
+
+export const getServerSideProps:GetServerSideProps=async context=>{try{const raw=await publicItem("projects",String(context.params?.slug||""));if(!raw)return {notFound:true};context.res.setHeader("Cache-Control","public, s-maxage=60, stale-while-revalidate=300");return {props:{initialProject:JSON.parse(JSON.stringify(normalizePublicProject(raw.id,raw)))}};}catch{context.res.statusCode=503;context.res.setHeader("Retry-After","60");context.res.setHeader("Cache-Control","no-store");return {props:{initialProject:null}};}};

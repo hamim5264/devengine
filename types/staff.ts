@@ -58,6 +58,7 @@ export interface ResignationDetails {
 export interface StaffMember {
   id: string;
   uid: string; // Firebase Auth UID
+  accountType?: "employee" | "sub_admin";
   name: string;
   email: string;
   password?: string; // Stored so admin can view, copy, and edit staff passwords
@@ -238,6 +239,8 @@ export function getRoleBadgeColor(
 
 /** Module keys matching the admin drawer groups */
 export const MODULE_KEYS = {
+  project_progress: "project_progress",
+  support: "support",
   appos: "appos",
   overview: "overview",
   commerce: "commerce",
@@ -254,6 +257,8 @@ export type ModuleKey = (typeof MODULE_KEYS)[keyof typeof MODULE_KEYS];
 
 /** Module display config */
 export const MODULE_CONFIG: Record<string, { label: string; icon: string; color: string; description: string }> = {
+  project_progress: { label: "Project Progress", icon: "monitoring", color: "#2cecf7", description: "Update assigned client delivery boards" },
+  support: { label: "Support Inbox", icon: "support_agent", color: "#2cecf7", description: "Messages and workspace communication" },
   appos: { label: "DevEngine AppOS", icon: "apps", color: "#2cecf7", description: "Application workspaces and scoped permissions" },
   overview: {
     label: "Overview",

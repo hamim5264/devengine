@@ -39,13 +39,10 @@ Disallow: /contract/
 Disallow: /contract/*
 Disallow: /project-overview/
 Disallow: /project-overview/*
+Disallow: /project-progress/
+Disallow: /project-progress/*
 Disallow: /api/
 Disallow: /api/*
-Disallow: /checkout
-Disallow: /payment-cancel
-Disallow: /payment-fail
-Disallow: /payment-success
-Disallow: /reset-password
 
 # Dynamic Sitemaps
 Sitemap: https://www.devenginehq.com/sitemap.xml

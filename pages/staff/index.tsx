@@ -11,7 +11,7 @@ import { getStaffByUid } from "@/lib/services/staffService";
 import HelixLoader from "@/components/HelixLoader";
 import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
-import InteractiveBear from "@/components/staff/InteractiveBear";
+import InteractiveYeti from "@/components/staff/InteractiveYeti";
 
 const TICKER_ITEMS = [
   { icon: "bolt", label: "DevEngine Sprint Mesh", highlight: "v2.4" },
@@ -233,10 +233,11 @@ export default function StaffLoginPage() {
 
         {/* ── 3. Main Login Container (Wider, Compact Height, Sleek Inputs) ── */}
         <main className="relative z-20 w-full max-w-[560px] mx-auto px-4 py-2 sm:py-4 flex-1 flex flex-col justify-center">
-          {/* Interactive Mascot Bear emerging from BEHIND the card */}
+          {/* Interactive Mascot Yeti emerging from BEHIND the card */}
           <div className="relative -mb-4 sm:-mb-5 z-10 flex justify-center pointer-events-none">
-            <InteractiveBear
+            <InteractiveYeti
               focusedField={focusedField}
+              email={email}
               emailLength={email.length}
               showPass={showPass}
               hasError={Boolean(error)}

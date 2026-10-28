@@ -327,6 +327,7 @@ export default function CheckoutPage() {
           name="description"
           content="Complete your software license acquisition. Secure manual payment verification for bKash, Nagad, Rocket, DBBL, and BRAC Bank."
         />
+        <meta name="robots" content="noindex, nofollow" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Head>
 

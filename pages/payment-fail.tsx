@@ -8,6 +8,7 @@ export default function PaymentFail() {
     <>
       <Head>
         <title>Payment Failed | DevEngine</title>
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
 
       <Navbar />

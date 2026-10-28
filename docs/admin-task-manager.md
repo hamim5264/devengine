@@ -116,6 +116,10 @@ The screenshot's message identifies an **External + Testing** app whose selected
 
 The Calendar card includes these instructions. No audience, publishing, IAM or production setting is changed automatically. For later public use, follow Google's applicable publishing/verification process. See [Google's access-denied explanation](https://support.google.com/accounts/answer/16668185).
 
+## Calendar processing after task saves
+
+Task saves now await the saved task’s own Calendar job using the existing deterministic job ID and durable lease/lock. The request never runs unrelated email/notification jobs. Successful sync is reported in the UI; failed sync remains visible and retryable without losing the saved task. This supports production serverless requests even when the optional scheduler is not activated. Native Google Calendar reminders are included in the event.
+
 ## Worker and scheduler activation
 
 Configure a private random secret of at least 32 characters as `ADMIN_TASK_WORKER_SECRET` in Vercel Production and, separately, as the Firebase Secret Manager secret with the **same name/value**. Never put it in client variables or source. This secret is distinct from the Google encryption key. No value has been generated or printed by the implementation.

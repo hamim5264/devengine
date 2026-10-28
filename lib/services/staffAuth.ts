@@ -25,6 +25,7 @@ interface AccessState {
   authorized: boolean;
   isAdmin: boolean;
   isStaff: boolean;
+  isSubAdmin?: boolean;
   staff: StaffMember | null;
 }
 const denied: AccessState = { user: null, authorized: false, isAdmin: false, isStaff: false, staff: null };
@@ -58,7 +59,7 @@ export function subscribeStudioAccess(required: RequiredModules, onChange: (stat
       if (current !== generation) return;
       const staff = snapshot.exists() ? { ...snapshot.data(), id: snapshot.id, uid: user.uid } as StaffMember : null;
       if (staff?.status === "suspended") void enforceStaffSuspension(staff).catch(() => {});
-      onChange({ user, staff, authorized: !!staff && staffMayEnter(staff, required), isAdmin: false, isStaff: staff?.status === "active" });
+      onChange({ user, staff, authorized: !!staff && staffMayEnter(staff, required), isAdmin: false, isStaff: staff?.status === "active", isSubAdmin: staff?.accountType === "sub_admin" });
     }, () => {
       if (current === generation) onChange({ ...denied, user });
     });
@@ -68,7 +69,7 @@ export function subscribeStudioAccess(required: RequiredModules, onChange: (stat
 
 function redirectDenied(router: NextRouter, state: AccessState) {
   const suspended = state.staff?.status === "suspended" || (!state.user && !!getStaffSuspensionNotice());
-  const destination = suspended ? "/staff?suspended=1" : state.isStaff ? "/staff/dashboard" : state.user ? "/staff" : `/login?redirect=${encodeURIComponent(router.asPath)}`;
+  const destination = suspended ? "/staff?suspended=1" : state.isSubAdmin ? "/admin/support" : state.isStaff ? "/staff/dashboard" : state.user ? "/staff" : `/login?redirect=${encodeURIComponent(router.asPath)}`;
   if (router.asPath !== destination) void router.replace(destination);
 }
 
@@ -104,7 +105,7 @@ export function useAdminOrStaffAuth(required?: RequiredModules) {
     });
   }, [key, router]);
   // isAdmin remains the legacy page authorization flag, with the real role explicit.
-  return { authReady, isAdmin: state.authorized, isAuthorized: state.authorized, isSuperAdmin: state.isAdmin, isStaff: state.isStaff, staffData: state.staff };
+  return { authReady, isAdmin: state.authorized, isAuthorized: state.authorized, isSuperAdmin: state.isAdmin, isSubAdmin: state.isSubAdmin === true, isStaff: state.isStaff, staffData: state.staff };
 }
 
 export async function checkUserAuthorized(user: User | null, requiredModule?: string) {

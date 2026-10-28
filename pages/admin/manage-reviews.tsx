@@ -9,6 +9,7 @@ import { auth } from "@/lib/firebase";
 import HelixLoader from "@/components/HelixLoader";
 import { ReviewRecord, ReviewStatus } from "@/types/review";
 import { moveToBin } from "@/lib/services/binService";
+import { uploadStorageAsset } from "@/lib/services/storageAssetService";
 import {
   getAllReviewsAdmin,
   updateReviewStatus,
@@ -30,6 +31,7 @@ interface FormState {
   reviewText: string;
   status: ReviewStatus;
   featured: boolean;
+  avatarUrl: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -40,6 +42,7 @@ const EMPTY_FORM: FormState = {
   reviewText: "",
   status: "APPROVED",
   featured: false,
+  avatarUrl: "",
 };
 
 export default function ManageReviewsPage() {
@@ -56,6 +59,8 @@ export default function ManageReviewsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [avatarTab, setAvatarTab] = useState<"file" | "url">("file");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ReviewRecord | null>(null);
 
   // Auth gate
@@ -168,6 +173,7 @@ export default function ManageReviewsPage() {
 
   const openCreateModal = () => {
     setForm(EMPTY_FORM);
+    setAvatarTab("file");
     setModalOpen(true);
   };
 
@@ -181,8 +187,31 @@ export default function ManageReviewsPage() {
       reviewText: r.reviewText,
       status: r.status,
       featured: !!r.featured,
+      avatarUrl: r.avatarUrl || "",
     });
+    setAvatarTab(r.avatarUrl && r.avatarUrl.startsWith("http") ? "url" : "file");
     setModalOpen(true);
+  };
+
+  const handleAvatarFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Image file size should be less than 8MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const url = await uploadStorageAsset(file, "reviews", "reviewer", 8 * 1024 * 1024);
+      setForm((prev) => ({ ...prev, avatarUrl: url }));
+    } catch (error) {
+      console.error("Reviewer photo upload failed:", error);
+      alert("Upload failed. Please try providing an image URL or retry.");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleSaveModal = async (e: React.FormEvent) => {
@@ -202,6 +231,7 @@ export default function ManageReviewsPage() {
         reviewText: form.reviewText,
         status: form.status,
         featured: form.featured,
+        avatarUrl: form.avatarUrl?.trim() || "",
       });
 
       setModalOpen(false);
@@ -495,13 +525,24 @@ export default function ManageReviewsPage() {
 
                       {/* Reviewer Profile */}
                       <div className="flex items-center gap-3 pt-1">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 border border-teal-500/30 flex items-center justify-center font-jetbrains font-bold text-xs text-teal-300">
-                          {rev.reviewerName
-                            .split(" ")
-                            .map((p: string) => p[0])
-                            .join("")
-                            .slice(0, 2)
-                            .toUpperCase()}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 border border-teal-500/30 flex items-center justify-center font-jetbrains font-bold text-xs text-teal-300 overflow-hidden shrink-0 shadow-sm">
+                          {rev.avatarUrl ? (
+                            <img
+                              src={rev.avatarUrl}
+                              alt={rev.reviewerName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            rev.reviewerName
+                              .split(" ")
+                              .map((p: string) => p[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()
+                          )}
                         </div>
                         <div>
                           <p className="text-white text-sm font-semibold">
@@ -702,6 +743,122 @@ export default function ManageReviewsPage() {
                   placeholder="Enter the client testimonial quote..."
                   className="w-full bg-black/40 border border-white/[0.08] rounded-xl p-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 resize-none transition-colors"
                 />
+              </div>
+
+              {/* Reviewer Photo / Avatar (Optional: Upload from file or enter image link) */}
+              <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <label className="block text-xs font-jetbrains text-gray-200 uppercase tracking-wider font-semibold">
+                      Reviewer Photo / Avatar <span className="text-gray-400 font-normal lowercase">(optional)</span>
+                    </label>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Upload from file or enter link. When added, public cards show a prominent circular photo.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 bg-black/40 border border-white/[0.08] p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setAvatarTab("file")}
+                      className={`px-3 py-1 text-[11px] font-jetbrains rounded-lg transition-colors cursor-pointer ${
+                        avatarTab === "file"
+                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Upload File
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAvatarTab("url")}
+                      className={`px-3 py-1 text-[11px] font-jetbrains rounded-lg transition-colors cursor-pointer ${
+                        avatarTab === "url"
+                          ? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Image URL
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 pt-1">
+                  {/* Live Avatar Preview */}
+                  <div className="relative shrink-0">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 border-2 border-teal-400 flex items-center justify-center font-jetbrains font-bold text-sm text-teal-300 overflow-hidden shadow-lg shadow-teal-500/20">
+                      {form.avatarUrl ? (
+                        <img
+                          src={form.avatarUrl}
+                          alt="Reviewer avatar preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        (form.reviewerName || "Alex Rivera")
+                          .split(" ")
+                          .map((p) => p[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-2 min-w-0">
+                    {avatarTab === "file" ? (
+                      <div>
+                        <label className="relative flex flex-col items-center justify-center border border-dashed border-white/20 hover:border-teal-500/60 rounded-xl px-4 py-2.5 cursor-pointer bg-black/40 transition-colors group">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarFileUpload}
+                            className="sr-only"
+                            disabled={uploadingAvatar}
+                          />
+                          <div className="flex items-center gap-2 text-xs font-jetbrains text-gray-300 group-hover:text-white">
+                            <span className="material-symbols-outlined text-[19px] text-teal-400">
+                              {uploadingAvatar ? "hourglass_top" : "add_photo_alternate"}
+                            </span>
+                            <span>
+                              {uploadingAvatar
+                                ? "Uploading image to server…"
+                                : "Choose photo from your PC (PNG, JPG, WebP)"}
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    ) : (
+                      <div>
+                        <input
+                          type="text"
+                          value={form.avatarUrl}
+                          onChange={(e) =>
+                            setForm({ ...form, avatarUrl: e.target.value })
+                          }
+                          placeholder="https://... or /assets/member.png"
+                          className="w-full h-11 bg-black/40 border border-white/[0.08] rounded-xl px-4 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-teal-500/50 transition-colors"
+                        />
+                      </div>
+                    )}
+
+                    {form.avatarUrl && (
+                      <div className="flex items-center justify-between text-[11px] font-jetbrains pt-0.5">
+                        <span className="text-teal-400 truncate max-w-[260px]">
+                          ✓ Photo attached
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, avatarUrl: "" })}
+                          className="text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                        >
+                          Remove photo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">

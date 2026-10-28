@@ -12,6 +12,8 @@ const item = (label: string, page: string) => ({ label, href: `/admin/${page}` }
 
 /** Employee destinations and page authorization share this registry. */
 export const STUDIO_MODULES: StudioModule[] = [
+  { key: "project_progress", label: "Project Progress", icon: "monitoring", description: "Live client delivery and assigned projects", items: [item("Project Progress", "project-progress")] },
+  { key: "support", label: "Support Inbox", icon: "support_agent", description: "Messages and workspace communication", items: [item("Support workspace", "support"), item("Messages", "messages"), item("Notifications", "notifications"), item("Departments", "departments"), item("Notice board", "notices")] },
   { key: "appos", label: "DevEngine AppOS", icon: "apps", description: "Your assigned application workspaces", items: [item("Application Registry", "appos")] },
   { key: "overview", label: "Overview", icon: "dashboard", description: "Studio dashboard and activity", items: [item("Studio Dashboard", "dashboard")] },
   { key: "commerce", label: "Commerce", icon: "shopping_bag", description: "Orders, payments, and currencies", items: [item("Orders & Payments", "manage-orders"), item("Invoice PDF Settings", "manage-pdf-settings"), item("Currencies", "manage-currencies")] },

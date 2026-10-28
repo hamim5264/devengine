@@ -3,24 +3,25 @@ import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { db } from '@/lib/firebase';
+import {taskRequest} from '@/lib/tasks/client';
 import { subscribeStudioAccess } from '@/lib/services/staffAuth';
 import { communicationCollections as C, prepareStudioDirectory, watchStudio } from '@/lib/services/communicationService';
 import type { StudioPerson, StudioNotification, StudioNotice, Department, StudioConversation, ConversationState, ChatBackground } from '@/types/communication';
 import s from './Communication.module.css';
 interface StudioState {
-  uid: string; admin: boolean; ready: boolean; me?: StudioPerson; people: StudioPerson[];
+  uid: string; admin: boolean; console: boolean; ready: boolean; me?: StudioPerson; people: StudioPerson[];
   departments: Department[]; conversations: StudioConversation[]; notifications: StudioNotification[];
   notices: StudioNotice[]; noticeReads: string[]; chatStates: Record<string, ConversationState>;
   background: ChatBackground; error: string; unread: number; unreadChats: number;
 }
-const empty: StudioState = { uid: '', admin: false, ready: false, people: [], departments: [], conversations: [], notifications: [], notices: [], noticeReads: [], chatStates: {}, background: 'aurora', error: '', unread: 0, unreadChats: 0 };
+const empty: StudioState = { uid: '', admin: false, console: false, ready: false, people: [], departments: [], conversations: [], notifications: [], notices: [], noticeReads: [], chatStates: {}, background: 'aurora', error: '', unread: 0, unreadChats: 0 };
 const Context = createContext<StudioState>(empty);
 export const useStudio = () => useContext(Context);
 export const studioHref = (href: string) => /^\/(staff|admin)(\/|\?|$)/.test(href) ? href : '/staff/dashboard';
 export function CommunicationProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const enabled = router.pathname.startsWith('/admin') || router.pathname.startsWith('/staff/');
-  const [session, setSession] = useState({ uid: '', admin: false, ready: false });
+  const [session, setSession] = useState({ uid: '', admin: false, console: false, ready: false });
   const [people, setPeople] = useState<StudioPerson[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [conversations, setConversations] = useState<StudioConversation[]>([]);
@@ -32,8 +33,8 @@ export function CommunicationProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState('');
   const [toast, setToast] = useState<StudioNotification | null>(null);
   useEffect(() => {
-    if (!enabled) { setSession({ uid: '', admin: false, ready: true }); return; }
-    return subscribeStudioAccess(undefined, state => setSession({ uid: state.authorized ? state.user!.uid : '', admin: state.isAdmin, ready: true }));
+    if (!enabled) { setSession({ uid: '', admin: false, console: false, ready: true }); return; }
+    return subscribeStudioAccess(undefined, state => setSession({ uid: state.authorized ? state.user!.uid : '', admin: state.isAdmin, console: state.isAdmin || state.isSubAdmin === true, ready: true }));
   }, [enabled]);
   useEffect(() => {
     setPeople([]); setDepartments([]); setNotifications([]); setNotices([]); setNoticeReads([]); setChatStates({}); setConversations([]); setBackground('aurora'); setError(''); setToast(null);
@@ -41,6 +42,7 @@ export function CommunicationProvider({ children }: { children: ReactNode }) {
     let alive = true; let seen: Set<string> | null = null;
     const fail = () => { if (alive) setError('Workspace communication is unavailable. Publish the updated Firebase rules, then refresh.'); };
     if (session.admin) void prepareStudioDirectory().catch(fail);
+    else if(!session.console) void taskRequest('/api/studio/support',{}).catch(()=>{});
     const stops = [
       watchStudio<StudioPerson>(C.people, rows => setPeople(rows.map(p => ({ ...p, uid: p.uid || p.id, name: p.name || 'Employee', departmentIds: p.departmentIds || [], chatSuspended: !!p.chatSuspended }))), fail),
       watchStudio<Department>(C.departments, rows => setDepartments(rows.filter(d => !d.deleted).sort((a, b) => a.title.localeCompare(b.title))), fail),
@@ -55,7 +57,7 @@ export function CommunicationProvider({ children }: { children: ReactNode }) {
       onSnapshot(collection(db, C.users, session.uid, 'notice_reads'), snap => setNoticeReads(snap.docs.map(d => d.id)), fail),
     ];
     return () => { alive = false; stops.forEach(stop => stop()); };
-  }, [session.uid, session.admin]);
+  }, [session.uid, session.admin, session.console]);
   const me = people.find(p => p.uid === session.uid);
   const membershipKey = me?.departmentIds.join('|') || '';
   useEffect(() => {

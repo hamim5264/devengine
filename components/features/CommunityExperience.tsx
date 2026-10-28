@@ -21,7 +21,7 @@ export function CommunityImage({ src, alt, priority = false }: { src?: string; a
 
 export function Person({ name, role, avatarUrl }: { name: string; role?: string; avatarUrl?: string }) {
   const initials = name.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "DE";
-  return <div className={styles.person}><span className={styles.avatar} aria-hidden="true">{initials}{avatarUrl && <img key={avatarUrl} src={avatarUrl} alt="" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />}</span><span className={styles.personText}><strong>{name}</strong>{role && <span>{role}</span>}</span></div>;
+  return <div className={styles.person}><span className={`${styles.avatar} ${avatarUrl ? styles.avatarWithImage : ""}`} aria-hidden="true">{initials}{avatarUrl && <img key={avatarUrl} src={avatarUrl} alt="" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />}</span><span className={styles.personText}><strong>{name}</strong>{role && <span>{role}</span>}</span></div>;
 }
 
 export function Author({ author }: { author: BlogAuthor }) {

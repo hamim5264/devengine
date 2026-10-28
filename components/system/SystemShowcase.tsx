@@ -1070,8 +1070,23 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
                   </blockquote>
 
                   <div className={styles.reviewerRow}>
-                    <span className={styles.avatar}>
-                      {currentReview.reviewerName?.trim().slice(0, 1).toUpperCase() || "D"}
+                    <span
+                      className={`${styles.avatar} ${
+                        currentReview.avatarUrl ? styles.avatarWithImage : ""
+                      }`}
+                    >
+                      {currentReview.avatarUrl ? (
+                        <img
+                          src={currentReview.avatarUrl}
+                          alt={currentReview.reviewerName}
+                          className={styles.avatarImg}
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        currentReview.reviewerName?.trim().slice(0, 1).toUpperCase() || "D"
+                      )}
                     </span>
                     <div>
                       <p className={styles.revName}>{currentReview.reviewerName}</p>

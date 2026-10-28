@@ -1,5 +1,5 @@
 export interface StudioPerson {
-  id: string; uid: string; name: string; avatarUrl: string; role: 'admin' | 'employee';
+  id: string; uid: string; name: string; avatarUrl: string; role: 'admin' | 'employee' | 'support';
   status: 'active' | 'suspended'; departmentIds: string[]; chatSuspended: boolean;
 }
 export interface Department {

@@ -1,3 +1,4 @@
+import {appPolicyServerProps} from "@/lib/server/public/content";
 import { AppLegalShell, AppLegalState, AppLegalDocument, AppShowcaseContent, AppLegalIcon, appLegalStyles as s } from "@/components/app-legal/AppLegalUI";
 import HeaderControls from "@/components/HeaderControls";
 import React, { useEffect, useState } from "react";
@@ -10,16 +11,17 @@ import { getAppPolicyBySlug } from "@/lib/services/appLegalService";
 import HelixLoader from "@/components/HelixLoader";
 import MarkdownViewer from "@/components/MarkdownViewer";
 
-export default function AppPrivacyPolicyPage() {
+export default function AppPrivacyPolicyPage({initialApp}: {initialApp?:AppPolicy|null}) {
   const router = useRouter();
   const { slug } = router.query;
 
-  const [app, setApp] = useState<AppPolicy | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [app, setApp] = useState<AppPolicy | null>(initialApp || null);
+  const [loading, setLoading] = useState(!initialApp);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!router.isReady || !slug) return;
+    if(initialApp?.slug === String(slug)){setApp(initialApp);setLoading(false);return;}
 
     let isMounted = true;
     async function load() {
@@ -40,7 +42,7 @@ export default function AppPrivacyPolicyPage() {
     return () => {
       isMounted = false;
     };
-  }, [router.isReady, slug]);
+  }, [router.isReady, slug, initialApp]);
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -71,3 +73,5 @@ export default function AppPrivacyPolicyPage() {
 
   return <AppLegalShell app={app} page="privacy" copied={copied} onCopy={handleCopyLink} onPrint={handlePrint}><AppLegalDocument content={policyContent} app={app} pageTitle="Privacy Policy" /></AppLegalShell>;
 }
+
+export const getServerSideProps=appPolicyServerProps;

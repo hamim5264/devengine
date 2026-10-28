@@ -9,6 +9,8 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  onSnapshot,
+  where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { UpdateLogEntry, UpdateLogFormData } from "@/types/update-log";
@@ -237,4 +239,13 @@ export async function seedDefaultUpdateLogs(): Promise<void> {
       updatedAt: serverTimestamp(),
     });
   }
+}
+
+/** The splash uses the first published changelog entry, never demo/default entries. */
+export function subscribeLatestRelease(callback: (version:string)=>void) {
+  return onSnapshot(query(collection(db,COLLECTION_NAME),where("isPublished","==",true)),snapshot=>{
+    const entries=snapshot.docs.map(item=>item.data()).sort((a,b)=>(typeof a.order==="number"?a.order:Number.MAX_SAFE_INTEGER)-(typeof b.order==="number"?b.order:Number.MAX_SAFE_INTEGER));
+    const latest=entries[0];
+    callback(latest?String(latest.versionNumber || latest.version || "").trim():"");
+  },()=>callback(""));
 }

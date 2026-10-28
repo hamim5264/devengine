@@ -34,7 +34,8 @@
 .reviewQuote { color:var(--devengine-text); line-height:1.85; font-size:.95rem; margin:0; overflow-wrap:anywhere; white-space:pre-wrap; }
 .reviewFooter { padding-top:1.3rem; margin-top:1.5rem; border-top:1px solid var(--devengine-border); }
 .person { display:flex; align-items:center; gap:.75rem; min-width:0; }
-.avatar { position:relative; display:grid; place-items:center; flex:none; width:42px; height:42px; border:1px solid var(--devengine-border); border-radius:50%; background:#0a101e; color:#2cecf7; font-size:.8rem; font-weight:600; overflow:hidden; }
+.avatar { position:relative; display:grid; place-items:center; flex:none; width:42px; height:42px; border:1px solid var(--devengine-border); border-radius:50%; background:#0a101e; color:#2cecf7; font-size:.8rem; font-weight:600; overflow:hidden; transition:all .25s ease; }
+.avatarWithImage { width:52px; height:52px; border:2px solid #2cecf7; box-shadow:0 0 18px rgba(44, 236, 247, 0.35); }
 .avatar img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .personText { min-width:0; display:grid; gap:.25rem; }
 .personText strong { color:var(--devengine-text); font-size:.8rem; font-weight:600; line-height:1.5; overflow-wrap:anywhere; }

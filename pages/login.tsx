@@ -11,6 +11,8 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import {getCachedStaffByUid} from "@/lib/services/staffAuth";
+import {modulesForAdminRoute,hasStudioModule} from "@/lib/staffModules";
 import { FiEye, FiEyeOff, FiMail, FiLock, FiArrowLeft, FiCheck, FiAlertCircle, FiPause, FiPlay } from "react-icons/fi";
 
 const ADMIN_EMAIL =
@@ -65,6 +67,12 @@ export default function LoginPage() {
         } else {
           router.push("/admin/dashboard");
         }
+      } else if ((await getCachedStaffByUid(user.uid))?.accountType === "sub_admin") {
+        const account = await getCachedStaffByUid(user.uid);
+        if (account?.status !== "active") { await auth.signOut(); setError("This account is suspended. Please contact administration."); return; }
+        localStorage.removeItem("isAdmin");
+        const requested = redirectUrl.startsWith("/admin/") && modulesForAdminRoute(redirectUrl).some(key => hasStudioModule(account,key));
+        router.push(requested ? redirectUrl : "/admin/support");
       } else {
         localStorage.removeItem("isAdmin");
         await auth.signOut();

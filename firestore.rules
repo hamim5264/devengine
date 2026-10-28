@@ -102,7 +102,7 @@ service cloud.firestore {
       return chat.participantIds.size() == 2 && request.auth.uid in chat.participantIds &&
         other.uid != request.auth.uid && other.status == 'active' && !other.chatSuspended &&
         (other.role == 'admin' || get(/databases/$(database)/documents/staff_members/$(otherUid)).data.status == 'active') &&
-        (isAdmin() || other.role == 'admin' || studioPerson(request.auth.uid).departmentIds.hasAny(other.departmentIds));
+        (isAdmin() || other.role == 'admin' || other.role == 'support' || studioPerson(request.auth.uid).role == 'support' || studioPerson(request.auth.uid).departmentIds.hasAny(other.departmentIds));
     }
     function canSendChat(chat) {
       return canReadChat(chat) && !chat.deleted &&
@@ -736,6 +736,21 @@ service cloud.firestore {
         request.resource.data.brief is map && request.resource.data.publisher is map &&
         request.resource.data.enabled is bool;
       allow delete: if isAdmin();
+    }
+
+    // Live client delivery: writes are validated in authenticated server routes.
+    // Module access and assignment must both remain valid on every live read.
+    match /project_progress/{id} {
+      allow read: if isAdmin() || (canUseModules(['project_progress']) &&
+        request.auth.uid in resource.data.editorIds &&
+        (!('project_progress' in get(/databases/$(database)/documents/staff_members/$(request.auth.uid)).data.get('allowedSubModules', {})) ||
+         '/admin/project-progress' in get(/databases/$(database)/documents/staff_members/$(request.auth.uid)).data.allowedSubModules.project_progress));
+      allow write: if false;
+      match /activity/{eventId} { allow read: if isAdmin(); allow write: if false; }
+    }
+    match /shared_project_progress/{token} {
+      allow get: if token.matches('^[a-f0-9]{64}$');
+      allow list, write: if false;
     }
 
     // Internal client planning drafts are accessible only to the owner admin.

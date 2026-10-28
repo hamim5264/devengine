@@ -1,124 +1,23 @@
-import { GetServerSideProps } from "next";
-import { getPublishedBlogs, INITIAL_BLOGS } from "@/lib/services/blogService";
-import { getAllAppPolicies } from "@/lib/services/appLegalService";
-
-export const getServerSideProps: GetServerSideProps = async ({ res }) => {
-  const baseUrl = "https://www.devenginehq.com";
-  const staticLastMod = "2026-10-24";
-
-  const staticPages = [
-    { loc: "/home", changefreq: "daily", priority: 1.0, lastmod: staticLastMod },
-    { loc: "/projects", changefreq: "weekly", priority: 0.9, lastmod: staticLastMod },
-    { loc: "/services", changefreq: "weekly", priority: 0.9, lastmod: staticLastMod },
-    { loc: "/blog", changefreq: "daily", priority: 0.9, lastmod: staticLastMod },
-    { loc: "/about", changefreq: "monthly", priority: 0.8, lastmod: staticLastMod },
-    { loc: "/pricing", changefreq: "weekly", priority: 0.8, lastmod: staticLastMod },
-    { loc: "/contact", changefreq: "monthly", priority: 0.8, lastmod: staticLastMod },
-    { loc: "/career", changefreq: "weekly", priority: 0.7, lastmod: staticLastMod },
-    { loc: "/reviews", changefreq: "weekly", priority: 0.7, lastmod: staticLastMod },
-    { loc: "/documentation-and-api-access", changefreq: "monthly", priority: 0.6, lastmod: staticLastMod },
-    { loc: "/terms", changefreq: "yearly", priority: 0.5, lastmod: staticLastMod },
-    { loc: "/privacy-policy", changefreq: "yearly", priority: 0.5, lastmod: staticLastMod },
-    { loc: "/refund-policy", changefreq: "yearly", priority: 0.5, lastmod: staticLastMod },
-    { loc: "/commercial-license", changefreq: "yearly", priority: 0.5, lastmod: staticLastMod },
-    { loc: "/security-protocol", changefreq: "yearly", priority: 0.5, lastmod: staticLastMod },
-  ];
-
-  let rawBlogs: any[] = [];
-  try {
-    const list = await getPublishedBlogs();
-    rawBlogs = list.length ? list : INITIAL_BLOGS.filter((b) => b.isPublished);
-  } catch (err) {
-    console.warn("Could not load blogs for sitemap:", err);
-    rawBlogs = INITIAL_BLOGS.filter((b) => b.isPublished);
-  }
-
-  // Strictly filter out drafts, unpublished, or invalid slugs
-  const validBlogs = rawBlogs.filter(
-    (b) =>
-      b &&
-      b.isPublished !== false &&
-      typeof b.slug === "string" &&
-      b.slug.trim().length > 0
-  );
-
-  let policies: any[] = [];
-  try {
-    policies = await getAllAppPolicies();
-  } catch (err) {
-    console.warn("Could not load app policies for sitemap:", err);
-  }
-
-  const validPolicies = (policies || []).filter(
-    (p) =>
-      p &&
-      p.isPublished !== false &&
-      typeof p.slug === "string" &&
-      p.slug.trim().length > 0
-  );
-
-  const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${staticPages
-  .map(
-    (page) => `  <url>
-    <loc>${baseUrl}${page.loc}</loc>
-    <lastmod>${page.lastmod}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority.toFixed(1)}</priority>
-  </url>`
-  )
-  .join("\n")}
-${validBlogs
-  .map((blog) => {
-    const rawDate = blog.updatedAt || blog.publishedAt || blog.createdAt;
-    let lastMod = "2026-10-21";
-    if (rawDate) {
-      const parsed = new Date(rawDate);
-      if (!isNaN(parsed.getTime())) {
-        lastMod = parsed.toISOString().split("T")[0];
-      }
-    }
-    const cleanSlug = encodeURIComponent(blog.slug.trim());
-    return `  <url>
-    <loc>${baseUrl}/blog/${cleanSlug}</loc>
-    <lastmod>${lastMod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-  })
-  .join("\n")}
-${validPolicies
-  .map((pol) => {
-    const rawPolDate = pol.updatedAt || pol.createdAt;
-    let polLastMod = "2026-10-21";
-    if (rawPolDate) {
-      const parsed = new Date(rawPolDate);
-      if (!isNaN(parsed.getTime())) {
-        polLastMod = parsed.toISOString().split("T")[0];
-      }
-    }
-    const cleanSlug = encodeURIComponent(pol.slug.trim());
-    return `  <url>
-    <loc>${baseUrl}/apps/${cleanSlug}/privacy-policy</loc>
-    <lastmod>${polLastMod}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>`;
-  })
-  .join("\n")}
-</urlset>`;
-
-  res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader("Cache-Control", "public, s-maxage=600, stale-while-revalidate=3600");
-  res.write(sitemapXml);
-  res.end();
-
-  return {
-    props: {},
-  };
+import type {GetServerSideProps} from 'next';
+import {publicContent} from '@/lib/server/public/content';
+import deployment from '@/config/deployment.json';
+const xml=(value:string)=>value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
+const timestamp=(value:unknown)=>{const date=typeof value==='string'?new Date(value):null;return date&&Number.isFinite(date.getTime())?date.toISOString():'';};
+export const getServerSideProps:GetServerSideProps=async({res})=>{
+ try{
+  const [blogs,projects,apps]=await Promise.all([publicContent('blogs','isPublished',true),publicContent('projects'),publicContent('app_policies')]);
+  const urls=new Map<string,{date:string;priority:string}>();
+  for(const path of ['/home','/about','/projects','/services','/blog','/pricing','/contact','/career','/reviews','/documentation-and-api-access','/terms','/privacy-policy','/refund-policy','/commercial-license','/security-protocol','/archive','/launchpad','/app-lab','/lab','/copyright'])urls.set(path,{date:'',priority:path==='/home'?'1.0':'0.7'});
+  const add=(path:string,item:Record<string,any>)=>urls.set(path,{date:timestamp(item.updatedAt||item.publishedAt||item.createdAt),priority:'0.8'});
+  for(const b of blogs)if(b.isPublished===true&&typeof b.slug==='string'&&b.slug.trim())add(`/blog/${encodeURIComponent(b.slug.trim())}`,b);
+  for(const p of projects)if(p.isPublic!==false)add(`/projects/${encodeURIComponent(p.slug||p.id)}`,p);
+  for(const a of apps)if(a.isPublished!==false&&typeof a.slug==='string'&&a.slug.trim())for(const suffix of ['','/privacy-policy','/terms','/data-deletion'])add(`/apps/${encodeURIComponent(a.slug.trim())}${suffix}`,a);
+  const body=`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...urls].map(([path,{date,priority}])=>`<url><loc>${xml(deployment.productionOrigin+path)}</loc>${date?`<lastmod>${date}</lastmod>`:''}<priority>${priority}</priority></url>`).join('\n')}\n</urlset>`;
+  res.setHeader('Content-Type','application/xml; charset=utf-8');res.setHeader('Cache-Control','public, s-maxage=600, stale-while-revalidate=3600');res.end(body);
+ }catch{
+  // Ask crawlers to retry instead of advertising demo URLs or an empty catalog.
+  res.statusCode=503;res.setHeader('Retry-After','60');res.setHeader('Cache-Control','no-store');res.end('Sitemap temporarily unavailable.');
+ }
+ return {props:{}};
 };
-
-export default function Sitemap() {
-  return null;
-}
+export default function Sitemap(){return null;}

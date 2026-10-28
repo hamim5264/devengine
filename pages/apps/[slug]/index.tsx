@@ -1,3 +1,4 @@
+import {appPolicyServerProps} from "@/lib/server/public/content";
 import { AppLegalShell, AppLegalState, AppLegalDocument, AppShowcaseContent, AppLegalIcon, appLegalStyles as s } from "@/components/app-legal/AppLegalUI";
 import HeaderControls from "@/components/HeaderControls";
 import React, { useEffect, useState } from "react";
@@ -9,16 +10,17 @@ import { AppPolicy } from "@/types/appLegal";
 import { getAppPolicyBySlug } from "@/lib/services/appLegalService";
 import HelixLoader from "@/components/HelixLoader";
 
-export default function AppShowcasePage() {
+export default function AppShowcasePage({initialApp}: {initialApp?:AppPolicy|null}) {
   const router = useRouter();
   const { slug } = router.query;
 
-  const [app, setApp] = useState<AppPolicy | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [app, setApp] = useState<AppPolicy | null>(initialApp || null);
+  const [loading, setLoading] = useState(!initialApp);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!router.isReady || !slug) return;
+    if(initialApp?.slug === String(slug)){setApp(initialApp);setLoading(false);return;}
 
     let isMounted = true;
     async function load() {
@@ -43,9 +45,11 @@ export default function AppShowcasePage() {
     return () => {
       isMounted = false;
     };
-  }, [router.isReady, slug]);
+  }, [router.isReady, slug, initialApp]);
 
   if (loading) return <AppLegalState loading />;
   if (notFound || !app) return <AppLegalState title="App unavailable" />;
   return <AppLegalShell app={app} page="showcase"><AppShowcaseContent app={app} /></AppLegalShell>;
 }
+
+export const getServerSideProps=appPolicyServerProps;

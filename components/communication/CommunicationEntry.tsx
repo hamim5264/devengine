@@ -4,12 +4,12 @@ import s from './Communication.module.css';
 const Icon = ({ name }: { name: string }) => <span className="material-symbols-outlined" aria-hidden="true">{name}</span>;
 export function CommunicationHeader() {
   const state = useStudio(); if (!state.uid) return null;
-  const base = state.admin ? '/admin' : '/staff';
+  const base = state.console ? '/admin' : '/staff';
   return <div className={s.headerTools}>{[{ path: 'notifications', label: 'Notifications', icon: 'notifications', count: state.unread }, { path: 'messages', label: 'Messages', icon: 'chat_bubble', count: state.unreadChats }].map(item => <Link key={item.path} href={`${base}/${item.path}`} className={s.headerButton} aria-label={`${item.label}${item.count ? `, ${item.count} unread` : ''}`} title={item.label}><Icon name={item.icon} />{item.count > 0 && <span className={s.counter}>{item.count > 99 ? '99+' : item.count}</span>}</Link>)}</div>;
 }
 export function CommunicationDashboard() {
   const state = useStudio();
-  const base = state.admin ? '/admin' : '/staff';
+  const base = state.console ? '/admin' : '/staff';
   return (
     <div className={s.dashboard}>
       <div className={s.sectionTitle}>

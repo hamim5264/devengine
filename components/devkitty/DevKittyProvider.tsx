@@ -16,6 +16,7 @@ export function useDevKitty() { const value = useContext(Context); if (!value) t
 const greetingMessage = (data: DevKittyBootstrap): DevKittyMessage => ({ id: "greeting", role: "assistant", content: data.greeting, greeting: true });
 export default function DevKittyProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const surface = /^\/(admin|staff|employee)(\/|$)/.test(router.pathname) ? "workspace" : "public";
   const [isOpen, setOpen] = useState(false), [hidden, setHidden] = useState(false);
   const [employeeWelcome, setEmployeeWelcome] = useState<{ uid: string; ready: boolean } | null>(null);
   const setEmployeeWelcomeReady = useCallback((uid: string, ready: boolean) => {
@@ -29,11 +30,11 @@ export default function DevKittyProvider({ children }: { children: ReactNode }) 
     const epoch = ++bootstrapEpoch.current;
     setLoading(true); setError("");
     try {
-      const data = await bootstrapDevKitty(); if (epoch !== bootstrapEpoch.current) return;
+      const data = await bootstrapDevKitty(surface); if (epoch !== bootstrapEpoch.current) return;
       setBootstrap(data); setMessages(current => current.length && !current.every(item => item.greeting) ? current : [greetingMessage(data)]);
     } catch (error) { if (epoch === bootstrapEpoch.current) setError(devKittyError(error)); }
     finally { if (epoch === bootstrapEpoch.current) setLoading(false); }
-  }, []);
+  }, [surface]);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, () => {
       requestEpoch.current++; bootstrapEpoch.current++; pending.current = false;
@@ -73,7 +74,7 @@ export default function DevKittyProvider({ children }: { children: ReactNode }) 
     const epoch = ++requestEpoch.current;
     setSending(true); setError("");
     try {
-      const answer = await sendDevKittyMessage(history);
+      const answer = await sendDevKittyMessage(history,surface);
       if (epoch !== requestEpoch.current) return;
       if (bootstrap && answer.role !== bootstrap.role) { setMessages([]); void reload(); return; }
       setBootstrap(current => current ? { ...current, enabled: !answer.maintenance, ...(!answer.maintenance ? { configured: true } : {}) } : current);

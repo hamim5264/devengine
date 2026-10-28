@@ -3,6 +3,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { GetServerSideProps } from "next";
+import {publicItem} from "@/lib/server/public/content";
 import HelixLoader from "@/components/HelixLoader";
 import { type BlogPost, BLOG_CATEGORY_CONFIG, getBlogCategoryDetails } from "@/types/blog";
 import {
@@ -218,20 +219,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const slug = context.params?.slug as string;
   let initialPost: BlogPost | null = null;
   try {
-    const candidate = await getBlogBySlug(slug);
+    const candidate = await publicItem("blogs",slug) as BlogPost | null;
     if (candidate && candidate.isPublished) {
-      initialPost = candidate;
-    } else {
-      const fallback = INITIAL_BLOGS.find((item) => item.slug === slug && item.isPublished);
-      if (fallback) {
-        initialPost = enrichBlogWithContextualLinks({
-          ...fallback,
-          id: `seed-${fallback.slug}`,
-        } as BlogPost);
-      }
+      initialPost = enrichBlogWithContextualLinks(candidate);
     }
   } catch (err) {
-    console.error("Error in blog getServerSideProps:", err);
+    context.res.statusCode=503;
+    context.res.setHeader("Cache-Control","no-store");
+    context.res.setHeader("Retry-After","60");
+    return {props:{initialPost:null}};
   }
 
   if (!initialPost) {

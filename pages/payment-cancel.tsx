@@ -8,6 +8,7 @@ export default function PaymentCancel() {
     <>
       <Head>
         <title>Payment Canceled | DevEngine</title>
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
 
       <Navbar />

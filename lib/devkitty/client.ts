@@ -2,11 +2,11 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "@/lib/firebase";
 import type { DevKittyBootstrap, DevKittyMessage, DevKittyAnswer, DevKittyAdminState, DevKittyModel, DevKittyInsights } from "@/types/devkitty";
 function callable<Request, Response>(name: string) { return httpsCallable<Request, Response>(getFunctions(app, "us-central1"), name, { timeout: 125000 }); }
-export async function bootstrapDevKitty() { return (await callable<Record<string, never>, DevKittyBootstrap>("devkittyBootstrap")({})).data; }
-export async function sendDevKittyMessage(messages: DevKittyMessage[]) {
+export async function bootstrapDevKitty(surface: "public" | "workspace" = "workspace") { return (await callable<{surface:string}, DevKittyBootstrap>("devkittyBootstrap")({surface})).data; }
+export async function sendDevKittyMessage(messages: DevKittyMessage[], surface: "public" | "workspace" = "workspace") {
   const history = messages.filter(message => !message.greeting).slice(-16).map(({ role, content }) => ({ role, content }));
   while (history.length > 1 && history.reduce((total, item) => total + item.content.length, 0) > 28000) history.shift();
-  return (await callable<{ messages: typeof history }, DevKittyAnswer>("devkittyChat")({ messages: history })).data;
+  return (await callable<{ messages: typeof history; surface:string }, DevKittyAnswer>("devkittyChat")({ messages: history, surface })).data;
 }
 export async function readDevKittyAdmin() { return (await callable<{ action: string }, DevKittyAdminState>("devkittyAdmin")({ action: "read" })).data; }
 export async function readDevKittyInsights() { return (await callable<{ action: string }, DevKittyInsights>("devkittyAdmin")({ action: "insights" })).data; }

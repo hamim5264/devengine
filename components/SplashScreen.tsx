@@ -5,6 +5,7 @@ import NetworkTopologyBody from "@/components/network/NetworkTopologyBody";
 import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
 import styles from "./SplashScreen.module.css";
+import {subscribeLatestRelease} from "@/lib/services/updateLogsService";
 import SystemShowcase from "@/components/system/SystemShowcase";
 
 interface SplashScreenProps {
@@ -19,6 +20,8 @@ const TABS = [
 
 export default function SplashScreen({ onEnterConsole }: SplashScreenProps) {
   const { theme } = useTheme();
+  const [release,setRelease]=useState("");
+  useEffect(()=>subscribeLatestRelease(setRelease),[]);
   const [percent, setPercent] = useState(0);
   const [statusText, setStatusText] = useState("SYSTEM INITIALIZING");
   const [splashState, setSplashState] = useState<"loading" | "exiting" | "ready">("loading");
@@ -87,7 +90,7 @@ export default function SplashScreen({ onEnterConsole }: SplashScreenProps) {
             <span className={styles.accent}>CORE / </span>
             <span className={`${styles.highlight} font-semibold`}>ACTIVE</span>
             <br />
-            <span className={styles.muted}>V 4.0.2</span>
+            <span className={styles.muted}>{release || "RELEASE / SYNCING"}</span>
           </div>
 
           <div className="absolute bottom-5 sm:bottom-10 left-5 sm:left-12 right-5 sm:right-12 flex flex-col min-[640px]:flex-row justify-between gap-4 font-jetbrains text-xs sm:text-sm tracking-wide sm:tracking-wider">

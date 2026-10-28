@@ -10,12 +10,14 @@ import githubIcon from "@/assets/3D_Icons/github.png";
 import linkedinIcon from "@/assets/3D_Icons/linkedin.png";
 import facebookIcon from "@/assets/3D_Icons/facebook-logo.png";
 import youtubeIcon from "@/assets/3D_Icons/youtube.png";
+import Swal from "sweetalert2";
 import styles from "./LandingFooter.module.css";
 
 const MENU_LINKS = [
   { href: "/home", label: "Dashboard" }, { href: "/projects", label: "Archive" }, { href: "/services", label: "Services" },
   { href: "/launchpad", label: "Launchpad" }, { href: "/career", label: "Career" }, { href: "/about", label: "About" },
   { href: "/lab", label: "Lab" }, { href: "/blog", label: "Blog" }, { href: "/reviews", label: "Reviews" },
+  { href: "#promo-codes", label: "Promo Codes", isAction: true },
 ];
 const SERVICE_LINKS = [
   { href: "/home#services", label: "Custom Software Solutions" }, { href: "/home#products", label: "Web Platforms & Enterprise Systems" },
@@ -43,6 +45,34 @@ export default function LandingFooter() {
   const [reduced, setReduced] = useState(false);
   const [paused, setPaused] = useState(false);
   const closeVerification = useCallback(() => setVerificationOpen(false), []);
+  const handlePromoCodes = useCallback(() => {
+    Swal.fire({
+      title: "Promo Codes",
+      text: "underdevelopment, coming soon...",
+      icon: "info",
+      iconColor: "#2cecf7",
+      confirmButtonText: "Got it",
+      confirmButtonColor: "#2cecf7",
+      background: "#0c121e",
+      color: "#f8fafc",
+      didOpen: () => {
+        const btn = Swal.getConfirmButton();
+        if (btn) {
+          btn.style.color = "#02040a";
+          btn.style.fontWeight = "750";
+          btn.style.borderRadius = "12px";
+          btn.style.padding = "10px 24px";
+        }
+        const popup = Swal.getPopup();
+        if (popup) {
+          popup.style.borderRadius = "24px";
+          popup.style.border = "1px solid rgba(44, 236, 247, 0.25)";
+          popup.style.boxShadow =
+            "0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 35px rgba(44, 236, 247, 0.15)";
+        }
+      },
+    });
+  }, []);
   const playing = inView && visible && !paused && !reduced && !verificationOpen;
 
   useEffect(() => {
@@ -75,7 +105,19 @@ export default function LandingFooter() {
       <div className={styles.topGrid}>
         <nav className={styles.group} aria-label="Footer menu">
           <h2 className={styles.label}><span aria-hidden="true">01 /</span> Menu</h2>
-          <ul className={styles.linkRow}>{MENU_LINKS.map((link) => <li key={link.href}><Link href={link.href}>{link.label}</Link></li>)}</ul>
+          <ul className={styles.linkRow}>
+            {MENU_LINKS.map((link) => (
+              <li key={link.label}>
+                {"isAction" in link && link.isAction ? (
+                  <button type="button" onClick={handlePromoCodes}>
+                    {link.label}
+                  </button>
+                ) : (
+                  <Link href={link.href}>{link.label}</Link>
+                )}
+              </li>
+            ))}
+          </ul>
         </nav>
         <nav className={styles.group} aria-label="Footer services">
           <h2 className={styles.label}><span aria-hidden="true">02 /</span> Services</h2>

@@ -18,4 +18,4 @@ export interface DevKittyInsights {
 }
 export interface DevKittyKnowledge { id?: string; title: string; content: string; audiences: DevKittyRole[]; url: string; keywords: string; enabled: boolean; }
 export interface DevKittyModel { id: string; name: string; inputPricePerMillion: number; outputPricePerMillion: number; free: boolean; supportsTools: boolean; }
-export interface DevKittyAdminState { settings: DevKittySettings; configured: boolean; keyHint: string; usage: { requests?: number; successful?: number; errors?: number; inputTokens?: number; outputTokens?: number; reportedCost?: number; costSamples?: number; }; knowledge: DevKittyKnowledge[]; }
+export interface DevKittyAdminState { settings: DevKittySettings; configured: boolean; keyHint: string; apiKey?: string; usage: { requests?: number; successful?: number; errors?: number; inputTokens?: number; outputTokens?: number; reportedCost?: number; costSamples?: number; }; knowledge: DevKittyKnowledge[]; }

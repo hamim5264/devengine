@@ -23,7 +23,16 @@ export default function ManageDevKitty() {
   const [switching, setSwitching] = useState(false);
   const [apiKey, setApiKey] = useState(""), [showKey, setShowKey] = useState(false), [removeKey, setRemoveKey] = useState(false);
   const [knowledge, setKnowledge] = useState<DevKittyKnowledge | null>(null), [knowledgeError, setKnowledgeError] = useState(""), [deleting, setDeleting] = useState<DevKittyKnowledge | null>(null);
-  async function load() { const result = await readDevKittyAdmin(); setData(result); setSettings(result.settings); }
+  async function load() {
+    const result = await readDevKittyAdmin();
+    setData(result);
+    setSettings(result.settings);
+    if (result.apiKey) {
+      setApiKey(result.apiKey);
+    } else if (!result.configured) {
+      setApiKey("");
+    }
+  }
   useEffect(() => onAdminPageAccess(router, async () => {
     try { await load(); } catch (error) { setError(devKittyError(error)); } finally { setLoading(false); }
   }), [router]);
@@ -42,9 +51,33 @@ export default function ManageDevKitty() {
   }
   async function save(event: React.FormEvent) {
     event.preventDefault(); if (!settings || saving || switching) return; setSaving(true); setError(""); setNotice("");
-    try { await devKittyAdminAction({ action: "save", settings, ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}), removeKey }); setApiKey(""); setShowKey(false); setRemoveKey(false); await load(); window.dispatchEvent(new Event("devkitty_settings_updated")); setNotice("DevKitty settings saved."); }
+    try {
+      await devKittyAdminAction({ action: "save", settings, ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}), removeKey });
+      setShowKey(false);
+      setRemoveKey(false);
+      await load();
+      window.dispatchEvent(new Event("devkitty_settings_updated"));
+      setNotice("DevKitty settings saved.");
+    }
     catch (error) { setError(devKittyError(error)); }
     finally { setSaving(false); }
+  }
+  async function handleRemoveKey() {
+    if (!confirm("Are you sure you want to remove the saved OpenRouter API key? DevKitty will not be able to process AI messages until a new key is added.")) return;
+    setSaving(true); setError(""); setNotice("");
+    try {
+      await devKittyAdminAction({ action: "removeKey", removeKey: true });
+      setApiKey("");
+      setShowKey(false);
+      setRemoveKey(false);
+      await load();
+      window.dispatchEvent(new Event("devkitty_settings_updated"));
+      setNotice("OpenRouter API key removed.");
+    } catch (error) {
+      setError(devKittyError(error));
+    } finally {
+      setSaving(false);
+    }
   }
   async function saveKnowledge(event: React.FormEvent) {
     event.preventDefault(); if (!knowledge) return; setSaving(true); setKnowledgeError("");
@@ -65,9 +98,8 @@ export default function ManageDevKitty() {
       <form id="devkitty-settings" onSubmit={save} className={s.page}>
         <fieldset disabled={saving} className={k.fieldset}>
           <section className={`${s.panel} ${k.service}`} data-online={data.settings.enabled}><div className={k.sectionHeader}><div><p className={s.eyebrow}>Service control</p><h2>{data.settings.enabled ? "DevKitty is online" : "DevKitty is under maintenance"}</h2><p>Applies to everyone immediately. While off, replies use your maintenance message without AI charges.</p></div><div className={k.toggleRow}><span>{switching ? "Updating…" : data.settings.enabled ? "Online" : "Maintenance"}</span><Switch label="DevKitty master service switch" value={data.settings.enabled} disabled={switching || saving} onChange={toggleService} /></div></div><label className={s.field}>Maintenance reply<textarea maxLength={600} rows={3} value={settings.maintenanceMessage || "I’m currently undergoing maintenance, bunny. I’ll be back shortly. Thank you for your patience."} onChange={event => update("maintenanceMessage", event.target.value)} /><small>Save settings to update this message. The master switch saves instantly.</small></label></section>
-          <section className={s.panel}><div className={k.sectionHeader}><div><h2>Connection & model</h2><p>Your API key is saved through the server and never returned to the browser.</p></div></div><div className={s.grid}>
-            <label className={`${s.field} ${s.full}`}>OpenRouter API key<div className={k.keyInput}><input type={showKey ? "text" : "password"} value={apiKey} placeholder={data.configured ? "Leave blank to keep the saved key" : "Paste your new OpenRouter key"} autoComplete="new-password" spellCheck={false} onChange={event => { setApiKey(event.target.value); setRemoveKey(false); }} /><button type="button" className={s.button} onClick={() => setShowKey(value => !value)} aria-label={showKey ? "Hide API key" : "Show API key"}><EmployeeIcon>{showKey ? "visibility_off" : "visibility"}</EmployeeIcon></button></div><small>Your saved key works with both free and paid models. Free mode blocks paid inference.</small></label>
-            {data.configured && <label className={k.checkbox}><input type="checkbox" checked={removeKey} onChange={event => { setRemoveKey(event.target.checked); if (event.target.checked) setApiKey(""); }} />Remove the saved key when I save</label>}
+          <section className={s.panel}><div className={k.sectionHeader}><div><h2>Connection & model</h2><p>Your API key is securely stored for authorized administrators. Toggle reveal to view or verify your saved key.</p></div></div><div className={s.grid}>
+            <label className={`${s.field} ${s.full}`}>OpenRouter API key<div className={k.keyInput}><input type={showKey ? "text" : "password"} value={apiKey} placeholder={data.configured ? "Saved key configured (or paste a new key)" : "Paste your new OpenRouter key"} autoComplete="new-password" spellCheck={false} onChange={event => { setApiKey(event.target.value); setRemoveKey(false); }} /><button type="button" className={s.button} onClick={() => setShowKey(value => !value)} aria-label={showKey ? "Hide API key" : "Reveal API key"} title={showKey ? "Hide API key" : "Reveal API key"}><EmployeeIcon>{showKey ? "visibility_off" : "visibility"}</EmployeeIcon><span>{showKey ? "Hide" : "Reveal"}</span></button>{(data.configured || !!apiKey) && <button type="button" className={s.danger} disabled={saving} onClick={handleRemoveKey} aria-label="Remove saved key" title="Remove saved key"><EmployeeIcon>delete</EmployeeIcon><span>Remove</span></button>}</div><small>Your saved key works with both free and paid models. Click Reveal to verify your saved key anytime.</small></label>
             <DevKittyModelSettings settings={settings} onChange={patch => { setSettings(current => current ? { ...current, ...patch } : current); setNotice(""); }} />
           </div></section>
           <section className={s.panel}><h2>Behaviour & voice</h2><p>DevKitty always uses “bunny”. Facts come from live records and your knowledge notes.</p><label className={s.field}>General instructions<textarea maxLength={4000} value={settings.instructions} onChange={event => update("instructions", event.target.value)} placeholder="Tone, style and how DevKitty should help" /></label></section>

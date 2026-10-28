@@ -46,7 +46,8 @@ exports.devkittyAdmin=onCall(OPTIONS,async request=>{
   const actor=await requireAdmin(request,db()); const action=request.data?.action || 'read';
   if(action==='read') {
     const [settings,key,usage,knowledge]=await Promise.all([readSettings(db()),privateRef(db()).get(),db().doc(`devkitty_usage/${dayKey()}`).get(),db().collection('devkitty_knowledge').limit(200).get()]);
-    return {settings,configured:!!(key.data()?.apiKey || process.env.OPENROUTER_API_KEY),keyHint:key.data()?.keyHint || '',usage:usage.data() || {},knowledge:knowledge.docs.map(snapshot=>({...snapshot.data(),id:snapshot.id}))};
+    const savedKey = key.data()?.apiKey || '';
+    return {settings,configured:!!(savedKey || process.env.OPENROUTER_API_KEY),keyHint:key.data()?.keyHint || (savedKey ? `••••${savedKey.slice(-4)}` : ''),apiKey:savedKey,usage:usage.data() || {},knowledge:knowledge.docs.map(snapshot=>({...snapshot.data(),id:snapshot.id}))};
   }
   if(action==='models') return {models:await modelCatalog()};
   if(action==='insights') {
@@ -66,9 +67,16 @@ exports.devkittyAdmin=onCall(OPTIONS,async request=>{
     if(key) await validateKey(key);
     const batch=db().batch();
     batch.set(settingsRef(db()),{...settings,updatedAt:new Date().toISOString(),updatedBy:actor.uid});
-    if(key) batch.set(privateRef(db()),{apiKey:key,keyHint:`••••${key.slice(-4)}`,updatedAt:new Date().toISOString(),updatedBy:actor.uid});
-    if(request.data.removeKey===true) batch.delete(privateRef(db()));
+    if(request.data.removeKey===true) {
+      batch.delete(privateRef(db()));
+    } else if(key) {
+      batch.set(privateRef(db()),{apiKey:key,keyHint:`••••${key.slice(-4)}`,updatedAt:new Date().toISOString(),updatedBy:actor.uid});
+    }
     await batch.commit();return {saved:true};
+  }
+  if(action==='removeKey') {
+    await privateRef(db()).delete();
+    return {saved:true,removed:true};
   }
   if(action==='saveKnowledge') {
     const item=request.data.item || {};

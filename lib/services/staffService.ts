@@ -126,6 +126,7 @@ export async function createStaffAccount(data: {
     password: data.password, // Persisted for admin visibility, edit and recovery
     avatarUrl: data.avatarUrl || "",
     staffType: data.staffType,
+    accountType: "employee",
     allowedModules: data.allowedModules,
     allowedSubModules: data.allowedSubModules || {},
     apposAccess: data.apposAccess || { registry: [], apps: {} },
@@ -174,7 +175,9 @@ export async function getStaffMembers(): Promise<StaffMember[]> {
     const colRef = collection(db, STAFF_COLLECTION);
     const q = query(colRef, orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ ...d.data(), id: d.id } as StaffMember));
+    return snap.docs
+      .map((d) => ({ ...d.data(), id: d.id } as StaffMember))
+      .filter((s) => s.accountType !== "sub_admin");
   } catch {
     return [];
   }
@@ -269,7 +272,9 @@ export function subscribeStaffMembers(callback: (staff: StaffMember[]) => void):
   return onSnapshot(
     q,
     (snap) => {
-      const list = snap.docs.map((d) => ({ ...d.data(), id: d.id } as StaffMember));
+      const list = snap.docs
+        .map((d) => ({ ...d.data(), id: d.id } as StaffMember))
+        .filter((s) => s.accountType !== "sub_admin");
       callback(list);
     },
     (err) => {

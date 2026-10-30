@@ -3,7 +3,7 @@ import AdminOverlay from "@/components/admin/AdminOverlay";
 import {AdminSelect,AdminDateInput} from "@/components/admin/AdminFormControls";
 import type {AdminTask,AdminTaskInput,TaskSettings} from "@/types/adminTasks";
 import s from "./TaskManager.module.css";
-export const emptyTask=():AdminTaskInput=>({title:"",description:"",status:"todo",priority:"medium",localStart:"",localDue:"",timezone:"Asia/Dhaka",category:"",project:"",tags:[],subtasks:[],assigneeUid:"",links:[],notes:"",reminderMinutes:[1440,60],calendarEnabled:false,emailEnabled:false});
+export const emptyTask=():AdminTaskInput=>({title:"",description:"",status:"todo",priority:"medium",localStart:"",localDue:"",timezone:"Asia/Dhaka",category:"",project:"",tags:[],subtasks:[],assigneeUid:"",links:[],notes:"",reminderMinutes:[1440,60],calendarEnabled:true,emailEnabled:true});
 const editable=(task:AdminTask):AdminTaskInput=>Object.fromEntries(Object.keys(emptyTask()).map(key=>[key,task[key as keyof AdminTask]])) as unknown as AdminTaskInput;
 const reminderLabel=(minutes:number)=>minutes%1440===0?`${minutes/1440} ${minutes===1440?"day":"days"} before`:minutes%60===0?`${minutes/60} ${minutes===60?"hour":"hours"} before`:`${minutes} minutes before`;
 export const STATUS_OPTIONS = [

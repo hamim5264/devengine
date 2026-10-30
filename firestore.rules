@@ -53,6 +53,16 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // ── RECYCLE BIN & RECOVERY ──
+    match /recycle_bin/{id} {
+      allow read: if canUseModules(['system']) || isAdmin();
+      allow create: if isAdmin() || canArchiveCollection(request.resource.data.originalCollection);
+      allow update, delete: if canUseModules(['system']) || isAdmin();
+    }
+    match /recycle_restore_intents/{uid} {
+      allow read, write: if isSignedIn() && (canUseModules(['system']) || isAdmin());
+    }
+
     // DevKitty is served only through callable functions, which verify roles on every request.
     // Provider keys, rate-limit state, knowledge audiences and settings cannot be read or forged by clients.
     match /devkitty_private/{id} { allow read, write: if false; }

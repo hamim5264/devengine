@@ -31,7 +31,7 @@ export default function AdminProfilePage() {
     finally { setBusy(false); }
   }
   return <AdminLayout title="My Profile | DevEngine"><div className={s.page}>
-    <div className={s.header}><div><p className={s.eyebrow}>Your studio identity</p><h1>My profile.</h1><p>Your name and photo appear in conversations, the team directory and public founder profile.</p></div></div>
+    <div className={s.header}><div><p className={s.eyebrow}>Your studio identity</p><h1>My profile.</h1><p>Your name and photo appear in conversations, the team directory and administrator console.</p></div></div>
     {error && <div role="alert" className={s.notice} data-error>{error}</div>}
     {ready ? <form onSubmit={save} className={s.profile}>
       <aside className={`${s.panel} ${s.avatarPanel}`}><div className={s.avatar}>{profile.avatarUrl && !broken ? <img src={profile.avatarUrl} alt="Profile preview" onError={() => setBroken(true)} /> : <span className="material-symbols-outlined">person</span>}</div><h2>{profile.name || "Administrator"}</h2><p>{profile.title}</p><label className={s.button}>{uploading ? "Uploading…" : "Upload photo"}<input type="file" accept="image/png,image/jpeg,image/webp" hidden disabled={busy || uploading} onChange={event => { void upload(event.target.files?.[0]); event.target.value = ""; }} /></label><button type="button" className={s.button} disabled={busy || uploading} onClick={() => change("avatarUrl", "")}>Remove photo</button><p>JPG, PNG or WebP · up to 10 MB</p></aside>

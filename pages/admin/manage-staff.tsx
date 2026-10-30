@@ -888,11 +888,12 @@ export default function ManageStaffPage() {
 
     // Live subscription: admin gets instant real-time updates when an employee updates profile
     const unsubscribe = subscribeStaffMembers((liveStaff) => {
-      setStaff(liveStaff);
+      const employeesOnly = liveStaff.filter((s) => s.accountType !== "sub_admin");
+      setStaff(employeesOnly);
       setLoading(false);
       setSelectedDetailStaff((prev) => {
         if (!prev) return null;
-        const fresh = liveStaff.find((s) => s.id === prev.id || s.uid === prev.uid);
+        const fresh = employeesOnly.find((s) => s.id === prev.id || s.uid === prev.uid);
         return fresh || prev;
       });
     });

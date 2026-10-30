@@ -13,8 +13,25 @@ export interface ShowcaseCard {
   tall?: boolean;
 }
 
-/** Collects every visual already managed in the admin landing config into the orbiting ring. */
+/** Collects every visual managed dynamically in the admin landing config into the orbiting ring. */
 export function buildHeroShowcase(config: LandingConfig): ShowcaseCard[] {
+  // If the admin has configured dynamic showcase images, use them directly
+  if (Array.isArray(config.hero?.showcaseImages) && config.hero.showcaseImages.length > 0) {
+    const valid = config.hero.showcaseImages
+      .filter((img) => img && typeof img.imageUrl === "string" && img.imageUrl.trim().length > 0)
+      .map((img) => ({
+        src: img.imageUrl.trim(),
+        alt: img.title || "DevEngine Showcase",
+        label: img.title || "Showcase",
+        href: img.link?.trim() || undefined,
+        tall: !!img.isTall,
+      }));
+    if (valid.length > 0) {
+      return valid;
+    }
+  }
+
+  // Fallback to automatic aggregation across landing sections
   const cards: ShowcaseCard[] = [];
   const seen = new Set<string>();
   const add = (card: ShowcaseCard) => {
@@ -30,11 +47,11 @@ export function buildHeroShowcase(config: LandingConfig): ShowcaseCard[] {
   add({ src: config.mobile.phone1ImageUrl, alt: "Mobile application preview", label: "Native Apps", tall: true });
   config.customSolutions.cards.forEach((card) => add({ src: card.imageUrl || "", alt: card.title, label: card.title }));
   add({ src: config.mobile.phone2ImageUrl, alt: "Second mobile application preview", label: "Cross-platform", tall: true });
-  return cards.slice(0, 9);
+  return cards;
 }
 
 const TAU = Math.PI * 2;
-const TILTS = [-5, 3, -2, 4, -4, 2, -3, 5, -1];
+const TILTS = [-5, 3, -2, 4, -4, 2, -3, 5, -1, 4, -3, 2, -5, 3, -2, 5, -4, 1];
 const easeOut = (value: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, value)), 3);
 
 /** Counts the first number inside a stat (e.g. "99.9%" → 0 … 99.9%) once, after the hero intro. */
@@ -71,6 +88,10 @@ export default function HeroSection({ config, showcase = [] }: { config: HeroCon
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const cards = useMemo(() => showcase.filter((card) => card.src), [showcase]);
+  const cardsKey = useMemo(
+    () => cards.map((c, i) => `${i}_${c.src}_${c.tall}_${c.label}`).join(";"),
+    [cards]
+  );
   const titleWords = config.title.split(/\s+/).filter(Boolean);
   const highlightWords = config.titleHighlight.split(/\s+/).filter(Boolean);
 
@@ -104,7 +125,7 @@ export default function HeroSection({ config, showcase = [] }: { config: HeroCon
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(heroW * dpr);
       canvas.height = Math.round(heroH * dpr);
-      limit = heroW < 780 ? Math.min(6, nodes.length) : nodes.length;
+      limit = heroW < 780 ? Math.min(8, nodes.length) : nodes.length;
       sizes = nodes.map((node) => ({ w: node.offsetWidth, h: node.offsetHeight }));
     };
 
@@ -221,7 +242,7 @@ export default function HeroSection({ config, showcase = [] }: { config: HeroCon
       stage.removeEventListener("pointerout", onOut);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [cards.length, reduceMotion]);
+  }, [cardsKey, reduceMotion]);
 
   const scrollToContact = (event: MouseEvent<HTMLAnchorElement>) => {
     const contact = document.getElementById("contact");
@@ -251,15 +272,54 @@ export default function HeroSection({ config, showcase = [] }: { config: HeroCon
         {cards.map((card, index) => {
           const media = (
             <>
-              <img src={card.src} alt={card.alt} className={styles.orbitMedia} draggable={false} decoding="async" fetchPriority={index < 3 ? "high" : "auto"} />
-              <span className={styles.orbitCaption} aria-hidden="true"><span>{card.label}</span><span>↗</span></span>
+              <img
+                src={card.src}
+                alt={card.alt}
+                className={styles.orbitMedia}
+                draggable={false}
+                decoding="async"
+                fetchPriority={index < 3 ? "high" : "auto"}
+              />
+              <span className={styles.orbitCaption} aria-hidden="true">
+                <span>{card.label}</span>
+                <span>↗</span>
+              </span>
             </>
           );
+          const isExternal =
+            card.href &&
+            (card.href.startsWith("http://") || card.href.startsWith("https://"));
+
           return (
-            <div key={`${card.src}-${index}`} className={styles.orbitCard} data-orbit-card data-tall={card.tall ? "1" : undefined}>
-              {card.href
-                ? <Link href={card.href} className={styles.orbitInner} aria-label={`Explore ${card.label}`}>{media}</Link>
-                : <div className={styles.orbitInner}>{media}</div>}
+            <div
+              key={`${card.src}-${index}`}
+              className={styles.orbitCard}
+              data-orbit-card
+              data-tall={card.tall ? "1" : undefined}
+            >
+              {card.href ? (
+                isExternal ? (
+                  <a
+                    href={card.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.orbitInner}
+                    aria-label={`Explore ${card.label}`}
+                  >
+                    {media}
+                  </a>
+                ) : (
+                  <Link
+                    href={card.href}
+                    className={styles.orbitInner}
+                    aria-label={`Explore ${card.label}`}
+                  >
+                    {media}
+                  </Link>
+                )
+              ) : (
+                <div className={styles.orbitInner}>{media}</div>
+              )}
             </div>
           );
         })}

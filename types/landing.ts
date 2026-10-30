@@ -1,3 +1,11 @@
+export interface HeroShowcaseImage {
+  id: string;
+  imageUrl: string;
+  title: string;
+  link?: string;
+  isTall?: boolean;
+}
+
 export interface HeroConfig {
   badgeText: string;
   title: string;
@@ -10,6 +18,7 @@ export interface HeroConfig {
   desktopImageUrl: string;
   tabletImageUrl: string;
   mobileImageUrl: string;
+  showcaseImages?: HeroShowcaseImage[];
 }
 
 export interface IntroConfig {

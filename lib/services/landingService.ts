@@ -12,6 +12,7 @@ import { db, storage } from "@/lib/firebase";
 import {
   LandingConfig,
   HeroConfig,
+  HeroShowcaseImage,
   IntroConfig,
   TechStackConfig,
   MobileConfig,
@@ -26,6 +27,73 @@ import {
 } from "@/types/landing";
 
 const COLLECTION_NAME = "landing_sections";
+
+export const DEFAULT_HERO_SHOWCASE_IMAGES: HeroShowcaseImage[] = [
+  {
+    id: "showcase-1",
+    imageUrl:
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
+    title: "Web Platforms",
+    link: "#products",
+    isTall: false,
+  },
+  {
+    id: "showcase-2",
+    imageUrl:
+      "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80",
+    title: "Mobile Ecosystem",
+    link: "#contact",
+    isTall: true,
+  },
+  {
+    id: "showcase-3",
+    imageUrl:
+      "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=1000&q=80",
+    title: "Enterprise ERP",
+    link: "#products",
+    isTall: false,
+  },
+  {
+    id: "showcase-4",
+    imageUrl:
+      "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?auto=format&fit=crop&w=600&q=80",
+    title: "FinTech App",
+    link: "#contact",
+    isTall: true,
+  },
+  {
+    id: "showcase-5",
+    imageUrl:
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80",
+    title: "Cloud Command",
+    link: "#products",
+    isTall: false,
+  },
+  {
+    id: "showcase-6",
+    imageUrl:
+      "https://images.unsplash.com/photo-1526470608268-f674ce90ebd4?auto=format&fit=crop&w=600&q=80",
+    title: "Health & Wellness",
+    link: "#contact",
+    isTall: true,
+  },
+  {
+    id: "showcase-7",
+    imageUrl:
+      "https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1000&q=80",
+    title: "AI Platform",
+    link: "#products",
+    isTall: false,
+  },
+  {
+    id: "showcase-8",
+    imageUrl:
+      "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
+    title: "Tablet Experience",
+    link: "#contact",
+    isTall: false,
+  },
+];
 
 export const DEFAULT_LANDING_CONFIG: LandingConfig = {
   hero: {
@@ -44,6 +112,7 @@ export const DEFAULT_LANDING_CONFIG: LandingConfig = {
       "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
     mobileImageUrl:
       "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80",
+    showcaseImages: DEFAULT_HERO_SHOWCASE_IMAGES,
   },
   intro: {
     headingPrefix: "We Don't Sell Apps.",
@@ -220,8 +289,17 @@ export async function getLandingConfig(): Promise<LandingConfig> {
       }
     });
 
+    const rawHero = (config.hero || DEFAULT_LANDING_CONFIG.hero) as HeroConfig;
+    const heroWithImages: HeroConfig = {
+      ...DEFAULT_LANDING_CONFIG.hero,
+      ...rawHero,
+      showcaseImages: Array.isArray(rawHero.showcaseImages)
+        ? rawHero.showcaseImages
+        : DEFAULT_HERO_SHOWCASE_IMAGES,
+    };
+
     return {
-      hero: config.hero || DEFAULT_LANDING_CONFIG.hero,
+      hero: heroWithImages,
       intro: config.intro || DEFAULT_LANDING_CONFIG.intro,
       techStack: config.techStack || DEFAULT_LANDING_CONFIG.techStack,
       mobile: config.mobile || DEFAULT_LANDING_CONFIG.mobile,

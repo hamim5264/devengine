@@ -9,6 +9,7 @@ import HelixLoader from "@/components/HelixLoader";
 import {
   LandingConfig,
   HeroConfig,
+  HeroShowcaseImage,
   IntroConfig,
   TechStackConfig,
   MobileConfig,
@@ -27,6 +28,7 @@ import {
   uploadLandingImage,
   seedDefaultLandingConfig,
   DEFAULT_LANDING_CONFIG,
+  DEFAULT_HERO_SHOWCASE_IMAGES,
 } from "@/lib/services/landingService";
 
 const ADMIN_EMAIL =
@@ -123,6 +125,83 @@ export default function ManageLandingPage() {
     } finally {
       setUploadingImage(null);
     }
+  };
+
+  // Orbit Showcase Images Handlers
+  const handleAddOrbitImage = () => {
+    const currentImages = config.hero.showcaseImages || [];
+    const newImage: HeroShowcaseImage = {
+      id: `showcase_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      imageUrl: "",
+      title: `Showcase #${currentImages.length + 1}`,
+      link: "#products",
+      isTall: false,
+    };
+    setConfig({
+      ...config,
+      hero: {
+        ...config.hero,
+        showcaseImages: [...currentImages, newImage],
+      },
+    });
+  };
+
+  const handleUpdateOrbitImage = (idx: number, patch: Partial<HeroShowcaseImage>) => {
+    const current = [...(config.hero.showcaseImages || [])];
+    if (!current[idx]) return;
+    current[idx] = { ...current[idx], ...patch };
+    setConfig({
+      ...config,
+      hero: {
+        ...config.hero,
+        showcaseImages: current,
+      },
+    });
+  };
+
+  const handleRemoveOrbitImage = (idx: number) => {
+    const current = [...(config.hero.showcaseImages || [])];
+    current.splice(idx, 1);
+    setConfig({
+      ...config,
+      hero: {
+        ...config.hero,
+        showcaseImages: current,
+      },
+    });
+  };
+
+  const handleMoveOrbitImage = (idx: number, direction: "up" | "down") => {
+    const current = [...(config.hero.showcaseImages || [])];
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= current.length) return;
+    const temp = current[idx];
+    current[idx] = current[targetIdx];
+    current[targetIdx] = temp;
+    setConfig({
+      ...config,
+      hero: {
+        ...config.hero,
+        showcaseImages: current,
+      },
+    });
+  };
+
+  const handleResetOrbitImages = () => {
+    if (
+      !confirm(
+        "Reset all moving orbit images to the recommended default showcase set?"
+      )
+    ) {
+      return;
+    }
+    setConfig({
+      ...config,
+      hero: {
+        ...config.hero,
+        showcaseImages: [...DEFAULT_HERO_SHOWCASE_IMAGES],
+      },
+    });
   };
 
   // Seed default configuration
@@ -223,7 +302,7 @@ export default function ManageLandingPage() {
           {/* Tab Navigation */}
           <div className="flex gap-2 overflow-x-auto pb-3 mb-8 border-b border-white/10 scrollbar-none">
             {[
-              { id: "hero", label: "1. Hero (3D Frames)" },
+              { id: "hero", label: "1. Hero & Orbit Images" },
               { id: "intro", label: "2. Intro" },
               { id: "techStack", label: "3. Tech Stack" },
               { id: "mobile", label: "4. Native Mobile" },
@@ -408,11 +487,277 @@ export default function ManageLandingPage() {
                   </div>
                 </div>
 
-                {/* 3D Device Frames Image Uploaders */}
+                {/* MOVING ORBIT SHOWCASE IMAGES (TOP HERO MOVING MOCKUPS) */}
                 <div className="border-t border-white/10 pt-6 space-y-6">
-                  <h3 className="font-space-grotesk text-lg font-bold text-white">
-                    3D Perspective Device Mockup Images
-                  </h3>
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-[#2cecf7]/5 border border-[#2cecf7]/20 p-4 sm:p-5 rounded-2xl">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[#2cecf7] text-xl">
+                          motion_photos_on
+                        </span>
+                        <h3 className="font-space-grotesk text-lg font-bold text-white">
+                          Moving Orbit Showcase Images
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-jetbrains font-bold uppercase tracking-wider bg-[#2cecf7] text-[#02040A]">
+                          {(config.hero.showcaseImages || []).length} Active
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#849495] mt-1 max-w-2xl leading-relaxed">
+                        These images dynamically float and orbit around the headline on the homepage hero section.
+                        Add as many showcase mockups as you like, upload files, set titles and click URLs, toggle portrait orientation, and reorder.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleResetOrbitImages}
+                        className="px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 text-xs font-jetbrains text-gray-300 hover:text-white transition-colors"
+                      >
+                        Reset Defaults
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddOrbitImage}
+                        className="px-4 py-1.5 rounded-lg bg-[#2cecf7] text-[#02040A] text-xs font-jetbrains font-bold uppercase hover:brightness-110 shadow-[0_0_15px_rgba(44,236,247,0.3)] transition-all flex items-center gap-1"
+                      >
+                        <span className="material-symbols-outlined text-sm font-bold">add</span>
+                        Add Orbit Image
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Orbit Images List */}
+                  <div className="space-y-4">
+                    {(!config.hero.showcaseImages || config.hero.showcaseImages.length === 0) ? (
+                      <div className="p-8 rounded-xl border border-dashed border-white/10 text-center space-y-3">
+                        <p className="text-sm text-gray-400">
+                          No custom orbit images added yet. Click below to add your first image or restore defaults.
+                        </p>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleAddOrbitImage}
+                            className="px-4 py-2 bg-[#2cecf7] text-[#02040A] rounded-lg text-xs font-jetbrains font-bold"
+                          >
+                            + Add First Orbit Image
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleResetOrbitImages}
+                            className="px-4 py-2 border border-white/20 text-white rounded-lg text-xs font-jetbrains"
+                          >
+                            Load Recommended Defaults
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      config.hero.showcaseImages.map((item, idx) => {
+                        const isFirst = idx === 0;
+                        const isLast = idx === (config.hero.showcaseImages?.length || 0) - 1;
+                        const uploadKey = `hero_orbit_${item.id || idx}`;
+
+                        return (
+                          <div
+                            key={item.id || idx}
+                            className="p-4 sm:p-5 rounded-xl bg-black/50 border border-white/10 hover:border-[#2cecf7]/30 transition-all space-y-4 shadow-lg"
+                          >
+                            {/* Card Header */}
+                            <div className="flex flex-wrap justify-between items-center gap-2 pb-3 border-b border-white/5">
+                              <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-md bg-[#2cecf7]/10 text-[#2cecf7] text-xs font-jetbrains font-bold flex items-center justify-center border border-[#2cecf7]/30">
+                                  {idx + 1}
+                                </span>
+                                <span className="font-jetbrains text-xs text-white font-bold">
+                                  {item.title || `Orbit Card #${idx + 1}`}
+                                </span>
+                                {item.isTall && (
+                                  <span className="text-[10px] font-jetbrains px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                    Portrait / Mobile
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Action Buttons: Move Up, Move Down, Delete */}
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  title="Move Up"
+                                  disabled={isFirst}
+                                  onClick={() => handleMoveOrbitImage(idx, "up")}
+                                  className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors"
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Move Down"
+                                  disabled={isLast}
+                                  onClick={() => handleMoveOrbitImage(idx, "down")}
+                                  className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-white/5 text-xs text-gray-300 hover:text-white transition-colors"
+                                >
+                                  ↓
+                                </button>
+                                <button
+                                  type="button"
+                                  title="Remove Orbit Image"
+                                  onClick={() => handleRemoveOrbitImage(idx)}
+                                  className="px-2.5 py-1 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-jetbrains transition-colors flex items-center gap-1"
+                                >
+                                  <span className="material-symbols-outlined text-xs">delete</span>
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Card Body: Left thumbnail preview, Right form fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                              {/* Preview Thumbnail */}
+                              <div className="md:col-span-4 flex flex-col items-center gap-2">
+                                <div
+                                  className={`w-full ${
+                                    item.isTall ? "max-w-[150px] aspect-[9/16]" : "aspect-[16/10]"
+                                  } rounded-lg overflow-hidden border border-white/10 bg-black/80 flex items-center justify-center relative group`}
+                                >
+                                  {item.imageUrl ? (
+                                    <img
+                                      src={item.imageUrl}
+                                      alt={item.title || "Showcase preview"}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex flex-col items-center justify-center text-gray-500 text-xs p-3 text-center">
+                                      <span className="material-symbols-outlined text-2xl text-gray-600 mb-1">
+                                        image
+                                      </span>
+                                      <span>No image specified</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Upload Local File Button */}
+                                <label className="cursor-pointer w-full py-1.5 px-3 rounded-lg bg-white/10 hover:bg-[#2cecf7]/20 hover:text-[#2cecf7] text-xs font-jetbrains text-gray-300 transition-colors flex items-center justify-center gap-1.5 border border-white/10">
+                                  <span className="material-symbols-outlined text-sm">
+                                    {uploadingImage === uploadKey ? "hourglass_top" : "upload"}
+                                  </span>
+                                  <span>
+                                    {uploadingImage === uploadKey ? "Uploading..." : "Upload File"}
+                                  </span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                      handleImageFileChange(
+                                        e,
+                                        (url) => handleUpdateOrbitImage(idx, { imageUrl: url }),
+                                        uploadKey
+                                      )
+                                    }
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Form Inputs */}
+                              <div className="md:col-span-8 space-y-3">
+                                <div>
+                                  <label className="block text-[11px] font-jetbrains text-[#2cecf7] uppercase mb-1">
+                                    Image URL
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={item.imageUrl}
+                                    placeholder="https://... or upload local file"
+                                    onChange={(e) =>
+                                      handleUpdateOrbitImage(idx, { imageUrl: e.target.value })
+                                    }
+                                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white text-xs font-jetbrains"
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[11px] font-jetbrains text-gray-400 uppercase mb-1">
+                                      Title / Label (Shown on Hover)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={item.title}
+                                      placeholder="e.g. Web Analytics, FinTech App"
+                                      onChange={(e) =>
+                                        handleUpdateOrbitImage(idx, { title: e.target.value })
+                                      }
+                                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white text-xs"
+                                    />
+                                  </div>
+
+                                  <div>
+                                    <label className="block text-[11px] font-jetbrains text-gray-400 uppercase mb-1">
+                                      Click Link (Optional)
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={item.link || ""}
+                                      placeholder="e.g. #products, #contact, /services"
+                                      onChange={(e) =>
+                                        handleUpdateOrbitImage(idx, { link: e.target.value })
+                                      }
+                                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white text-xs font-jetbrains"
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Portrait Toggle */}
+                                <div className="pt-1">
+                                  <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!item.isTall}
+                                      onChange={(e) =>
+                                        handleUpdateOrbitImage(idx, { isTall: e.target.checked })
+                                      }
+                                      className="w-4 h-4 rounded bg-black/60 border-white/20 text-[#2cecf7] focus:ring-[#2cecf7] cursor-pointer"
+                                    />
+                                    <span className="text-xs text-gray-300 font-jetbrains">
+                                      Portrait / Mobile Format (Renders narrower vertical phone card)
+                                    </span>
+                                  </label>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Quick Add Button at bottom of list */}
+                  {config.hero.showcaseImages && config.hero.showcaseImages.length > 0 && (
+                    <div className="flex justify-center pt-2">
+                      <button
+                        type="button"
+                        onClick={handleAddOrbitImage}
+                        className="px-5 py-2 rounded-lg border border-[#2cecf7]/30 text-[#2cecf7] hover:bg-[#2cecf7]/10 text-xs font-jetbrains font-bold uppercase transition-all flex items-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm font-bold">add</span>
+                        + Add Another Orbit Image
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Legacy 3D Device Frames Image Uploaders */}
+                <div className="border-t border-white/10 pt-6 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-space-grotesk text-lg font-bold text-white">
+                        Fallback 3D Perspective Device Mockup Images
+                      </h3>
+                      <p className="text-xs text-[#849495] mt-0.5">
+                        Optional background frames used as fallback when orbit images are not configured.
+                      </p>
+                    </div>
+                  </div>
 
                   {/* Desktop Mockup Frame Image */}
                   <div className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-3">

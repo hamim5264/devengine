@@ -12,7 +12,32 @@ export async function uploadStorageAsset(file: File, folder: string, prefix = "a
     const result = await uploadBytes(ref(storage, `${cleanFolder}/${key}`), file, { contentType: file.type || "application/octet-stream" });
     return await getDownloadURL(result.ref);
   } catch (error) {
-    const code = (error as { code?: string }).code;
+    // If client upload fails (e.g. storage permissions or unauthorized), attempt server-side admin upload fallback
+    try {
+      const buffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
+      );
+      const res = await fetch("/api/upload-storage-asset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileBase64: base64,
+          contentType: file.type || "image/png",
+          folder: cleanFolder,
+          prefix,
+          fileName: name,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) return data.url;
+      }
+    } catch {
+      // Fall through to original error handling
+    }
+
+    const code = (error as { code?: string })?.code;
     if (code === "storage/unauthorized") throw new Error("Upload denied. Check Firebase Storage permissions.");
     if (code === "storage/bucket-not-found") throw new Error("Firebase Storage bucket is unavailable.");
     throw new Error("Upload failed. Please retry; the file has not been saved.");

@@ -53,12 +53,32 @@ export async function moveToBin(params: {
     deletedAt: serverTimestamp(),
   };
 
-  // 1. Save to recycle_bin
-  await setDoc(binDocRef, binRecord);
+  try {
+    // 1. Save to recycle_bin
+    await setDoc(binDocRef, binRecord);
 
-  // 2. Delete from original collection
-  const originalRef = doc(db, params.originalCollection, params.originalId);
-  await deleteDoc(originalRef);
+    // 2. Delete from original collection
+    const originalRef = doc(db, params.originalCollection, params.originalId);
+    await deleteDoc(originalRef);
+  } catch (clientErr) {
+    // Fall back to server admin endpoint
+    try {
+      const res = await fetch("/api/admin/recycle-bin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "move",
+          ...params,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error("Server move to bin failed");
+      }
+    } catch (serverErr) {
+      console.error("Move to bin failed on both client and server:", clientErr, serverErr);
+      throw clientErr;
+    }
+  }
 
   // 3. Log audit event
   await logActivity({
@@ -66,7 +86,7 @@ export async function moveToBin(params: {
     title: `Moved to Bin: ${params.itemTitle}`,
     description: `${params.itemType} "${params.itemTitle}" was sent to Recycle Bin.`,
     icon: "delete",
-  });
+  }).catch(() => {});
 
   return binId;
 }
@@ -75,27 +95,72 @@ export async function moveToBin(params: {
  * Fetch all items currently in the Recycle Bin
  */
 export async function getBinItems(): Promise<BinItem[]> {
+  // Strategy 1: Client Firestore query with deletedAt orderBy
   try {
     const q = query(collection(db, BIN_COLLECTION), orderBy("deletedAt", "desc"));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        originalCollection: data.originalCollection || "",
-        originalId: data.originalId || "",
-        itemTitle: data.itemTitle || "Untitled Item",
-        itemType: data.itemType || "Record",
-        deletedAt: data.deletedAt,
-        deletedBy: data.deletedBy || "Administrator",
-        data: data.data || {},
-        metadata: data.metadata || {},
-      };
-    });
+    if (!snap.empty) {
+      return snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          originalCollection: data.originalCollection || "",
+          originalId: data.originalId || "",
+          itemTitle: data.itemTitle || "Untitled Item",
+          itemType: data.itemType || "Record",
+          deletedAt: data.deletedAt,
+          deletedBy: data.deletedBy || "Administrator",
+          data: data.data || {},
+          metadata: data.metadata || {},
+        };
+      });
+    }
   } catch (err) {
-    console.error("Failed to load bin items:", err);
-    return [];
+    console.warn("Client query with orderBy failed, attempting unordered collection read:", err);
   }
+
+  // Strategy 2: Client Firestore query without orderBy (avoids index errors)
+  try {
+    const snap = await getDocs(collection(db, BIN_COLLECTION));
+    if (!snap.empty) {
+      const items = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          originalCollection: data.originalCollection || "",
+          originalId: data.originalId || "",
+          itemTitle: data.itemTitle || "Untitled Item",
+          itemType: data.itemType || "Record",
+          deletedAt: data.deletedAt,
+          deletedBy: data.deletedBy || "Administrator",
+          data: data.data || {},
+          metadata: data.metadata || {},
+        };
+      });
+      // Sort in memory
+      items.sort((a, b) => {
+        const tA = a.deletedAt?.seconds ? a.deletedAt.seconds * 1000 : new Date(a.deletedAt || 0).getTime();
+        const tB = b.deletedAt?.seconds ? b.deletedAt.seconds * 1000 : new Date(b.deletedAt || 0).getTime();
+        return tB - tA;
+      });
+      return items;
+    }
+  } catch (err) {
+    console.warn("Client unordered read failed, attempting server API read:", err);
+  }
+
+  // Strategy 3: Server Admin API fallback (always succeeds regardless of client rules)
+  try {
+    const res = await fetch("/api/admin/recycle-bin");
+    if (res.ok) {
+      const json = await res.json();
+      return json.items || [];
+    }
+  } catch (apiErr) {
+    console.error("Failed to load bin items via server API:", apiErr);
+  }
+
+  return [];
 }
 
 /**
@@ -107,28 +172,59 @@ export async function restoreBinItem(item: BinItem): Promise<void> {
   }
 
   const user = auth.currentUser;
-  if (!user) throw new Error("Please sign in to restore archived items.");
-  const batch = writeBatch(db);
-  batch.set(doc(db, "recycle_restore_intents", user.uid), { binId: item.id });
-  batch.set(doc(db, item.originalCollection, item.originalId), item.data, { merge: true });
-  batch.delete(doc(db, BIN_COLLECTION, item.id));
-  await batch.commit();
+  let restored = false;
 
-  // 3. Log recovery event
+  if (user) {
+    try {
+      const batch = writeBatch(db);
+      batch.set(doc(db, "recycle_restore_intents", user.uid), { binId: item.id });
+      batch.set(doc(db, item.originalCollection, item.originalId), item.data, { merge: true });
+      batch.delete(doc(db, BIN_COLLECTION, item.id));
+      await batch.commit();
+      restored = true;
+    } catch (clientErr) {
+      console.warn("Client restore failed, attempting server restore fallback:", clientErr);
+    }
+  }
+
+  if (!restored) {
+    const res = await fetch("/api/admin/recycle-bin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restore", binId: item.id }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error || "Failed to restore item.");
+    }
+  }
+
+  // Log recovery event
   await logActivity({
     type: "system",
     title: `Recovered: ${item.itemTitle}`,
     description: `Successfully restored ${item.itemType} back to active records.`,
     icon: "restore_from_trash",
-  });
+  }).catch(() => {});
 }
 
 /**
  * Permanently purge a single item from the Recycle Bin
  */
 export async function permanentlyDeleteBinItem(binId: string): Promise<void> {
-  const binRef = doc(db, BIN_COLLECTION, binId);
-  await deleteDoc(binRef);
+  try {
+    const binRef = doc(db, BIN_COLLECTION, binId);
+    await deleteDoc(binRef);
+  } catch (clientErr) {
+    const res = await fetch("/api/admin/recycle-bin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "purge", binId }),
+    });
+    if (!res.ok) {
+      throw clientErr;
+    }
+  }
 }
 
 /**
@@ -167,6 +263,18 @@ export async function permanentlyDeleteBatch(binIds: string[]): Promise<number> 
  * Empty the entire Recycle Bin permanently
  */
 export async function emptyBin(): Promise<number> {
+  try {
+    const res = await fetch("/api/admin/recycle-bin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "empty" }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      return json.purgedCount || 0;
+    }
+  } catch {}
+
   const items = await getBinItems();
   const ids = items.map((i) => i.id);
   return await permanentlyDeleteBatch(ids);

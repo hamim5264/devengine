@@ -27,7 +27,6 @@ export async function saveAdminProfile(input: AdminProfile) {
   const person = await getDoc(personRef);
   const batch = writeBatch(db);
   batch.set(profileRef(), profile);
-  batch.set(doc(db, "studio_about", "founder"), { name, avatarUrl, ...(profile.bio ? { bio: profile.bio } : {}), updatedAt: new Date().toISOString() }, { merge: true });
   batch.set(personRef, { uid: user.uid, name, avatarUrl, role: "admin", status: "active", departmentIds: person.data()?.departmentIds || [], chatSuspended: false });
   await batch.commit();
   return profile;

@@ -173,6 +173,10 @@ export async function generateProjectBriefPdf(brief: ProjectBriefDocument, publi
     MUTED
   );
   section("Assumptions & exclusions", brief.assumptions); section("Payment terms", brief.paymentTerms);
+  if (brief.additionalNote && brief.additionalNote.trim()) {
+    heading("Additional Note");
+    paragraph(brief.additionalNote.trim(), 11, "bold", INK, "Additional Note");
+  }
   section("Next steps", "Review the scope, timing and budget together before starting. This preliminary estimate is for discussion; a signed agreement confirms the final commitment.");
   paragraph("Terms and conditions apply. This document is electronically generated and does not require a digital signature for issue. Project commitments remain subject to the parties’ agreed scope and terms.", 9.5, "italic", MUTED);
   const pages = pdf.getNumberOfPages();

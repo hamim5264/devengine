@@ -6,6 +6,7 @@ export interface BriefCost { id: string; title: string; quantity: number; amount
 export interface ProjectBrief {
   id: string; title: string; client: string; clientEmail: string; clientPhone?: string; overview: string; objectives: string; technology: string;
   deliveryPlan: string; timeline: string; deliverables: string; assumptions: string; paymentTerms: string;
+  additionalNote?: string;
   currency: string; shareToken?: string; status: "draft" | "ready"; costs: BriefCost[]; createdAt: string; updatedAt: string; createdBy: string;
   hasDiscount?: boolean; discountPercent?: number;
 }
@@ -33,6 +34,7 @@ function sharedDocument(brief: ProjectBrief): ProjectBriefDocument {
     title: brief.title, client: brief.client, clientEmail: brief.clientEmail || "", clientPhone: brief.clientPhone || "", overview: brief.overview,
     objectives: brief.objectives, technology: brief.technology, deliveryPlan: brief.deliveryPlan, timeline: brief.timeline,
     deliverables: brief.deliverables, assumptions: brief.assumptions, paymentTerms: brief.paymentTerms,
+    additionalNote: brief.additionalNote || "",
     currency: brief.currency, status: brief.status, costs: brief.costs, createdAt: brief.createdAt, updatedAt: brief.updatedAt,
     hasDiscount: Boolean(brief.hasDiscount), discountPercent: brief.discountPercent || 0,
   };
@@ -63,7 +65,7 @@ export function briefMoney(value: number, currency: string) {
 }
 export function blankBrief(): ProjectBrief {
   const date = new Date().toISOString();
-  return { id: "", title: "", client: "", clientEmail: "", clientPhone: "", overview: "", objectives: "", technology: "", deliveryPlan: "", timeline: "", deliverables: "", assumptions: "", paymentTerms: "", currency: "BDT", status: "draft", hasDiscount: false, discountPercent: 10, costs: ["Discovery & planning", "UI / UX design", "Development", "Server & infrastructure", "Deployment"].map((title, index) => ({ id: crypto.randomUUID(), title, quantity: 1, amount: 0, period: index === 3 ? "monthly" : "one_time" })), createdAt: date, updatedAt: date, createdBy: "" };
+  return { id: "", title: "", client: "", clientEmail: "", clientPhone: "", overview: "", objectives: "", technology: "", deliveryPlan: "", timeline: "", deliverables: "", assumptions: "", paymentTerms: "", additionalNote: "", currency: "BDT", status: "draft", hasDiscount: false, discountPercent: 10, costs: ["Discovery & planning", "UI / UX design", "Development", "Server & infrastructure", "Deployment"].map((title, index) => ({ id: crypto.randomUUID(), title, quantity: 1, amount: 0, period: index === 3 ? "monthly" : "one_time" })), createdAt: date, updatedAt: date, createdBy: "" };
 }
 function requireAdmin() {
   const user = auth.currentUser;
@@ -98,6 +100,7 @@ export async function saveProjectBrief(input: ProjectBrief): Promise<ProjectBrie
     const hasDiscount = Boolean(input.hasDiscount);
     const discountPercent = hasDiscount ? Math.min(100, Math.max(1, Math.round(Number(input.discountPercent) || 0))) : 0;
     const result: ProjectBrief = { ...fields, id: ref.id, title: input.title.trim(), client: input.client.trim(), clientEmail, clientPhone, costs,
+      additionalNote: (input.additionalNote || "").trim(),
       hasDiscount, discountPercent,
       createdAt: existing.data()?.createdAt || now, updatedAt: now, createdBy: user.uid, ...(token ? { shareToken: token } : {}) };
     transaction.set(ref, result);

@@ -162,6 +162,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <IconEdit />,
     items: [
       { label: "Landing", href: "/admin/manage-landing" },
+      { label: "SEO & Google Search", href: "/admin/manage-seo", badge: "new" },
       { label: "Archive", href: "/admin/manage-archive" },
       { label: "Launchpad", href: "/admin/manage-launchpad" },
       { label: "App Collection", href: "/admin/app-lab/manage" },
@@ -232,8 +233,9 @@ const NAV_GROUPS: NavGroup[] = [
     color: "#2cecf7",
     icon: <IconSettings />,
     items: [
-      {label:"Sub-admin Access",href:"/admin/manage-sub-admins"},
-      {label:"Service Usage & Costs",href:"/admin/service-usage"},
+      { label: "Security & Monitoring", href: "/admin/security-monitoring", badge: "new" },
+      { label: "Sub-admin Access", href: "/admin/manage-sub-admins" },
+      { label: "Service Usage & Costs", href: "/admin/service-usage" },
       { label: "DevKitty AI", href: "/admin/manage-devkitty", badge: "new" },
       { label: "Theme & Fonts", href: "/admin/manage-theme-settings", badge: "new" },
       { label: "Invoice & PDF Settings", href: "/admin/manage-pdf-settings" },

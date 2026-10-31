@@ -103,6 +103,17 @@ export default function StaffLoginPage() {
 
       router.push("/staff/dashboard");
     } catch (err: any) {
+      // Report failed authentication attempt to security monitoring
+      fetch("/api/security/report-threat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "failed_login",
+          email: email.trim(),
+          details: `Staff portal attempt: ${err?.code || "authentication_failure"}`,
+        }),
+      }).catch(() => {});
+
       if (err.code === "auth/user-disabled") {
         const previous = getStaffSuspensionNotice();
         const reason = previous?.email?.toLowerCase() === email.trim().toLowerCase() ? previous.reason : "Your employee account has been suspended.";

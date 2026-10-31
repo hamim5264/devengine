@@ -63,6 +63,26 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && (canUseModules(['system']) || isAdmin());
     }
 
+    // ── SECURITY & HEALTH MONITORING ──
+    match /system_security_settings/{id} {
+      allow read, write: if canUseModules(['system']) || isAdmin();
+    }
+    match /security_logs/{id} {
+      allow read: if canUseModules(['system']) || isAdmin();
+      allow create: if true;
+      allow update, delete: if canUseModules(['system']) || isAdmin();
+    }
+    match /blocked_ips/{id} {
+      allow read: if true;
+      allow write: if canUseModules(['system']) || isAdmin();
+    }
+
+    // ── SEO & META CONFIGURATION ──
+    match /system_seo_settings/{id} {
+      allow read: if true;
+      allow write: if canUseModules(['content_cms', 'system']) || isAdmin();
+    }
+
     // DevKitty is served only through callable functions, which verify roles on every request.
     // Provider keys, rate-limit state, knowledge audiences and settings cannot be read or forged by clients.
     match /devkitty_private/{id} { allow read, write: if false; }

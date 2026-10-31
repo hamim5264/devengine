@@ -1,5 +1,5 @@
 import { onAdminPageAccess } from "@/lib/services/staffAuth";
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";

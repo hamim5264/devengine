@@ -87,6 +87,17 @@ export default function LoginPage() {
         setError("Access restricted. Only authorized DevEngine administrators can log in.");
       }
     } catch (err: any) {
+      // Report failed authentication attempt to security monitoring
+      fetch("/api/security/report-threat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "failed_login",
+          email: email.trim(),
+          details: err.code || "authentication_failure",
+        }),
+      }).catch(() => {});
+
       if (
         err.code === "auth/user-not-found" ||
         err.code === "auth/invalid-credential"

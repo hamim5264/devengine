@@ -11,8 +11,8 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import {getCachedStaffByUid} from "@/lib/services/staffAuth";
-import {modulesForAdminRoute,hasStudioModule} from "@/lib/staffModules";
+import { getCachedStaffByUid } from "@/lib/services/staffAuth";
+import { STUDIO_MODULES, modulesForAdminRoute, hasStudioModule } from "@/lib/staffModules";
 import { FiEye, FiEyeOff, FiMail, FiLock, FiArrowLeft, FiCheck, FiAlertCircle, FiPause, FiPlay } from "react-icons/fi";
 
 const ADMIN_EMAIL =

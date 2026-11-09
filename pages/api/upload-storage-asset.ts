@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import crypto from "node:crypto";
 import { getServerFirebase } from "@/lib/server/admin";
 
 export const config = {

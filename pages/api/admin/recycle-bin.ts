@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // GET: List all items in the recycle bin
     if (req.method === "GET") {
       const snap = await binCollection.get();
-      const items = snap.docs.map((d) => {
+      const items = snap.docs.map((d: any) => {
         const data = d.data();
         let deletedAt = data.deletedAt;
         if (deletedAt && typeof deletedAt.toDate === "function") {
@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       // Sort in memory by deletedAt descending
-      items.sort((a, b) => {
+      items.sort((a: any, b: any) => {
         const dateA = a.deletedAt ? new Date(a.deletedAt).getTime() : 0;
         const dateB = b.deletedAt ? new Date(b.deletedAt).getTime() : 0;
         return dateB - dateA;
@@ -40,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // POST actions
     if (req.method === "POST") {
-      const { action, binId, binIds, item, originalCollection, originalId, itemTitle, itemType, data, metadata, deletedBy } = req.body;
+      const { action, binId, item, originalCollection, originalId, itemTitle, itemType, data, metadata, deletedBy } = req.body || {};
 
       // 1. Move to bin (Soft Delete)
       if (action === "move") {
@@ -100,7 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (action === "empty" || action === "purgeBatch") {
         const snap = await binCollection.get();
         const batch = db.batch();
-        snap.docs.forEach((doc) => batch.delete(doc.ref));
+        snap.docs.forEach((doc: any) => batch.delete(doc.ref));
         await batch.commit();
         return res.status(200).json({ success: true, purgedCount: snap.docs.length });
       }

@@ -335,6 +335,12 @@ export default function ProjectDetailPage({initialProject}:{initialProject?:Proj
           content={project.subtitle || project.details?.slice(0, 160)}
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+          rel="canonical"
+          href={`https://www.devenginehq.com/projects/${encodeURIComponent(
+            project.slug || project.id
+          )}`}
+        />
       </Head>
 
       {/* Atmospheric Ambient Canvas */}

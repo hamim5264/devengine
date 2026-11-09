@@ -7,7 +7,7 @@ export const getServerSideProps:GetServerSideProps=async({res})=>{
  try{
   const [blogs,projects,apps]=await Promise.all([publicContent('blogs','isPublished',true),publicContent('projects'),publicContent('app_policies')]);
   const urls=new Map<string,{date:string;priority:string}>();
-  for(const path of ['/home','/about','/projects','/services','/blog','/pricing','/contact','/career','/reviews','/documentation-and-api-access','/terms','/privacy-policy','/refund-policy','/commercial-license','/security-protocol','/archive','/launchpad','/app-lab','/lab','/copyright'])urls.set(path,{date:'',priority:path==='/home'?'1.0':'0.7'});
+  for(const path of ['/home','/about','/projects','/projects/all','/services','/blog','/pricing','/contact','/career','/reviews','/documentation-and-api-access','/terms','/privacy-policy','/refund-policy','/commercial-license','/security-protocol','/launchpad','/lab','/copyright'])urls.set(path,{date:'',priority:path==='/home'?'1.0':'0.7'});
   const add=(path:string,item:Record<string,any>)=>urls.set(path,{date:timestamp(item.updatedAt||item.publishedAt||item.createdAt),priority:'0.8'});
   for(const b of blogs)if(b.isPublished===true&&typeof b.slug==='string'&&b.slug.trim())add(`/blog/${encodeURIComponent(b.slug.trim())}`,b);
   for(const p of projects)if(p.isPublic!==false)add(`/projects/${encodeURIComponent(p.slug||p.id)}`,p);

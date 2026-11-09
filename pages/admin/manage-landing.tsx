@@ -21,6 +21,7 @@ import {
   ProcessConfig,
   TestimonialsConfig,
   ContactConfig,
+  FooterConfig,
 } from "@/types/landing";
 import {
   getLandingConfig,
@@ -29,6 +30,7 @@ import {
   seedDefaultLandingConfig,
   DEFAULT_LANDING_CONFIG,
   DEFAULT_HERO_SHOWCASE_IMAGES,
+  DEFAULT_FOOTER_CONFIG,
 } from "@/lib/services/landingService";
 
 const ADMIN_EMAIL =
@@ -46,7 +48,8 @@ type SectionTab =
   | "featuredProducts"
   | "process"
   | "testimonials"
-  | "contact";
+  | "contact"
+  | "footer";
 
 export default function ManageLandingPage() {
   const router = useRouter();
@@ -91,6 +94,29 @@ export default function ManageLandingPage() {
       loadData();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (router.query.tab && typeof router.query.tab === "string") {
+      const validTabs: SectionTab[] = [
+        "hero",
+        "intro",
+        "techStack",
+        "mobile",
+        "webPlatform",
+        "aiLab",
+        "defense",
+        "customSolutions",
+        "featuredProducts",
+        "process",
+        "testimonials",
+        "contact",
+        "footer",
+      ];
+      if (validTabs.includes(router.query.tab as SectionTab)) {
+        setActiveTab(router.query.tab as SectionTab);
+      }
+    }
+  }, [router.query.tab]);
 
   // Save current section
   const handleSaveSection = async (sectionKey: SectionTab) => {
@@ -314,6 +340,7 @@ export default function ManageLandingPage() {
               { id: "process", label: "10. Process Steps" },
               { id: "testimonials", label: "11. Testimonials" },
               { id: "contact", label: "12. Contact" },
+              { id: "footer", label: "13. Footer & Location" },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -2027,6 +2054,396 @@ export default function ManageLandingPage() {
                     }
                     className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm"
                   />
+                </div>
+              </div>
+            )}
+
+            {/* 13. FOOTER & LOCATION SECTION EDITOR */}
+            {activeTab === "footer" && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                  <div>
+                    <h2 className="font-space-grotesk text-xl font-bold text-white flex items-center gap-2">
+                      <span>Footer & Studio Location</span>
+                      <span className="text-xs font-jetbrains px-2 py-0.5 rounded-full bg-[#2cecf7]/10 text-[#2cecf7] border border-[#2cecf7]/30">
+                        Live on All Pages
+                      </span>
+                    </h2>
+                    <p className="text-xs text-[#849495] mt-1">
+                      Manage studio physical address, Google Maps link, contact info, and footer tagline.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveSection("footer")}
+                    disabled={saving}
+                    className="px-6 py-2 bg-[#2cecf7] text-[#02040A] font-jetbrains text-xs font-bold uppercase rounded-lg shadow hover:scale-105 transition-all disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save Footer Section"}
+                  </button>
+                </div>
+
+                {/* Visibility Toggle */}
+                <div className="p-4 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold text-white">Display Studio Address in Footer</div>
+                    <div className="text-xs text-[#849495] mt-0.5">
+                      Toggle whether the studio address card appears in the footer across the website.
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(config.footer || DEFAULT_FOOTER_CONFIG).showLocation}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          footer: {
+                            ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                            showLocation: e.target.checked,
+                          },
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2cecf7]"></div>
+                  </label>
+                </div>
+
+                {/* Studio Address Fields */}
+                <div className="p-5 rounded-xl bg-black/30 border border-white/10 space-y-4">
+                  <h3 className="font-jetbrains text-xs font-bold uppercase tracking-wider text-[#2cecf7]">
+                    Physical Location & Address
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Location / Studio Title
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. DevEngine HQ / Innovation Studio"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).locationTitle}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              locationTitle: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Google Maps URL
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://maps.google.com/?q=..."
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).mapUrl || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              mapUrl: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Address Line 1
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Level 4, Plot 12, Road 5"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).addressLine1}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              addressLine1: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Address Line 2 (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Sector 10, Uttara"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).addressLine2 || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              addressLine2: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dhaka"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).city}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              city: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Bangladesh"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).country}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              country: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Contact Email
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="e.g. contact@devenginehq.com"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).email || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              email: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Contact Phone
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. +880 1700-000000"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).phone || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              phone: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Taglines & CTA */}
+                <div className="p-5 rounded-xl bg-black/30 border border-white/10 space-y-4">
+                  <h3 className="font-jetbrains text-xs font-bold uppercase tracking-wider text-[#2cecf7]">
+                    Footer Pitch & CTA Link
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Primary Tagline
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Engineering the Cinematic Future."
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).tagline || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              tagline: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        Secondary Tagline
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="High-fidelity, performant digital ecosystems."
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).subTagline || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              subTagline: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        CTA Button Text
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Build Together"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).ctaText || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              ctaText: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-jetbrains text-[#849495] uppercase mb-1">
+                        CTA Button Link
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="/home#contact"
+                        value={(config.footer || DEFAULT_FOOTER_CONFIG).ctaLink || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            footer: {
+                              ...(config.footer || DEFAULT_FOOTER_CONFIG),
+                              ctaLink: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full px-4 py-2.5 rounded-lg bg-black/60 border border-white/10 text-white text-sm focus:border-[#2cecf7] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Preview Card */}
+                <div className="p-5 rounded-xl bg-black/50 border border-[#2cecf7]/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-jetbrains text-xs font-bold uppercase tracking-wider text-[#2cecf7]">
+                      Live Preview: How It Appears In The Footer
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-jetbrains">
+                      Status: {(config.footer || DEFAULT_FOOTER_CONFIG).showLocation ? "VISIBLE" : "HIDDEN"}
+                    </span>
+                  </div>
+
+                  <div className="p-5 rounded-2xl bg-[#070b13] border border-white/10 max-w-md">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#2cecf7]/10 border border-[#2cecf7]/30 flex items-center justify-center text-[#2cecf7] shrink-0">
+                        <span className="material-symbols-outlined text-xl">location_on</span>
+                      </div>
+                      <div className="text-xs space-y-1 text-gray-300">
+                        <div className="font-bold text-white text-sm">
+                          {(config.footer || DEFAULT_FOOTER_CONFIG).locationTitle || "DevEngine HQ"}
+                        </div>
+                        <div>{(config.footer || DEFAULT_FOOTER_CONFIG).addressLine1 || "Address Line 1"}</div>
+                        {(config.footer || DEFAULT_FOOTER_CONFIG).addressLine2 && (
+                          <div>{(config.footer || DEFAULT_FOOTER_CONFIG).addressLine2}</div>
+                        )}
+                        <div>
+                          {[(config.footer || DEFAULT_FOOTER_CONFIG).city, (config.footer || DEFAULT_FOOTER_CONFIG).country]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </div>
+                        {((config.footer || DEFAULT_FOOTER_CONFIG).email ||
+                          (config.footer || DEFAULT_FOOTER_CONFIG).phone) && (
+                          <div className="pt-2 border-t border-white/10 text-[11px] text-gray-400 space-y-1">
+                            {(config.footer || DEFAULT_FOOTER_CONFIG).email && (
+                              <div className="flex items-center gap-1.5 text-[#2cecf7]">
+                                <span className="material-symbols-outlined text-xs">mail</span>
+                                <span>{(config.footer || DEFAULT_FOOTER_CONFIG).email}</span>
+                              </div>
+                            )}
+                            {(config.footer || DEFAULT_FOOTER_CONFIG).phone && (
+                              <div className="flex items-center gap-1.5 text-[#2cecf7]">
+                                <span className="material-symbols-outlined text-xs">call</span>
+                                <span>{(config.footer || DEFAULT_FOOTER_CONFIG).phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {(config.footer || DEFAULT_FOOTER_CONFIG).mapUrl && (
+                          <div className="pt-2">
+                            <span className="text-[#2cecf7] font-semibold text-xs inline-flex items-center gap-1">
+                              View on Google Maps ↗
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

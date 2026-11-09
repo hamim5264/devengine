@@ -1,25 +1,58 @@
+import { useEffect, useState } from "react";
 import {
   FaLinkedin,
   FaGithub,
   FaFacebook,
   FaYoutube,
-  FaInstagram,
-  FaXTwitter,
 } from "react-icons/fa6";
 import Link from "next/link";
+import type { FooterConfig } from "@/types/landing";
+import { getFooterConfig, DEFAULT_FOOTER_CONFIG } from "@/lib/services/landingService";
 
 export default function Footer() {
+  const [config, setConfig] = useState<FooterConfig>(DEFAULT_FOOTER_CONFIG);
+
+  useEffect(() => {
+    let active = true;
+    getFooterConfig()
+      .then((data) => {
+        if (active && data) setConfig(data);
+      })
+      .catch((err) => console.error("Error loading footer config:", err));
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <footer className="bg-gradient-to-tr from-gray-900 to-black text-white py-10 px-6 mt-0 border-t-[1px] border-teal-500/30 shadow-inner">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 md:gap-0">
         {/* Left Section */}
         <div className="text-center md:text-left">
-          <h3 className="text-lg font-semibold text-teal-400 mb-1">
+          <h3 className="text-lg font-semibold text-[#2cecf7] mb-1">
             Connect with DevEngine
           </h3>
           <p className="text-sm text-gray-400">
-            Engineering the Cinematic Future. High-fidelity, performant digital ecosystems.
+            {config.tagline || "Engineering the Cinematic Future."}{" "}
+            {config.subTagline || "High-fidelity, performant digital ecosystems."}
           </p>
+          {config.showLocation && (
+            <div className="mt-2 text-xs text-gray-400 space-y-0.5">
+              {config.locationTitle && <p className="font-semibold text-gray-300">{config.locationTitle}</p>}
+              <p>{[config.addressLine1, config.addressLine2, config.city, config.country].filter(Boolean).join(", ")}</p>
+              {config.mapUrl && (
+                <a
+                  href={config.mapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[#2cecf7] hover:underline pt-1"
+                >
+                  <span>Google Maps</span>
+                  <span className="text-[10px]">↗</span>
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Social Icons */}

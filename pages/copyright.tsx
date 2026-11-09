@@ -7,6 +7,11 @@ export default function CopyrightPage() {
     <>
       <Head>
         <title>Copyright | DevEngine</title>
+        <meta
+          name="description"
+          content="Legal Copyright Notice for DevEngine software systems, code, and digital assets."
+        />
+        <link rel="canonical" href="https://www.devenginehq.com/copyright" />
       </Head>
 
       <Navbar />

@@ -4,6 +4,8 @@ import Image, { type StaticImageData } from "next/image";
 import PaymentVerificationModal from "@/components/PaymentVerificationModal";
 import type { SocialLink } from "@/types/social";
 import { getSocialLinks, INITIAL_SOCIAL_LINKS } from "@/lib/services/socialService";
+import type { FooterConfig } from "@/types/landing";
+import { getFooterConfig, DEFAULT_FOOTER_CONFIG } from "@/lib/services/landingService";
 import Reveal from "./Reveal";
 import FooterKitty from "./FooterKitty";
 import githubIcon from "@/assets/3D_Icons/github.png";
@@ -39,6 +41,7 @@ export default function LandingFooter() {
   const footerRef = useRef<HTMLElement>(null);
   const [verificationOpen, setVerificationOpen] = useState(false);
   const [socials, setSocials] = useState<SocialLink[]>(INITIAL_SOCIAL_LINKS);
+  const [footerConfig, setFooterConfig] = useState<FooterConfig>(DEFAULT_FOOTER_CONFIG);
   const [inView, setInView] = useState(false);
   const [loadKitty, setLoadKitty] = useState(false);
   const [visible, setVisible] = useState(true);
@@ -95,6 +98,7 @@ export default function LandingFooter() {
   useEffect(() => {
     let active = true;
     getSocialLinks().then((data) => { if (active) setSocials(data); }).catch((error) => console.error("Error loading footer social links:", error));
+    getFooterConfig().then((data) => { if (active && data) setFooterConfig(data); }).catch((error) => console.error("Error loading footer config:", error));
     return () => { active = false; };
   }, []);
 
@@ -130,14 +134,98 @@ export default function LandingFooter() {
 
       <div className={styles.midRow}>
         <div className={styles.contact}>
-          <p>Engineering the Cinematic Future.</p>
-          <p>High-fidelity, performant digital ecosystems.</p>
-          <Link href="/home#contact" className={styles.contactLink}>Build Together <span aria-hidden="true">↗</span></Link>
+          <p>{footerConfig.tagline || "Engineering the Cinematic Future."}</p>
+          <p>{footerConfig.subTagline || "High-fidelity, performant digital ecosystems."}</p>
+          <Link href={footerConfig.ctaLink || "/home#contact"} className={styles.contactLink}>
+            {footerConfig.ctaText || "Build Together"} <span aria-hidden="true">↗</span>
+          </Link>
         </div>
-        <div className={styles.socialGroup}><h2 className={styles.label}><span aria-hidden="true">03 /</span> Find us elsewhere</h2><ul className={styles.socials} aria-label="Follow us">{socials.map((link) => {
-          const icon = SOCIAL_ICONS.find((item) => `${link.platform} ${link.url}`.toLowerCase().includes(item.match));
-          return <li key={link.id}><a href={link.url} target="_blank" rel="noopener noreferrer" className={styles.socialLink} aria-label={`${link.platform} (opens in a new tab)`}><span className={styles.iconPedestal}>{icon ? <Image src={icon.image} alt="" width={64} height={64} sizes="64px" className={styles.socialIcon} /> : <span className={`material-symbols-outlined ${styles.socialFallback}`} aria-hidden="true">{link.icon || "public"}</span>}</span><span className={styles.socialName}>{link.platform}<span aria-hidden="true">↗</span></span></a></li>;
-        })}</ul></div>
+
+        {footerConfig.showLocation && (
+          <div className={styles.locationGroup}>
+            <h2 className={styles.label}><span aria-hidden="true">03 /</span> Studio Location</h2>
+            <div className={styles.locationCard}>
+              <div className={styles.locationPinBox} aria-hidden="true">
+                <span className="material-symbols-outlined">location_on</span>
+              </div>
+              <div className={styles.locationDetails}>
+                <address className={styles.addressText}>
+                  {footerConfig.locationTitle && <strong>{footerConfig.locationTitle}</strong>}
+                  {footerConfig.addressLine1 && <span>{footerConfig.addressLine1}</span>}
+                  {footerConfig.addressLine2 && <span>{footerConfig.addressLine2}</span>}
+                  {(footerConfig.city || footerConfig.country) && (
+                    <span>{[footerConfig.city, footerConfig.country].filter(Boolean).join(", ")}</span>
+                  )}
+                </address>
+
+                {(footerConfig.email || footerConfig.phone) && (
+                  <div className={styles.locationMeta}>
+                    {footerConfig.email && (
+                      <a href={`mailto:${footerConfig.email}`} className={styles.locationMetaLink}>
+                        <span className="material-symbols-outlined">mail</span>
+                        <span>{footerConfig.email}</span>
+                      </a>
+                    )}
+                    {footerConfig.phone && (
+                      <a href={`tel:${footerConfig.phone}`} className={styles.locationMetaLink}>
+                        <span className="material-symbols-outlined">call</span>
+                        <span>{footerConfig.phone}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {footerConfig.mapUrl && (
+                  <a
+                    href={footerConfig.mapUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.mapLink}
+                  >
+                    <span>View on Google Maps</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: "15px" }}>open_in_new</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={styles.socialGroup}>
+          <h2 className={styles.label}>
+            <span aria-hidden="true">{footerConfig.showLocation ? "04 /" : "03 /"}</span> Find us elsewhere
+          </h2>
+          <ul className={styles.socials} aria-label="Follow us">
+            {socials.map((link) => {
+              const icon = SOCIAL_ICONS.find((item) => `${link.platform} ${link.url}`.toLowerCase().includes(item.match));
+              return (
+                <li key={link.id}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.socialLink}
+                    aria-label={`${link.platform} (opens in a new tab)`}
+                  >
+                    <span className={styles.iconPedestal}>
+                      {icon ? (
+                        <Image src={icon.image} alt="" width={64} height={64} sizes="64px" className={styles.socialIcon} />
+                      ) : (
+                        <span className={`material-symbols-outlined ${styles.socialFallback}`} aria-hidden="true">
+                          {link.icon || "public"}
+                        </span>
+                      )}
+                    </span>
+                    <span className={styles.socialName}>
+                      {link.platform}
+                      <span aria-hidden="true">↗</span>
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </div>
 
       <Reveal className={styles.wordmarkWrap} duration={1.1} distance={60}>

@@ -117,6 +117,23 @@ export interface ContactConfig {
   subtitle: string;
 }
 
+export interface FooterConfig {
+  locationTitle: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city?: string;
+  country?: string;
+  fullAddress?: string;
+  mapUrl?: string;
+  email?: string;
+  phone?: string;
+  tagline?: string;
+  subTagline?: string;
+  ctaText?: string;
+  ctaLink?: string;
+  showLocation?: boolean;
+}
+
 export interface LandingConfig {
   hero: HeroConfig;
   intro: IntroConfig;
@@ -130,4 +147,5 @@ export interface LandingConfig {
   process: ProcessConfig;
   testimonials: TestimonialsConfig;
   contact: ContactConfig;
+  footer: FooterConfig;
 }

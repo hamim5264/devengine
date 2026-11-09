@@ -90,6 +90,13 @@ export default function AppDetails() {
           name="description"
           content={app.description || `${app.name} specifications, guidelines, and developer policies.`}
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+          rel="canonical"
+          href={`https://www.devenginehq.com/app-lab/${encodeURIComponent(
+            app.slug || app.id
+          )}`}
+        />
       </Head>
 
       <LandingNavbar />

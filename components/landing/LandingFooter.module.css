@@ -18,11 +18,27 @@
 .linkRow a:hover, .linkRow button:hover { color: var(--devengine-accent-text); }
 .linkRow a:hover::after, .linkRow button:hover::after { transform: scaleX(1); }
 
-.midRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2rem; margin-top: clamp(2rem, 4vw, 4rem); padding-bottom: clamp(4rem, 8vw, 8rem); }
+.midRow { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: clamp(1.5rem, 3vw, 3rem); margin-top: clamp(2rem, 4vw, 4rem); padding-bottom: clamp(4rem, 8vw, 8rem); }
 .contact { flex: 1 1 240px; color: var(--devengine-muted); font-size: 0.85rem; line-height: 1.9; min-width: 0; }
 .contactLink { display: inline-flex; align-items: center; gap: 0.85rem; margin-top: 1rem; min-height: 44px; color: var(--devengine-text); font-size: 0.92rem; font-weight: 650; text-decoration: underline; text-decoration-color: var(--devengine-accent); text-underline-offset: 6px; text-decoration-thickness: 2px; }
 .contactLink span { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #2cecf7; border-radius: 50%; color: #02040a; background: #2cecf7; font-size: 21px; transition: transform 0.25s; }
 .contactLink:hover span { transform: translate(3px, -3px); }
+
+/* Studio Location & Address */
+.locationGroup { flex: 1 1 300px; max-width: min(100%, 460px); min-width: 0; }
+.locationCard { display: flex; align-items: flex-start; gap: 1rem; padding: 1.15rem 1.25rem; border-radius: 18px; border: 1px solid var(--devengine-border); background: var(--devengine-surface); box-shadow: var(--devengine-surface-shadow); transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s; }
+.locationCard:hover { border-color: rgba(44, 236, 247, 0.4); box-shadow: 0 16px 36px -16px rgba(44, 236, 247, 0.25); transform: translateY(-2px); }
+.locationPinBox { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: rgba(44, 236, 247, 0.08); border: 1px solid rgba(44, 236, 247, 0.3); color: #2cecf7; flex-shrink: 0; margin-top: 2px; }
+.locationPinBox span { font-size: 24px; color: #2cecf7; }
+.locationDetails { flex: 1; min-width: 0; }
+.addressText { font-style: normal; display: flex; flex-direction: column; gap: 0.25rem; color: var(--devengine-text); font-size: 0.85rem; line-height: 1.6; font-weight: 500; overflow-wrap: anywhere; }
+.locationMeta { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.75rem; padding-top: 0.65rem; border-top: 1px dashed var(--devengine-border); }
+.locationMetaLink { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--devengine-muted); font-size: 0.78rem; text-decoration: none; transition: color 0.2s; overflow-wrap: anywhere; }
+.locationMetaLink:hover { color: #2cecf7; }
+.locationMetaLink span:first-child { font-size: 16px; color: #2cecf7; }
+.mapLink { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.75rem; font-size: 0.75rem; font-weight: 650; color: #2cecf7; text-decoration: none; transition: opacity 0.2s, transform 0.2s; }
+.mapLink:hover { opacity: 0.85; transform: translateX(2px); }
+
 .socialGroup { width: min(100%, 440px); min-width: 0; }
 .socials { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; }
 .socials li { min-width: 0; }
@@ -118,10 +134,10 @@
 }
 @media (max-width: 760px) {
   .footer { padding-bottom: 9rem; }
-  .midRow { flex-direction: column; }
-  .midRow { align-items: stretch; }
+  .midRow { flex-direction: column; align-items: stretch; }
   .contact { flex-basis: auto; }
-  .socialGroup { width: min(100%, 440px); }
+  .locationGroup { width: 100%; max-width: 100%; }
+  .socialGroup { width: 100%; max-width: 100%; }
   .linkRow { gap: 0.1rem 1rem; }
   .linkRow a, .linkRow button { min-height: 44px; }
 }

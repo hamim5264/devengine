@@ -70,7 +70,11 @@ export default function LaunchpadPage() {
 
   return (
     <FeaturePage>
-      <Head><title>DevEngine Launchpad | Early Access & Experimental Apps</title><meta name="description" content={config.overview.subtitle} /></Head>
+      <Head>
+        <title>DevEngine Launchpad | Early Access & Experimental Apps</title>
+        <meta name="description" content={config.overview.subtitle} />
+        <link rel="canonical" href="https://www.devenginehq.com/launchpad" />
+      </Head>
       {loading ? <div className={styles.loading}><HelixLoader size={52} color="#2cecf7" /><p className={styles.small}>Opening the Launchpad…</p></div> : <>
         <nav className={styles.subnav} aria-label="Launchpad sections"><div className={styles.subnavInner}><span className={styles.small}>DevEngine / Launchpad</span><div className={styles.subnavLinks}>{SECTIONS.map((section) => <button key={section.id} type="button" className={styles.filter} aria-current={activeSection === section.id ? "true" : undefined} onClick={() => scrollTo(section.id)}>{section.label}</button>)}</div></div></nav>
         <section id="overview" className={`${styles.section} ${styles.launchHero}`}>

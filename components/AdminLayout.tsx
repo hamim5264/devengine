@@ -162,6 +162,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <IconEdit />,
     items: [
       { label: "Landing", href: "/admin/manage-landing" },
+      { label: "Footer & Location", href: "/admin/manage-landing?tab=footer", badge: "new" },
       { label: "Archive", href: "/admin/manage-archive" },
       { label: "Launchpad", href: "/admin/manage-launchpad" },
       { label: "App Collection", href: "/admin/app-lab/manage" },

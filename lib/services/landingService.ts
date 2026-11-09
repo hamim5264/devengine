@@ -24,6 +24,7 @@ import {
   ProcessConfig,
   TestimonialsConfig,
   ContactConfig,
+  FooterConfig,
 } from "@/types/landing";
 
 const COLLECTION_NAME = "landing_sections";
@@ -262,7 +263,25 @@ export const DEFAULT_LANDING_CONFIG: LandingConfig = {
     title: "Initiate Sequence.",
     subtitle: "Ready to engineer the future? Tell us about your objective.",
   },
+  footer: {
+    locationTitle: "Studio Headquarters",
+    addressLine1: "House #12, Road #04, Block #B",
+    addressLine2: "Banani, Dhaka - 1213",
+    city: "Dhaka",
+    country: "Bangladesh",
+    fullAddress: "House #12, Road #04, Block #B, Banani, Dhaka - 1213, Bangladesh",
+    mapUrl: "https://maps.google.com/?q=Banani,Dhaka,Bangladesh",
+    email: "hamim.leon@gmail.com",
+    phone: "+880 1724-879284",
+    tagline: "Engineering the Cinematic Future.",
+    subTagline: "High-fidelity, performant digital ecosystems.",
+    ctaText: "Build Together",
+    ctaLink: "/home#contact",
+    showLocation: true,
+  },
 };
+
+export const DEFAULT_FOOTER_CONFIG: FooterConfig = DEFAULT_LANDING_CONFIG.footer;
 
 /**
  * Fetch all dynamic sections for the dashboard landing page.
@@ -313,11 +332,38 @@ export async function getLandingConfig(): Promise<LandingConfig> {
       process: config.process || DEFAULT_LANDING_CONFIG.process,
       testimonials: config.testimonials || DEFAULT_LANDING_CONFIG.testimonials,
       contact: config.contact || DEFAULT_LANDING_CONFIG.contact,
+      footer: (config.footer && typeof config.footer === "object")
+        ? { ...DEFAULT_FOOTER_CONFIG, ...config.footer }
+        : DEFAULT_FOOTER_CONFIG,
     };
   } catch (err) {
     console.warn("Notice: Firestore landing config fallback active:", err);
     return DEFAULT_LANDING_CONFIG;
   }
+}
+
+/**
+ * Fetch dedicated footer configuration (cached / direct doc lookup)
+ */
+export async function getFooterConfig(): Promise<FooterConfig> {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, "footer");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return { ...DEFAULT_FOOTER_CONFIG, ...(snap.data() as Partial<FooterConfig>) };
+    }
+    return DEFAULT_FOOTER_CONFIG;
+  } catch (err) {
+    console.warn("Notice: Firestore footer config fallback active:", err);
+    return DEFAULT_FOOTER_CONFIG;
+  }
+}
+
+/**
+ * Update dedicated footer configuration
+ */
+export async function updateFooterConfig(data: Partial<FooterConfig>): Promise<void> {
+  return updateLandingSection("footer", data);
 }
 
 /**

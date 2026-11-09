@@ -439,6 +439,7 @@ export default function ViewAllProjectsPage() {
           content="Complete index of production-ready mobile applications, web platforms, and automated software architectures engineered by DevEngine."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="canonical" href="https://www.devenginehq.com/projects/all" />
       </Head>
 
       {/* Landing Navbar with Navigation & Global Theme Switcher */}

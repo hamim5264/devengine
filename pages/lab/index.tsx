@@ -55,7 +55,11 @@ export default function LabPage() {
   const activeBuilds = projects.filter((project) => ["IN_DEVELOPMENT", "ALPHA", "BETA"].includes(project.status)).length;
   return (
     <FeaturePage>
-      <Head><title>DevEngine Lab | Ideas Taking Shape</title><meta name="description" content="Explore DevEngine’s research and development: upcoming mobile apps, web platforms, AI engines, and cloud services. Follow our experiments from concept to launch." /></Head>
+      <Head>
+        <title>DevEngine Lab | Ideas Taking Shape</title>
+        <meta name="description" content="Explore DevEngine’s research and development: upcoming mobile apps, web platforms, AI engines, and cloud services. Follow our experiments from concept to launch." />
+        <link rel="canonical" href="https://www.devenginehq.com/lab" />
+      </Head>
       <section className={`${styles.section} ${styles.hero}`}><div className={styles.inner}><div className={styles.split}>
         <div><Reveal><span className={styles.eyebrow}>DevEngine / Research & development</span></Reveal><AnimatedTitle text="A space for" accent="what comes next." /><Reveal delay={0.15}><p className={`${styles.body} ${styles.lead}`}>The Lab is where ideas become experiments, and experiments become possibilities. Follow the platforms, prototypes, and new experiences taking shape at DevEngine.</p><div className={styles.metrics}><div className={styles.metric}><strong>{projects.length}</strong><span>Projects in the lab</span></div><div className={styles.metric}><strong>{activeBuilds}</strong><span>Active builds</span></div><div className={styles.metric}><strong>{projects.filter((project) => project.progressPercent >= 70).length}</strong><span>Near launch</span></div></div><div className={styles.actions}><a className={styles.secondaryButton} href="#experiments">Explore the experiments <Icon name="south" /></a></div></Reveal></div>
         <DepthStage><Portal label="Curiosity → Experiment → Possibility" /></DepthStage>

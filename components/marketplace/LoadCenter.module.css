@@ -1,0 +1,1 @@
+.scope :global([class*="loading"]) { position: fixed !important; z-index: 950; inset: 0 !important; min-height: 100svh !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; }

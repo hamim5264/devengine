@@ -116,6 +116,8 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <IconBag />,
     items: [
       { label: "Orders & Payments", href: "/admin/manage-orders", badge: "live" },
+      { label: "Landing Page Marketplace", href: "/admin/landing-page-designs", badge: "new" },
+      { label: "Marketplace Requests", href: "/admin/landing-page-designs/requests" },
       { label: "Invoice PDF Settings", href: "/admin/manage-pdf-settings", badge: "pdf" },
       { label: "Currencies", href: "/admin/manage-currencies" },
     ],

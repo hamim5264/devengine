@@ -13,13 +13,15 @@ service firebase.storage {
         request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/(png|jpeg|webp)');
     }
     // Universal rules for DevEngine workspace & eco-system
-    match /{allPaths=**} {
-      // 1. Public read so images, PDFs, deliverables, and attachments render everywhere
-      allow read: if true;
+    match /{topLevel}/{allPaths=**} {
+      // 1. Public read so images, PDFs, and public attachments render everywhere.
+      // Marketplace delivery objects remain server-only and are shared as short-lived
+      // signed URLs only after server-side payment/ownership verification.
+      allow read: if topLevel != 'landing_page_deliveries';
 
       // 2. Allow writes with 25 MB size limit (No 30-day expiration, zero blockers)
       // Any authenticated admin/staff, or app client uploads safely under 25 MB
-      allow write: if request.resource.size < 25 * 1024 * 1024;
+      allow write: if topLevel != 'landing_page_deliveries' && request.resource.size < 25 * 1024 * 1024;
     }
   }
 }

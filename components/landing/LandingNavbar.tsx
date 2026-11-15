@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/home", label: "Dashboard", icon: "dashboard", desc: "Studio Overview" },
   { href: "/projects", label: "Archive", icon: "auto_awesome_motion", desc: "Selected Works" },
   { href: "/services", label: "Services", icon: "layers", desc: "Capabilities & Stack" },
+  { href: "/landing-page-designs", label: "Designs", icon: "palette", desc: "Premium Landing Pages" },
   { href: "/launchpad", label: "Launchpad", icon: "rocket_launch", desc: "Venture Accelerator" },
   { href: "/career", label: "Career", icon: "person_search", desc: "Join Our Team" },
   { href: "/about", label: "About", icon: "fingerprint", desc: "Philosophy & DNA" },

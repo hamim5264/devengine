@@ -1,0 +1,11 @@
+import Head from "next/head";
+import Link from "next/link";
+import { onAuthStateChanged } from "firebase/auth";
+import { useEffect, useState } from "react";
+import MarketplaceShell from "@/components/marketplace/MarketplaceShell";
+import styles from "@/components/marketplace/Marketplace.module.css";
+import { auth } from "@/lib/firebase";
+import { getMarketplaceOrders } from "@/lib/services/landingMarketplaceService";
+import type { LandingPageOrder } from "@/types/marketplace";
+const money = (amount: number, currency: string) => new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD" }).format(amount || 0);
+export default function MarketplaceOrders() { const [orders, setOrders] = useState<LandingPageOrder[]>([]); const [ready, setReady] = useState(false); useEffect(() => onAuthStateChanged(auth, (user) => { setReady(true); if (user) void getMarketplaceOrders(user.uid).then(setOrders).catch(() => setOrders([])); else setOrders([]); }), []); return <><Head><title>My purchases | DevEngine Marketplace</title><meta name="robots" content="noindex"/></Head><MarketplaceShell><div className={styles.container}><section className={styles.hero}><div className={styles.eyebrow}>Marketplace account</div><h1 className={styles.title}>My purchases</h1><p className={styles.subtitle}>Your orders and secure digital deliveries live here.</p></section>{!ready ? <div className={styles.empty}>Loading your orders…</div> : !auth.currentUser ? <div className={styles.empty}>Sign in to view your private purchase history.<br/><Link href="/landing-page-designs/account">Sign in</Link></div> : <div className={styles.orderList}>{orders.map((order) => <article className={styles.order} key={order.id}><div><h2>{order.designTitle}</h2><p>{order.orderNumber} · {money(order.amount, order.currency)} · {order.paymentProvider}</p></div><div className={styles.status}>{order.paymentStatus}{order.paymentStatus === "paid" && <><br/><Link href={`/landing-page-designs/orders/${order.id}`}>View delivery</Link></>}</div></article>)}{!orders.length && <div className={styles.empty}><span className="material-symbols-outlined">shopping_bag</span>No marketplace orders yet.</div>}</div>}</div></MarketplaceShell></> }

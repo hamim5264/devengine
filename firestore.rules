@@ -637,23 +637,17 @@ service cloud.firestore {
       allow create: if false;
     }
     match /landing_page_favorites/{favoriteId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && request.resource.data.keys().hasOnly(['userId', 'designId', 'createdAt']) &&
-        request.resource.data.userId == request.auth.uid && favoriteId == request.auth.uid + '_' + request.resource.data.designId;
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow update: if false;
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && (request.resource.data.userId == request.auth.uid || request.resource.data.customerUid == request.auth.uid);
+      allow delete: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid || resource.data.customerUid == request.auth.uid);
     }
     match /landing_page_reviews/{reviewId} {
-      allow get, list: if marketplaceManager() || resource.data.status == 'approved';
-      allow create: if isSignedIn() && request.resource.data.keys().hasOnly(['designId', 'orderId', 'userId', 'rating', 'body', 'displayName', 'status', 'createdAt', 'updatedAt']) &&
-        request.resource.data.userId == request.auth.uid && request.resource.data.rating is int && request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
-        request.resource.data.body is string && request.resource.data.body.size() >= 5 && request.resource.data.body.size() <= 4000 &&
-        request.resource.data.status == 'pending' && request.resource.data.orderId is string &&
-        exists(/databases/$(database)/documents/landing_page_orders/$(request.resource.data.orderId)) &&
-        get(/databases/$(database)/documents/landing_page_orders/$(request.resource.data.orderId)).data.userId == request.auth.uid &&
-        get(/databases/$(database)/documents/landing_page_orders/$(request.resource.data.orderId)).data.designId == request.resource.data.designId &&
-        get(/databases/$(database)/documents/landing_page_orders/$(request.resource.data.orderId)).data.paymentStatus == 'paid';
+      allow get, list: if true;
+      allow create: if isSignedIn();
       allow update, delete: if marketplaceManager();
+    }
+    match /guest_users/{guestId} {
+      allow read, write: if isSignedIn() && request.auth.uid == guestId;
     }
 
     /* =========================

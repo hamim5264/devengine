@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await orderRef.update({ paymentStatus: "failed", updatedAt: new Date() });
       return res.redirect(303, resultUrl(req, orderId, "failed"));
     }
-    await db.runTransaction(async (transaction) => {
+    await db.runTransaction(async (transaction: any) => {
       const current = await transaction.get(orderRef);
       if (!current.exists || current.data()?.paymentStatus === "paid") return;
       const designRef = db.collection("landing_page_designs").doc(expected.designId);

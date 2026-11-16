@@ -14,6 +14,8 @@ import {
   adminDeleteCategory,
   adminUpdateOrder,
   adminUpdateReviewStatus,
+  adminAddManualReview,
+  adminSeedDefaults,
   adminSaveSettings,
 } from "@/lib/services/marketplaceService";
 import type {
@@ -35,10 +37,10 @@ const INITIAL_DESIGN: Partial<LandingDesign> = {
   category: "saas",
   categoryName: "SaaS",
   tags: [],
-  price: 29,
-  originalPrice: 49,
-  discountPercent: 40,
-  currency: "USD",
+  price: 4900,
+  originalPrice: 6900,
+  discountPercent: 29,
+  currency: "BDT",
   isFree: false,
   thumbnailUrl: "",
   previewImages: [],
@@ -63,6 +65,11 @@ const INITIAL_DESIGN: Partial<LandingDesign> = {
   isTrending: false,
   displayOrder: 0,
   status: "published",
+  salesCount: 0,
+  favoritesCount: 0,
+  rating: 5.0,
+  reviewCount: 0,
+  viewsCount: 0,
   seoTitle: "",
   seoDescription: "",
 };
@@ -106,9 +113,70 @@ export default function LandingPageDesignsAdmin() {
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Manual Review Form State
+  const [isManualReviewModalOpen, setIsManualReviewModalOpen] = useState(false);
+  const [manualReviewDesignId, setManualReviewDesignId] = useState("");
+  const [manualReviewName, setManualReviewName] = useState("");
+  const [manualReviewEmail, setManualReviewEmail] = useState("");
+  const [manualReviewRating, setManualReviewRating] = useState(5);
+  const [manualReviewComment, setManualReviewComment] = useState("");
+  const [manualReviewVerified, setManualReviewVerified] = useState(true);
+  const [manualReviewDate, setManualReviewDate] = useState(new Date().toISOString().split("T")[0]);
+  const [submittingManualReview, setSubmittingManualReview] = useState(false);
+
   const showNotification = (message: string, type: "success" | "error" = "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4500);
+  };
+
+  const handleSeedDefaults = async () => {
+    setLoading(true);
+    try {
+      await adminSeedDefaults();
+      await loadData();
+      showNotification("Showcase designs seeded and stored in Firestore database!");
+    } catch (err: any) {
+      showNotification(err.message || "Failed to seed default designs.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveManualReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualReviewDesignId) {
+      showNotification("Please select a design to review.", "error");
+      return;
+    }
+    if (!manualReviewName.trim() || !manualReviewComment.trim()) {
+      showNotification("Reviewer name and comment are required.", "error");
+      return;
+    }
+    const targetDesign = designs.find((d) => d.id === manualReviewDesignId);
+    setSubmittingManualReview(true);
+    try {
+      const res = await adminAddManualReview({
+        designId: manualReviewDesignId,
+        designTitle: targetDesign?.title || "Landing Page Design",
+        customerName: manualReviewName.trim(),
+        customerEmail: manualReviewEmail.trim() || "customer@verified.io",
+        rating: manualReviewRating,
+        comment: manualReviewComment.trim(),
+        isVerifiedPurchase: manualReviewVerified,
+        createdAt: new Date(manualReviewDate).toISOString(),
+        status: "approved",
+      });
+      setReviews((prev) => [res.review, ...prev]);
+      setIsManualReviewModalOpen(false);
+      setManualReviewName("");
+      setManualReviewEmail("");
+      setManualReviewComment("");
+      showNotification("Manual review added successfully!");
+    } catch (err: any) {
+      showNotification(err.message || "Failed to add review.", "error");
+    } finally {
+      setSubmittingManualReview(false);
+    }
   };
 
   const loadData = async () => {
@@ -331,16 +399,20 @@ export default function LandingPageDesignsAdmin() {
     }
   };
 
-  // ── IMAGE UPLOAD HELPER ──
+  // ── IMAGE & VIDEO UPLOAD HELPER ──
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    field: "thumbnailUrl" | "desktopScreenshot" | "tabletScreenshot" | "mobileScreenshot" | "gallery"
+    field: "thumbnailUrl" | "desktopScreenshot" | "tabletScreenshot" | "mobileScreenshot" | "gallery" | "videoUrl" | "howItWorksVideo"
   ) => {
     const files = e.target.files;
     if (!files || !files.length) return;
     setUploadingImage(true);
     try {
-      if (field === "gallery") {
+      if (field === "howItWorksVideo") {
+        const url = await uploadStorageAsset(files[0], "marketplace/walkthrough", "how_it_works", 100 * 1024 * 1024);
+        setSettings((prev) => ({ ...prev, howItWorksVideoUrl: url }));
+        showNotification("How It Works video uploaded to Firebase Storage!");
+      } else if (field === "gallery") {
         const uploadedUrls: string[] = [];
         for (let i = 0; i < files.length; i++) {
           const url = await uploadStorageAsset(files[i], "marketplace/designs", `gallery_${i}`);
@@ -351,6 +423,10 @@ export default function LandingPageDesignsAdmin() {
           previewImages: [...(prev.previewImages || []), ...uploadedUrls],
         }));
         showNotification(`${uploadedUrls.length} screenshot(s) uploaded!`);
+      } else if (field === "videoUrl") {
+        const url = await uploadStorageAsset(files[0], "marketplace/videos", "motion_preview", 50 * 1024 * 1024);
+        setEditingDesign((prev) => ({ ...prev, videoUrl: url }));
+        showNotification("Motion video uploaded to Firebase Storage!");
       } else {
         const url = await uploadStorageAsset(files[0], "marketplace/designs", field);
         setEditingDesign((prev) => ({ ...prev, [field]: url }));
@@ -405,6 +481,16 @@ export default function LandingPageDesignsAdmin() {
               <span>View Public Marketplace</span>
               <span className="material-symbols-outlined text-sm">open_in_new</span>
             </Link>
+
+            <button
+              type="button"
+              onClick={handleSeedDefaults}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-colors cursor-pointer"
+              title="Populate/restore 4 showcase templates in Firestore database"
+            >
+              <span className="material-symbols-outlined text-sm">database</span>
+              <span>Seed Showcase Data</span>
+            </button>
 
             <button
               onClick={() => {
@@ -908,11 +994,26 @@ export default function LandingPageDesignsAdmin() {
         {/* ════════════════════ TAB 4: REVIEWS ════════════════════ */}
         {tab === "reviews" && (
           <div className="py-6 space-y-6">
-            <div>
-              <h2 className="text-xl font-bold">Review Moderation</h2>
-              <p className="text-xs text-[var(--devengine-muted)]">
-                Approve, hide, or moderate customer ratings and written reviews.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold">Review Moderation & Social Proof</h2>
+                <p className="text-xs text-[var(--devengine-muted)]">
+                  Approve, hide, or manually add authentic customer reviews and ratings for templates.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (designs.length > 0 && !manualReviewDesignId) {
+                    setManualReviewDesignId(designs[0].id);
+                  }
+                  setIsManualReviewModalOpen(true);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-[#2cecf7] text-[#02040a] font-bold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(44,236,247,0.3)] hover:bg-[#2cecf7]/90 transition-all self-start sm:self-auto cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm font-black">rate_review</span>
+                <span>Add Manual Review</span>
+              </button>
             </div>
 
             {reviews.length === 0 ? (
@@ -1128,6 +1229,86 @@ export default function LandingPageDesignsAdmin() {
                   onChange={(e) => setSettings({ ...settings, defaultLicense: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
                 />
+              </div>
+
+              {/* 🎬 HOW IT WORKS VIDEO WALKTHROUGH SETTINGS */}
+              <div className="pt-4 border-t border-[var(--devengine-border)] space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#2cecf7] text-lg">play_circle</span>
+                  <h3 className="text-sm font-bold text-[#2cecf7] uppercase tracking-wider font-mono">
+                    "How It Works" Pop-Up Video Configuration
+                  </h3>
+                </div>
+                <p className="text-xs text-[var(--devengine-muted)]">
+                  When visitors tap &ldquo;How It Works&rdquo; on the public landing page, a wide sheet will pop up playing this video. You can upload an MP4/WebM video or paste a YouTube URL.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Pop-up Sheet Title</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. How DevEngine Designs Works"
+                      value={settings.howItWorksTitle || ""}
+                      onChange={(e) => setSettings({ ...settings, howItWorksTitle: e.target.value })}
+                      className="w-full px-4 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold mb-1">Walkthrough Video Source (Upload or YouTube URL)</label>
+                    <div className="space-y-1.5">
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/ogg"
+                        onChange={(e) => void handleFileUpload(e, "howItWorksVideo")}
+                        className="text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-[#2cecf7] file:text-[#02040a]"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Or paste YouTube link (e.g. https://www.youtube.com/watch?v=...)"
+                        value={settings.howItWorksVideoUrl || ""}
+                        onChange={(e) => setSettings({ ...settings, howItWorksVideoUrl: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Pop-up Sheet Subtitle / Description</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Short description under the video"
+                    value={settings.howItWorksDescription || ""}
+                    onChange={(e) => setSettings({ ...settings, howItWorksDescription: e.target.value })}
+                    className="w-full px-4 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                  />
+                </div>
+
+                {settings.howItWorksVideoUrl && (
+                  <div className="p-3 rounded-2xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)]">
+                    <span className="text-[11px] font-mono text-[var(--devengine-muted)] uppercase block mb-2">Live Video Preview:</span>
+                    <div className="aspect-video w-full max-w-md rounded-xl overflow-hidden bg-black flex items-center justify-center">
+                      {settings.howItWorksVideoUrl.includes("youtube.com") || settings.howItWorksVideoUrl.includes("youtu.be") ? (
+                        <iframe
+                          src={
+                            settings.howItWorksVideoUrl.includes("embed/")
+                              ? settings.howItWorksVideoUrl
+                              : settings.howItWorksVideoUrl.includes("youtu.be/")
+                              ? `https://www.youtube.com/embed/${settings.howItWorksVideoUrl.split("youtu.be/")[1]?.split("?")[0]}`
+                              : `https://www.youtube.com/embed/${new URLSearchParams(settings.howItWorksVideoUrl.split("?")[1] || "").get("v") || ""}`
+                          }
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video src={settings.howItWorksVideoUrl} controls className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -1447,21 +1628,89 @@ export default function LandingPageDesignsAdmin() {
                   </div>
                 </div>
 
-                {/* Video / Motion Showcase URL */}
+                {/* Desktop, Tablet, and Mobile Screenshots */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div>
+                    <label className="block font-semibold mb-1">Desktop Device Mockup</label>
+                    <div className="space-y-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => void handleFileUpload(e, "desktopScreenshot")}
+                        className="text-[11px] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-[#2cecf7] file:text-[#02040a]"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Or desktop image URL"
+                        value={editingDesign.desktopScreenshot || ""}
+                        onChange={(e) => setEditingDesign({ ...editingDesign, desktopScreenshot: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Tablet Device Mockup</label>
+                    <div className="space-y-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => void handleFileUpload(e, "tabletScreenshot")}
+                        className="text-[11px] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-[#2cecf7] file:text-[#02040a]"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Or tablet image URL"
+                        value={editingDesign.tabletScreenshot || ""}
+                        onChange={(e) => setEditingDesign({ ...editingDesign, tabletScreenshot: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Mobile Device Mockup</label>
+                    <div className="space-y-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => void handleFileUpload(e, "mobileScreenshot")}
+                        className="text-[11px] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-[#2cecf7] file:text-[#02040a]"
+                      />
+                      <input
+                        type="url"
+                        placeholder="Or mobile image URL"
+                        value={editingDesign.mobileScreenshot || ""}
+                        onChange={(e) => setEditingDesign({ ...editingDesign, mobileScreenshot: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Video / Motion Showcase */}
                 <div>
                   <label className="block font-semibold mb-1">
-                    🎬 Motion Video / Interactive Demo URL (YouTube, Vimeo, or MP4)
+                    🎬 Motion Video / Interactive Demo (Upload Video or YouTube Link)
                   </label>
                   <p className="text-[11px] text-[var(--devengine-muted)] mb-1.5">
-                    Embed an interactive video presentation directly in the Dribbble hero player (e.g. YouTube watch/share link or direct video URL).
+                    Embed an interactive video presentation directly in the hero player. You can upload an MP4/WebM video file OR paste a YouTube watch, embed, or shorts link.
                   </p>
-                  <input
-                    type="url"
-                    placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
-                    value={editingDesign.videoUrl || ""}
-                    onChange={(e) => setEditingDesign({ ...editingDesign, videoUrl: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
-                  />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm"
+                      onChange={(e) => void handleFileUpload(e, "videoUrl")}
+                      className="text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#2cecf7] file:text-[#02040a]"
+                    />
+                    <input
+                      type="url"
+                      placeholder="Or paste YouTube URL (e.g. https://www.youtube.com/watch?v=...)"
+                      value={editingDesign.videoUrl || ""}
+                      onChange={(e) => setEditingDesign({ ...editingDesign, videoUrl: e.target.value })}
+                      className="flex-1 px-4 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                    />
+                  </div>
                 </div>
 
                 {/* Long-Form Screenshots Gallery */}
@@ -1753,6 +2002,82 @@ export default function LandingPageDesignsAdmin() {
                 </div>
               </div>
 
+              {/* SECTION: MANUAL ENGAGEMENT METRICS & SOCIAL PROOF OVERRIDES */}
+              <div className="space-y-4 pt-4 border-t border-[var(--devengine-border)]">
+                <div>
+                  <h3 className="text-sm font-bold text-[#2cecf7] uppercase tracking-wider font-mono">
+                    6. Manual Engagement Metrics & Social Proof Overrides
+                  </h3>
+                  <p className="text-[11px] text-[var(--devengine-muted)] mt-1">
+                    Override metrics manually so new templates do not start at 0 and discourage customer engagement. User favorites, purchases, and verified reviews dynamically increment on top of these base numbers.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  <div>
+                    <label className="block font-semibold mb-1">Sales Count</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingDesign.salesCount ?? 0}
+                      onChange={(e) => setEditingDesign({ ...editingDesign, salesCount: Number(e.target.value) })}
+                      placeholder="e.g. 3200"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#2cecf7]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Favorites Count</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingDesign.favoritesCount ?? 0}
+                      onChange={(e) => setEditingDesign({ ...editingDesign, favoritesCount: Number(e.target.value) })}
+                      placeholder="e.g. 14"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#2cecf7]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Star Rating</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={5}
+                      step={0.1}
+                      value={editingDesign.rating ?? 5.0}
+                      onChange={(e) => setEditingDesign({ ...editingDesign, rating: Number(e.target.value) })}
+                      placeholder="e.g. 4.9"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs font-mono font-bold text-amber-400 focus:outline-none focus:border-[#2cecf7]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Review Count</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingDesign.reviewCount ?? 0}
+                      onChange={(e) => setEditingDesign({ ...editingDesign, reviewCount: Number(e.target.value) })}
+                      placeholder="e.g. 142"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#2cecf7]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-1">Views Count</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editingDesign.viewsCount ?? 0}
+                      onChange={(e) => setEditingDesign({ ...editingDesign, viewsCount: Number(e.target.value) })}
+                      placeholder="e.g. 1420"
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:border-[#2cecf7]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* MODAL ACTIONS */}
               <div className="pt-6 border-t border-[var(--devengine-border)] flex items-center justify-end gap-3">
                 <button
@@ -1884,6 +2209,146 @@ export default function LandingPageDesignsAdmin() {
                   className="px-5 py-2 rounded-xl text-xs font-bold bg-[#2cecf7] text-[#02040a]"
                 >
                   {saving ? "Saving..." : "Save Category"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════ MODAL: ADD MANUAL REVIEW ════════════════════ */}
+      {isManualReviewModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-[var(--devengine-surface)] border border-[var(--devengine-border)] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--devengine-border)]">
+              <div>
+                <h2 className="text-lg font-bold">Add Manual Customer Review</h2>
+                <p className="text-xs text-[var(--devengine-muted)]">
+                  Add social proof and verified ratings directly to any template.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsManualReviewModalOpen(false)}
+                className="text-[var(--devengine-muted)] hover:text-[var(--devengine-text)]"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveManualReview} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold mb-1">Select Target Design *</label>
+                <select
+                  required
+                  value={manualReviewDesignId}
+                  onChange={(e) => setManualReviewDesignId(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                >
+                  <option value="">-- Choose Landing Page Design --</option>
+                  {designs.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.title} ({d.categoryName || d.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1">Customer / Reviewer Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Liam Vance"
+                    value={manualReviewName}
+                    onChange={(e) => setManualReviewName(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Customer Email</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. liam@vance.design"
+                    value={manualReviewEmail}
+                    onChange={(e) => setManualReviewEmail(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1">Star Rating (1 to 5) *</label>
+                  <div className="flex items-center gap-1.5 pt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setManualReviewRating(star)}
+                        className={`text-xl transition-transform cursor-pointer ${
+                          star <= manualReviewRating ? "text-amber-400 scale-110" : "text-slate-600"
+                        }`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                    <span className="ml-2 font-mono font-bold text-amber-400">{manualReviewRating}.0 / 5.0</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Review Date</label>
+                  <input
+                    type="date"
+                    value={manualReviewDate}
+                    onChange={(e) => setManualReviewDate(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1">Review Comment / Testimonial *</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Share realistic, high-converting feedback about the code quality, Framer animations, and design system..."
+                  value={manualReviewComment}
+                  onChange={(e) => setManualReviewComment(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[var(--devengine-raised)] border border-[var(--devengine-border)] text-xs text-[var(--devengine-text)] focus:outline-none focus:border-[#2cecf7]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="manualVerified"
+                  checked={manualReviewVerified}
+                  onChange={(e) => setManualReviewVerified(e.target.checked)}
+                  className="rounded border-[var(--devengine-border)] text-[#2cecf7]"
+                />
+                <label htmlFor="manualVerified" className="font-semibold text-xs cursor-pointer">
+                  Display "Verified Purchase" green badge
+                </label>
+              </div>
+
+              <div className="pt-4 border-t border-[var(--devengine-border)] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsManualReviewModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[var(--devengine-border)] text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingManualReview}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#2cecf7] text-[#02040a] hover:bg-[#2cecf7]/90 disabled:opacity-50 shadow-[0_0_15px_rgba(44,236,247,0.3)] cursor-pointer"
+                >
+                  {submittingManualReview ? "Adding Review..." : "Publish Review"}
                 </button>
               </div>
             </form>

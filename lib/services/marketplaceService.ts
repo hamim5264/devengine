@@ -31,6 +31,283 @@ const REVIEWS_COL = "landing_page_reviews";
 const FAVORITES_COL = "landing_page_favorites";
 const SETTINGS_DOC = "landing_page_settings/main";
 
+// ── DEFAULT SHOWCASE DESIGNS (FALLBACK & SEED DATA) ──
+export const DEFAULT_SHOWCASE_DESIGNS: LandingDesign[] = [
+  {
+    id: "seed_flowstack_saas",
+    slug: "flowstack-saas",
+    title: "FlowStack SaaS",
+    shortDescription: "A focused software launch page with pricing proof and product storytelling.",
+    fullDescription:
+      "FlowStack SaaS is a high-converting, production-ready landing page template designed specifically for modern SaaS platforms, developer tools, and AI startups. Features dark & light mode, interactive pricing matrix, testimonials, feature highlights, and motion micro-interactions.",
+    category: "saas",
+    categoryName: "SaaS",
+    tags: ["SaaS", "Dashboard", "Framer", "React", "Next.js", "Dark Mode"],
+    price: 4900,
+    originalPrice: 6900,
+    discountPercent: 29,
+    currency: "BDT",
+    isFree: false,
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format&fit=crop",
+    previewImages: [
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?q=80&w=1600&auto=format&fit=crop",
+    ],
+    desktopScreenshot:
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format&fit=crop",
+    tabletScreenshot:
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop",
+    mobileScreenshot:
+      "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?q=80&w=1200&auto=format&fit=crop",
+    videoUrl: "https://www.youtube.com/embed/L_LUpnjgPso",
+    liveDemoUrl: "https://www.devenginehq.com",
+    deliveryType: "zip_file",
+    whatsIncluded: [
+      "Figma Component Library & UI Kit (.fig)",
+      "Next.js 14 & Tailwind CSS Source Code",
+      "Framer Motion Interactive Animations",
+      "Responsive Mobile & Tablet Breakpoints",
+      "SEO Optimized Meta & OpenGraph Tags",
+      "Commercial Use License & Free Updates",
+    ],
+    technologies: ["Next.js", "React", "Tailwind CSS", "TypeScript", "Framer Motion", "Figma"],
+    license: "Commercial License · Unlimited Client & Commercial Projects",
+    isFeatured: true,
+    isPopular: true,
+    isTrending: false,
+    displayOrder: 0,
+    status: "published",
+    rating: 4.9,
+    reviewCount: 142,
+    salesCount: 3200,
+    viewsCount: 1420,
+    favoritesCount: 14,
+    seoTitle: "FlowStack SaaS | Landing Page Design",
+    seoDescription:
+      "High-converting SaaS landing page with clean layout, engaging visuals, and interactive pricing proof.",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "seed_framefolio",
+    slug: "framefolio",
+    title: "Framefolio",
+    shortDescription: "A refined portfolio page for designers, photographers, and independent makers.",
+    fullDescription:
+      "Framefolio is a minimal, typography-focused portfolio landing page designed for world-class designers, digital artists, and creative agencies. Highlights client work, project case studies, awards, and an interactive contact reel.",
+    category: "portfolio",
+    categoryName: "Portfolio",
+    tags: ["Portfolio", "Creative", "Minimal", "Grid", "Case Studies"],
+    price: 3900,
+    originalPrice: 5500,
+    discountPercent: 29,
+    currency: "BDT",
+    isFree: false,
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1600&auto=format&fit=crop",
+    previewImages: [
+      "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1600&auto=format&fit=crop",
+    ],
+    desktopScreenshot:
+      "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=1600&auto=format&fit=crop",
+    tabletScreenshot:
+      "https://images.unsplash.com/photo-1541701494587-cb58502866ab?q=80&w=1600&auto=format&fit=crop",
+    mobileScreenshot:
+      "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?q=80&w=1200&auto=format&fit=crop",
+    videoUrl: "https://www.youtube.com/embed/L_LUpnjgPso",
+    liveDemoUrl: "https://www.devenginehq.com",
+    deliveryType: "zip_file",
+    whatsIncluded: [
+      "Figma Component Library",
+      "Next.js & Tailwind CSS Source",
+      "Custom Case Study Layouts",
+      "Dark / Light Switcher",
+      "Commercial License",
+    ],
+    technologies: ["Next.js", "Tailwind CSS", "Figma", "TypeScript"],
+    license: "Commercial License · Unlimited Projects",
+    isFeatured: false,
+    isPopular: false,
+    isTrending: true,
+    displayOrder: 1,
+    status: "published",
+    rating: 4.8,
+    reviewCount: 96,
+    salesCount: 1800,
+    viewsCount: 890,
+    favoritesCount: 22,
+    seoTitle: "Framefolio | Creative Portfolio Design",
+    seoDescription:
+      "Refined portfolio landing page for designers, photographers, and independent makers.",
+    createdAt: "2026-01-02T00:00:00.000Z",
+    updatedAt: "2026-01-02T00:00:00.000Z",
+  },
+  {
+    id: "seed_northstar_creative",
+    slug: "northstar-creative",
+    title: "Northstar Creative",
+    shortDescription: "A focused agency landing page designed to put selected client work first.",
+    fullDescription:
+      "Northstar Creative delivers a bold, editorial aesthetic tailored for boutique agencies, motion studios, and branding consultancies. Includes interactive services grid, client logos, video reels, and inquiry intake.",
+    category: "agency",
+    categoryName: "Agency",
+    tags: ["Agency", "Editorial", "Studio", "Branding", "Creative"],
+    price: 5900,
+    originalPrice: 7900,
+    discountPercent: 25,
+    currency: "BDT",
+    isFree: false,
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1600&auto=format&fit=crop",
+    previewImages: [
+      "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1522542550221-31fd19575a2d?q=80&w=1600&auto=format&fit=crop",
+    ],
+    desktopScreenshot:
+      "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1600&auto=format&fit=crop",
+    tabletScreenshot:
+      "https://images.unsplash.com/photo-1522542550221-31fd19575a2d?q=80&w=1600&auto=format&fit=crop",
+    mobileScreenshot:
+      "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?q=80&w=1200&auto=format&fit=crop",
+    videoUrl: "https://www.youtube.com/embed/L_LUpnjgPso",
+    liveDemoUrl: "https://www.devenginehq.com",
+    deliveryType: "zip_file",
+    whatsIncluded: [
+      "Figma Design System",
+      "Production Next.js Template",
+      "Motion Interactions",
+      "Commercial License",
+      "Priority Support",
+    ],
+    technologies: ["Next.js", "Tailwind CSS", "Framer Motion", "Figma"],
+    license: "Commercial License · Unlimited Projects",
+    isFeatured: true,
+    isPopular: false,
+    isTrending: false,
+    displayOrder: 2,
+    status: "published",
+    rating: 4.8,
+    reviewCount: 210,
+    salesCount: 4600,
+    viewsCount: 2300,
+    favoritesCount: 45,
+    seoTitle: "Northstar Creative | Agency Landing Page Design",
+    seoDescription: "Focused agency landing page designed to put selected client work first.",
+    createdAt: "2026-01-03T00:00:00.000Z",
+    updatedAt: "2026-01-03T00:00:00.000Z",
+  },
+  {
+    id: "seed_teamly",
+    slug: "teamly",
+    title: "Teamly",
+    shortDescription: "A modern SaaS landing page for team collaboration and productivity.",
+    fullDescription:
+      "Teamly is a sleek, modern SaaS landing page engineered for collaboration suites, task managers, and developer productivity tools. Features interactive feature cards, pricing tiers, and client reviews.",
+    category: "saas",
+    categoryName: "SaaS",
+    tags: ["SaaS", "Productivity", "Collaboration", "Clean UI", "Next.js"],
+    price: 4500,
+    originalPrice: 5900,
+    discountPercent: 24,
+    currency: "BDT",
+    isFree: false,
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop",
+    previewImages: [
+      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop",
+    ],
+    desktopScreenshot:
+      "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop",
+    mobileScreenshot:
+      "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?q=80&w=1200&auto=format&fit=crop",
+    videoUrl: "https://www.youtube.com/embed/L_LUpnjgPso",
+    liveDemoUrl: "https://www.devenginehq.com",
+    deliveryType: "zip_file",
+    whatsIncluded: [
+      "Figma UI Kit & Tokens",
+      "Production Next.js Source",
+      "Interactive Components",
+      "Commercial License",
+    ],
+    technologies: ["Next.js", "Tailwind CSS", "React", "Figma"],
+    license: "Commercial License · Unlimited Projects",
+    isFeatured: true,
+    isPopular: false,
+    isTrending: true,
+    displayOrder: 3,
+    status: "published",
+    rating: 4.8,
+    reviewCount: 210,
+    salesCount: 2400,
+    viewsCount: 1950,
+    favoritesCount: 38,
+    seoTitle: "Teamly | Team Collaboration SaaS Landing Page",
+    seoDescription: "A modern SaaS landing page for team collaboration and productivity.",
+    createdAt: "2026-01-04T00:00:00.000Z",
+    updatedAt: "2026-01-04T00:00:00.000Z",
+  },
+];
+
+const DEFAULT_FALLBACK_REVIEWS: Record<string, DesignReview[]> = {
+  "flowstack-saas": [
+    {
+      id: "rev_1",
+      designId: "seed_flowstack_saas",
+      designTitle: "FlowStack SaaS",
+      customerName: "Alex Rivera",
+      customerEmail: "alex@techlaunch.io",
+      rating: 5,
+      comment:
+        "Saved our engineering team at least 3 weeks of front-end styling. The animations are butter-smooth and look incredible on desktop and mobile.",
+      status: "approved",
+      createdAt: "2026-02-10T14:30:00.000Z",
+    },
+    {
+      id: "rev_2",
+      designId: "seed_flowstack_saas",
+      designTitle: "FlowStack SaaS",
+      customerName: "Sarah Chen",
+      customerEmail: "sarah@lumina.design",
+      rating: 5,
+      comment:
+        "Super clean code, well-structured components and the video preview matches the delivered files 100%. Highly recommended!",
+      status: "approved",
+      createdAt: "2026-02-14T09:15:00.000Z",
+    },
+  ],
+  framefolio: [
+    {
+      id: "rev_3",
+      designId: "seed_framefolio",
+      designTitle: "Framefolio",
+      customerName: "Liam Vance",
+      customerEmail: "liam@vance.studio",
+      rating: 5,
+      comment:
+        "Minimal, gorgeous typography, and the dark mode switch is pure elegance. Client inquiries jumped by 40% after re-launching with Framefolio.",
+      status: "approved",
+      createdAt: "2026-02-12T11:00:00.000Z",
+    },
+  ],
+  "northstar-creative": [
+    {
+      id: "rev_4",
+      designId: "seed_northstar_creative",
+      designTitle: "Northstar Creative",
+      customerName: "Elena Rostova",
+      customerEmail: "elena@nordicmotion.co",
+      rating: 5,
+      comment:
+        "Best investment for our agency this year. Clean Figma layers and flawless responsive layout out of the box.",
+      status: "approved",
+      createdAt: "2026-02-15T16:20:00.000Z",
+    },
+  ],
+};
+
 // ── 1. CATEGORIES ──
 export async function getMarketplaceCategories(): Promise<DesignCategory[]> {
   try {
@@ -81,6 +358,13 @@ export async function getPublishedDesigns(params?: {
     const snap = await getDocs(q);
     let designs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as LandingDesign));
 
+    if (designs.length === 0) {
+      designs = DEFAULT_SHOWCASE_DESIGNS.filter((d) => {
+        if (!params?.category || params.category === "all") return true;
+        return d.category === params.category;
+      });
+    }
+
     // Sort in memory for maximum reliability
     const sort = params?.sortBy || "popular";
     designs.sort((a, b) => {
@@ -105,57 +389,157 @@ export async function getPublishedDesigns(params?: {
 
     return designs;
   } catch (err) {
-    console.error("Failed to load designs:", err);
-    return [];
+    console.warn("Failed to load designs from Firestore, using showcase fallback:", err);
+    let designs = DEFAULT_SHOWCASE_DESIGNS.filter((d) => {
+      if (!params?.category || params.category === "all") return true;
+      return d.category === params.category;
+    });
+    if (params?.limitCount) {
+      designs = designs.slice(0, params.limitCount);
+    }
+    return designs;
   }
 }
 
 export async function getDesignBySlug(slug: string): Promise<LandingDesign | null> {
+  const normalizedSlug = (slug || "").trim().toLowerCase();
   try {
-    const q = query(collection(db, DESIGNS_COL), where("slug", "==", slug), limit(1));
-    const snap = await getDocs(q);
-    if (snap.empty) return null;
-    const docData = snap.docs[0];
-    const design = { id: docData.id, ...docData.data() } as LandingDesign;
+    // 1. Try public query with status == "published" (required by firestore.rules for non-admin reads)
+    const qPub = query(
+      collection(db, DESIGNS_COL),
+      where("slug", "==", normalizedSlug),
+      where("status", "==", "published"),
+      limit(1)
+    );
+    const snapPub = await getDocs(qPub);
+    if (!snapPub.empty) {
+      const docData = snapPub.docs[0];
+      const design = { id: docData.id, ...docData.data() } as LandingDesign;
 
-    // Increment view count non-blockingly
-    updateDoc(docData.ref, { viewsCount: increment(1) }).catch(() => {});
+      // Increment view count non-blockingly
+      updateDoc(docData.ref, { viewsCount: increment(1) }).catch(() => {});
 
-    return design;
-  } catch (err) {
-    console.error("Failed to fetch design by slug:", err);
+      return design;
+    }
+
+    // 2. Try without status constraint in case an admin/staff user is viewing a draft
+    try {
+      const qAny = query(collection(db, DESIGNS_COL), where("slug", "==", normalizedSlug), limit(1));
+      const snapAny = await getDocs(qAny);
+      if (!snapAny.empty) {
+        const docData = snapAny.docs[0];
+        const design = { id: docData.id, ...docData.data() } as LandingDesign;
+        return design;
+      }
+    } catch {}
+
+    // 3. Fallback to default showcase designs (e.g. flowstack-saas, framefolio, northstar-creative)
+    const fallback = DEFAULT_SHOWCASE_DESIGNS.find((d) => d.slug.toLowerCase() === normalizedSlug);
+    if (fallback) return fallback;
+
     return null;
+  } catch (err) {
+    console.warn("Failed to fetch design by slug, using showcase fallback:", err);
+    return DEFAULT_SHOWCASE_DESIGNS.find((d) => d.slug.toLowerCase() === normalizedSlug) || null;
   }
 }
 
-// ── 3. FAVORITES ──
-export async function toggleFavoriteDesign(designId: string, uid: string): Promise<boolean> {
-  const favDocId = `${uid}_${designId}`;
+// ── 3. FAVORITES & GUEST AUTH SESSION ──
+export interface GuestSession {
+  uid: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  role: "guest";
+  isGuest: boolean;
+  loggedIn: boolean;
+  loginTime?: number;
+}
+
+export function getGuestUser(): GuestSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("devengine_guest");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && parsed.uid) {
+        return parsed as GuestSession;
+      }
+    }
+  } catch {}
+
+  // If Firebase Auth has a logged-in user
+  if (auth.currentUser) {
+    const session: GuestSession = {
+      uid: auth.currentUser.uid,
+      email: auth.currentUser.email || "",
+      fullName: auth.currentUser.displayName || auth.currentUser.email?.split("@")[0] || "Guest User",
+      role: "guest",
+      isGuest: true,
+      loggedIn: true,
+    };
+    try {
+      localStorage.setItem("devengine_guest", JSON.stringify(session));
+    } catch {}
+    return session;
+  }
+
+  return null;
+}
+
+export function checkIsGuestLoggedIn(): boolean {
+  return Boolean(getGuestUser());
+}
+
+export async function toggleFavoriteDesign(designId: string, uid?: string): Promise<boolean> {
+  const currentUid = uid || auth.currentUser?.uid || getGuestUser()?.uid;
+  if (!currentUid) throw new Error("Sign in required");
+
+  // Try API route first if available
+  try {
+    const res = await fetch("/api/marketplace/favorite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ designId, uid: currentUid }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return Boolean(data.isFavorite);
+    }
+  } catch {}
+
+  // Direct client Firestore operation with safety
+  const favDocId = `${currentUid}_${designId}`;
   const favRef = doc(db, FAVORITES_COL, favDocId);
-  const snap = await getDoc(favRef);
+  
+  let exists = false;
+  try {
+    const snap = await getDoc(favRef);
+    exists = snap.exists();
+  } catch (err) {
+    console.warn("getDoc error, defaulting to add:", err);
+  }
 
-  const designRef = doc(db, DESIGNS_COL, designId);
-
-  if (snap.exists()) {
+  if (exists) {
     await deleteDoc(favRef);
-    await updateDoc(designRef, { favoritesCount: increment(-1) }).catch(() => {});
     return false;
   } else {
     await setDoc(favRef, {
       id: favDocId,
-      customerUid: uid,
+      userId: currentUid,
+      customerUid: currentUid,
       designId,
       createdAt: new Date().toISOString(),
-    });
-    await updateDoc(designRef, { favoritesCount: increment(1) }).catch(() => {});
+    }, { merge: true });
     return true;
   }
 }
 
 export async function checkIsFavorite(designId: string, uid?: string): Promise<boolean> {
-  if (!uid) return false;
+  const currentUid = uid || auth.currentUser?.uid || getGuestUser()?.uid;
+  if (!currentUid) return false;
   try {
-    const favRef = doc(db, FAVORITES_COL, `${uid}_${designId}`);
+    const favRef = doc(db, FAVORITES_COL, `${currentUid}_${designId}`);
     const snap = await getDoc(favRef);
     return snap.exists();
   } catch {
@@ -165,9 +549,14 @@ export async function checkIsFavorite(designId: string, uid?: string): Promise<b
 
 export async function getUserFavorites(uid: string): Promise<string[]> {
   try {
-    const q = query(collection(db, FAVORITES_COL), where("customerUid", "==", uid));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => d.data().designId);
+    const q1 = query(collection(db, FAVORITES_COL), where("userId", "==", uid));
+    const snap1 = await getDocs(q1);
+    if (!snap1.empty) {
+      return snap1.docs.map((d) => d.data().designId);
+    }
+    const q2 = query(collection(db, FAVORITES_COL), where("customerUid", "==", uid));
+    const snap2 = await getDocs(q2);
+    return snap2.docs.map((d) => d.data().designId);
   } catch {
     return [];
   }
@@ -183,10 +572,21 @@ export async function getDesignReviews(designId: string): Promise<DesignReview[]
     );
     const snap = await getDocs(q);
     const items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as DesignReview));
-    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return items;
+    if (items.length > 0) {
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return items;
+    }
+
+    // Fallback showcase reviews if none in Firestore
+    const matchedKey = Object.keys(DEFAULT_FALLBACK_REVIEWS).find(
+      (k) => designId.toLowerCase().includes(k) || k.includes(designId.toLowerCase())
+    );
+    return matchedKey ? DEFAULT_FALLBACK_REVIEWS[matchedKey] : [];
   } catch {
-    return [];
+    const matchedKey = Object.keys(DEFAULT_FALLBACK_REVIEWS).find(
+      (k) => designId.toLowerCase().includes(k) || k.includes(designId.toLowerCase())
+    );
+    return matchedKey ? DEFAULT_FALLBACK_REVIEWS[matchedKey] : [];
   }
 }
 
@@ -224,6 +624,9 @@ export async function getMarketplaceSettings(): Promise<MarketplaceSettings> {
     defaultLicense: "Commercial License · Unlimited Projects",
     allowFreeListings: true,
     featuredDesignIds: [],
+    howItWorksVideoUrl: "https://www.youtube.com/watch?v=LXb3EKWsInQ",
+    howItWorksTitle: "How DevEngine Designs Works",
+    howItWorksDescription: "Watch a quick walkthrough of how you can explore, customize, and license production-ready landing page designs with instant digital delivery.",
     updatedAt: new Date().toISOString(),
   };
 
@@ -295,6 +698,14 @@ export async function adminUpdateReviewStatus(id: string, status: "approved" | "
   return adminRequest("update_review_status", { id, status });
 }
 
+export async function adminAddManualReview(review: Partial<DesignReview>) {
+  return adminRequest("add_manual_review", { review }) as Promise<{ review: DesignReview }>;
+}
+
+export async function adminSeedDefaults() {
+  return adminRequest("seed_defaults") as Promise<{ success: boolean; message: string }>;
+}
+
 export async function adminGetAnalytics() {
   return adminRequest("analytics") as Promise<{ analytics: any }>;
 }
@@ -317,13 +728,18 @@ export async function createMarketplaceOrder(order: {
   const user = auth.currentUser;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (user) {
-    headers["Authorization"] = `Bearer ${await user.getIdToken()}`;
+    try {
+      headers["Authorization"] = `Bearer ${await user.getIdToken()}`;
+    } catch {}
   }
 
   const res = await fetch("/api/marketplace/order", {
     method: "POST",
     headers,
-    body: JSON.stringify(order),
+    body: JSON.stringify({
+      ...order,
+      customerUid: user?.uid || undefined,
+    }),
   });
 
   const data = await res.json();
@@ -343,6 +759,101 @@ export async function getMarketplaceOrderById(orderId: string): Promise<Marketpl
   } catch (err) {
     console.error("Error fetching order:", err);
     return null;
+  }
+}
+
+export async function getUserOrders(email?: string | null, uid?: string | null): Promise<MarketplaceOrder[]> {
+  const results: MarketplaceOrder[] = [];
+  const seenIds = new Set<string>();
+
+  try {
+    if (uid) {
+      const qUid = query(collection(db, ORDERS_COL), where("customerUid", "==", uid));
+      const snapUid = await getDocs(qUid);
+      snapUid.docs.forEach((d) => {
+        if (!seenIds.has(d.id)) {
+          seenIds.add(d.id);
+          results.push({ id: d.id, ...d.data() } as MarketplaceOrder);
+        }
+      });
+    }
+
+    if (email) {
+      const cleanEmail = email.trim().toLowerCase();
+      const qEmail = query(collection(db, ORDERS_COL), where("customerEmail", "==", cleanEmail));
+      const snapEmail = await getDocs(qEmail);
+      snapEmail.docs.forEach((d) => {
+        if (!seenIds.has(d.id)) {
+          seenIds.add(d.id);
+          results.push({ id: d.id, ...d.data() } as MarketplaceOrder);
+        }
+      });
+    }
+
+    results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return results;
+  } catch (err) {
+    console.error("Error fetching user orders:", err);
+    return [];
+  }
+}
+
+export async function getUserReviews(uid?: string | null, email?: string | null): Promise<DesignReview[]> {
+  const results: DesignReview[] = [];
+  const seenIds = new Set<string>();
+
+  try {
+    if (uid) {
+      const qUid = query(collection(db, REVIEWS_COL), where("customerUid", "==", uid));
+      const snapUid = await getDocs(qUid);
+      snapUid.docs.forEach((d) => {
+        if (!seenIds.has(d.id)) {
+          seenIds.add(d.id);
+          results.push({ id: d.id, ...d.data() } as DesignReview);
+        }
+      });
+    }
+
+    if (email) {
+      const qEmail = query(collection(db, REVIEWS_COL), where("customerEmail", "==", email.trim().toLowerCase()));
+      const snapEmail = await getDocs(qEmail);
+      snapEmail.docs.forEach((d) => {
+        if (!seenIds.has(d.id)) {
+          seenIds.add(d.id);
+          results.push({ id: d.id, ...d.data() } as DesignReview);
+        }
+      });
+    }
+
+    results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return results;
+  } catch (err) {
+    console.error("Error fetching user reviews:", err);
+    return [];
+  }
+}
+
+export async function getUserFavoriteDesigns(uid: string): Promise<LandingDesign[]> {
+  try {
+    const favoriteIds = await getUserFavorites(uid);
+    if (!favoriteIds.length) return [];
+
+    const designs: LandingDesign[] = [];
+    for (const designId of favoriteIds) {
+      try {
+        const snap = await getDoc(doc(db, DESIGNS_COL, designId));
+        if (snap.exists()) {
+          designs.push({ id: snap.id, ...snap.data() } as LandingDesign);
+        } else {
+          // Check fallback showcase
+          const fallback = DEFAULT_SHOWCASE_DESIGNS.find((d) => d.id === designId || d.slug === designId);
+          if (fallback) designs.push(fallback);
+        }
+      } catch {}
+    }
+    return designs;
+  } catch {
+    return [];
   }
 }
 

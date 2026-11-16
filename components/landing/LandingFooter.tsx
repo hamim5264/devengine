@@ -144,49 +144,11 @@ export default function LandingFooter() {
         {footerConfig.showLocation && (
           <div className={styles.locationGroup}>
             <h2 className={styles.label}><span aria-hidden="true">03 /</span> Studio Location</h2>
-            <div className={styles.locationCard}>
-              <div className={styles.locationPinBox} aria-hidden="true">
-                <span className="material-symbols-outlined">location_on</span>
-              </div>
-              <div className={styles.locationDetails}>
-                <address className={styles.addressText}>
-                  {footerConfig.locationTitle && <strong>{footerConfig.locationTitle}</strong>}
-                  {footerConfig.addressLine1 && <span>{footerConfig.addressLine1}</span>}
-                  {footerConfig.addressLine2 && <span>{footerConfig.addressLine2}</span>}
-                  {(footerConfig.city || footerConfig.country) && (
-                    <span>{[footerConfig.city, footerConfig.country].filter(Boolean).join(", ")}</span>
-                  )}
-                </address>
-
-                {(footerConfig.email || footerConfig.phone) && (
-                  <div className={styles.locationMeta}>
-                    {footerConfig.email && (
-                      <a href={`mailto:${footerConfig.email}`} className={styles.locationMetaLink}>
-                        <span className="material-symbols-outlined">mail</span>
-                        <span>{footerConfig.email}</span>
-                      </a>
-                    )}
-                    {footerConfig.phone && (
-                      <a href={`tel:${footerConfig.phone}`} className={styles.locationMetaLink}>
-                        <span className="material-symbols-outlined">call</span>
-                        <span>{footerConfig.phone}</span>
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {footerConfig.mapUrl && (
-                  <a
-                    href={footerConfig.mapUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.mapLink}
-                  >
-                    <span>View on Google Maps</span>
-                    <span className="material-symbols-outlined" style={{ fontSize: "15px" }}>open_in_new</span>
-                  </a>
-                )}
-              </div>
+            <div className={styles.locationItem}>
+              <span className={`material-symbols-outlined ${styles.locationIcon}`} aria-hidden="true">
+                location_on
+              </span>
+              <span className={styles.locationText}>Banasree, Rampura, Dhaka-1219</span>
             </div>
           </div>
         )}

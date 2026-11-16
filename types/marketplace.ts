@@ -51,6 +51,12 @@ export interface LandingDesign {
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
+
+  // Compatibility aliases
+  trending?: boolean;
+  featured?: boolean;
+  ratingAverage?: number;
+  totalSales?: number;
 }
 
 export interface DesignCategory {
@@ -95,6 +101,11 @@ export interface MarketplaceOrder {
   verifiedAt?: string;
   createdAt: string;
   updatedAt?: string;
+
+  // Compatibility aliases
+  orderNumber?: string;
+  paymentProvider?: string;
+  paymentStatus?: string;
 }
 
 export interface DesignReview {
@@ -103,7 +114,7 @@ export interface DesignReview {
   designTitle: string;
   designSlug?: string;
   orderId?: string;
-  customerUid: string;
+  customerUid?: string;
   customerName: string;
   customerEmail?: string;
   customerAvatar?: string;
@@ -131,6 +142,9 @@ export const DEFAULT_MARKETPLACE_SETTINGS: MarketplaceSettings = {
   defaultLicense: "Commercial Lifetime License · Unlimited Projects",
   allowFreeListings: true,
   featuredDesignIds: [],
+  howItWorksVideoUrl: "https://www.youtube.com/watch?v=LXb3EKWsInQ",
+  howItWorksTitle: "How DevEngine Designs Works",
+  howItWorksDescription: "Watch a quick walkthrough of how you can explore, customize, and license production-ready landing page designs with instant digital delivery.",
   updatedAt: new Date().toISOString(),
 };
 
@@ -150,6 +164,9 @@ export interface MarketplaceSettings {
   allowFreeListings: boolean;
   featuredDesignIds: string[];
   bannerNotice?: string;
+  howItWorksVideoUrl?: string;
+  howItWorksTitle?: string;
+  howItWorksDescription?: string;
   updatedAt: string;
 }
 

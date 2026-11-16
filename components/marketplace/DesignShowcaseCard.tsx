@@ -7,5 +7,63 @@ const price = (amount: number, currency: string) => new Intl.NumberFormat("en-US
 
 export default function DesignShowcaseCard({ design, index, favorite, onFavorite }: { design: LandingPageDesign; index: number; favorite: boolean; onFavorite: (event: MouseEvent, id: string) => void }) {
   const hasDiscount = !!design.originalPrice && design.originalPrice > design.price;
-  return <Link href={`/landing-page-designs/${design.slug}`} className={styles.card}><div className={styles.artboard}>{design.thumbnailUrl ? <img src={design.thumbnailUrl} alt=""/> : <div className={styles.emptyArt}><span className="material-symbols-outlined">web</span></div>}<div className={styles.topline}><span>{String(index + 1).padStart(2, "0")}</span><span>{design.categoryName || "Landing page"}</span></div><button className={styles.favorite} data-active={favorite} onClick={(event) => onFavorite(event, design.id)} aria-label={favorite ? "Remove from wishlist" : "Save to wishlist"}><span className="material-symbols-outlined">{favorite ? "favorite" : "favorite_border"}</span></button><div className={styles.artFooter}><span>{design.trending ? "Trending direction" : design.featured ? "Featured direction" : "Design study"}</span><span className="material-symbols-outlined">arrow_outward</span></div></div><div className={styles.dossier}><div className={styles.dossierHead}><div><p>{design.tags?.slice(0, 2).join(" · ") || "Responsive experience"}</p><h2>{design.title}</h2></div><div className={styles.price}><small>License from</small><strong>{design.isFree || design.price === 0 ? "Free" : price(design.price, design.currency)}</strong>{hasDiscount && <del>{price(design.originalPrice!, design.currency)}</del>}</div></div><p className={styles.description}>{design.shortDescription}</p><div className={styles.meta}><span><i />{design.reviewCount ? `${design.ratingAverage.toFixed(1)} rating · ${design.reviewCount} review${design.reviewCount === 1 ? "" : "s"}` : "New · no reviews yet"}</span><span>{design.totalSales ? `${design.totalSales} sale${design.totalSales === 1 ? "" : "s"}` : "Ready to license"}</span></div></div></Link>;
+  const isTrending = Boolean(design.isTrending ?? design.trending);
+  const isFeatured = Boolean(design.isFeatured ?? design.featured);
+  const ratingVal = Number(design.rating ?? design.ratingAverage ?? 5);
+  const salesVal = Number(design.salesCount ?? design.totalSales ?? 0);
+
+  return (
+    <Link href={`/landing-page-designs/${design.slug}`} className={styles.card}>
+      <div className={styles.artboard}>
+        {design.thumbnailUrl ? (
+          <img src={design.thumbnailUrl} alt="" />
+        ) : (
+          <div className={styles.emptyArt}>
+            <span className="material-symbols-outlined">web</span>
+          </div>
+        )}
+        <div className={styles.topline}>
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <span>{design.categoryName || "Landing page"}</span>
+        </div>
+        <button
+          className={styles.favorite}
+          data-active={favorite}
+          onClick={(event) => onFavorite(event, design.id)}
+          aria-label={favorite ? "Remove from wishlist" : "Save to wishlist"}
+        >
+          <span className="material-symbols-outlined">{favorite ? "favorite" : "favorite_border"}</span>
+        </button>
+        <div className={styles.artFooter}>
+          <span>{isTrending ? "Trending direction" : isFeatured ? "Featured direction" : "Design study"}</span>
+          <span className="material-symbols-outlined">arrow_outward</span>
+        </div>
+      </div>
+      <div className={styles.dossier}>
+        <div className={styles.dossierHead}>
+          <div>
+            <p>{design.tags?.slice(0, 2).join(" · ") || "Responsive experience"}</p>
+            <h2>{design.title}</h2>
+          </div>
+          <div className={styles.price}>
+            <small>License from</small>
+            <strong>{design.isFree || design.price === 0 ? "Free" : price(design.price, design.currency)}</strong>
+            {hasDiscount && <del>{price(design.originalPrice!, design.currency)}</del>}
+          </div>
+        </div>
+        <p className={styles.description}>{design.shortDescription}</p>
+        <div className={styles.meta}>
+          <span>
+            <i />
+            {design.reviewCount
+              ? `${ratingVal.toFixed(1)} rating · ${design.reviewCount} review${design.reviewCount === 1 ? "" : "s"}`
+              : "New · no reviews yet"}
+          </span>
+          <span>
+            {salesVal ? `${salesVal} sale${salesVal === 1 ? "" : "s"}` : "Ready to license"}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
 }

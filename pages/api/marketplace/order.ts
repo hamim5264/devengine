@@ -26,14 +26,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // 1. Fetch the design from database to ensure authentic price
-    const designRef = db.collection("landing_page_designs").doc(designId);
-    const designSnap = await designRef.get();
-    if (!designSnap.exists) {
+    let designRef = db.collection("landing_page_designs").doc(designId);
+    let designSnap = await designRef.get();
+    let design = designSnap.exists ? designSnap.data() : null;
+
+    if (!design) {
+      // Query by slug if id wasn't matched
+      const slugSnap = await db.collection("landing_page_designs").where("slug", "==", designId).limit(1).get();
+      if (!slugSnap.empty) {
+        designRef = slugSnap.docs[0].ref;
+        design = slugSnap.docs[0].data();
+      }
+    }
+
+    if (!design) {
       return res.status(404).json({ error: "Design not found in marketplace." });
     }
 
-    const design = designSnap.data()!;
-    if (design.status !== "published") {
+    if (design.status && design.status !== "published") {
       return res.status(400).json({ error: "This design is not currently available for purchase." });
     }
 
@@ -48,12 +58,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const now = new Date().toISOString();
     const orderRecord = {
       id: orderId,
-      designId: design.id,
+      orderId,
+      designId: design.id || designId,
       designTitle: design.title,
       designSlug: design.slug,
       thumbnailUrl: design.thumbnailUrl || "",
       amount: price,
-      currency: design.currency || "USD",
+      currency: design.currency || "BDT",
 
       customerUid: customerUid || "",
       customerName: String(customerName).trim(),
@@ -75,17 +86,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     await db.collection("landing_page_orders").doc(orderId).set(orderRecord);
+    // Also save in root `orders` collection so footer PaymentVerificationModal can immediately verify it!
+    await db.collection("orders").doc(orderId).set({
+      id: orderId,
+      customerName: orderRecord.customerName,
+      customerEmail: orderRecord.customerEmail,
+      customerPhone: orderRecord.customerPhone,
+      customerAddress: orderRecord.customerAddress,
+      projectId: orderRecord.designId,
+      projectSlug: orderRecord.designSlug,
+      projectTitle: orderRecord.designTitle,
+      planId: "commercial_lifetime",
+      planName: "Commercial Lifetime License",
+      amount: String(orderRecord.amount),
+      currency: orderRecord.currency,
+      paymentMethod: orderRecord.paymentMethod,
+      transactionId: orderRecord.transactionId,
+      senderNumberOrAccount: orderRecord.senderNumberOrAccount,
+      status: orderRecord.status,
+      createdAt: now,
+      isMarketplace: true,
+    }).catch(() => {});
 
-    // If free, increment sales count immediately
-    if (isFree) {
-      await designRef.update({
-        salesCount: (design.salesCount || 0) + 1,
-      }).catch(() => {});
-    }
+    // Dynamically increment salesCount on design
+    await designRef.update({
+      salesCount: (Number(design.salesCount) || 0) + 1,
+    }).catch(() => {});
 
     return res.status(200).json({
       success: true,
+      orderId,
       order: orderRecord,
+      amount: price,
+      currency: orderRecord.currency,
+      status: orderRecord.status,
       message: isFree
         ? "Your free download is ready!"
         : "Order submitted successfully! Our team will verify your transaction shortly.",

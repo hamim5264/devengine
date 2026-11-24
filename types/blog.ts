@@ -17,7 +17,17 @@ export type GridSpanType =
   | "spotlight"
   | "compact"
   | "overlay"
-  | "strip";
+  | "strip"
+  | "mosaic"
+  | "editorial"
+  | "portrait"
+  | "duo"
+  | "ticker"
+  | "aurora"
+  | "notebook"
+  | "casefile"
+  | "horizon"
+  | "luxe";
 
 export interface BlogAuthor {
   name: string;
@@ -325,5 +335,135 @@ export const GRID_SPAN_CONFIG: Record<GridSpanType, GridSpanInfo> = {
     badgeColor: "text-emerald-300 border-emerald-500/30 bg-emerald-500/10",
     recommended: "Studio news bulletins, breaking event notices, and horizontal timeline entries.",
     wireframe: { cells: [3, 4, 5] },
+  },
+  mosaic: {
+    id: "mosaic",
+    label: "Mosaic Anchor (2 Columns × 2 Rows)",
+    shortLabel: "Mosaic Anchor",
+    cols: 2,
+    rows: 2,
+    tag: "2 COLS × 2 ROWS",
+    description: "A large editorial anchor with an art-led cover and spacious story treatment for the most important feature in a feed.",
+    icon: "dashboard_customize",
+    badgeColor: "text-fuchsia-300 border-fuchsia-500/30 bg-fuchsia-500/10",
+    recommended: "Launch stories, annual reports, and signature product narratives.",
+    wireframe: { cells: [0, 1, 3, 4] },
+  },
+  editorial: {
+    id: "editorial",
+    label: "Editorial Ledger (Full 3 Columns)",
+    shortLabel: "Editorial Ledger",
+    cols: 3,
+    rows: 1,
+    tag: "3 COLS EDITORIAL",
+    description: "A full-width, publication-style feature with an asymmetric image and reading-first copy column.",
+    icon: "article",
+    badgeColor: "text-blue-300 border-blue-500/30 bg-blue-500/10",
+    recommended: "Founder letters, essays, and thoughtful company updates.",
+    wireframe: { cells: [0, 1, 2] },
+  },
+  portrait: {
+    id: "portrait",
+    label: "Portrait Journal (1 Column × 2 Rows)",
+    shortLabel: "Portrait Journal",
+    cols: 1,
+    rows: 2,
+    tag: "1 COL × 2 ROWS",
+    description: "A gallery-inspired vertical story card with a tall visual rhythm and a more deliberate reading pace.",
+    icon: "crop_portrait",
+    badgeColor: "text-violet-300 border-violet-500/30 bg-violet-500/10",
+    recommended: "People stories, visual diaries, and detailed studio notes.",
+    wireframe: { cells: [1, 4] },
+  },
+  duo: {
+    id: "duo",
+    label: "Duo Narrative (2 Columns)",
+    shortLabel: "Duo Narrative",
+    cols: 2,
+    rows: 1,
+    tag: "2 COLS NARRATIVE",
+    description: "A refined side-by-side story layout where the visual and narrative carry equal weight.",
+    icon: "view_week",
+    badgeColor: "text-cyan-300 border-cyan-500/30 bg-cyan-500/10",
+    recommended: "Case studies, client transformations, and before-and-after stories.",
+    wireframe: { cells: [1, 2] },
+  },
+  ticker: {
+    id: "ticker",
+    label: "News Ticker (Full 3 Columns)",
+    shortLabel: "News Ticker",
+    cols: 3,
+    rows: 1,
+    tag: "3 COLS NEWS RAIL",
+    description: "A compact full-width update rail designed to make time-sensitive news easy to scan and open.",
+    icon: "breaking_news",
+    badgeColor: "text-orange-300 border-orange-500/30 bg-orange-500/10",
+    recommended: "Release notes, event notices, and short operational updates.",
+    wireframe: { cells: [3, 4, 5] },
+  },
+  aurora: {
+    id: "aurora",
+    label: "Aurora Feature (1 Column)",
+    shortLabel: "Aurora Feature",
+    cols: 1,
+    rows: 1,
+    tag: "1 COL AURORA",
+    description: "A premium card with a luminous border treatment that quietly elevates a single story in the grid.",
+    icon: "flare",
+    badgeColor: "text-teal-300 border-teal-500/30 bg-teal-500/10",
+    recommended: "Editor selections, popular reads, and noteworthy project moments.",
+    wireframe: { cells: [2] },
+  },
+  notebook: {
+    id: "notebook",
+    label: "Field Notes (1 Column)",
+    shortLabel: "Field Notes",
+    cols: 1,
+    rows: 1,
+    tag: "1 COL NOTES",
+    description: "A tactile note-style card with a clean cover edge and compact, approachable editorial details.",
+    icon: "sticky_note_2",
+    badgeColor: "text-lime-300 border-lime-500/30 bg-lime-500/10",
+    recommended: "Lessons learned, engineering notes, and short perspectives.",
+    wireframe: { cells: [5] },
+  },
+  casefile: {
+    id: "casefile",
+    label: "Case File (2 Columns)",
+    shortLabel: "Case File",
+    cols: 2,
+    rows: 1,
+    tag: "2 COLS CASE FILE",
+    description: "A structured two-column briefing card with a confident image panel and a precise information hierarchy.",
+    icon: "folder_open",
+    badgeColor: "text-amber-300 border-amber-500/30 bg-amber-500/10",
+    recommended: "Technical explainers, process breakdowns, and project reports.",
+    wireframe: { cells: [4, 5] },
+  },
+  horizon: {
+    id: "horizon",
+    label: "Horizon Cinema (Full 3 Columns)",
+    shortLabel: "Horizon Cinema",
+    cols: 3,
+    rows: 1,
+    tag: "3 COLS CINEMA",
+    description: "A panoramic, full-bleed feature that places luminous story text directly over the artwork.",
+    icon: "panorama",
+    badgeColor: "text-rose-300 border-rose-500/30 bg-rose-500/10",
+    recommended: "Visual campaigns, product reveals, and big creative announcements.",
+    wireframe: { cells: [6, 7, 8] },
+  },
+  luxe: {
+    id: "luxe",
+    label: "Luxe Showcase (2 Columns × 2 Rows)",
+    shortLabel: "Luxe Showcase",
+    cols: 2,
+    rows: 2,
+    tag: "2 COLS × 2 LUXE",
+    description: "A high-presence magazine panel with generous art direction, elevated type, and generous visual space.",
+    icon: "auto_awesome",
+    badgeColor: "text-pink-300 border-pink-500/30 bg-pink-500/10",
+    recommended: "Premium launches, design showcases, and studio-defining stories.",
+    wireframe: { cells: [1, 2, 4, 5] },
   },
 };

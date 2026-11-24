@@ -5,8 +5,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import Image from "next/image";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { getPublicApprovedReviews } from "@/lib/services/reviewsService";
 import type { ReviewRecord } from "@/types/review";
 import styles from "./SystemShowcase.module.css";
@@ -294,6 +292,20 @@ export const SYSTEM_3D_ICONS: System3DIconItem[] = [
 ];
 
 const TAU = Math.PI * 2;
+const systemIconSource = (file: string) =>
+  `/assets/3D_Icons/optimized/${file.replace(/\.[^/.]+$/, ".webp")}`;
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  return reduced;
+}
 const CATEGORIES = [
   { id: "all", label: "All Nodes (24)" },
   { id: "mobile", label: "Mobile" },
@@ -368,7 +380,7 @@ interface SystemShowcaseProps {
 }
 
 export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) {
-  const reduceMotion = !!useReducedMotion();
+  const reduceMotion = usePrefersReducedMotion();
   const heroRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -384,8 +396,11 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [isReviewPaused, setIsReviewPaused] = useState(false);
 
-  // Load reviews from service if available
+  // Reviews are not visible in the default orbit screen. Fetch them only when
+  // someone opens the reviews view instead of adding a Firestore request to
+  // the entry experience.
   useEffect(() => {
+    if (activeTab !== "reviews") return;
     let active = true;
     getPublicApprovedReviews()
       .then((items) => {
@@ -401,7 +416,7 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
     return () => {
       active = false;
     };
-  }, []);
+  }, [activeTab]);
 
   // Auto-advance reviews carousel one by one
   useEffect(() => {
@@ -481,6 +496,8 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
     let phase2 = Math.PI * 0.45;
     let speed = 1;
     let frame = 0;
+    let lastPaint = 0;
+    let visible = true;
     let last = performance.now();
     const born = performance.now();
     const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
@@ -614,6 +631,17 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
     };
 
     const tick = (now: number) => {
+      if (!visible) {
+        frame = 0;
+        return;
+      }
+      // The orbit remains smooth at 30fps while cutting its layout and canvas
+      // work roughly in half on mobile CPUs.
+      if (now - lastPaint < 32) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
+      lastPaint = now;
       const dt = Math.min(64, now - last);
       last = now;
 
@@ -692,6 +720,14 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
       layout(performance.now());
     });
     ro.observe(hero);
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible && !frame) {
+        last = performance.now();
+        frame = requestAnimationFrame(tick);
+      }
+    }, { threshold: 0 });
+    observer.observe(hero);
 
     hero.addEventListener("pointermove", onPointerMove, { passive: true });
     hero.addEventListener("pointerdown", onPointerDown);
@@ -705,6 +741,7 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
     return () => {
       cancelAnimationFrame(frame);
       ro.disconnect();
+      observer.disconnect();
       hero.removeEventListener("pointermove", onPointerMove);
       hero.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointerup", onPointerUp);
@@ -867,7 +904,7 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
 
           {/* Fullscreen 3D Orbital Nodes (Revolving across entire viewport) */}
           <div ref={stageRef} className={styles.orbitStage}>
-            {SYSTEM_3D_ICONS.map((node) => {
+            {SYSTEM_3D_ICONS.map((node, index) => {
               const isFilteredOut =
                 selectedCategory !== "all" && node.category !== selectedCategory;
               const isSelected = selectedNode?.id === node.id;
@@ -890,11 +927,14 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
                 >
                   <div className={styles.nodeCard}>
                     <img
-                      src={`/assets/3D_Icons/${node.file}`}
+                      src={systemIconSource(node.file)}
                       alt={node.name}
                       className={styles.nodeImage}
                       draggable={false}
-                      loading="eager"
+                      width={256}
+                      height={256}
+                      loading={index < 6 ? "eager" : "lazy"}
+                      fetchPriority={index < 2 ? "high" : "auto"}
                     />
                     <span className={styles.nodePing} aria-hidden="true" />
                   </div>
@@ -912,18 +952,11 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
           </div>
 
           {/* Selected Node Floating HUD */}
-          <AnimatePresence>
-            {selectedNode && (
-              <motion.div
-                className={styles.nodeDetailHud}
-                initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
+          {selectedNode && (
+              <div className={styles.nodeDetailHud}>
                 <div className={styles.hudHeader}>
                   <img
-                    src={`/assets/3D_Icons/${selectedNode.file}`}
+                    src={systemIconSource(selectedNode.file)}
                     alt={selectedNode.name}
                     className={styles.hudThumb}
                   />
@@ -957,9 +990,8 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
                   </div>
                 </div>
                 <p className={styles.hudTag}>{selectedNode.tag}</p>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
         </div>
       )}
 
@@ -991,9 +1023,12 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
               >
                 <div className={styles.bentoThumbWrap}>
                   <img
-                    src={`/assets/3D_Icons/${item.file}`}
+                    src={systemIconSource(item.file)}
                     alt={item.name}
                     className={styles.bentoThumb}
+                    width={256}
+                    height={256}
+                    loading="lazy"
                   />
                 </div>
                 <div className={styles.bentoInfo}>
@@ -1028,23 +1063,10 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
             onMouseEnter={() => setIsReviewPaused(true)}
             onMouseLeave={() => setIsReviewPaused(false)}
           >
-            <AnimatePresence mode="wait">
-              {currentReview && (
-                <motion.article
+            {currentReview && (
+                <article
                   key={currentReview.id}
                   className={styles.reviewCardSolo}
-                  initial={
-                    reduceMotion
-                      ? { opacity: 1 }
-                      : { opacity: 0, x: 35, filter: "blur(6px)" }
-                  }
-                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                  exit={
-                    reduceMotion
-                      ? { opacity: 0 }
-                      : { opacity: 0, x: -35, filter: "blur(6px)" }
-                  }
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <div className={styles.starsRow}>
                     <div className={styles.stars} aria-hidden="true">
@@ -1097,9 +1119,8 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
                       </p>
                     </div>
                   </div>
-                </motion.article>
+                </article>
               )}
-            </AnimatePresence>
 
             {/* Carousel Controls */}
             <div className={styles.carouselControls}>
@@ -1180,10 +1201,13 @@ export default function SystemShowcase({ onEnterConsole }: SystemShowcaseProps) 
                   }}
                 >
                   <img
-                    src={`/assets/3D_Icons/${item.file}`}
+                    src={systemIconSource(item.file)}
                     alt=""
                     className={styles.tickerThumb}
                     aria-hidden="true"
+                    width={256}
+                    height={256}
+                    loading="lazy"
                   />
                   <span>{item.name}</span>
                   <span className={styles.tickerDot} />

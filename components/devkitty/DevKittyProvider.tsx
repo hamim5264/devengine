@@ -6,13 +6,18 @@ import { bootstrapDevKitty, sendDevKittyMessage, devKittyError } from "@/lib/dev
 import type { DevKittyBootstrap, DevKittyMessage } from "@/types/devkitty";
 import DevKittyPanel from "./DevKittyPanel";
 interface DevKittyState {
-  open: () => void; close: () => void; hidden: boolean; isOpen: boolean;
+  available: boolean; open: () => void; close: () => void; hidden: boolean; isOpen: boolean;
   setEmployeeWelcomeReady: (uid: string, ready: boolean) => void;
   bootstrap: DevKittyBootstrap | null; loading: boolean; error: string; messages: DevKittyMessage[];
   sending: boolean; send: (text: string) => Promise<void>; retry: () => Promise<void>; reset: () => void; reload: () => Promise<void>;
 }
-const Context = createContext<DevKittyState | null>(null);
-export function useDevKitty() { const value = useContext(Context); if (!value) throw new Error("DevKittyProvider is required."); return value; }
+const unavailableDevKitty: DevKittyState = {
+  available: false, open: () => {}, close: () => {}, hidden: true, isOpen: false,
+  setEmployeeWelcomeReady: () => {}, bootstrap: null, loading: false, error: "", messages: [],
+  sending: false, send: async () => {}, retry: async () => {}, reset: () => {}, reload: async () => {},
+};
+const Context = createContext<DevKittyState>(unavailableDevKitty);
+export function useDevKitty() { return useContext(Context); }
 const greetingMessage = (data: DevKittyBootstrap): DevKittyMessage => ({ id: "greeting", role: "assistant", content: data.greeting, greeting: true });
 export default function DevKittyProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -89,5 +94,5 @@ export default function DevKittyProvider({ children }: { children: ReactNode }) 
   }
   async function retry() { if (messagesRef.current.at(-1)?.role === "user") await perform(messagesRef.current); else await reload(); }
   function reset() { if (pending.current) return; setError(""); setMessages(bootstrap ? [greetingMessage(bootstrap)] : []); }
-  return <Context.Provider value={{ open, close, hidden, isOpen, setEmployeeWelcomeReady, bootstrap, loading, error, messages, sending, send, retry, reset, reload }}>{children}{isOpen && !hidden && <DevKittyPanel />}</Context.Provider>;
+  return <Context.Provider value={{ available: true, open, close, hidden, isOpen, setEmployeeWelcomeReady, bootstrap, loading, error, messages, sending, send, retry, reset, reload }}>{children}{isOpen && !hidden && <DevKittyPanel />}</Context.Provider>;
 }

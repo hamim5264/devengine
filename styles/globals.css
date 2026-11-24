@@ -1,4 +1,9 @@
-@import "@fontsource/poppins";
+/* Keep the first render small: only the locally hosted Poppins weights used by
+   the public interface are shipped, all with font-display: swap. */
+@import "@fontsource/poppins/latin-400.css";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/poppins/latin-600.css";
+@import "@fontsource/poppins/latin-700.css";
 
 @tailwind base;
 @tailwind components;

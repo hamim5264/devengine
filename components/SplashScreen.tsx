@@ -1,12 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import UpdateLogBody from "@/components/update-log/UpdateLogBody";
-import NetworkTopologyBody from "@/components/network/NetworkTopologyBody";
 import HeaderControls from "@/components/HeaderControls";
 import { useTheme } from "@/context/ThemeContext";
 import styles from "./SplashScreen.module.css";
-import {subscribeLatestRelease} from "@/lib/services/updateLogsService";
-import SystemShowcase from "@/components/system/SystemShowcase";
+
+// The console panels are deliberately loaded only after the lightweight boot
+// screen is ready. Keeping these interactive views out of the initial chunk
+// prevents their data clients and visual code from delaying the first paint.
+const SystemShowcase = dynamic(() => import("@/components/system/SystemShowcase"));
+const UpdateLogBody = dynamic(() => import("@/components/update-log/UpdateLogBody"));
+const NetworkTopologyBody = dynamic(() => import("@/components/network/NetworkTopologyBody"));
 
 interface SplashScreenProps {
   onEnterConsole?: () => void;
@@ -21,7 +25,18 @@ const TABS = [
 export default function SplashScreen({ onEnterConsole }: SplashScreenProps) {
   const { theme } = useTheme();
   const [release,setRelease]=useState("");
-  useEffect(()=>subscribeLatestRelease(setRelease),[]);
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    let active = true;
+    // A release label is supplementary boot-screen content, so do not pull a
+    // Firestore subscriber into the first render.
+    const timer = window.setTimeout(() => {
+      void import("@/lib/services/updateLogsService").then(({ subscribeLatestRelease }) => {
+        if (active) unsubscribe = subscribeLatestRelease(setRelease);
+      });
+    }, 1200);
+    return () => { active = false; window.clearTimeout(timer); unsubscribe?.(); };
+  }, []);
   const [percent, setPercent] = useState(0);
   const [statusText, setStatusText] = useState("SYSTEM INITIALIZING");
   const [splashState, setSplashState] = useState<"loading" | "exiting" | "ready">("loading");

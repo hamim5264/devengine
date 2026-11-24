@@ -73,15 +73,45 @@ export function BlogCard({ post, compact = false, headingLevel = "h2" }: { post:
       case "strip":
         layoutClass = styles.blogStrip;
         break;
+      case "mosaic":
+        layoutClass = styles.blogMosaic;
+        break;
+      case "editorial":
+        layoutClass = styles.blogEditorial;
+        break;
+      case "portrait":
+        layoutClass = styles.blogPortrait;
+        break;
+      case "duo":
+        layoutClass = styles.blogDuo;
+        break;
+      case "ticker":
+        layoutClass = styles.blogTicker;
+        break;
+      case "aurora":
+        layoutClass = styles.blogAurora;
+        break;
+      case "notebook":
+        layoutClass = styles.blogNotebook;
+        break;
+      case "casefile":
+        layoutClass = styles.blogCasefile;
+        break;
+      case "horizon":
+        layoutClass = styles.blogHorizon;
+        break;
+      case "luxe":
+        layoutClass = styles.blogLuxe;
+        break;
       default:
         layoutClass = "";
         break;
     }
   }
 
-  const isOverlay = !compact && post.gridSpan === "overlay";
+  const isOverlay = !compact && (post.gridSpan === "overlay" || post.gridSpan === "horizon");
   const isSpotlight = !compact && post.gridSpan === "spotlight";
-  const isStrip = !compact && post.gridSpan === "strip";
+  const isStrip = !compact && (post.gridSpan === "strip" || post.gridSpan === "ticker");
   const isMini = !compact && post.gridSpan === "compact";
 
   return (

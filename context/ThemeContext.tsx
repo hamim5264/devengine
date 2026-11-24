@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { normalizeSiteFont, SITE_FONTS } from "@/lib/fonts";
-import {
-  subscribeThemeModeSettings,
-  ThemeModeSettings,
-  DEFAULT_THEME_MODES,
-} from "@/lib/services/themeSettingsService";
+import type { ThemeModeSettings } from "@/lib/services/themeSettingsService";
 
 export type Theme = "dark" | "light";
+
+const DEFAULT_THEME_MODES: ThemeModeSettings = {
+  allowDarkMode: true,
+  allowLightMode: true,
+  defaultTheme: "light",
+  fontFamily: "default",
+};
 
 interface ThemeContextType {
   theme: Theme;
@@ -28,7 +31,7 @@ const ThemeContext = createContext<ThemeContextType>({
   canSwitchTheme: false,
 });
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode; syncRemote?: boolean }> = ({ children, syncRemote = true }) => {
   const [theme, setThemeState] = useState<Theme>("light");
   const [themeModes, setThemeModes] = useState<ThemeModeSettings>(DEFAULT_THEME_MODES);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -93,7 +96,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       applyTheme(initial);
     } catch {}
 
-    const unsub = subscribeThemeModeSettings((modes) => {
+    if (!syncRemote) return;
+
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    void import("@/lib/services/themeSettingsService").then(({ subscribeThemeModeSettings }) => {
+      if (!active) return;
+      unsubscribe = subscribeThemeModeSettings((modes) => {
       setThemeModes(modes);
       setSettingsLoaded(true);
 
@@ -134,13 +143,17 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           applyTheme(targetDefault);
         }
       }
+      });
     });
 
-    return () => unsub();
-  }, []);
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, [syncRemote]);
 
   const setTheme = (newTheme: Theme) => {
-    if (!settingsLoaded) return;
+    if (!settingsLoaded && syncRemote) return;
     // If locked to a single mode, ignore changes that violate admin policy
     if (!themeModes.allowDarkMode && newTheme === "dark") return;
     if (!themeModes.allowLightMode && newTheme === "light") return;
@@ -160,7 +173,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     applyTheme(newTheme);
   };
 
-  const canSwitchTheme = settingsLoaded && themeModes.allowDarkMode && themeModes.allowLightMode;
+  const canSwitchTheme = (settingsLoaded || !syncRemote) && themeModes.allowDarkMode && themeModes.allowLightMode;
 
   const toggleTheme = () => {
     if (!canSwitchTheme) return; // Locked by admin

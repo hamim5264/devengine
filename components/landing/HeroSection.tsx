@@ -54,6 +54,23 @@ const TAU = Math.PI * 2;
 const TILTS = [-5, 3, -2, 4, -4, 2, -3, 5, -1, 4, -3, 2, -5, 3, -2, 5, -4, 1];
 const easeOut = (value: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, value)), 3);
 
+/** The orbit only needs compact thumbnails; avoid downloading source artwork at desktop-poster size. */
+const orbitImageSource = (source: string) => {
+  try {
+    const url = new URL(source);
+    if (url.hostname === "images.unsplash.com") {
+      url.searchParams.set("auto", "format");
+      url.searchParams.set("fit", "crop");
+      url.searchParams.set("w", "640");
+      url.searchParams.set("q", "68");
+      return url.toString();
+    }
+  } catch {
+    // A relative or malformed source remains usable as supplied by the CMS.
+  }
+  return source;
+};
+
 /** Counts the first number inside a stat (e.g. "99.9%" → 0 … 99.9%) once, after the hero intro. */
 function CountUp({ value, reduce }: { value: string; reduce: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -273,12 +290,13 @@ export default function HeroSection({ config, showcase = [] }: { config: HeroCon
           const media = (
             <>
               <img
-                src={card.src}
+                src={orbitImageSource(card.src)}
                 alt={card.alt}
                 className={styles.orbitMedia}
                 draggable={false}
                 decoding="async"
-                fetchPriority={index < 3 ? "high" : "auto"}
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : "auto"}
               />
               <span className={styles.orbitCaption} aria-hidden="true">
                 <span>{card.label}</span>

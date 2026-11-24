@@ -44,18 +44,7 @@ import {
 const ADMIN_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_EMAIL || "hamim.leon@gmail.com";
 
-const GRID_SPANS: { id: GridSpanType; label: string; tag: string; icon: string }[] = [
-  { id: "normal", label: "Standard (1 Col × 1 Row)", tag: "1×1", icon: "crop_portrait" },
-  { id: "wide", label: "Wide Showcase (2 Cols × 1 Row)", tag: "2×1", icon: "view_column" },
-  { id: "tall", label: "Tall Feature (1 Col × 2 Rows)", tag: "1×2", icon: "view_stream" },
-  { id: "hero", label: "Hero Banner (Full 3 Columns)", tag: "3×1 Full", icon: "web_stories" },
-  { id: "split", label: "Horizontal Split (2 Cols 50/50)", tag: "2×1 Split", icon: "vertical_split" },
-  { id: "quad", label: "Magazine Quad (2 Cols × 2 Rows)", tag: "2×2 Quad", icon: "grid_view" },
-  { id: "spotlight", label: "Spotlight Accent (1 Col Glow)", tag: "1×1 Accent", icon: "flare" },
-  { id: "compact", label: "Compact Dispatch (1 Col Mini)", tag: "1×1 Mini", icon: "view_list" },
-  { id: "overlay", label: "Cinematic Overlay (2 Cols Full-Bleed)", tag: "2×1 Overlay", icon: "wallpaper" },
-  { id: "strip", label: "Panorama Ribbon (Full 3 Cols Slim)", tag: "3×1 Ribbon", icon: "view_day" },
-];
+const GRID_SPANS: { id: GridSpanType; label: string; tag: string; icon: string }[] = Object.values(GRID_SPAN_CONFIG).map((style) => ({ id: style.id, label: style.label, tag: style.tag, icon: style.icon }));
 
 const EMPTY_FORM: Omit<BlogPost, "id" | "createdAt" | "updatedAt"> = {
   slug: "",
@@ -91,6 +80,9 @@ export default function ManageBlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
+  const [promotionFilter, setPromotionFilter] = useState<"ALL" | "FEATURED" | "PINNED">("ALL");
+  const [layoutFilter, setLayoutFilter] = useState<string>("ALL");
+  const [adminSort, setAdminSort] = useState<"ORDER" | "NEWEST" | "MOST_VIEWED" | "UPDATED">("ORDER");
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -497,7 +489,17 @@ export default function ManageBlogPage() {
       post.slug.toLowerCase().includes(q) ||
       post.tags.some((t) => t.toLowerCase().includes(q));
 
-    return matchesStatus && matchesCategory && matchesSearch;
+    const matchesPromotion = promotionFilter === "ALL" || (promotionFilter === "FEATURED" && post.featured) || (promotionFilter === "PINNED" && post.pinned);
+    const matchesLayout = layoutFilter === "ALL" || post.gridSpan === layoutFilter;
+
+    return matchesStatus && matchesCategory && matchesSearch && matchesPromotion && matchesLayout;
+  }).sort((a, b) => {
+    const date = (post: BlogPost, field: "publishedAt" | "updatedAt") => new Date(post[field] || post.createdAt || 0).getTime();
+    const reads = (post: BlogPost) => post.readsCount ?? post.views ?? 0;
+    if (adminSort === "NEWEST") return date(b, "publishedAt") - date(a, "publishedAt");
+    if (adminSort === "MOST_VIEWED") return reads(b) - reads(a) || date(b, "publishedAt") - date(a, "publishedAt");
+    if (adminSort === "UPDATED") return date(b, "updatedAt") - date(a, "updatedAt");
+    return (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER);
   });
 
   if (!authReady || !isAdmin) {
@@ -688,6 +690,47 @@ export default function ManageBlogPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
+            </div>
+
+            <div className="flex items-center bg-black/40 border border-white/[0.06] p-1 rounded-xl">
+              {(["ALL", "FEATURED", "PINNED"] as const).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setPromotionFilter(item)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${promotionFilter === item ? "bg-[#2cecf7] text-black font-bold shadow-sm" : "text-gray-400 hover:text-white"}`}
+                >
+                  {item === "ALL" ? "Any priority" : item === "FEATURED" ? "Featured" : "Pinned"}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <AdminSelect
+                value={layoutFilter}
+                onChange={(e) => setLayoutFilter(e.target.value)}
+                className="h-10 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 text-gray-300 text-xs rounded-xl px-3.5 pr-8 appearance-none cursor-pointer outline-none transition"
+                aria-label="Filter by grid presentation style"
+              >
+                <option value="ALL" className="bg-[#0c0c16] text-white">All layouts</option>
+                {GRID_SPANS.map((style) => <option key={style.id} value={style.id} className="bg-[#0c0c16] text-white">{style.label}</option>)}
+              </AdminSelect>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400"><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
+            </div>
+
+            <div className="relative">
+              <AdminSelect
+                value={adminSort}
+                onChange={(e) => setAdminSort(e.target.value as typeof adminSort)}
+                className="h-10 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 text-gray-300 text-xs rounded-xl px-3.5 pr-8 appearance-none cursor-pointer outline-none transition"
+                aria-label="Sort chronicles"
+              >
+                <option value="ORDER" className="bg-[#0c0c16] text-white">Display order</option>
+                <option value="NEWEST" className="bg-[#0c0c16] text-white">Newest first</option>
+                <option value="MOST_VIEWED" className="bg-[#0c0c16] text-white">Most viewed</option>
+                <option value="UPDATED" className="bg-[#0c0c16] text-white">Recently updated</option>
+              </AdminSelect>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400"><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
             </div>
           </div>
         </div>
@@ -1009,7 +1052,7 @@ export default function ManageBlogPage() {
                         </option>
                       ))}
                       <option value="__OPEN_GUIDE__" className="bg-[#0c0c16] text-[#2cecf7] font-bold">
-                        ⊞ Expanded Visual Guide (10 Styles)...
+                        ⊞ Expanded Visual Guide (20 Styles)...
                       </option>
                     </AdminSelect>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 text-gray-400">
@@ -1022,7 +1065,7 @@ export default function ManageBlogPage() {
                     type="button"
                     onClick={() => setGridModalOpen(true)}
                     className="mt-1.5 text-[11px] font-medium text-[#2cecf7] hover:text-[#53f2fb] hover:underline flex items-center gap-1 cursor-pointer transition"
-                    title="Open visual matrix with previews for all 10 layout styles"
+                    title="Open visual matrix with previews for all 20 layout styles"
                   >
                     <span className="material-symbols-outlined text-[13px]">grid_view</span>
                     <span>Expanded view of styles ↗</span>
@@ -1732,7 +1775,7 @@ export default function ManageBlogPage() {
       )}
 
       {/* ══════════════════════════════════════════════════════
-          EXPANDED GRID PRESENTATION VISUAL GUIDE (10 STYLES)
+          EXPANDED GRID PRESENTATION VISUAL GUIDE (20 STYLES)
       ══════════════════════════════════════════════════════ */}
       {gridModalOpen && (
         <AdminOverlay
@@ -1751,11 +1794,11 @@ export default function ManageBlogPage() {
                 <h3 className="font-bold text-xl sm:text-2xl text-white tracking-tight flex items-center gap-3">
                   <span>Grid Presentation Styles</span>
                   <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-white/10 text-[#2cecf7] border border-[#2cecf7]/30">
-                    10 Architectural Styles
+                    20 Architectural Styles
                   </span>
                 </h3>
                 <p className="text-xs text-gray-400 mt-1 max-w-2xl">
-                  Choose how your publication is framed within the 3-column responsive matrix. Real-time blueprint wireframe matrices and card anatomy previews.
+                  Choose from 20 premium publication frames within the 3-column responsive matrix. Each style includes a live blueprint and responsive card anatomy preview.
                 </p>
               </div>
               <button

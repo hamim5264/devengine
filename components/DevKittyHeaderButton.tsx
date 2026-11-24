@@ -17,6 +17,6 @@ export default function DevKittyHeaderButton() {
     media.addEventListener("change", update); document.addEventListener("visibilitychange", update);
     return () => { observer.disconnect(); media.removeEventListener("change", update); document.removeEventListener("visibilitychange", update); };
   }, [kitty.hidden]);
-  if (kitty.hidden) return null;
+  if (!kitty.available || kitty.hidden) return null;
   return <div ref={root} className={styles.root}><button type="button" className={styles.launcher} onClick={kitty.isOpen ? kitty.close : kitty.open} aria-expanded={kitty.isOpen} aria-haspopup="dialog" aria-label="Open DevKitty assistant"><DevKittyAnimatedIcon size={40} active={visible && motion} isLight={theme === "light"} /></button></div>;
 }

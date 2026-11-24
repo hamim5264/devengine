@@ -237,6 +237,7 @@ const NAV_GROUPS: NavGroup[] = [
     icon: <IconSettings />,
     items: [
       { label: "Security & Monitoring", href: "/admin/security-monitoring", badge: "new" },
+      { label: "Important URLs", href: "/admin/important-urls", badge: "new" },
       { label: "Sub-admin Access", href: "/admin/manage-sub-admins" },
       { label: "Service Usage & Costs", href: "/admin/service-usage" },
       { label: "DevKitty AI", href: "/admin/manage-devkitty", badge: "new" },

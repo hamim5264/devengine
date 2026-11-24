@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { GetServerSideProps } from "next";
 import HelixLoader from "@/components/HelixLoader";
-import type { BlogPost, BlogCategory } from "@/types/blog";
+import type { BlogPost } from "@/types/blog";
 import { getBlogCategoryDetails } from "@/types/blog";
 import { getPublishedBlogs, INITIAL_BLOGS } from "@/lib/services/blogService";
 import { FeaturePage, Icon } from "@/components/features/FeatureExperience";
@@ -19,11 +19,16 @@ const DEFAULT_CATEGORIES: { key: string; label: string }[] = [
   { key: "STUDIO_CULTURE", label: "Studio culture" },
 ];
 
+const POSTS_PER_PAGE = 20;
+type StoryOrder = "CURATED" | "NEWEST" | "MOST_VIEWED" | "FEATURED";
+
 export default function BlogIndexPage({ initialPosts = [] }: { initialPosts?: BlogPost[] }) {
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [loading, setLoading] = useState(initialPosts.length === 0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("ALL");
+  const [order, setOrder] = useState<StoryOrder>("CURATED");
+  const [page, setPage] = useState(1);
   useEffect(() => {
     if (initialPosts.length > 0) return;
     let mounted = true;
@@ -50,8 +55,19 @@ export default function BlogIndexPage({ initialPosts = [] }: { initialPosts?: Bl
   const filtered = useMemo(() => posts.filter((post) => {
     const query = search.trim().toLowerCase();
     return (category === "ALL" || post.category.toLowerCase() === category.toLowerCase()) && (!query || [post.title, post.subtitle, post.excerpt, ...(post.tags || [])].some((value) => value?.toLowerCase().includes(query)));
-  }), [posts, search, category]);
-  const clearFilters = () => { setSearch(""); setCategory("ALL"); };
+  }).sort((a, b) => {
+    const publishedAt = (post: BlogPost) => new Date(post.publishedAt || post.createdAt || 0).getTime();
+    const reads = (post: BlogPost) => post.readsCount ?? post.views ?? 0;
+    if (order === "NEWEST") return publishedAt(b) - publishedAt(a);
+    if (order === "MOST_VIEWED") return reads(b) - reads(a) || publishedAt(b) - publishedAt(a);
+    if (order === "FEATURED") return Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || publishedAt(b) - publishedAt(a);
+    return Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || publishedAt(b) - publishedAt(a);
+  }), [posts, search, category, order]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / POSTS_PER_PAGE));
+  const activePage = Math.min(page, totalPages);
+  const pagePosts = filtered.slice((activePage - 1) * POSTS_PER_PAGE, activePage * POSTS_PER_PAGE);
+  useEffect(() => { setPage(1); }, [search, category, order]);
+  const clearFilters = () => { setSearch(""); setCategory("ALL"); setOrder("CURATED"); };
   return <FeaturePage><div className={styles.quiet}>
     <Head>
       <title>DevEngine Chronicles | Ideas, Engineering & Studio Stories</title>
@@ -84,9 +100,12 @@ export default function BlogIndexPage({ initialPosts = [] }: { initialPosts?: Bl
     <section className={`${base.section} ${styles.hero}`}><div className={base.inner}><SoftReveal><div className={styles.heroCopy}><span className={styles.heroLabel}>DevEngine Chronicles / Inside the studio</span><h1 className={styles.title}>Behind the work.<br /><span className={styles.highlight}>Stories worth sharing.</span></h1><p className={styles.intro}>The ideas, breakthroughs, and lessons behind our software. Notes from the people building DevEngine, one thoughtful experience at a time.</p></div></SoftReveal></div></section>
     <section className={base.section} style={{ paddingTop: "1rem" }} aria-label="Browse stories"><div className={base.inner}>
       <div className={styles.sectionHeader}><h2 className={styles.sectionHeading}>The latest from DevEngine.</h2><SearchField id="blog-search" value={search} onChange={setSearch} label="Search stories" placeholder="Search stories, topics, or technology…" /></div>
-      <div className={styles.toolbar}><div className={base.filters} aria-label="Filter stories by category">{availableCategories.map((item) => <button key={item.key} className={base.filter} type="button" aria-pressed={category.toLowerCase() === item.key.toLowerCase()} onClick={() => setCategory(item.key)}>{item.label}</button>)}</div></div>
-      <div className={styles.results}><span role="status">{loading ? "Loading stories…" : `${filtered.length} stor${filtered.length === 1 ? "y" : "ies"}${search.trim() ? ` matching “${search.trim()}”` : ""}`}</span>{(search || category !== "ALL") && <button type="button" className={styles.textButton} onClick={clearFilters}>Clear filters <Icon name="close" /></button>}</div>
-      {loading ? <div className={base.empty} role="status"><HelixLoader size={48} color="#2cecf7" /><p className={base.small}>Opening the Chronicles…</p></div> : filtered.length ? <div className={styles.blogGrid}>{filtered.map((post) => <BlogCard post={post} key={post.id} />)}</div> : <div className={`${base.card} ${base.empty}`}><div className={base.emptyIcon}><Icon name="auto_stories" /></div><h2 className={base.cardTitle}>No stories match just yet.</h2><p className={base.body}>Try another topic or clear your filters to explore all the Chronicles.</p><div className={base.actions}><button className={base.button} type="button" onClick={clearFilters}>Show all stories <Icon name="arrow_forward" /></button></div></div>}
+      <div className={styles.toolbar}>
+        <div className={base.filters} aria-label="Filter stories by category">{availableCategories.map((item) => <button key={item.key} className={base.filter} type="button" aria-pressed={category.toLowerCase() === item.key.toLowerCase()} onClick={() => setCategory(item.key)}>{item.label}</button>)}</div>
+        <div className={styles.sortFilters} aria-label="Order stories">{([ ["CURATED", "All stories"], ["NEWEST", "Newest"], ["MOST_VIEWED", "Most viewed"], ["FEATURED", "Featured"] ] as const).map(([value, label]) => <button key={value} className={styles.sortFilter} type="button" aria-pressed={order === value} onClick={() => setOrder(value)}>{label}</button>)}</div>
+      </div>
+      <div className={styles.results}><span role="status">{loading ? "Loading stories…" : `${filtered.length} stor${filtered.length === 1 ? "y" : "ies"}${search.trim() ? ` matching “${search.trim()}”` : ""} · Page ${activePage} of ${totalPages}`}</span>{(search || category !== "ALL" || order !== "CURATED") && <button type="button" className={styles.textButton} onClick={clearFilters}>Clear filters <Icon name="close" /></button>}</div>
+      {loading ? <div className={base.empty} role="status"><HelixLoader size={48} color="#2cecf7" /><p className={base.small}>Opening the Chronicles…</p></div> : filtered.length ? <><div className={styles.blogGrid}>{pagePosts.map((post) => <BlogCard post={post} key={post.id} />)}</div>{totalPages > 1 && <nav className={styles.pagination} aria-label="Blog pages"><button type="button" className={base.secondaryButton} disabled={activePage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}><Icon name="west" />Previous</button><span>Page {activePage} of {totalPages}</span><button type="button" className={base.button} disabled={activePage === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>Next<Icon name="east" /></button></nav>}</> : <div className={`${base.card} ${base.empty}`}><div className={base.emptyIcon}><Icon name="auto_stories" /></div><h2 className={base.cardTitle}>No stories match just yet.</h2><p className={base.body}>Try another topic or clear your filters to explore all the Chronicles.</p><div className={base.actions}><button className={base.button} type="button" onClick={clearFilters}>Show all stories <Icon name="arrow_forward" /></button></div></div>}
     </div></section>
   </div></FeaturePage>;
 }

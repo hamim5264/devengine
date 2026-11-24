@@ -155,6 +155,7 @@
   font-size: 0.72rem;
   font-weight: 600;
   padding: 0.35rem 0.75rem;
+  min-height: 44px;
   border-radius: 999px;
   white-space: nowrap;
   cursor: pointer;
@@ -197,6 +198,7 @@
   font-size: 0.78rem;
   font-weight: 650;
   padding: 0.45rem 1rem;
+  min-height: 44px;
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -215,8 +217,8 @@
 .pauseBtn {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--devengine-border);
   background: var(--devengine-surface);
@@ -631,7 +633,11 @@
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  padding: 2px 8px;
+  width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   border-radius: 8px;
 }
 
@@ -721,6 +727,7 @@
   align-items: center;
   gap: 0.55rem;
   padding: 0.45rem 0.95rem;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid var(--devengine-border);
   background: var(--devengine-surface);
@@ -1056,20 +1063,60 @@
 }
 
 .dotItem {
-  width: 10px;
-  height: 10px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   border: none;
-  background: var(--devengine-border);
+  background: transparent;
   cursor: pointer;
   padding: 0;
   transition: width 0.3s ease, background 0.3s ease;
 }
 
+.dotItem::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--devengine-border);
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
 .dotItemActive {
+  background: transparent;
+  box-shadow: none;
+}
+
+.dotItemActive::after {
   width: 28px;
   background: var(--devengine-accent);
   box-shadow: 0 0 10px var(--devengine-accent);
+}
+
+.catChip:focus-visible,
+.viewTab:focus-visible,
+.pauseBtn:focus-visible,
+.tickerChip:focus-visible,
+.dotItem:focus-visible,
+.hudClose:focus-visible {
+  outline: 2px solid var(--devengine-accent);
+  outline-offset: 3px;
+}
+
+/* Brand cyan remains intact on light mode while the highlight gets a dark
+   surface behind it, giving the large hero text an accessible contrast ratio. */
+:global(html.light) .shimmer {
+  display: inline-block;
+  padding-inline: 0.1em;
+  border-radius: 0.12em;
+  background: #08111e;
+  color: #2cecf7;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: #2cecf7;
 }
 
 .counterPill {

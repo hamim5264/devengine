@@ -27,14 +27,10 @@ export default function Document() {
         <link
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap"
           rel="stylesheet"
-          media="print"
-          onLoad={(event) => { (event.currentTarget as HTMLLinkElement).media = "all"; }}
         />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
-          media="print"
-          onLoad={(event) => { (event.currentTarget as HTMLLinkElement).media = "all"; }}
         />
         {/* Favicons & Site Brand Icons */}
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=3" />

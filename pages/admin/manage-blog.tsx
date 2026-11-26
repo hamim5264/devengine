@@ -5,7 +5,6 @@ import React, { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/router";
 import { auth } from "@/lib/firebase";
 import HelixLoader from "@/components/HelixLoader";
@@ -13,6 +12,7 @@ import {
   BlogPost,
   BlogCategory,
   GridSpanType,
+  GridSpanInfo,
   BLOG_CATEGORY_CONFIG,
   getBlogCategoryDetails,
   GRID_SPAN_CONFIG,
@@ -69,6 +69,159 @@ const EMPTY_FORM: Omit<BlogPost, "id" | "createdAt" | "updatedAt"> = {
   isPublished: true,
   publishedAt: new Date().toISOString(),
 };
+
+function BlogCoverPreview({ src, title }: { src?: string; title: string }) {
+  const [failed, setFailed] = useState(!src);
+
+  useEffect(() => {
+    setFailed(!src);
+  }, [src]);
+
+  return (
+    <div className="relative aspect-[16/8.5] overflow-hidden bg-[var(--devengine-raised)]">
+      {!failed ? (
+        <img
+          src={src}
+          alt=""
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[linear-gradient(135deg,var(--devengine-raised),var(--devengine-soft))] px-5 text-center">
+          <span className="material-symbols-outlined text-3xl text-[#2cecf7]" aria-hidden="true">image</span>
+          <span className="line-clamp-2 text-xs font-medium text-[var(--devengine-muted)]">{title}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const getReadTimeMinutes = (readTime: string) =>
+  Math.max(1, Number.parseInt(readTime, 10) || 5);
+
+const formatReadTime = (minutes: number) => `${Math.max(1, minutes)} min read`;
+
+function PublicGridStylePreview({ info }: { info: GridSpanInfo }) {
+  const palettes: Record<GridSpanType, string> = {
+    normal: "linear-gradient(135deg, #2cecf7 0%, #1677d2 56%, #172554 100%)",
+    wide: "linear-gradient(135deg, #14b8a6 0%, #0e7490 55%, #172554 100%)",
+    tall: "linear-gradient(155deg, #f97316 0%, #db2777 52%, #4c1d95 100%)",
+    hero: "linear-gradient(135deg, #2cecf7 0%, #2563eb 48%, #312e81 100%)",
+    split: "linear-gradient(135deg, #22c55e 0%, #0891b2 50%, #1d4ed8 100%)",
+    quad: "linear-gradient(145deg, #f59e0b 0%, #ea580c 44%, #be123c 100%)",
+    spotlight: "linear-gradient(145deg, #2cecf7 0%, #0284c7 45%, #1e3a8a 100%)",
+    compact: "linear-gradient(135deg, #a855f7 0%, #6366f1 52%, #0f766e 100%)",
+    overlay: "linear-gradient(135deg, #0f766e 0%, #0f172a 50%, #7c3aed 100%)",
+    strip: "linear-gradient(135deg, #fb7185 0%, #ec4899 45%, #7c3aed 100%)",
+    mosaic: "linear-gradient(135deg, #06b6d4 0%, #2563eb 50%, #7c3aed 100%)",
+    editorial: "linear-gradient(135deg, #38bdf8 0%, #0f766e 48%, #164e63 100%)",
+    portrait: "linear-gradient(155deg, #f43f5e 0%, #c026d3 50%, #3730a3 100%)",
+    duo: "linear-gradient(135deg, #eab308 0%, #ea580c 47%, #be123c 100%)",
+    ticker: "linear-gradient(135deg, #2cecf7 0%, #0891b2 45%, #1e40af 100%)",
+    aurora: "linear-gradient(135deg, #2cecf7 0%, #14b8a6 40%, #7c3aed 100%)",
+    notebook: "linear-gradient(135deg, #facc15 0%, #fb923c 46%, #e11d48 100%)",
+    casefile: "linear-gradient(135deg, #22d3ee 0%, #2563eb 45%, #4338ca 100%)",
+    horizon: "linear-gradient(135deg, #14b8a6 0%, #0ea5e9 46%, #312e81 100%)",
+    luxe: "linear-gradient(135deg, #f472b6 0%, #a855f7 48%, #2cecf7 100%)",
+  };
+  const coverPalette = palettes[info.id];
+
+  const Cover = ({ className = "" }: { className?: string }) => (
+    <div
+      className={`relative overflow-hidden rounded-md ${className}`}
+      style={{ background: coverPalette }}
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(255,255,255,.52),transparent_19%),radial-gradient(circle_at_12%_84%,rgba(255,255,255,.23),transparent_24%),linear-gradient(135deg,transparent_35%,rgba(2,6,23,.54))]" />
+      <span className="absolute bottom-1.5 left-1.5 rounded bg-[#071020]/75 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[.12em] text-white">Cover</span>
+    </div>
+  );
+
+  const Copy = ({ className = "", bright = false, title = "Building what matters" }: { className?: string; bright?: boolean; title?: string }) => (
+    <div className={`min-w-0 ${className}`}>
+      <div className={`mb-1 text-[7px] font-bold uppercase tracking-[.1em] ${bright ? "text-[#2cecf7]" : "text-[#2cecf7]"}`}>Studio Notes · 6 min</div>
+      <div className={`line-clamp-2 text-[11px] font-bold leading-[1.15] ${bright ? "text-white" : "text-white"}`}>{title}</div>
+      <div className={`mt-1.5 line-clamp-2 text-[8px] leading-snug ${bright ? "text-white/70" : "text-white/55"}`}>A short preview of the image, headline, story, and author details shown to visitors.</div>
+      <div className={`mt-2 flex items-center gap-1.5 text-[7px] ${bright ? "text-white/80" : "text-white/65"}`}><span className="h-2.5 w-2.5 rounded-full bg-[#2cecf7]" />DevEngine · Read story</div>
+    </div>
+  );
+
+  const previewShell = "rounded-xl border border-cyan-200/70 p-2.5 shadow-inner";
+  let layout: React.ReactNode;
+
+  switch (info.id) {
+    case "wide":
+      layout = <div className="overflow-hidden rounded-lg border border-white/10"><Cover className="h-16 rounded-none" /><div className="px-3 py-2"><Copy title="A wide story with room to breathe" /></div></div>;
+      break;
+    case "split":
+      layout = <div className="grid h-28 grid-cols-2 overflow-hidden rounded-lg border border-white/10"><Cover className="h-full rounded-none" /><div className="flex items-center bg-[#101b2e] p-3"><Copy title="A balanced 50 / 50 feature" /></div></div>;
+      break;
+    case "duo":
+      layout = <div className="grid h-28 grid-cols-[.9fr_1.1fr] overflow-hidden rounded-lg border border-[#2cecf7]/30"><div className="flex items-center bg-[#101b2e] p-3"><Copy title="A dual-panel visual story" /></div><Cover className="h-full rounded-none" /></div>;
+      break;
+    case "casefile":
+      layout = <div className="grid h-28 grid-cols-[.8fr_1.2fr] gap-2 border-l-4 border-[#2cecf7] pl-2"><Cover className="h-full" /><div className="self-center"><div className="mb-2 w-fit rounded border border-[#2cecf7]/50 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[.12em] text-[#2cecf7]">Case file</div><Copy /></div></div>;
+      break;
+    case "tall":
+      layout = <div className="mx-auto flex h-40 w-28 flex-col overflow-hidden rounded-lg border border-white/10"><Cover className="h-[58%] shrink-0 rounded-none" /><Copy className="p-2" title="A tall editorial note" /></div>;
+      break;
+    case "portrait":
+      layout = <div className="mx-auto grid h-40 w-28 grid-rows-[1fr_auto] overflow-hidden rounded-[18px] border border-[#2cecf7]/35 bg-[#0e1a2c]"><Cover className="h-full rounded-none" /><Copy className="p-2" title="Portrait story" /></div>;
+      break;
+    case "hero":
+      layout = <div className="grid min-h-32 grid-cols-[1.15fr_1fr] overflow-hidden rounded-lg border border-[#2cecf7]/30"><Cover className="min-h-32 rounded-none" /><div className="flex items-center bg-[#101b2e] p-4"><Copy title="A full-width hero story" /></div></div>;
+      break;
+    case "editorial":
+      layout = <div className="grid min-h-32 grid-cols-[.78fr_1.22fr] overflow-hidden rounded-lg border border-white/10"><Cover className="min-h-32 rounded-none" /><div className="flex items-center bg-[#0d1729] p-4"><Copy title="Editorial headline with more copy" /></div></div>;
+      break;
+    case "quad":
+      layout = <div className="flex h-40 flex-col overflow-hidden rounded-lg border border-white/10 bg-[#0d1729]"><Cover className="h-[57%] shrink-0 rounded-none" /><Copy className="flex-1 p-3" title="A large 2 × 2 magazine feature" /></div>;
+      break;
+    case "mosaic":
+      layout = <div className="grid h-40 grid-cols-[1.15fr_.85fr] grid-rows-[1fr_auto] overflow-hidden rounded-lg border border-[#2cecf7]/25"><Cover className="row-span-2 h-full rounded-none" /><Cover className="h-full rounded-none" /><Copy className="bg-[#0f1d33] p-2.5" title="Mosaic feature story" /></div>;
+      break;
+    case "luxe":
+      layout = <div className="h-40 overflow-hidden rounded-xl border border-fuchsia-300/30 bg-[linear-gradient(135deg,rgba(44,236,247,.16),#12162b_48%,rgba(168,85,247,.2))] p-2.5 shadow-[0_12px_28px_-18px_rgba(44,236,247,.9)]"><Cover className="h-[55%]" /><div className="mt-2 border-t border-white/15 pt-2"><Copy title="A polished luxe showcase" /></div></div>;
+      break;
+    case "compact":
+      layout = <div className="flex h-20 items-center gap-3"><Cover className="h-16 w-20 shrink-0" /><Copy className="flex-1" /><span className="material-symbols-outlined text-lg text-[#2cecf7]">arrow_forward</span></div>;
+      break;
+    case "overlay":
+      layout = <div className="relative h-32 overflow-hidden rounded-md"><Cover className="h-full rounded-none" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071020] via-[#071020]/90 to-transparent px-3 pb-2 pt-9"><Copy bright /></div></div>;
+      break;
+    case "horizon":
+      layout = <div className="relative h-40 overflow-hidden rounded-lg border border-white/15"><Cover className="h-full rounded-none" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071020] via-[#071020]/95 to-transparent px-4 pb-3 pt-14"><Copy bright title="A cinematic, full-width horizon" /></div></div>;
+      break;
+    case "strip":
+      layout = <div className="flex h-20 items-center gap-3 rounded-md border border-[#2cecf7]/25 bg-[#0b1626] p-2"><Cover className="h-full w-24 shrink-0" /><Copy className="flex-1" /><span className="rounded-full bg-[#2cecf7] px-2 py-1 text-[8px] font-bold text-[#071020]">Read</span></div>;
+      break;
+    case "ticker":
+      layout = <div className="grid h-20 grid-cols-[.65fr_1.35fr] overflow-hidden rounded-md border border-[#2cecf7]/25 bg-[#0b1626]"><Cover className="h-full rounded-none" /><div className="flex items-center p-2.5"><Copy title="A fast, compact ticker update" /></div></div>;
+      break;
+    case "spotlight":
+      layout = <div className="rounded-lg border border-[#2cecf7]/40 bg-[radial-gradient(circle_at_72%_18%,rgba(44,236,247,.35),transparent_34%),#0a1120] p-3"><Cover className="h-16" /><Copy className="mt-2 px-1" /></div>;
+      break;
+    case "aurora":
+      layout = <div className="rounded-lg bg-[linear-gradient(135deg,#10172e,#24426b_55%,#0c1829)] p-3 shadow-[inset_0_0_30px_rgba(44,236,247,.18)]"><div className="mb-2 h-1 w-16 rounded-full bg-[#2cecf7]" /><Cover className="h-14" /><Copy className="mt-2 px-1" /></div>;
+      break;
+    case "notebook":
+      layout = <div className="rounded-md border-l-4 border-[#2cecf7] bg-[#f5f0dc] p-3 text-[#13213a]"><div className="mb-2 h-px w-full bg-[#a3bdd5]" /><div className="h-2.5 w-4/5 rounded bg-[#13213a]/80" /><div className="mt-2 space-y-1"><div className="h-1.5 w-full rounded bg-[#61738d]/45" /><div className="h-1.5 w-5/6 rounded bg-[#61738d]/45" /><div className="h-1.5 w-3/4 rounded bg-[#61738d]/45" /></div><span className="mt-3 inline-block rounded bg-[#2cecf7] px-2 py-1 text-[7px] font-bold">Journal</span></div>;
+      break;
+    default:
+      layout = <div className="mx-auto w-40 overflow-hidden rounded-lg border border-white/10 bg-[#0b1626]"><Cover className="h-16 rounded-none" /><Copy className="p-2" /></div>;
+  }
+
+  return (
+    <div className={previewShell} style={{ backgroundColor: "#071526", color: "#ffffff" }}>
+      <div className="mb-2 flex items-center justify-between gap-2 text-[9px] font-mono uppercase tracking-[.12em] text-gray-400">
+        <span>Public page preview</span>
+        <span className="text-[#2cecf7]">{info.tag}</span>
+      </div>
+      {layout}
+    </div>
+  );
+}
 
 export default function ManageBlogPage() {
   const router = useRouter();
@@ -357,6 +510,13 @@ export default function ManageBlogPage() {
       ...prev,
       title: newTitle,
       slug: editingPost ? prev.slug : newSlug,
+    }));
+  };
+
+  const adjustReadTime = (change: number) => {
+    setForm((prev) => ({
+      ...prev,
+      readTime: formatReadTime(getReadTimeMinutes(prev.readTime) + change),
     }));
   };
 
@@ -757,156 +917,49 @@ export default function ManageBlogPage() {
             </p>
           </div>
         ) : (
-          <div className="bg-[#0c0c16]/95 border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[900px]">
-                <thead>
-                  <tr className="border-b border-white/[0.08] bg-black/40 text-gray-400 font-mono text-[11px] uppercase tracking-wider">
-                    <th className="py-4 px-4 text-center">Order</th>
-                    <th className="py-4 px-5">Chronicle</th>
-                    <th className="py-4 px-5">Category</th>
-                    <th className="py-4 px-5">Layout Grid</th>
-                    <th className="py-4 px-5">Author</th>
-                    <th className="py-4 px-5 text-center">Reads</th>
-                    <th className="py-4 px-5 text-center">Status</th>
-                    <th className="py-4 px-5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04] text-xs font-sans">
-                  {filteredPosts.map((post, idx) => {
-                    const catConfig = getBlogCategoryDetails(post.category, customCategories);
-                    const spanInfo = GRID_SPAN_CONFIG[post.gridSpan] || GRID_SPAN_CONFIG.normal;
-                    const orderNum = typeof post.order === "number" ? post.order : idx + 1;
-
-                    return (
-                      <tr key={post.id} className="hover:bg-white/[0.02] transition-colors">
-                        {/* Display Order */}
-                        <td className="py-4 px-4 text-center">
-                          <span className="inline-block px-2.5 py-1 rounded-lg bg-teal-500/10 border border-teal-500/25 text-teal-300 font-mono text-xs font-bold shadow-sm">
-                            #{orderNum}
-                          </span>
-                        </td>
-                        {/* Image + Title */}
-                        <td className="py-4 px-5">
-                          <div className="flex items-center gap-3">
-                            <div className="relative w-14 h-10 rounded-xl overflow-hidden bg-black/40 flex-shrink-0 border border-white/10">
-                              <Image
-                                src={post.coverImage}
-                                alt={post.title}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                            <div>
-                              <div className="font-bold text-white text-sm line-clamp-1">
-                                {post.title}
-                              </div>
-                              <div className="text-teal-400/80 font-mono text-[11px]">
-                                /{post.slug}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Category */}
-                        <td className="py-4 px-5">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold border ${catConfig.badgeBg} ${catConfig.badgeText} ${catConfig.badgeBorder}`}
-                          >
-                            <span className="material-symbols-outlined text-xs">
-                              {catConfig.icon}
-                            </span>
-                            <span>{catConfig.label}</span>
-                          </span>
-                        </td>
-
-                        {/* Grid Span */}
-                        <td className="py-4 px-5 font-mono text-[11px]">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md border text-[11px] font-mono ${spanInfo.badgeColor}`}>
-                            <span className="material-symbols-outlined text-[13px]">{spanInfo.icon}</span>
-                            <span>{spanInfo.tag}</span>
-                            {post.featured && <span className="text-amber-400 font-bold">★</span>}
-                          </span>
-                        </td>
-
-                        {/* Author */}
-                        <td className="py-4 px-5 text-gray-300">
-                          <div className="font-semibold text-white">{post.author.name}</div>
-                          <div className="text-[10px] text-gray-400 font-mono">
-                            {post.author.role}
-                          </div>
-                        </td>
-
-                        {/* Reads Count */}
-                        <td className="py-4 px-5 text-center font-mono">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] text-xs text-white">
-                            <span className="material-symbols-outlined text-xs text-[#2cecf7]">visibility</span>
-                            <span>{(post.readsCount || post.views || 0).toLocaleString()}</span>
-                          </span>
-                        </td>
-
-                        {/* Status */}
-                        <td className="py-4 px-5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleTogglePublish(post)}
-                            className={`px-2.5 py-1 rounded-full font-mono text-[10px] uppercase font-bold border transition cursor-pointer ${
-                              post.isPublished
-                                ? "bg-teal-500/10 text-teal-300 border-teal-500/25 hover:bg-teal-500/20"
-                                : "bg-amber-500/10 text-amber-300 border-amber-500/25 hover:bg-amber-500/20"
-                            }`}
-                          >
-                            {post.isPublished ? "✓ Published" : "Draft"}
-                          </button>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-4 px-5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button type="button" onClick={() => void handleTogglePin(post)} disabled={pinningId !== null} aria-pressed={post.pinned === true} title={post.pinned ? "Unpin blog" : "Pin blog first"} aria-label={`${post.pinned ? "Unpin" : "Pin"} ${post.title}`} className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition disabled:opacity-50 ${post.pinned ? "border-[#2cecf7]/50 bg-[#2cecf7]/15 text-[var(--devengine-text)]" : "border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:bg-[#2cecf7]/10"}`}>
-                              <span className={`material-symbols-outlined text-[20px] text-[#2cecf7] ${pinningId === post.id ? "animate-pulse" : ""}`} aria-hidden="true">{post.pinned ? "keep" : "keep_off"}</span>
-                            </button>
-                            <Link
-                              href={`/blog/${post.slug}`}
-                              target="_blank"
-                              className="p-2 rounded-xl hover:bg-white/[0.06] text-gray-400 hover:text-teal-300 transition"
-                              title="View Public Post"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </Link>
-
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEdit(post, idx)}
-                              className="p-2 rounded-xl hover:bg-teal-500/10 text-gray-400 hover:text-teal-300 transition cursor-pointer"
-                              title="Edit blog post"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setDeleteTarget(post)}
-                              className="p-2 rounded-xl hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 transition cursor-pointer"
-                              title="Move to Recycle Bin"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {filteredPosts.map((post, idx) => {
+              const catConfig = getBlogCategoryDetails(post.category, customCategories);
+              const spanInfo = GRID_SPAN_CONFIG[post.gridSpan] || GRID_SPAN_CONFIG.normal;
+              const orderNum = typeof post.order === "number" ? post.order : idx + 1;
+              const reads = post.readsCount || post.views || 0;
+              return (
+                <article key={post.id} className="group flex min-w-0 flex-col overflow-hidden rounded-3xl border border-[var(--devengine-border)] bg-[var(--devengine-surface)] shadow-lg transition duration-200 hover:-translate-y-1 hover:border-[#2cecf7]/60 hover:shadow-[#2cecf7]/10">
+                  <div className="relative border-b border-[var(--devengine-border)]">
+                    <BlogCoverPreview src={post.coverImage} title={post.title} />
+                    <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
+                      <span className="rounded-lg border border-[#2cecf7]/40 bg-[#07131a]/85 px-2 py-1 font-mono text-[11px] font-bold text-[#2cecf7] backdrop-blur-sm">#{orderNum}</span>
+                      <div className="flex gap-1.5">
+                        {post.pinned && <span className="rounded-full border border-[#2cecf7]/45 bg-[#07131a]/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#2cecf7] backdrop-blur-sm">Pinned</span>}
+                        {post.featured && <span className="rounded-full border border-amber-400/45 bg-[#07131a]/85 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-300 backdrop-blur-sm">Featured</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <span className={`inline-flex min-w-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${catConfig.badgeBg} ${catConfig.badgeText} ${catConfig.badgeBorder}`}><span className="material-symbols-outlined text-[14px]" aria-hidden="true">{catConfig.icon}</span><span className="truncate">{catConfig.label}</span></span>
+                      <button type="button" onClick={() => handleTogglePublish(post)} className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${post.isPublished ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-400 hover:bg-emerald-400/20" : "border-amber-400/35 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20"}`}>{post.isPublished ? "Published" : "Draft"}</button>
+                    </div>
+                    <h2 className="line-clamp-2 text-lg font-bold leading-snug text-[var(--devengine-text)]">{post.title}</h2>
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--devengine-muted)]">{post.excerpt || post.subtitle || "No summary has been added yet."}</p>
+                    <p className="mt-3 truncate font-mono text-[11px] text-[#2cecf7]">/{post.slug}</p>
+                    <div className="mt-4 grid grid-cols-2 gap-2 border-y border-[var(--devengine-border)] py-3 text-xs">
+                      <div className="min-w-0"><span className="block text-[10px] font-bold uppercase tracking-wide text-[var(--devengine-muted)]">Layout</span><span className="mt-1 flex items-center gap-1 truncate text-[var(--devengine-text)]"><span className="material-symbols-outlined text-[15px] text-[#2cecf7]" aria-hidden="true">{spanInfo.icon}</span>{spanInfo.shortLabel}</span></div>
+                      <div className="min-w-0 text-right"><span className="block text-[10px] font-bold uppercase tracking-wide text-[var(--devengine-muted)]">Reads</span><span className="mt-1 inline-flex items-center gap-1 text-[var(--devengine-text)]"><span className="material-symbols-outlined text-[15px] text-[#2cecf7]" aria-hidden="true">visibility</span>{reads.toLocaleString()}</span></div>
+                    </div>
+                    <div className="mt-3 flex min-w-0 items-center gap-2">
+                      <div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-[var(--devengine-text)]">{post.author?.name || "No author"}</p><p className="truncate text-[11px] text-[var(--devengine-muted)]">{post.author?.role || ""}</p></div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button type="button" onClick={() => void handleTogglePin(post)} disabled={pinningId !== null} aria-pressed={post.pinned === true} title={post.pinned ? "Unpin blog" : "Pin blog first"} aria-label={`${post.pinned ? "Unpin" : "Pin"} ${post.title}`} className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition disabled:opacity-50 ${post.pinned ? "border-[#2cecf7]/50 bg-[#2cecf7]/15 text-[#2cecf7]" : "border-[var(--devengine-border)] text-[var(--devengine-muted)] hover:bg-[#2cecf7]/10 hover:text-[#2cecf7]"}`}><span className={`material-symbols-outlined text-[19px] ${pinningId === post.id ? "animate-pulse" : ""}`} aria-hidden="true">{post.pinned ? "keep" : "keep_off"}</span></button>
+                        <Link href={`/blog/${post.slug}`} target="_blank" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--devengine-border)] text-[var(--devengine-muted)] transition hover:bg-[#2cecf7]/10 hover:text-[#2cecf7]" title="View public post" aria-label={`View ${post.title}`}><span className="material-symbols-outlined text-[19px]" aria-hidden="true">visibility</span></Link>
+                        <button type="button" onClick={() => handleOpenEdit(post, idx)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--devengine-border)] text-[var(--devengine-muted)] transition hover:bg-[#2cecf7]/10 hover:text-[#2cecf7]" title="Edit blog post" aria-label={`Edit ${post.title}`}><span className="material-symbols-outlined text-[19px]" aria-hidden="true">edit</span></button>
+                        <button type="button" onClick={() => setDeleteTarget(post)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--devengine-border)] text-[var(--devengine-muted)] transition hover:border-rose-400/50 hover:bg-rose-400/10 hover:text-rose-400" title="Move to Recycle Bin" aria-label={`Move ${post.title} to Recycle Bin`}><span className="material-symbols-outlined text-[19px]" aria-hidden="true">delete</span></button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </main>
@@ -1092,15 +1145,35 @@ export default function ManageBlogPage() {
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1.5 flex items-center justify-between">
                     <span>Read Time</span>
-                    <span className="text-[10px] text-gray-500 font-mono">e.g. 5 min</span>
+                    <span className="text-[10px] text-gray-500 font-mono">Tap to adjust minutes</span>
                   </label>
-                  <input
-                    type="text"
-                    value={form.readTime}
-                    onChange={(e) => setForm({ ...form, readTime: e.target.value })}
-                    placeholder="e.g. 6 min read"
-                    className="w-full h-11 bg-black/40 border border-white/[0.08] focus:border-teal-500/50 rounded-xl px-3.5 text-xs text-white font-mono placeholder-gray-500 outline-none transition"
-                  />
+                  <div className="flex h-11 overflow-hidden rounded-xl border border-white/[0.08] bg-black/40 shadow-inner">
+                    <button
+                      type="button"
+                      onClick={() => adjustReadTime(-1)}
+                      disabled={getReadTimeMinutes(form.readTime) <= 1}
+                      className="flex min-w-11 items-center justify-center border-r border-white/[0.08] text-[#2cecf7] transition hover:bg-[#2cecf7]/15 disabled:cursor-not-allowed disabled:text-gray-600"
+                      aria-label="Decrease read time by one minute"
+                      title="Decrease by 1 minute"
+                    >
+                      <span className="material-symbols-outlined text-[19px]" aria-hidden="true">remove</span>
+                    </button>
+                    <output
+                      className="flex flex-1 items-center justify-center px-2 text-xs font-semibold text-white"
+                      aria-live="polite"
+                    >
+                      {formatReadTime(getReadTimeMinutes(form.readTime))}
+                    </output>
+                    <button
+                      type="button"
+                      onClick={() => adjustReadTime(1)}
+                      className="flex min-w-11 items-center justify-center border-l border-white/[0.08] text-[#2cecf7] transition hover:bg-[#2cecf7]/15"
+                      aria-label="Increase read time by one minute"
+                      title="Increase by 1 minute"
+                    >
+                      <span className="material-symbols-outlined text-[19px]" aria-hidden="true">add</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1783,7 +1856,7 @@ export default function ManageBlogPage() {
           onClose={() => setGridModalOpen(false)}
           label="Expanded grid styles visualizer"
         >
-          <div className="bg-[#0c0c16] border border-white/[0.14] rounded-3xl max-w-5xl w-full shadow-2xl relative max-h-[92vh] text-white flex flex-col overflow-hidden">
+          <div className="bg-[#0c0c16] border border-white/[0.14] rounded-3xl max-w-6xl w-full shadow-2xl relative max-h-[92vh] text-white flex flex-col overflow-hidden">
             {/* Pinned Header */}
             <div className="flex justify-between items-start px-6 sm:px-8 py-5 border-b border-white/[0.08] bg-[#0c0c16] shrink-0">
               <div>
@@ -1798,7 +1871,7 @@ export default function ManageBlogPage() {
                   </span>
                 </h3>
                 <p className="text-xs text-gray-400 mt-1 max-w-2xl">
-                  Choose from 20 premium publication frames within the 3-column responsive matrix. Each style includes a live blueprint and responsive card anatomy preview.
+                  Choose from 20 premium publication frames. Every tile mirrors the public blog feed—image placement, text hierarchy, card size, and full-width behavior—so the final result is clear before you publish.
                 </p>
               </div>
               <button
@@ -1865,89 +1938,8 @@ export default function ManageBlogPage() {
                       </span>
                     </div>
 
-                    {/* Middle: 3x3 Wireframe Matrix + Layout Mockup */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-xl bg-black/60 border border-white/[0.06]">
-                      {/* Left: 3x3 Blueprint Matrix */}
-                      <div>
-                        <span className="text-[9px] font-mono uppercase text-gray-400 block mb-1.5 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[11px]">grid_4x4</span>
-                          <span>Matrix Blueprint (3 Cols)</span>
-                        </span>
-                        <div className="grid grid-cols-3 gap-1 p-1.5 bg-[#070b14] rounded-lg border border-white/10 w-full h-20">
-                          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((cellIdx) => {
-                            const isOccupied = info.wireframe.cells.includes(cellIdx);
-                            return (
-                              <div
-                                key={cellIdx}
-                                className={`rounded-sm transition-all flex items-center justify-center ${
-                                  isOccupied
-                                    ? "bg-[#2cecf7]/40 border border-[#2cecf7] shadow-[0_0_8px_rgba(44,236,247,0.5)] text-[10px] font-mono text-[#2cecf7] font-bold"
-                                    : "bg-white/[0.03] border border-white/[0.04]"
-                                }`}
-                              >
-                                {isOccupied && "★"}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Right: Card Anatomy Skeleton */}
-                      <div>
-                        <span className="text-[9px] font-mono uppercase text-gray-400 block mb-1.5 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[11px]">web</span>
-                          <span>Card Anatomy</span>
-                        </span>
-                        <div className="p-2 bg-[#070b14] rounded-lg border border-white/10 h-20 flex flex-col justify-between overflow-hidden">
-                          {info.id === "hero" || info.id === "split" ? (
-                            <div className="flex gap-2 h-full items-center">
-                              <div className="w-1/2 h-full bg-[#2cecf7]/20 border border-[#2cecf7]/40 rounded flex items-center justify-center text-[9px] font-mono text-[#2cecf7]">
-                                Visual
-                              </div>
-                              <div className="w-1/2 space-y-1">
-                                <div className="h-2 w-3/4 bg-white/30 rounded" />
-                                <div className="h-1.5 w-full bg-white/15 rounded" />
-                                <div className="h-1.5 w-2/3 bg-white/15 rounded" />
-                              </div>
-                            </div>
-                          ) : info.id === "overlay" ? (
-                            <div className="relative h-full w-full bg-[#2cecf7]/15 border border-[#2cecf7]/30 rounded flex flex-col justify-end p-1.5 space-y-1">
-                              <div className="h-2 w-3/4 bg-white rounded shadow-sm" />
-                              <div className="h-1.5 w-1/2 bg-[#2cecf7] rounded" />
-                            </div>
-                          ) : info.id === "strip" ? (
-                            <div className="flex gap-2 h-full items-center">
-                              <div className="w-12 h-full bg-[#2cecf7]/20 border border-[#2cecf7]/40 rounded shrink-0 flex items-center justify-center text-[8px] font-mono text-[#2cecf7]">
-                                Visual
-                              </div>
-                              <div className="flex-1 space-y-1">
-                                <div className="h-2 w-3/4 bg-white/30 rounded" />
-                                <div className="h-1.5 w-full bg-white/15 rounded" />
-                              </div>
-                              <div className="w-6 h-4 bg-[#2cecf7]/30 rounded shrink-0" />
-                            </div>
-                          ) : info.id === "compact" ? (
-                            <div className="flex gap-2 h-full items-center">
-                              <div className="w-8 h-full bg-[#2cecf7]/20 border border-[#2cecf7]/40 rounded shrink-0" />
-                              <div className="flex-1 space-y-1">
-                                <div className="h-2 w-4/5 bg-white/30 rounded" />
-                                <div className="h-1.5 w-1/2 bg-white/15 rounded" />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-1.5 h-full flex flex-col justify-between">
-                              <div className="h-8 w-full bg-[#2cecf7]/20 border border-[#2cecf7]/30 rounded flex items-center justify-center text-[8px] font-mono text-[#2cecf7]">
-                                Cover Image
-                              </div>
-                              <div className="space-y-1">
-                                <div className="h-2 w-3/4 bg-white/30 rounded" />
-                                <div className="h-1.5 w-full bg-white/15 rounded" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    {/* The full-card preview mirrors the geometry visitors see in the public 3-column feed. */}
+                    <PublicGridStylePreview info={info} />
 
                     {/* Bottom: Description & Recommendation */}
                     <div className="space-y-1">

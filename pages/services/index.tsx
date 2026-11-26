@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import LandingNavbar from "@/components/landing/LandingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import HelixLoader from "@/components/HelixLoader";
@@ -54,6 +54,7 @@ const ENGINEERING_STEPS = [
 ];
 
 export default function ServicesPage() {
+  const shouldReduceMotion = useReducedMotion();
   const [services, setServices] = useState<DevEngineService[]>(() => {
     return getCachedData<DevEngineService[]>("services_list", DEFAULT_SERVICES);
   });
@@ -206,9 +207,21 @@ export default function ServicesPage() {
       <div className="min-h-screen bg-[var(--devengine-page)] text-[var(--devengine-text)] relative overflow-x-hidden transition-colors duration-300">
         {/* Ambient Cyber Light Canvas (Light & Dark Compatible) */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-          <div className="absolute -top-[15%] -left-[10%] w-[min(60vw,750px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(44,236,247,0.18),transparent_70%)] blur-[90px] opacity-30 dark:opacity-45" />
-          <div className="absolute top-[35%] -right-[10%] w-[min(55vw,680px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(44,236,247,0.14),transparent_70%)] blur-[90px] opacity-25 dark:opacity-35" />
-          <div className="absolute bottom-[5%] left-[20%] w-[min(50vw,600px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(44,236,247,0.12),transparent_70%)] blur-[90px] opacity-20 dark:opacity-30" />
+          <motion.div
+            className="absolute -top-[15%] -left-[10%] w-[min(60vw,750px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(44,236,247,0.18),transparent_70%)] blur-[90px] opacity-30 dark:opacity-45"
+            animate={shouldReduceMotion ? undefined : { x: [0, 26, 0], y: [0, 18, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute top-[35%] -right-[10%] w-[min(55vw,680px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.16),transparent_70%)] blur-[90px] opacity-25 dark:opacity-35"
+            animate={shouldReduceMotion ? undefined : { x: [0, -28, 0], y: [0, -16, 0], scale: [1.04, 1, 1.04] }}
+            transition={{ duration: 19, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute bottom-[5%] left-[20%] w-[min(50vw,600px)] aspect-square rounded-full bg-[radial-gradient(circle,rgba(20,184,166,0.16),transparent_70%)] blur-[90px] opacity-20 dark:opacity-30"
+            animate={shouldReduceMotion ? undefined : { x: [0, 20, 0], y: [0, -24, 0] }}
+            transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
+          />
           <div className="absolute inset-0 bg-[linear-gradient(var(--devengine-border)_1px,transparent_1px),linear-gradient(90deg,var(--devengine-border)_1px,transparent_1px)] bg-[size:50px_50px] opacity-15 dark:opacity-25 [mask-image:radial-gradient(ellipse_90%_80%_at_50%_50%,#000_30%,transparent_85%)]" />
         </div>
 
@@ -220,9 +233,9 @@ export default function ServicesPage() {
           ═════════════════════════════════════════════════════════════════ */}
           <section className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 text-center mb-16 sm:mb-20">
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
+              transition={{ duration: 0.68, ease: "easeOut" }}
             >
               {/* Pill Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-50 dark:bg-[#2cecf7]/10 border border-cyan-200 dark:border-[#2cecf7]/30 text-[#0284c7] dark:text-[#2cecf7] mb-6 sm:mb-7 shadow-xs">
@@ -271,9 +284,9 @@ export default function ServicesPage() {
 
             {/* Key Metrics Strip */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+              transition={{ duration: 0.6, delay: shouldReduceMotion ? 0 : 0.18, ease: "easeOut" }}
               className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5 max-w-5xl mx-auto mt-14 pt-8 border-t border-slate-200/80 dark:border-white/10"
             >
               <div className="bg-white dark:bg-[#0a0f1d] p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-cyan-500/20 shadow-xs hover:border-[#2cecf7] transition-all">
@@ -319,7 +332,13 @@ export default function ServicesPage() {
           ═════════════════════════════════════════════════════════════════ */}
           <section id="catalog" className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 mb-24 scroll-mt-28">
             {/* Command Header & Filter Bar */}
-            <div className="bg-white/95 dark:bg-[#0a0f1d]/95 backdrop-blur-2xl p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-lg shadow-slate-200/40 dark:shadow-black/60 mb-8 sm:mb-10 space-y-4">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
+              className="bg-white/95 dark:bg-[#0a0f1d]/95 backdrop-blur-2xl p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-lg shadow-slate-200/40 dark:shadow-black/60 mb-8 sm:mb-10 space-y-4"
+            >
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                   <div className="inline-flex items-center gap-2 bg-cyan-50 dark:bg-[#2cecf7]/10 text-[#0284c7] dark:text-[#2cecf7] px-3 py-1 rounded-full font-jetbrains text-xs uppercase tracking-widest font-bold mb-2 border border-cyan-200 dark:border-[#2cecf7]/20">
@@ -377,7 +396,7 @@ export default function ServicesPage() {
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
 
             {/* Services Cards Grid with Smooth Animated Layout */}
             {loading ? (
@@ -408,15 +427,15 @@ export default function ServicesPage() {
             ) : (
               <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                 <AnimatePresence mode="popLayout">
-                  {filteredServices.map((service) => (
+                  {filteredServices.map((service, index) => (
                     <motion.div
                       layout
                       key={service.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.28, ease: "easeOut" }}
-                      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                      initial={shouldReduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.98 }}
+                      transition={{ duration: shouldReduceMotion ? 0.01 : 0.42, delay: shouldReduceMotion ? 0 : Math.min(index * 0.06, 0.3), ease: "easeOut" }}
+                      whileHover={shouldReduceMotion ? undefined : { y: -8, transition: { duration: 0.22, ease: "easeOut" } }}
                       className="bg-white dark:bg-[#0a0f1d] rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-md shadow-slate-200/40 dark:shadow-black/60 hover:border-[#2cecf7] hover:shadow-xl hover:shadow-[#2cecf7]/10 transition-all duration-300 group flex flex-col justify-between p-6 sm:p-7 relative overflow-hidden"
                     >
                       {/* Top Cyber Accent Strip */}
@@ -518,7 +537,13 @@ export default function ServicesPage() {
               THE DEVENGINE METHOD (ENGINEERING LIFECYCLE)
           ═════════════════════════════════════════════════════════════════ */}
           <section className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 mb-24">
-            <div className="bg-white/95 dark:bg-[#0a0f1d]/95 backdrop-blur-2xl p-6 sm:p-10 lg:p-12 rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-lg shadow-slate-200/40 dark:shadow-black/60">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 22 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.14 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="bg-white/95 dark:bg-[#0a0f1d]/95 backdrop-blur-2xl p-6 sm:p-10 lg:p-12 rounded-3xl border border-slate-200/90 dark:border-cyan-500/20 shadow-lg shadow-slate-200/40 dark:shadow-black/60"
+            >
               <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-14">
                 <div className="inline-flex items-center gap-2 bg-cyan-50 dark:bg-[#2cecf7]/10 text-[#0284c7] dark:text-[#2cecf7] px-3 py-1 rounded-full font-jetbrains text-xs uppercase tracking-widest font-bold mb-3 border border-cyan-200 dark:border-[#2cecf7]/20">
                   THE DEVENGINE STANDARD
@@ -535,7 +560,11 @@ export default function ServicesPage() {
                 {ENGINEERING_STEPS.map((s, idx) => (
                   <motion.div
                     key={idx}
-                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    transition={{ duration: 0.42, delay: shouldReduceMotion ? 0 : idx * 0.08, ease: "easeOut" }}
+                    whileHover={shouldReduceMotion ? undefined : { y: -5, transition: { duration: 0.2, ease: "easeOut" } }}
                     className="bg-slate-50 dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 relative overflow-hidden group hover:border-[#2cecf7] hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                   >
                     <div>
@@ -565,14 +594,20 @@ export default function ServicesPage() {
                   </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </section>
 
           {/* ═════════════════════════════════════════════════════════════════
               BOTTOM CTA BANNER
           ═════════════════════════════════════════════════════════════════ */}
           <section className="w-full max-w-[1780px] 2xl:max-w-[1920px] mx-auto px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 mb-20">
-            <div className="bg-gradient-to-br from-cyan-50/90 via-sky-50/70 to-white dark:from-[#0a0f1d] dark:via-[#111827] dark:to-[#060a14] rounded-3xl p-8 sm:p-12 lg:p-14 border border-cyan-200/90 dark:border-cyan-500/30 shadow-xl shadow-cyan-500/5 relative overflow-hidden">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20, scale: 0.99 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, amount: 0.18 }}
+              transition={{ duration: 0.58, ease: "easeOut" }}
+              className="bg-gradient-to-br from-cyan-50/90 via-sky-50/70 to-white dark:from-[#0a0f1d] dark:via-[#111827] dark:to-[#060a14] rounded-3xl p-8 sm:p-12 lg:p-14 border border-cyan-200/90 dark:border-cyan-500/30 shadow-xl shadow-cyan-500/5 relative overflow-hidden"
+            >
               <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8 text-center lg:text-left">
                 <div className="max-w-xl">
                   <span className="px-3 py-1 rounded-full bg-cyan-100 dark:bg-[#2cecf7]/10 border border-cyan-300 dark:border-[#2cecf7]/30 text-[#0284c7] dark:text-[#2cecf7] font-mono text-[10px] uppercase tracking-widest font-bold inline-block mb-3">
@@ -606,7 +641,7 @@ export default function ServicesPage() {
                   </a>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </section>
         </main>
 
